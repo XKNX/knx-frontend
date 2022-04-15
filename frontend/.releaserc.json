@@ -3,16 +3,13 @@
   "plugins": [
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
+    ["@semantic-release/exec", {
+      "prepareCmd": "mkdir -p dist/; sed -i 's/0.0.0/${nextRelease.version}/' custom_components/knx_panel/manifest.json; cd custom_components/knx_panel; zip ../../dist/knx_panel.zip ./*"
+    }],
     ["@semantic-release/github", {
       "assets": [
         {"path": "../dist/knx_panel.zip", "label": "KNX Panel HACS distribution"}
       ]
-    }],
-    ["semantic-release-plugin-update-version-in-files", {
-    "files": [
-      "../custom_components/knx_panel/manifest.json"
-    ],
-    "placeholder": "0.0.0"
     }]
   ]
 }
