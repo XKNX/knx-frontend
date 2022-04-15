@@ -14,6 +14,7 @@ jobs:
         with:
           cache: npm
           node-version: 16
+          cache-dependency-path: frontend/package-lock.json
       - run: |
           mkdir -p dist/
           cd custom_components/knx_panel
