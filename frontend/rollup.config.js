@@ -2,7 +2,6 @@ import {terser} from "rollup-plugin-terser";
 import cleanup from "rollup-plugin-cleanup";
 import commonjs from "@rollup/plugin-commonjs";
 import dev from "rollup-plugin-dev";
-import gzipPlugin from "rollup-plugin-gzip";
 import json from "@rollup/plugin-json";
 import nodeResolve from "@rollup/plugin-node-resolve";
 import progress from "rollup-plugin-progress";
@@ -33,7 +32,6 @@ const Plugins = [
         port: 5000,
         host: "0.0.0.0",
     }),
-    !isdev && gzipPlugin(),
 ];
 
 export default [
