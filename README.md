@@ -1,8 +1,5 @@
 # KNX UI
 
-[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/XKNX/custom-panel/main.svg)](https://results.pre-commit.ci/latest/github/XKNX/custom-panel/main)
-
-
 This is a custom UI for the KNX core integration in Home Assistant. It provides a user interface for interacting with the
 KNX integration.
 
