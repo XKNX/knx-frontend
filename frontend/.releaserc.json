@@ -4,7 +4,7 @@
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
     ["@semantic-release/exec", {
-      "prepareCmd": "mkdir -p dist/; sed -i 's/0.0.0/${nextRelease.version}/' custom_components/knx_panel/manifest.json; cd custom_components/knx_panel; zip ../../dist/knx_panel.zip ./*"
+      "prepareCmd": "mkdir -p ../dist/; sed -i 's/0.0.0/${nextRelease.version}/' ../custom_components/knx_panel/manifest.json; cd ../custom_components/knx_panel; zip ../../dist/knx_panel.zip ./*"
     }],
     ["@semantic-release/github", {
       "assets": [

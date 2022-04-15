@@ -2,7 +2,8 @@ name: HACS Validation
 
 on:
   push:
-  pull_request:
+    branches-ignore:
+      - '**'
 
 jobs:
   validate:
