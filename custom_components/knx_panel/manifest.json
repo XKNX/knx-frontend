@@ -1,7 +1,7 @@
 {
     "domain": "knx_panel",
     "name": "KNX Custom Panel",
-    "version": "0.0.1",
+    "version": "0.0.0",
     "dependencies": [
         "panel_custom",
         "http",

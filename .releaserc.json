@@ -1,0 +1,19 @@
+{
+  "branches": ["main"],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    ["@semantic-release/github", {
+      "assets": [
+        {"path": "dist/knx_panel.zip", "label": "KNX Panel HACS distribution"}
+      ]
+    }],
+    ["semantic-release-plugin-update-version-in-files", {
+    "files": [
+      "frontend/package.json",
+      "custom_components/knx_panel/manifest.json"
+    ],
+    "placeholder": "0.0.0"
+    }]
+  ]
+}
