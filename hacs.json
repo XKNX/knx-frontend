@@ -1,0 +1,9 @@
+{
+  "name": "KNX Custom Panel",
+  "render_readme": "true",
+  "iot_class": ["Local Push"],
+  "domains": ["knx_panel"],
+  "zip_release": true,
+  "filename": "knx_panel.zip",
+  "hide_default_branch": true
+}

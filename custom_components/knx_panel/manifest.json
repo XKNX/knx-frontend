@@ -1,6 +1,6 @@
 {
     "domain": "knx_panel",
-    "name": "KNX UI",
+    "name": "KNX Custom Panel",
     "version": "0.0.1",
     "dependencies": [
         "panel_custom",
