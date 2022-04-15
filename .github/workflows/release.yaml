@@ -15,11 +15,13 @@ jobs:
           cache: npm
           node-version: 16
           cache-dependency-path: frontend/package-lock.json
-      - run: cd frontend && npm ci
       - run: |
           mkdir -p dist/
           cd custom_components/knx_panel
           zip ../../dist/knx_panel.zip ./*
-      - run: npx semantic-release
+      - run: |
+          cd frontend
+          npm ci
+          npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

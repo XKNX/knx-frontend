@@ -10,7 +10,6 @@
     }],
     ["semantic-release-plugin-update-version-in-files", {
     "files": [
-      "frontend/package.json",
       "custom_components/knx_panel/manifest.json"
     ],
     "placeholder": "0.0.0"
