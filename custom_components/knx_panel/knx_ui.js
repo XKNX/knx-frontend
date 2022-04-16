@@ -192,13 +192,20 @@ this.knx_ui.js = (function (exports) {
             }
             return $ `
       <ha-card class="knx-info" header="KNX Information">
-        <div class="card-content">
-          <div class="knx-version">XKNX Version: ${(_a = this.knxInfo) === null || _a === void 0 ? void 0 : _a.version}</div>
-          <div class="knx-connection-state">
-            Connected to Bus: ${((_b = this.knxInfo) === null || _b === void 0 ? void 0 : _b.connected) ? "Yes" : "No"}
+        <div class="card-content knx-info-section">
+          <div class="knx-content-row">
+            <div>XKNX Version</div>
+            <div>${(_a = this.knxInfo) === null || _a === void 0 ? void 0 : _a.version}</div>
           </div>
-          <div>
-            Individual address: ${(_c = this.knxInfo) === null || _c === void 0 ? void 0 : _c.current_address}
+          
+          <div class="knx-content-row">
+            <div>Connected to Bus</div>
+            <div>${((_b = this.knxInfo) === null || _b === void 0 ? void 0 : _b.connected) ? "Yes" : "No"}</div>
+          </div>
+          
+          <div class="knx-content-row">
+            <div>Individual address</div>
+            <div>${(_c = this.knxInfo) === null || _c === void 0 ? void 0 : _c.current_address}</div>
           </div>
         </div>
       </ha-card>
@@ -208,6 +215,17 @@ this.knx_ui.js = (function (exports) {
             return r$1 `
       .knx-info {
         max-width: 400px;
+      }
+      
+      .knx-info-section {
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .knx-content-row {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between; 
       }
     `;
         }
