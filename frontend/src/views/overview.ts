@@ -30,6 +30,7 @@ export class KNXOverview extends LitElement {
           <div class="knx-connection-state">
             Connected to Bus: ${this.knxInfo?.connected ? "Yes" : "No"}
           </div>
+          <div>Individual address: ${this.knxInfo?.current_address}</div>
         </div>
       </ha-card>
     `;

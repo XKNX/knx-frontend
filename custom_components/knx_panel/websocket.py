@@ -29,5 +29,6 @@ async def ws_info(
         {
             "version": xknx.version,
             "connected": xknx.connection_manager.connected.is_set(),
+            "current_address": str(xknx.current_address),
         },
     )
