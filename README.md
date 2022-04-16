@@ -44,3 +44,7 @@ Please install the pre-commit hook by using:
 
     pip install -r requirements_dev.txt
     pre-commit install
+
+Start the frontend with:
+
+    cd frontend && nvm use && npm install && npm run start

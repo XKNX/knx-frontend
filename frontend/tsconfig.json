@@ -8,6 +8,12 @@
       "dom",
       "dom.iterable"
     ],
+    "baseUrl": "src",
+    "paths": {
+      "@util/*": ["util/*"],
+      "@services/*": ["services/*"],
+      "@typing/*": ["types/*"]
+    },
     "noEmit": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
