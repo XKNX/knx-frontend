@@ -1,14 +1,17 @@
 import { NavigationService } from "@services/navigation.service";
+import { NavigationEntry, Route } from "@typing/navigation";
 import { HomeAssistantComponentLoader } from "@util/load-ha";
 import { HomeAssistant, navigate } from "custom-card-helpers";
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
+import { KNXOverview } from "./views/overview";
 
 @customElement("knx-custom-panel")
 export class KNXCustomPanel extends LitElement {
   @property({ type: Object }) public hass!: HomeAssistant;
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
 
+  private loadedViews = KNXOverview; // We need this so that the compiler also compiles our views...
   private navigationService: NavigationService = new NavigationService();
 
   protected firstUpdated() {
@@ -49,10 +52,31 @@ export class KNXCustomPanel extends LitElement {
           </ha-tabs>
         </app-header>
       </ha-app-layout>
-      <div class="route">
-        Render routes here :-) Active route: ${route.name}
-      </div>
+      <div class="route">${this.getViewForRoute(route)}</div>
     `;
+  }
+
+  private getViewForRoute(route: Route) {
+    const page = route.name;
+
+    switch (page) {
+      case NavigationEntry.OVERVIEW:
+        return html`
+          <knx-overview
+            .hass=${this.hass}
+            .narrow=${this.narrow}
+          ></knx-overview>
+        `;
+      case NavigationEntry.BUS_MONITOR:
+      default:
+        return html`
+          <ha-card header="404">
+            <div class="card-content">
+              This page is not yet implemented, sorry! :-(
+            </div>
+          </ha-card>
+        `;
+    }
   }
 
   /**
@@ -85,6 +109,10 @@ export class KNXCustomPanel extends LitElement {
       }
       app-toolbar {
         height: var(--header-height);
+      }
+
+      .route {
+        margin: 0.5rem;
       }
     `;
   }

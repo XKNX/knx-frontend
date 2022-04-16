@@ -1,4 +1,5 @@
 """Custom panel for KNX."""
+from .websocket import register_websocket_api
 
 
 async def async_setup(hass, config):
@@ -21,4 +22,7 @@ async def async_setup(hass, config):
         },
         require_admin=True,
     )
+
+    register_websocket_api(hass)
+
     return True
