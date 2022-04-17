@@ -12,6 +12,13 @@ KNX UI exists of 2 components right now:
 knx_panel:
 ```
 
+## Features
+
+* Get an overview of your current KNX installation state (shows if connected to the Bus, which XKNX version is running and the currently assigned Individual address)
+* Use the interactive bus monitor to view all incoming and outgoing telegrams on the bus
+
+![Bus Monitor](./screenshots/bus_monitor.png?raw=true)
+
 ## Installation
 
 ### Manual
