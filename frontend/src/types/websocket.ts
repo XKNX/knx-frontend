@@ -7,7 +7,8 @@ export interface KNXInfo {
 export interface KNXTelegram {
   destination_address: string;
   source_address: string;
-  payload: any;
+  payload: string;
+  type: string;
   direction: string;
   timestamp: Date;
 }

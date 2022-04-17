@@ -182,15 +182,16 @@ this.knx_ui.js = (function (exports) {
     let KNXBusMonitor = class KNXBusMonitor extends s {
         constructor() {
             super(...arguments);
-            this.rows = [];
             this.columns = {
                 timestamp: {
                     filterable: true,
+                    sortable: true,
                     title: $ `Time`,
                     width: "15%",
                 },
                 direction: {
                     filterable: true,
+                    sortable: true,
                     title: $ `Direction`,
                     width: "15%",
                 },
@@ -217,6 +218,7 @@ this.knx_ui.js = (function (exports) {
                     grows: true,
                 },
             };
+            this.rows = [];
         }
         disconnectedCallback() {
             super.disconnectedCallback();
@@ -227,20 +229,23 @@ this.knx_ui.js = (function (exports) {
         }
         async firstUpdated() {
             if (!this.subscribed) {
-                this.subscribed = await subscribeKnxTelegrams(this.hass, (message) => this.telegram_callback(message));
-                this.rows = [];
+                this.subscribed = await subscribeKnxTelegrams(this.hass, (message) => {
+                    this.telegram_callback(message);
+                    this.requestUpdate();
+                });
             }
         }
         telegram_callback(telegram) {
-            this.rows.push({
+            const rows = [...this.rows];
+            rows.push({
                 destinationAddress: telegram.destination_address,
                 direction: telegram.direction,
                 payload: telegram.payload,
                 sourceAddress: telegram.source_address,
                 timestamp: telegram.timestamp,
-                type: "TBD",
+                type: telegram.type,
             });
-            this.requestUpdate();
+            this.rows = rows;
         }
         render() {
             return $ `
@@ -253,19 +258,37 @@ this.knx_ui.js = (function (exports) {
         .dir=${z$1(this.hass)}
       >
       </ha-data-table>
+      <div class="telegram_counter">
+        <div class="telegram_counter_label">Telegram count:</div>
+        <div>${this.rows.length}</div>
+      </div>
     `;
         }
         static get styles() {
             return r$1 `
       ha-data-table {
-        height: calc(100vh - 150px);
+        height: calc(100vh - 160px);
       }
-    
+
       .telegram {
         display: flex;
         flex-direction: row;
         justify-content: space-between;
       }
+      
+      .telegram_counter {
+        margin-top: 0.4rem;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        max-width: 200px;
+      }
+      
+      .telegram_counter_label {
+        font-size: 12px;
+        font-weight: bold;
+      }
+      
     `;
         }
     };
@@ -276,14 +299,14 @@ this.knx_ui.js = (function (exports) {
         e({ type: Boolean, reflect: true })
     ], KNXBusMonitor.prototype, "narrow", void 0);
     __decorate([
+        e()
+    ], KNXBusMonitor.prototype, "columns", void 0);
+    __decorate([
         t()
     ], KNXBusMonitor.prototype, "subscribed", void 0);
     __decorate([
         t()
     ], KNXBusMonitor.prototype, "rows", void 0);
-    __decorate([
-        e()
-    ], KNXBusMonitor.prototype, "columns", void 0);
     KNXBusMonitor = __decorate([
         n$1("knx-bus-monitor")
     ], KNXBusMonitor);

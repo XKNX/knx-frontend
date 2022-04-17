@@ -7,6 +7,7 @@ from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant
 import voluptuous as vol
 from xknx.telegram import Telegram
+from xknx.telegram.apci import GroupValueRead, GroupValueResponse, GroupValueWrite
 
 from .const import KNX_DOMAIN, AsyncMessageCallbackType, MessageCallbackType
 
@@ -55,12 +56,20 @@ async def ws_subscribe_telegram(
 
     async def forward_telegrams(telegram: Telegram):
         """Forward events to websocket."""
+        if not isinstance(
+            telegram.payload, (GroupValueRead, GroupValueWrite, GroupValueResponse)
+        ):
+            return
+
         connection.send_message(
             websocket_api.event_message(
                 msg["id"],
                 {
                     "destination_address": str(telegram.destination_address),
-                    "payload": str(telegram.payload),
+                    "payload": str(telegram.payload.value)
+                    if hasattr(telegram.payload, "value")
+                    else "",
+                    "type": str(telegram.payload.__class__.__name__),
                     "source_address": str(telegram.source_address),
                     "direction": str(telegram.direction),
                     "timestamp": str(telegram.timestamp),
@@ -81,10 +90,10 @@ async def async_subscribe_telegrams(
     """Subscribe to telegram received callback."""
     xknx = hass.data[KNX_DOMAIN].xknx
 
+    unregister = xknx.telegram_queue.register_telegram_received_cb(callback)
+
     def async_remove():
         """Remove callback."""
-        xknx.telegram_queue.unregister_telegram_received_cb(callback)
-
-    xknx.telegram_queue.register_telegram_received_cb(callback)
+        xknx.telegram_queue.unregister_telegram_received_cb(unregister)
 
     return async_remove

@@ -10,17 +10,16 @@ import { customElement, property } from "lit/decorators.js";
 export class KNXBusMonitor extends LitElement {
   @property({ type: Object }) public hass!: HomeAssistant;
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
-  @state() private subscribed?: () => void;
-
-  @state() private rows: DataTableRowData[] = [];
   @property() private columns: DataTableColumnContainer = {
     timestamp: {
       filterable: true,
+      sortable: true,
       title: html`Time`,
       width: "15%",
     },
     direction: {
       filterable: true,
+      sortable: true,
       title: html`Direction`,
       width: "15%",
     },
@@ -48,6 +47,9 @@ export class KNXBusMonitor extends LitElement {
     },
   };
 
+  @state() private subscribed?: () => void;
+  @state() private rows: DataTableRowData[] = [];
+
   public disconnectedCallback() {
     super.disconnectedCallback();
     if (this.subscribed) {
@@ -58,23 +60,24 @@ export class KNXBusMonitor extends LitElement {
 
   protected async firstUpdated() {
     if (!this.subscribed) {
-      this.subscribed = await subscribeKnxTelegrams(this.hass, (message) =>
-        this.telegram_callback(message)
-      );
-      this.rows = [];
+      this.subscribed = await subscribeKnxTelegrams(this.hass, (message) => {
+        this.telegram_callback(message);
+        this.requestUpdate();
+      });
     }
   }
 
   protected telegram_callback(telegram: KNXTelegram): void {
-    this.rows.push({
+    const rows = [...this.rows];
+    rows.push({
       destinationAddress: telegram.destination_address,
       direction: telegram.direction,
       payload: telegram.payload,
       sourceAddress: telegram.source_address,
       timestamp: telegram.timestamp,
-      type: "TBD",
+      type: telegram.type,
     });
-    this.requestUpdate();
+    this.rows = rows;
   }
 
   protected render(): TemplateResult | void {
@@ -88,19 +91,36 @@ export class KNXBusMonitor extends LitElement {
         .dir=${computeRTLDirection(this.hass)}
       >
       </ha-data-table>
+      <div class="telegram_counter">
+        <div class="telegram_counter_label">Telegram count:</div>
+        <div>${this.rows.length}</div>
+      </div>
     `;
   }
 
   static get styles() {
     return css`
       ha-data-table {
-        height: calc(100vh - 150px);
+        height: calc(100vh - 160px);
       }
 
       .telegram {
         display: flex;
         flex-direction: row;
         justify-content: space-between;
+      }
+
+      .telegram_counter {
+        margin-top: 0.4rem;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        max-width: 200px;
+      }
+
+      .telegram_counter_label {
+        font-size: 12px;
+        font-weight: bold;
       }
     `;
   }
