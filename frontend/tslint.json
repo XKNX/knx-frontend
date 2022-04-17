@@ -13,7 +13,16 @@
         "no-console": {
             "severity": "warning",
             "options": ["debug", "info", "log", "time", "timeEnd", "trace"]
-        }
+        },
+        "trailing-comma": [true, {
+          "singleline": "never",
+          "multiline": {
+            "objects": "always",
+            "arrays": "always",
+            "functions": "never",
+            "typeLiterals": "ignore"
+          }
+        }]
     },
     "jsRules": {
         "max-line-length": {

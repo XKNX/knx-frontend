@@ -1,5 +1,5 @@
 import { getKnxInfo } from "@services/websocket.service";
-import { KnxInfo } from "@typing/websocket";
+import { KNXInfo } from "@typing/websocket";
 import { HomeAssistant } from "custom-card-helpers";
 import { css, html, LitElement, TemplateResult } from "lit";
 import { state } from "lit-element";
@@ -9,7 +9,7 @@ import { customElement, property } from "lit/decorators.js";
 export class KNXOverview extends LitElement {
   @property({ type: Object }) public hass!: HomeAssistant;
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
-  @state() private knxInfo: KnxInfo | null = null;
+  @state() private knxInfo: KNXInfo | null = null;
 
   protected firstUpdated() {
     getKnxInfo(this.hass).then((knxInfo) => {

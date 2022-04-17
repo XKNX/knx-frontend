@@ -1,17 +1,18 @@
 import { NavigationService } from "@services/navigation.service";
 import { NavigationEntry, Route } from "@typing/navigation";
 import { HomeAssistantComponentLoader } from "@util/load-ha";
+import { KNXBusMonitor } from "@views/bus_monitor";
+import { KNXOverview } from "@views/overview";
 import { HomeAssistant, navigate } from "custom-card-helpers";
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { KNXOverview } from "./views/overview";
 
 @customElement("knx-custom-panel")
 export class KNXCustomPanel extends LitElement {
   @property({ type: Object }) public hass!: HomeAssistant;
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
 
-  private loadedViews = KNXOverview; // We need this so that the compiler also compiles our views...
+  private loadedViews = [KNXOverview, KNXBusMonitor]; // We need this so that the compiler also compiles our views...
   private navigationService: NavigationService = new NavigationService();
 
   protected firstUpdated() {
@@ -68,6 +69,12 @@ export class KNXCustomPanel extends LitElement {
           ></knx-overview>
         `;
       case NavigationEntry.BUS_MONITOR:
+        return html`
+          <knx-bus-monitor
+            .hass=${this.hass}
+            .narrow=${this.narrow}
+          ></knx-bus-monitor>
+        `;
       default:
         return html`
           <ha-card header="404">

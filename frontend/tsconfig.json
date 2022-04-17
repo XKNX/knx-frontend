@@ -12,7 +12,8 @@
     "paths": {
       "@util/*": ["util/*"],
       "@services/*": ["services/*"],
-      "@typing/*": ["types/*"]
+      "@typing/*": ["types/*"],
+      "@views/*": ["views/*"]
     },
     "noEmit": true,
     "noUnusedParameters": true,
