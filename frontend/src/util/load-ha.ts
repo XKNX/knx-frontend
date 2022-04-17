@@ -1,6 +1,10 @@
 export class HomeAssistantComponentLoader {
   public static async loadForm(): Promise<void> {
-    if (customElements.get("ha-checkbox") && customElements.get("ha-slider")) {
+    if (
+      customElements.get("ha-checkbox") &&
+      customElements.get("ha-slider") &&
+      customElements.get("ha-data-table")
+    ) {
       return Promise.reject();
     }
 
