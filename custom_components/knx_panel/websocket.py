@@ -90,7 +90,9 @@ async def async_subscribe_telegrams(
     """Subscribe to telegram received callback."""
     xknx = hass.data[KNX_DOMAIN].xknx
 
-    unregister = xknx.telegram_queue.register_telegram_received_cb(callback)
+    unregister = xknx.telegram_queue.register_telegram_received_cb(
+        callback, match_for_outgoing=True
+    )
 
     def async_remove():
         """Remove callback."""
