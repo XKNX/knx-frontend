@@ -43,7 +43,7 @@ export default [
         },
         input: ["src/knx_ui.ts"],
         output: {
-            file: `../custom_components/knx_panel/knx_ui.js`,
+            file: `./xknx-custom-panel/knx_ui.js`,
             name: "knx_ui.js",
             format: "iife",
         },
