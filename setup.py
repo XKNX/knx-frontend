@@ -30,7 +30,6 @@ setup(
     ],
     packages=find_packages(include=["xknx_custom_panel", "xknx_custom_panel.*"]),
     package_data={"xknx_custom_panel": ["knx-ui.js"]},
-    include_package_data=True,
     keywords="knx panel xknx custom-panel home-assistant",
     zip_safe=False,
 )
