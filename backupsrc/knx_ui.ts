@@ -1,13 +1,13 @@
-import { NavigationService } from "@services/navigation.service";
-import { NavigationEntry, Route } from "@typing/navigation";
-import { HomeAssistantComponentLoader } from "@util/load-ha";
-import { KNXBusMonitor } from "@views/bus_monitor";
-import { KNXOverview } from "@views/overview";
-import { HomeAssistant, navigate } from "custom-card-helpers";
-import { css, html, LitElement, TemplateResult } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { NavigationService } from '@services/navigation.service';
+import { NavigationEntry, Route } from '@typing/navigation';
+import { HomeAssistantComponentLoader } from '@util/load-ha';
+import { KNXBusMonitor } from '@views/bus_monitor';
+import { KNXOverview } from '@views/overview';
+import { HomeAssistant, navigate } from 'custom-card-helpers';
+import { css, html, LitElement, TemplateResult } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
 
-@customElement("knx-custom-panel")
+@customElement('knx-custom-panel')
 export class KNXCustomPanel extends LitElement {
   @property({ type: Object }) public hass!: HomeAssistant;
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
@@ -16,7 +16,7 @@ export class KNXCustomPanel extends LitElement {
   private navigationService: NavigationService = new NavigationService();
 
   protected firstUpdated() {
-    window.addEventListener("location-changed", () => {
+    window.addEventListener('location-changed', () => {
       this.requestUpdate();
     });
     HomeAssistantComponentLoader.loadForm().then(() => {
@@ -26,7 +26,7 @@ export class KNXCustomPanel extends LitElement {
   }
 
   protected render(): TemplateResult | void {
-    if (!customElements.get("ha-app-layout")) {
+    if (!customElements.get('ha-app-layout')) {
       return html`Preparing the awesome...`;
     }
 

@@ -1,12 +1,12 @@
-import { subscribeKnxTelegrams } from "@services/websocket.service";
-import { DataTableColumnContainer, DataTableRowData } from "@typing/table";
-import { KNXTelegram } from "@typing/websocket";
-import { computeRTLDirection, HomeAssistant } from "custom-card-helpers";
-import { css, html, LitElement, TemplateResult } from "lit";
-import { state } from "lit-element";
-import { customElement, property } from "lit/decorators.js";
+import { subscribeKnxTelegrams } from '@services/websocket.service';
+import { DataTableColumnContainer, DataTableRowData } from '@typing/table';
+import { KNXTelegram } from '@typing/websocket';
+import { computeRTLDirection, HomeAssistant } from 'custom-card-helpers';
+import { css, html, LitElement, TemplateResult } from 'lit';
+import { state } from 'lit-element';
+import { customElement, property } from 'lit/decorators.js';
 
-@customElement("knx-bus-monitor")
+@customElement('knx-bus-monitor')
 export class KNXBusMonitor extends LitElement {
   @property({ type: Object }) public hass!: HomeAssistant;
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
@@ -15,25 +15,25 @@ export class KNXBusMonitor extends LitElement {
       filterable: true,
       sortable: true,
       title: html`Time`,
-      width: "15%",
+      width: '15%',
     },
     direction: {
       filterable: true,
       sortable: true,
       title: html`Direction`,
-      width: "15%",
+      width: '15%',
     },
     sourceAddress: {
       filterable: true,
       sortable: true,
       title: html`Source Address`,
-      width: "15%",
+      width: '15%',
     },
     destinationAddress: {
       sortable: true,
       filterable: true,
       title: html`Destination Address`,
-      width: "15%",
+      width: '15%',
     },
     type: {
       title: html`Type`,

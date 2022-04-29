@@ -1,11 +1,11 @@
-import { getKnxInfo } from "@services/websocket.service";
-import { KNXInfo } from "@typing/websocket";
-import { HomeAssistant } from "custom-card-helpers";
-import { css, html, LitElement, TemplateResult } from "lit";
-import { state } from "lit-element";
-import { customElement, property } from "lit/decorators.js";
+import { getKnxInfo } from '@services/websocket.service';
+import { KNXInfo } from '@typing/websocket';
+import { HomeAssistant } from 'custom-card-helpers';
+import { css, html, LitElement, TemplateResult } from 'lit';
+import { state } from 'lit-element';
+import { customElement, property } from 'lit/decorators.js';
 
-@customElement("knx-overview")
+@customElement('knx-overview')
 export class KNXOverview extends LitElement {
   @property({ type: Object }) public hass!: HomeAssistant;
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
@@ -33,7 +33,7 @@ export class KNXOverview extends LitElement {
 
           <div class="knx-content-row">
             <div>Connected to Bus</div>
-            <div>${this.knxInfo?.connected ? "Yes" : "No"}</div>
+            <div>${this.knxInfo?.connected ? 'Yes' : 'No'}</div>
           </div>
 
           <div class="knx-content-row">

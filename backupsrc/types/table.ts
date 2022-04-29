@@ -1,6 +1,6 @@
-import { TemplateResult } from "lit-element";
+import { TemplateResult } from 'lit-element';
 
-export type SortingDirection = "desc" | "asc" | null;
+export type SortingDirection = 'desc' | 'asc' | null;
 
 export interface DataTableColumnContainer {
   [key: string]: DataTableColumnData;
@@ -16,7 +16,7 @@ export interface DataTableSortColumnData {
 
 export interface DataTableColumnData extends DataTableSortColumnData {
   title: TemplateResult | string;
-  type?: "numeric" | "icon" | "icon-button" | "overflow-menu";
+  type?: 'numeric' | 'icon' | 'icon-button' | 'overflow-menu';
   template?: <T>(data: any, row: T) => TemplateResult | string;
   width?: string;
   maxWidth?: string;
@@ -25,7 +25,7 @@ export interface DataTableColumnData extends DataTableSortColumnData {
   hidden?: boolean;
 }
 
-export type ClonedDataTableColumnData = Omit<DataTableColumnData, "title"> & {
+export type ClonedDataTableColumnData = Omit<DataTableColumnData, 'title'> & {
   title?: TemplateResult | string;
 };
 

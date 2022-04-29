@@ -39,10 +39,3 @@ repos:
     hooks:
       - id: prettier
         files: src/.
-  - repo: https://github.com/awebdeveloper/pre-commit-tslint
-    rev: v0.0.2
-    hooks:
-      - id: tslint
-        args:
-          - --fix
-        additional_dependencies: [ 'tslint@5.0.0' ]
