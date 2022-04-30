@@ -1,11 +1,11 @@
-name: Build
+name: Test
 
 on:
   pull_request:
   push:
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -13,4 +13,5 @@ jobs:
         with:
           node-version: 16
       - run: npm ci && npm install -g @angular/cli
-      - run: ng build
+      - run: sudo apt-get install xvfb
+      - run: xvfb-run --auto-servernum ng test --watch=false --browsers ChromeHeadless
