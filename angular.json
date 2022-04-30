@@ -15,7 +15,7 @@
       },
       "root": "",
       "sourceRoot": "src",
-      "prefix": "app",
+      "prefix": "knx",
       "architect": {
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
@@ -103,9 +103,21 @@
             ],
             "scripts": []
           }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": [
+              "src/**/*.ts",
+              "src/**/*.html"
+            ]
+          }
         }
       }
     }
   },
-  "defaultProject": "knx-custom-panel"
+  "defaultProject": "knx-custom-panel",
+  "cli": {
+    "defaultCollection": "@angular-eslint/schematics"
+  }
 }
