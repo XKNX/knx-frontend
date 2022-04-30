@@ -13,5 +13,4 @@ jobs:
         with:
           node-version: 16
       - run: npm ci && npm install -g @angular/cli
-      - run: sudo apt-get install xvfb
-      - run: xvfb-run --auto-servernum ng test --watch=false --browsers ChromeHeadless
+      - run: xvfb-run --auto-servernum ng test --watch=false
