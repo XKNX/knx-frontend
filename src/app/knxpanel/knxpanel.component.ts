@@ -1,5 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { HomeAssistant } from 'custom-card-helpers';
+import { HomeAssistant } from '../types';
 
 @Component({
   selector: 'knx-panel',
