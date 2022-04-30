@@ -25,11 +25,12 @@ module.exports = function (config) {
       suppressAll: true // removes the duplicated traces
     },
     coverageReporter: {
-      dir: require('path').join(__dirname, './coverage/knx-custom-panel'),
+      dir: require('path').join(__dirname, './coverage/knx-panel'),
       subdir: '.',
       reporters: [
         { type: 'html' },
-        { type: 'text-summary' }
+        { type: 'text-summary' },
+        { type: 'cobertura' }
       ]
     },
     reporters: ['progress', 'kjhtml'],

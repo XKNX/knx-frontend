@@ -13,4 +13,8 @@ jobs:
         with:
           node-version: 16
       - run: npm ci && npm install -g @angular/cli
-      - run: xvfb-run --auto-servernum ng test --watch=false
+      - run: xvfb-run --auto-servernum ng test --watch=false --code-coverage=true
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1.3.2
+        with:
+          fail_ci_if_error: true
