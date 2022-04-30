@@ -33,7 +33,7 @@ repos:
           - --force
           - --keep-updates
         files: ^(xknx_custom_panel)/.+\.py$
-  # Frontend
+  # Frontend TODO: Move to package json
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v2.6.2
     hooks:

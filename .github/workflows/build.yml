@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: 16
       - run: npm ci && npm install -g @angular/cli
-      - run: ng build
+      - run: npm run build
 
   test:
     runs-on: ubuntu-latest

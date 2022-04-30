@@ -1,10 +1,10 @@
 {
-  "name": "knx-custom-panel",
+  "name": "knx-panel",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
+    "build": "ng build && node build-panel.js",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint"
@@ -42,6 +42,7 @@
     "@types/node": "^12.11.1",
     "@typescript-eslint/eslint-plugin": "5.17.0",
     "@typescript-eslint/parser": "5.17.0",
+    "concat": "^1.0.3",
     "eslint": "^8.12.0",
     "jasmine-core": "~4.0.0",
     "karma": "~6.3.0",
