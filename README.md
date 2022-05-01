@@ -23,4 +23,9 @@ Please install the pre-commit hook by using:
 
 Start the frontend with:
 
-    nvm use && npm install && ng watch
+    nvm use && npm install && ng build --watch
+
+To test this with Home Assistant you need to set an appropriate `PYTHONPATH` to your local installation.
+In order to achieve this run:
+
+    export PYTHONPATH="/path/to/your/local/custom-panel" && python -m homeassistant -c /path/to/your/config

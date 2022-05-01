@@ -21,6 +21,7 @@ import { environment } from '../environments/environment';
   ],
   providers: [],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  bootstrap: [KNXPanelComponent],
 })
 export class AppModule {
   constructor(private injector: Injector) {
