@@ -124,8 +124,9 @@
       }
     }
   },
-  "defaultProject": "knx-panel",
   "cli": {
-    "defaultCollection": "@angular-eslint/schematics"
+    "schematicCollections": [
+      "@angular-eslint/schematics"
+    ]
   }
 }
