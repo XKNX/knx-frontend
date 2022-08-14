@@ -1,11 +1,11 @@
 import { NavigationService } from "@services/navigation.service";
 import { NavigationEntry, Route } from "@typing/navigation";
-import { HomeAssistantComponentLoader } from "@util/load-ha";
 import { KNXBusMonitor } from "@views/bus_monitor";
 import { KNXOverview } from "@views/overview";
 import { HomeAssistant, navigate } from "custom-card-helpers";
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
+import { HaAppLayout } from "./homeassistant/ha-app-layout";
 
 @customElement("knx-custom-panel")
 export class KNXCustomPanel extends LitElement {
@@ -13,13 +13,11 @@ export class KNXCustomPanel extends LitElement {
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
 
   private loadedViews = [KNXOverview, KNXBusMonitor]; // We need this so that the compiler also compiles our views...
+  private haDependencies = [HaAppLayout];
   private navigationService: NavigationService = new NavigationService();
 
   protected firstUpdated() {
     window.addEventListener("location-changed", () => {
-      this.requestUpdate();
-    });
-    HomeAssistantComponentLoader.loadForm().then(() => {
       this.requestUpdate();
     });
     this.requestUpdate();
@@ -36,10 +34,7 @@ export class KNXCustomPanel extends LitElement {
       <ha-app-layout>
         <app-header fixed slot="header">
           <app-toolbar>
-            <ha-menu-button
-              .hass=${this.hass}
-              .narrow=${this.narrow}
-            ></ha-menu-button>
+            <ha-menu-button .hass=${this.hass} .narrow=${this.narrow}></ha-menu-button>
             <div main-title>KNX UI</div>
           </app-toolbar>
           <ha-tabs
@@ -62,25 +57,15 @@ export class KNXCustomPanel extends LitElement {
 
     switch (page) {
       case NavigationEntry.OVERVIEW:
-        return html`
-          <knx-overview
-            .hass=${this.hass}
-            .narrow=${this.narrow}
-          ></knx-overview>
-        `;
+        return html` <knx-overview .hass=${this.hass} .narrow=${this.narrow}></knx-overview> `;
       case NavigationEntry.BUS_MONITOR:
         return html`
-          <knx-bus-monitor
-            .hass=${this.hass}
-            .narrow=${this.narrow}
-          ></knx-bus-monitor>
+          <knx-bus-monitor .hass=${this.hass} .narrow=${this.narrow}></knx-bus-monitor>
         `;
       default:
         return html`
           <ha-card header="404">
-            <div class="card-content">
-              This page is not yet implemented, sorry! :-(
-            </div>
+            <div class="card-content">This page is not yet implemented, sorry! :-(</div>
           </ha-card>
         `;
     }

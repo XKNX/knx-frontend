@@ -1,1 +1,2 @@
-include xknx_custom_panel/knx_ui.js
+graft knx_frontend
+global-exclude *.py[cod]

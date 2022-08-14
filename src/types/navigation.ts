@@ -1,9 +1,8 @@
 export interface Route {
-  name: NavigationEntry;
-  parameters: object;
+  path: string;
+  prefix: string;
 }
 
-export enum NavigationEntry {
-  OVERVIEW = "overview",
-  BUS_MONITOR = "bus_monitor",
+export interface LocationChangedEvent {
+  detail?: { route: Route; force?: boolean };
 }
