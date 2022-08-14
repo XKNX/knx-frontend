@@ -3,19 +3,9 @@
     "target": "es2017",
     "module": "esnext",
     "moduleResolution": "node",
-    "lib": [
-      "es2017",
-      "dom",
-      "dom.iterable"
-    ],
-    "baseUrl": "src",
-    "paths": {
-      "@util/*": ["util/*"],
-      "@services/*": ["services/*"],
-      "@typing/*": ["types/*"],
-      "@views/*": ["views/*"]
-    },
+    "lib": ["es2017", "dom", "dom.iterable"],
     "noEmit": true,
+    "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
@@ -24,6 +14,20 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "plugins": [
+      {
+        "name": "ts-lit-plugin",
+        "strict": false,
+        "rules": {
+          "no-unknown-tag-name": "error",
+          "no-missing-import": "error",
+          "no-unclosed-tag": "error",
+          "no-incompatible-type-binding": "warning",
+          "no-invalid-css": "warning",
+          "no-missing-element-type-definition": "warning"
+        }
+      }
+    ]
   }
 }

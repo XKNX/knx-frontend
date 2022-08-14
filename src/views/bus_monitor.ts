@@ -1,10 +1,26 @@
-import { subscribeKnxTelegrams } from "@services/websocket.service";
-import { DataTableColumnContainer, DataTableRowData } from "@typing/table";
-import { KNXTelegram } from "@typing/websocket";
-import { computeRTLDirection, HomeAssistant } from "custom-card-helpers";
+import "@material/mwc-button";
+import "@material/mwc-fab";
+import "@material/mwc-list/mwc-list-item";
+import "@polymer/app-layout/app-header/app-header";
+import "@polymer/app-layout/app-toolbar/app-toolbar";
 import { css, html, LitElement, TemplateResult } from "lit";
 import { state } from "lit-element";
 import { customElement, property } from "lit/decorators.js";
+import { computeRTLDirection } from "../../homeassistant-frontend/src/common/util/compute_rtl";
+import "../../homeassistant-frontend/src/components/data-table/ha-data-table";
+import "../../homeassistant-frontend/src/components/data-table/ha-data-table";
+import {
+  DataTableColumnContainer,
+  DataTableRowData,
+} from "../../homeassistant-frontend/src/components/data-table/ha-data-table";
+import "../../homeassistant-frontend/src/components/ha-button-menu";
+import "../../homeassistant-frontend/src/components/ha-card";
+import "../../homeassistant-frontend/src/layouts/ha-app-layout";
+import "../../homeassistant-frontend/src/layouts/hass-subpage";
+import { haStyle } from "../../homeassistant-frontend/src/resources/styles";
+import { HomeAssistant } from "../../homeassistant-frontend/src/types";
+import { subscribeKnxTelegrams } from "../services/websocket.service";
+import { KNXTelegram } from "../types/websocket";
 
 @customElement("knx-bus-monitor")
 export class KNXBusMonitor extends LitElement {
@@ -99,29 +115,38 @@ export class KNXBusMonitor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      ha-data-table {
-        height: calc(100vh - 160px);
-      }
+    return [
+      css`
+        ha-data-table {
+          height: calc(100vh - 160px);
+        }
 
-      .telegram {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-      }
+        .telegram {
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+        }
 
-      .telegram_counter {
-        margin-top: 0.4rem;
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        max-width: 200px;
-      }
+        .telegram_counter {
+          margin-top: 0.4rem;
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          max-width: 200px;
+        }
 
-      .telegram_counter_label {
-        font-size: 12px;
-        font-weight: bold;
-      }
-    `;
+        .telegram_counter_label {
+          font-size: 12px;
+          font-weight: bold;
+        }
+      `,
+      haStyle,
+    ];
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "knx-bus-monitor": KNXBusMonitor;
   }
 }

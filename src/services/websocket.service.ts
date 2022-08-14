@@ -1,5 +1,5 @@
-import { KNXInfo, KNXTelegram } from "@typing/websocket";
-import { HomeAssistant } from "custom-card-helpers";
+import { HomeAssistant } from "../../homeassistant-frontend/src/types";
+import { KNXInfo, KNXTelegram } from "../types/websocket";
 
 export const getKnxInfo = (hass: HomeAssistant): Promise<KNXInfo> =>
   hass.callWS({

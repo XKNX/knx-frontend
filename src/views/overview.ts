@@ -1,9 +1,13 @@
-import { getKnxInfo } from "@services/websocket.service";
-import { KNXInfo } from "@typing/websocket";
-import { HomeAssistant } from "custom-card-helpers";
 import { css, html, LitElement, TemplateResult } from "lit";
 import { state } from "lit-element";
 import { customElement, property } from "lit/decorators.js";
+import "../../homeassistant-frontend/src/components/ha-button-menu";
+import "../../homeassistant-frontend/src/components/ha-card";
+import "../../homeassistant-frontend/src/layouts/ha-app-layout";
+import "../../homeassistant-frontend/src/layouts/hass-subpage";
+import { HomeAssistant } from "../../homeassistant-frontend/src/types";
+import { getKnxInfo } from "../services/websocket.service";
+import { KNXInfo } from "../types/websocket";
 
 @customElement("knx-overview")
 export class KNXOverview extends LitElement {
@@ -62,5 +66,11 @@ export class KNXOverview extends LitElement {
         justify-content: space-between;
       }
     `;
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "knx-overview": KNXOverview;
   }
 }
