@@ -5,13 +5,13 @@ with open(path.join(THIS_DIRECTORY, "README.md"), encoding="utf-8") as f:
     LONG_DESCRIPTION = f.read()
 
 setup(
-    name="xknx-panel",
+    name="knx_frontend",
     version="0.0.0",
-    url="https://github.com/XKNX/custom-panel",
+    url="https://github.com/XKNX/knx-frontend",
     license="MIT License",
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
-    download_url=f"https://github.com/XKNX/custom-panel/archive/{version}.zip",
+    download_url=f"https://github.com/XKNX/knx-frontend/archive/{version}.zip",
     author="Marvin Wichmann",
     author_email="me@marvin-wichmann.de",
     packages=find_packages(include=["knx_frontend", "knx_frontend.*"]),

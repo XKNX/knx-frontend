@@ -12,11 +12,14 @@ KNX integration.
 
 ## Development
 
-Please install the pre-commit hook by using:
+If you check this repository out for the first time please run the following command to init the submodules:
 
-    pip install -r requirements_dev.txt
-    pre-commit install
+    script/bootstrap
 
-Start the frontend with:
+### Development build (watcher)
 
-    cd frontend && nvm use && npm install && npm run start
+    yarn run develop
+
+### Production build
+
+    yarn run build

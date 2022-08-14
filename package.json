@@ -4,8 +4,8 @@
   "source": "src/entrypoint.ts",
   "main": "build/entrypoint.js",
   "scripts": {
-    "develop": "./script/develop",
-    "build": "./script/build",
+    "develop": "gulp develop-knx",
+    "build": "gulp build-knx",
     "lint:eslint": "eslint \"**/src/**/*.{js,ts,html}\" --ignore-path .gitignore",
     "format:eslint": "eslint \"**/src/**/*.{js,ts,html}\" --fix --ignore-path .gitignore",
     "lint:prettier": "prettier \"**/src/**/*.{js,ts,json,css,md}\" --check",
@@ -17,12 +17,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/XKNX/custom-panel.git"
+    "url": "git+https://github.com/XKNX/knx-frontend.git"
   },
   "bugs": {
-    "url": "https://github.com/XKNX/custom-panel/issues"
+    "url": "https://github.com/XKNX/knx-frontend/issues"
   },
-  "homepage": "https://github.com/XKNX/custom-panel",
+  "homepage": "https://github.com/XKNX/knx-frontend",
   "devDependencies": {
     "@babel/core": "^7.15.5",
     "@babel/plugin-external-helpers": "^7.14.5",

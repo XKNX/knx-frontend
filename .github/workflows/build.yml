@@ -13,7 +13,7 @@ env:
 
 jobs:
   build_frontend:
-    name: Test build
+    name: Build
     runs-on: ubuntu-latest
 
     steps:
@@ -30,4 +30,4 @@ jobs:
       - name: Install dependencies
         run: script/bootstrap
       - name: Build
-        run: script/build
+        run: yarn run build
