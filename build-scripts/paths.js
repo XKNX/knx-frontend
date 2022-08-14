@@ -16,6 +16,7 @@ module.exports = {
   knx_output_latest: path.resolve(__dirname, "../knx_frontend/frontend_latest"),
   knx_output_es5: path.resolve(__dirname, "../knx_frontend/frontend_es5"),
   knx_publicPath: "/knx_static",
+  knx_initPath: path.resolve(__dirname, "../src/__init__.py"),
 
   translations_src: path.resolve(__dirname, "../src/translations"),
 };

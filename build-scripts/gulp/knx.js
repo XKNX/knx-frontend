@@ -19,6 +19,7 @@ gulp.task(
     "clean-knx",
     "gen-index-knx-dev",
     "generate-translations-knx",
+    "copy-init-knx",
     "webpack-watch-knx"
   )
 );
@@ -34,7 +35,8 @@ gulp.task(
     "generate-translations-knx",
     "webpack-prod-knx",
     "gen-index-knx-prod",
-    ...// Don't compress running tests
+    "copy-init-knx",
+    ... // Don't compress running tests
     (env.isTest() ? [] : ["compress-knx"])
   )
 );

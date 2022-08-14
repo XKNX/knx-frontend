@@ -3,7 +3,7 @@ import { KNXInfo, KNXTelegram } from "../types/websocket";
 
 export const getKnxInfo = (hass: HomeAssistant): Promise<KNXInfo> =>
   hass.callWS({
-    type: "knx_panel/info",
+    type: "knx/info",
   });
 
 export const subscribeKnxTelegrams = (
@@ -11,5 +11,5 @@ export const subscribeKnxTelegrams = (
   callback: (telegram: KNXTelegram) => void
 ) =>
   hass.connection.subscribeMessage<KNXTelegram>(callback, {
-    type: "knx_panel/subscribe_telegrams",
+    type: "knx/subscribe_telegrams",
   });
