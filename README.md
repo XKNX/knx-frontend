@@ -1,6 +1,6 @@
 # KNX UI
 
-This is the KNX custom panel for the KNX core integration in Home Assistant. It provides a user interface for interacting with the
+This is the KNX panel for the KNX core integration in Home Assistant. It provides a user interface for interacting with the
 KNX integration.
 
 ## Features
@@ -18,8 +18,20 @@ If you check this repository out for the first time please run the following com
 
 ### Development build (watcher)
 
-    yarn run develop
+    yarn start
 
 ### Production build
 
-    yarn run build
+    yarn build
+
+### Update the home assistant frontend
+
+Replace latest_tag with the current release tag.
+
+    cd homeassistant-frontend
+    git fetch
+    git checkout latest_tag
+    cd ..
+    rm -f yarn.lock
+    node ./script/merge_requirements.js
+    script/bootstrap
