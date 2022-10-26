@@ -9,7 +9,7 @@ on:
       - main
 
 env:
-  NODE_VERSION: 14
+  NODE_VERSION: 16
 
 jobs:
   build_frontend:
@@ -29,5 +29,6 @@ jobs:
 
       - name: Install dependencies
         run: script/bootstrap
+
       - name: Build
-        run: yarn run build
+        run: yarn build

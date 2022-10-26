@@ -19,7 +19,11 @@ __pycache__/
 .Python
 env/
 build/
-knx_frontend/
+knx_frontend/frontend_latest
+knx_frontend/*.js
+knx_frontend/*.json
+knx_frontend/*.js.gz
+!knx_frontend/*.py
 develop-eggs/
 dist/
 downloads/
