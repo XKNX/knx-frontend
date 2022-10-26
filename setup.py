@@ -1,3 +1,5 @@
+from os import path
+
 from setuptools import find_packages, setup
 
 THIS_DIRECTORY = path.abspath(path.dirname(__file__))
@@ -6,7 +8,7 @@ with open(path.join(THIS_DIRECTORY, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="knx_frontend",
-    version="0.0.0",
+    version="main",
     url="https://github.com/XKNX/knx-frontend",
     license="MIT License",
     long_description=LONG_DESCRIPTION,
