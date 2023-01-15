@@ -7,6 +7,8 @@ set -e
 cd "$(dirname "$0")/.."
 
 cd homeassistant-frontend
+git checkout dev
 git pull
+cd ..
 rm -f yarn.lock
 node ./script/merge_requirements.js
