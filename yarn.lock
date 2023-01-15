@@ -10874,6 +10874,7 @@ __metadata:
     roboto-fontface: ^0.10.0
     rollup: ^2.8.2
     rollup-plugin-entrypoint-hashmanifest: ^0.1.2
+    rollup-plugin-gzip: ^3.1.0
     rollup-plugin-string: ^3.0.0
     rollup-plugin-terser: ^5.3.0
     rollup-plugin-visualizer: ^5.9.0
@@ -13662,6 +13663,15 @@ __metadata:
   version: 0.1.2
   resolution: "rollup-plugin-entrypoint-hashmanifest@npm:0.1.2"
   checksum: cf90bba28d432fd5cfbaaa46abf72de4e855f8a653c20a802dbfeb23e45a27a1a0233d6abe434e8d756538b648b9669d0232af122a03685baebcf04e9dda6f4b
+  languageName: node
+  linkType: hard
+
+"rollup-plugin-gzip@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "rollup-plugin-gzip@npm:3.1.0"
+  peerDependencies:
+    rollup: ">=2.0.0"
+  checksum: b6e9671639f50bd4fda586603d784597abe19925ceda81fd4d3aa44f538b3be45f4d4b29ea1e251c20b2f2c3c16f498e762fac266114751f827b324acfca8b4f
   languageName: node
   linkType: hard
 
