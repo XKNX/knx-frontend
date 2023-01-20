@@ -7,8 +7,11 @@ set -e
 cd "$(dirname "$0")/.."
 
 cd homeassistant-frontend
-git checkout dev
+git fetch --tags
+latestTag=$(git describe --tags `git rev-list --tags --max-count=1`)
+git checkout $latestTag
 git pull
+
 cd ..
 rm -f yarn.lock
 node ./script/merge_requirements.js
