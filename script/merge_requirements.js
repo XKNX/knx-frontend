@@ -1,21 +1,21 @@
 const fs = require("fs");
 const yaml = require('js-yaml');
 
-let raw_package_core = fs.readFileSync("./homeassistant-frontend/package.json");
-let raw_package_knx = fs.readFileSync("./package.json");
+let rawPackageCore = fs.readFileSync("./homeassistant-frontend/package.json");
+let rawPackageKnx = fs.readFileSync("./package.json");
 
 
-const package_core = JSON.parse(raw_package_core);
-const package_knx = JSON.parse(raw_package_knx);
+const packageCore = JSON.parse(rawPackageCore);
+const packageKnx = JSON.parse(rawPackageKnx);
 
 fs.writeFileSync(
   "./package.json",
   JSON.stringify(
     {
-      ...package_knx,
-      resolutions: { ...package_core.resolutions, ...package_knx.resolutionsOverride },
-      dependencies: { ...package_core.dependencies, ...package_knx.dependenciesOverride },
-      devDependencies: { ...package_core.devDependencies, ...package_knx.devDependenciesOverride },
+      ...packageKnx,
+      resolutions: { ...packageCore.resolutions, ...packageKnx.resolutionsOverride },
+      dependencies: { ...packageCore.dependencies, ...packageKnx.dependenciesOverride },
+      devDependencies: { ...packageCore.devDependencies, ...packageKnx.devDependenciesOverride },
     },
     null,
     2
@@ -23,8 +23,8 @@ fs.writeFileSync(
 );
 
 
-let yarn_release = fs.readdirSync("./homeassistant-frontend/.yarn/releases/").filter(fn => fn.match(/yarn-\d.*\.cjs/) !== null)
+let yarnRelease = fs.readdirSync("./homeassistant-frontend/.yarn/releases/").filter(fn => fn.match(/yarn-\d.*\.cjs/) !== null)
 
 const yarnrc = yaml.load(fs.readFileSync("./.yarnrc.yml", 'utf8'));
-yarnrc.yarnPath = 'homeassistant-frontend/.yarn/releases/' + yarn_release[0]
+yarnrc.yarnPath = 'homeassistant-frontend/.yarn/releases/' + yarnRelease[0]
 fs.writeFileSync("./.yarnrc.yml", yaml.dump(yarnrc));
