@@ -1,5 +1,5 @@
 """KNX Frontend"""
-from .constants import FILE_HASH
+from .constants import DEV, FILE_HASH
 
 
 def locate_dir():
@@ -7,8 +7,8 @@ def locate_dir():
     return __path__[0]
 
 
-def get_build_id(is_dev):
+def get_build_id():
     """Get the KNX panel build id."""
-    if is_dev:
+    if DEV:
         return "dev"
     return FILE_HASH

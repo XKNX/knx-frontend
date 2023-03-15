@@ -5,7 +5,8 @@ src/localize/generated.ts
 
 yarn-error.log
 .yarn
-.idea
+
+result.md
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -19,11 +20,7 @@ __pycache__/
 .Python
 env/
 build/
-knx_frontend/frontend_latest
-knx_frontend/*.js
-knx_frontend/*.json
-knx_frontend/*.js.gz
-!knx_frontend/*.py
+knx_frontend/
 develop-eggs/
 dist/
 downloads/
@@ -47,3 +44,8 @@ var/
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
+
+# Development environment
+.vscode
+.idea
+.DS_Store

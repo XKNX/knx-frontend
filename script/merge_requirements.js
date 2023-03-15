@@ -13,7 +13,10 @@ fs.writeFileSync(
       ...knx,
       resolutions: { ...core.resolutions, ...knx.resolutionsOverride },
       dependencies: { ...core.dependencies, ...knx.dependenciesOverride },
-      devDependencies: { ...core.devDependencies, ...knx.devDependenciesOverride },
+      devDependencies: {
+        ...core.devDependencies,
+        ...knx.devDependenciesOverride,
+      },
     },
     null,
     2

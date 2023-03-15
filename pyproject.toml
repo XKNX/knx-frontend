@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools~=62.3", "wheel~=0.37.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name         = "knx_frontend"
+version      = "0.0.1"
+license      = {text = "MIT"}
+description  = "KNX panel for Home Assistant"
+readme       = "README.md"
+authors      = [
+    {name = "Marvin Wichmann", email = "me@marvin-wichmann.de"}
+]
+requires-python = ">=3.9.0"
+
+[project.urls]
+"Homepage" = "https://github.com/XKNX/knx-frontend"
+
+[tool.setuptools]
+platforms = ["any"]
+zip-safe  = false
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["knx_frontend", "knx_frontend.*"]
+
+[tool.mypy]
+python_version = 3.9
+show_error_codes = true
+strict = true
