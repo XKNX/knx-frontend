@@ -14,15 +14,15 @@ KNX integration.
 
 If you check this repository out for the first time please run the following command to init the submodules:
 
-    script/bootstrap
+    make bootstrap
 
 ### Development build (watcher)
 
-    yarn start
+    make develop
 
 ### Production build
 
-    yarn build
+    make build
 
 ### Update the home assistant frontend
 
@@ -35,3 +35,9 @@ Replace latest_tag with the current release tag.
     rm -f yarn.lock
     node ./script/merge_requirements.js
     script/bootstrap
+
+### Testing the panel
+
+You can test the panel by symlinking the build result directory `knx_frontend` into your Home Assistant configuration directory.
+
+    ln -s /Users/me/dev/knx-frontend/knx_frontend ~/.homeassistant/
