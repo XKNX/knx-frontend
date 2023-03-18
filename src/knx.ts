@@ -1,8 +1,8 @@
 import { LitElement } from "lit";
 import { property } from "lit/decorators";
-import { getConfigEntries } from "../homeassistant-frontend/src/data/config_entries";
-import { ProvideHassLitMixin } from "../homeassistant-frontend/src/mixins/provide-hass-lit-mixin";
-import { HomeAssistant } from "../homeassistant-frontend/src/types";
+import { getConfigEntries } from "@ha/data/config_entries";
+import { ProvideHassLitMixin } from "@ha/mixins/provide-hass-lit-mixin";
+import { HomeAssistant } from "@ha/types";
 import { localize } from "./localize/localize";
 import { KNXLogger } from "./tools/knx-logger";
 import { KNX } from "./types/knx";

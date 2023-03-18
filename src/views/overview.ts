@@ -1,10 +1,10 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators";
-import "../../homeassistant-frontend/src/components/ha-button-menu";
-import "../../homeassistant-frontend/src/components/ha-card";
-import "../../homeassistant-frontend/src/layouts/ha-app-layout";
-import "../../homeassistant-frontend/src/layouts/hass-subpage";
-import { HomeAssistant } from "../../homeassistant-frontend/src/types";
+import "@ha/components/ha-button-menu";
+import "@ha/components/ha-card";
+import "@ha/layouts/ha-app-layout";
+import "@ha/layouts/hass-subpage";
+import { HomeAssistant } from "@ha/types";
 import { getKnxInfo } from "../services/websocket.service";
 import { KNXInfo } from "../types/websocket";
 

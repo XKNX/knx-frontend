@@ -1,4 +1,4 @@
-import { HomeAssistant } from "../../homeassistant-frontend/src/types";
+import { HomeAssistant } from "@ha/types";
 import { KNXInfo, KNXTelegram } from "../types/websocket";
 
 export const getKnxInfo = (hass: HomeAssistant): Promise<KNXInfo> =>

@@ -1,7 +1,7 @@
 // Compat needs to be first import
-import "../homeassistant-frontend/src/resources/compatibility";
-import "../homeassistant-frontend/src/resources/roboto";
-import "../homeassistant-frontend/src/resources/safari-14-attachshadow-patch";
+import "@ha/resources/compatibility";
+import "@ha/resources/roboto";
+import "@ha/resources/safari-14-attachshadow-patch";
 import "./main";
 
 const styleEl = document.createElement("style");
