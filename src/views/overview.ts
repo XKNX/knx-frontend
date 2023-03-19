@@ -1,6 +1,5 @@
 import { css, html, LitElement, TemplateResult } from "lit";
-import { state } from "lit-element";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators";
 import "../../homeassistant-frontend/src/components/ha-button-menu";
 import "../../homeassistant-frontend/src/components/ha-card";
 import "../../homeassistant-frontend/src/layouts/ha-app-layout";

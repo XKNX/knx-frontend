@@ -1,13 +1,11 @@
-import "@material/mwc-button";
-import "@material/mwc-fab";
-import "@material/mwc-list/mwc-list-item";
-import "@polymer/app-layout/app-header/app-header";
-import "@polymer/app-layout/app-toolbar/app-toolbar";
-import { css, html, LitElement, TemplateResult } from "lit";
-import { state } from "lit-element";
-import { customElement, property } from "lit/decorators.js";
+// import "@material/mwc-button";
+// import "@material/mwc-fab";
+// import "@material/mwc-list/mwc-list-item";
+// import "@polymer/app-layout/app-header/app-header";
+// import "@polymer/app-layout/app-toolbar/app-toolbar";
+import { css, html, CSSResultGroup, LitElement, TemplateResult } from "lit";
+import { customElement, property, state } from "lit/decorators";
 import { computeRTLDirection } from "../../homeassistant-frontend/src/common/util/compute_rtl";
-import "../../homeassistant-frontend/src/components/data-table/ha-data-table";
 import "../../homeassistant-frontend/src/components/data-table/ha-data-table";
 import {
   DataTableColumnContainer,
@@ -114,7 +112,7 @@ export class KNXBusMonitor extends LitElement {
     `;
   }
 
-  static get styles() {
+  static get styles(): CSSResultGroup {
     return [
       css`
         ha-data-table {
