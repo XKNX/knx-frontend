@@ -28,19 +28,14 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
 
-      - name: "Set version number"
+      - name: "Set version number from tag"
         run: |
-          export version=${{ github.ref }}
-          sed -i "s|main|${version##*/}|" ./setup.py
-          sed -i "s|main|${version##*/}|" ./src/version.ts
-
-          cat ./setup.py
-          cat ./src/version.ts
+          echo '${{ github.ref }}' > ./VERSION
+          cat ./VERSION
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install setuptools wheel twine
+          python -m pip install build twine
           ./script/bootstrap
 
       - name: Build
@@ -51,5 +46,5 @@ jobs:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
         run: |
-          python setup.py sdist bdist_wheel
+          python -m build
           twine upload dist/*
