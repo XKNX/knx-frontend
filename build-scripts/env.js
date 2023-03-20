@@ -24,12 +24,10 @@ module.exports = {
   },
   version() {
     const version = fs
-      .readFileSync(path.resolve(paths.polymer_dir, "setup.cfg"), "utf8")
-      .match(/version\W+=\W(\d{8}\.\d)/);
+      .readFileSync(path.resolve(paths.polymer_dir, "VERSION"), "utf8")
     if (!version) {
-      return "0.1.0";
-      //throw Error("Version not found");
+      throw Error("Version not found");
     }
-    return version[1];
+    return version.trim();
   },
 };
