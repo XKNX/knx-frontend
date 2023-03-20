@@ -10,7 +10,7 @@ jobs:
     steps:
       - id: version
         run: |
-          version=$(date --utc '+%Y.%m.%d.%H%M%S')
+          version=$(date --utc '+%Y.%-m.%-d.%H%M%S')
           echo "::set-output name=version::$version"
 
       - uses: release-drafter/release-drafter@v5
