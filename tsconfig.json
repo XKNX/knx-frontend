@@ -15,6 +15,10 @@
     "resolveJsonModule": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
+    "baseUrl": "src",
+    "paths": {
+      "@ha/*": ["../homeassistant-frontend/src/*"],
+    },
     "plugins": [
       {
         "name": "ts-lit-plugin",

@@ -5,18 +5,18 @@
 // import "@polymer/app-layout/app-toolbar/app-toolbar";
 import { css, html, CSSResultGroup, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators";
-import { computeRTLDirection } from "../../homeassistant-frontend/src/common/util/compute_rtl";
-import "../../homeassistant-frontend/src/components/data-table/ha-data-table";
-import {
+import { computeRTLDirection } from "@ha/common/util/compute_rtl";
+import "@ha/components/data-table/ha-data-table";
+import type {
   DataTableColumnContainer,
   DataTableRowData,
-} from "../../homeassistant-frontend/src/components/data-table/ha-data-table";
-import "../../homeassistant-frontend/src/components/ha-button-menu";
-import "../../homeassistant-frontend/src/components/ha-card";
-import "../../homeassistant-frontend/src/layouts/ha-app-layout";
-import "../../homeassistant-frontend/src/layouts/hass-subpage";
-import { haStyle } from "../../homeassistant-frontend/src/resources/styles";
-import { HomeAssistant } from "../../homeassistant-frontend/src/types";
+} from "@ha/components/data-table/ha-data-table";
+import "@ha/components/ha-button-menu";
+import "@ha/components/ha-card";
+import "@ha/layouts/ha-app-layout";
+import "@ha/layouts/hass-subpage";
+import { haStyle } from "@ha/resources/styles";
+import { HomeAssistant } from "@ha/types";
 import { subscribeKnxTelegrams } from "../services/websocket.service";
 import { KNXTelegram } from "../types/websocket";
 

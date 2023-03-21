@@ -2,8 +2,8 @@ import { customElement, property, state } from "lit/decorators";
 import {
   HassRouterPage,
   RouterOptions,
-} from "../homeassistant-frontend/src/layouts/hass-router-page";
-import { HomeAssistant, Route } from "../homeassistant-frontend/src/types";
+} from "@ha/layouts/hass-router-page";
+import { HomeAssistant, Route } from "@ha/types";
 import { KNX } from "./types/knx";
 
 @customElement("knx-router")

@@ -5,19 +5,19 @@
 // import "@material/mwc-fab";
 import {css, html, TemplateResult} from "lit";
 import { customElement, property } from "lit/decorators";
-import { applyThemesOnElement } from "../homeassistant-frontend/src/common/dom/apply_themes_on_element";
-import { navigate } from "../homeassistant-frontend/src/common/navigate";
-import { makeDialogManager } from "../homeassistant-frontend/src/dialogs/make-dialog-manager";
-import "../homeassistant-frontend/src/resources/ha-style";
-import "../homeassistant-frontend/src/components/ha-tabs";
-import "../homeassistant-frontend/src/components/ha-menu-button";
-import "../homeassistant-frontend/src/layouts/ha-app-layout";
-import "../homeassistant-frontend/src/layouts/hass-subpage";
-import { HomeAssistant, Route } from "../homeassistant-frontend/src/types";
+import { applyThemesOnElement } from "@ha/common/dom/apply_themes_on_element";
+import { navigate } from "@ha/common/navigate";
+import { makeDialogManager } from "@ha/dialogs/make-dialog-manager";
+import "@ha/resources/ha-style";
+import "@ha/components/ha-tabs";
+import "@ha/components/ha-menu-button";
+import "@ha/layouts/ha-app-layout";
+import "@ha/layouts/hass-subpage";
+import { HomeAssistant, Route } from "@ha/types";
 import { knxElement } from "./knx";
 import "./knx-router";
 import { LocationChangedEvent } from "./types/navigation";
-import {haStyle} from "../homeassistant-frontend/src/resources/styles";
+import {haStyle} from "@ha/resources/styles";
 
 @customElement("knx-frontend")
 class KnxFrontend extends knxElement {

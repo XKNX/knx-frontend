@@ -5,7 +5,7 @@ import { KNXOverview } from "@views/overview";
 import { HomeAssistant, navigate } from "custom-card-helpers";
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators";
-import { HaAppLayout } from "../homeassistant-frontend/src/layouts/ha-app-layout";
+import { HaAppLayout } from "@ha/layouts/ha-app-layout";
 
 @customElement("knx-custom-panel")
 export class KNXCustomPanel extends LitElement {
