@@ -1,2 +1,3 @@
 graft knx_frontend
 global-exclude *.py[cod]
+include VERSION

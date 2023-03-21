@@ -30,7 +30,7 @@ jobs:
 
       - name: "Set version number from tag"
         run: |
-          echo '${{ github.ref_name }}' > ./VERSION
+          echo -n '${{ github.ref_name }}' > ./VERSION
           cat ./VERSION
 
       - name: Install dependencies
