@@ -1,8 +1,5 @@
 import { customElement, property, state } from "lit/decorators";
-import {
-  HassRouterPage,
-  RouterOptions,
-} from "@ha/layouts/hass-router-page";
+import { HassRouterPage, RouterOptions } from "@ha/layouts/hass-router-page";
 import { HomeAssistant, Route } from "@ha/types";
 import { KNX } from "./types/knx";
 
