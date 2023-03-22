@@ -3,7 +3,7 @@
 // import "@material/mwc-list/mwc-list-item";
 // import "@material/mwc-button";
 // import "@material/mwc-fab";
-import { css, html, TemplateResult } from "lit";
+import { html, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators";
 import { applyThemesOnElement } from "@ha/common/dom/apply_themes_on_element";
 import { navigate } from "@ha/common/navigate";
@@ -35,7 +35,7 @@ class KnxFrontend extends knxElement {
     if (!this.knx) {
       this._getKNXConfigEntry();
     }
-    //this.knx.language = this.hass.language;
+    // this.knx.language = this.hass.language;
     this.addEventListener("knx-location-changed", (e) => this._setRoute(e as LocationChangedEvent));
 
     makeDialogManager(this, this.shadowRoot!);

@@ -11,7 +11,9 @@ import { KNXInfo } from "../types/websocket";
 @customElement("knx-overview")
 export class KNXOverview extends LitElement {
   @property({ type: Object }) public hass!: HomeAssistant;
+
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
+
   @state() private knxInfo: KNXInfo | null = null;
 
   protected firstUpdated() {

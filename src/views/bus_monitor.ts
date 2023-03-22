@@ -23,7 +23,9 @@ import { KNXTelegram } from "../types/websocket";
 @customElement("knx-bus-monitor")
 export class KNXBusMonitor extends LitElement {
   @property({ type: Object }) public hass!: HomeAssistant;
+
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
+
   @property() private columns: DataTableColumnContainer = {
     timestamp: {
       filterable: true,
@@ -62,6 +64,7 @@ export class KNXBusMonitor extends LitElement {
   };
 
   @state() private subscribed?: () => void;
+
   @state() private rows: DataTableRowData[] = [];
 
   public disconnectedCallback() {
