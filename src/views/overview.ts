@@ -1,10 +1,12 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators";
+
 import "@ha/components/ha-button-menu";
 import "@ha/components/ha-card";
 import "@ha/layouts/ha-app-layout";
 import "@ha/layouts/hass-subpage";
 import { HomeAssistant } from "@ha/types";
+
 import { getKnxInfo } from "../services/websocket.service";
 import { KNXInfo } from "../types/websocket";
 

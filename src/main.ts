@@ -5,19 +5,21 @@
 // import "@material/mwc-fab";
 import { html, nothing, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators";
+
 import { applyThemesOnElement } from "@ha/common/dom/apply_themes_on_element";
+import "@ha/components/ha-menu-button";
+import "@ha/components/ha-tabs";
 import { navigate } from "@ha/common/navigate";
 import { makeDialogManager } from "@ha/dialogs/make-dialog-manager";
-import "@ha/resources/ha-style";
-import "@ha/components/ha-tabs";
-import "@ha/components/ha-menu-button";
 import "@ha/layouts/ha-app-layout";
 import "@ha/layouts/hass-subpage";
+import "@ha/resources/ha-style";
+import { haStyle } from "@ha/resources/styles";
 import { HomeAssistant, Route } from "@ha/types";
+
 import { knxElement } from "./knx";
 import "./knx-router";
 import { LocationChangedEvent } from "./types/navigation";
-import { haStyle } from "@ha/resources/styles";
 
 @customElement("knx-frontend")
 class KnxFrontend extends knxElement {
