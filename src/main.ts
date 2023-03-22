@@ -3,7 +3,7 @@
 // import "@material/mwc-list/mwc-list-item";
 // import "@material/mwc-button";
 // import "@material/mwc-fab";
-import { html, TemplateResult } from "lit";
+import { html, nothing, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators";
 import { applyThemesOnElement } from "@ha/common/dom/apply_themes_on_element";
 import { navigate } from "@ha/common/navigate";
@@ -48,7 +48,7 @@ class KnxFrontend extends knxElement {
 
   protected render(): TemplateResult | void {
     if (!this.hass || !this.knx) {
-      return html``;
+      return html`${nothing}`;
     }
 
     return html`
