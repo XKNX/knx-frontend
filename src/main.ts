@@ -3,7 +3,7 @@
 // import "@material/mwc-list/mwc-list-item";
 // import "@material/mwc-button";
 // import "@material/mwc-fab";
-import { html, nothing, TemplateResult } from "lit";
+import { html, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 
 import { applyThemesOnElement } from "@ha/common/dom/apply_themes_on_element";
