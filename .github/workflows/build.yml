@@ -12,12 +12,39 @@ env:
   NODE_VERSION: 16
 
 jobs:
-  build_frontend:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out files from GitHub
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      - name: Install dependencies
+        run: script/bootstrap
+
+      - name: Run eslint
+        run: yarn run lint:eslint
+
+      - name: Run prettier
+        run: yarn run lint:prettier
+
+      - name: Check for duplicate dependencies
+        run: yarn dedupe --check
+
+  build:
     name: Build
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v3
+      - name: Check out files from GitHub
+        uses: actions/checkout@v3
         with:
           submodules: recursive
 
