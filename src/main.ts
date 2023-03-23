@@ -48,9 +48,9 @@ class KnxFrontend extends knxElement {
     this._applyTheme();
   }
 
-  protected render(): TemplateResult | void {
+  protected render() {
     if (!this.hass || !this.knx) {
-      return html`${nothing}`;
+      return nothing;
     }
 
     return html`
