@@ -1,9 +1,8 @@
 import { customElement, property, state } from "lit/decorators";
-import {
-  HassRouterPage,
-  RouterOptions,
-} from "@ha/layouts/hass-router-page";
+
+import { HassRouterPage, RouterOptions } from "@ha/layouts/hass-router-page";
 import { HomeAssistant, Route } from "@ha/types";
+
 import { KNX } from "./types/knx";
 
 @customElement("knx-router")
@@ -57,7 +56,7 @@ class KnxRouter extends HassRouterPage {
     // eslint-disable-next-line no-console
     console.info("Route " + this.route.path + " in knx-router");
 
-    if (this._currentPage != "devices") {
+    if (this._currentPage !== "devices") {
       const routeSplit = this.routeTail.path.split("/");
       el.deviceId = routeSplit[routeSplit.length - 1];
 

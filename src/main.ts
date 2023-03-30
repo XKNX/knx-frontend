@@ -3,21 +3,23 @@
 // import "@material/mwc-list/mwc-list-item";
 // import "@material/mwc-button";
 // import "@material/mwc-fab";
-import {css, html, TemplateResult} from "lit";
+import { html, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
+
 import { applyThemesOnElement } from "@ha/common/dom/apply_themes_on_element";
+import "@ha/components/ha-menu-button";
+import "@ha/components/ha-tabs";
 import { navigate } from "@ha/common/navigate";
 import { makeDialogManager } from "@ha/dialogs/make-dialog-manager";
-import "@ha/resources/ha-style";
-import "@ha/components/ha-tabs";
-import "@ha/components/ha-menu-button";
 import "@ha/layouts/ha-app-layout";
 import "@ha/layouts/hass-subpage";
+import "@ha/resources/ha-style";
+import { haStyle } from "@ha/resources/styles";
 import { HomeAssistant, Route } from "@ha/types";
+
 import { knxElement } from "./knx";
 import "./knx-router";
 import { LocationChangedEvent } from "./types/navigation";
-import {haStyle} from "@ha/resources/styles";
 
 @customElement("knx-frontend")
 class KnxFrontend extends knxElement {
@@ -35,7 +37,7 @@ class KnxFrontend extends knxElement {
     if (!this.knx) {
       this._getKNXConfigEntry();
     }
-    //this.knx.language = this.hass.language;
+    // this.knx.language = this.hass.language;
     this.addEventListener("knx-location-changed", (e) => this._setRoute(e as LocationChangedEvent));
 
     makeDialogManager(this, this.shadowRoot!);
@@ -46,9 +48,9 @@ class KnxFrontend extends knxElement {
     this._applyTheme();
   }
 
-  protected render(): TemplateResult | void {
+  protected render() {
     if (!this.hass || !this.knx) {
-      return html``;
+      return nothing;
     }
 
     return html`
@@ -59,10 +61,10 @@ class KnxFrontend extends knxElement {
             <div main-title>KNX UI</div>
           </app-toolbar>
           <ha-tabs
-              scrollable
-              attr-for-selected="page-name"
-              .selected=${this.route.path}
-              @iron-activate=${this.handleNavigationEvent}
+            scrollable
+            attr-for-selected="page-name"
+            .selected=${this.route.path}
+            @iron-activate=${this.handleNavigationEvent}
           >
             <paper-tab page-name="/knx/overview"> Overview </paper-tab>
             <paper-tab page-name="/knx/monitor"> Bus Monitor </paper-tab>
@@ -80,7 +82,7 @@ class KnxFrontend extends knxElement {
 
   private handleNavigationEvent(event: any) {
     const path = event.detail.item.getAttribute("page-name");
-    navigate(path, {replace: true});
+    navigate(path, { replace: true });
   }
 
   static get styles() {

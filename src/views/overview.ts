@@ -1,17 +1,21 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators";
+
 import "@ha/components/ha-button-menu";
 import "@ha/components/ha-card";
 import "@ha/layouts/ha-app-layout";
 import "@ha/layouts/hass-subpage";
 import { HomeAssistant } from "@ha/types";
+
 import { getKnxInfo } from "../services/websocket.service";
 import { KNXInfo } from "../types/websocket";
 
 @customElement("knx-overview")
 export class KNXOverview extends LitElement {
   @property({ type: Object }) public hass!: HomeAssistant;
+
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
+
   @state() private knxInfo: KNXInfo | null = null;
 
   protected firstUpdated() {
