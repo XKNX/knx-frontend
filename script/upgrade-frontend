@@ -6,7 +6,18 @@ set -e
 
 cd "$(dirname "$0")/.."
 
+echo "Updating frontend submodule"
 cd homeassistant-frontend
-git pull
-rm -f yarn.lock
+git fetch --tags
+latestTag=$(git describe --tags `git rev-list --tags --max-count=1`)
+git checkout $latestTag
+cd ..
+
+# echo "Removing yarn.lock"
+# rm -f yarn.lock
+
+echo "Merging requirements"
 node ./script/merge_requirements.js
+
+echo "Installing modules"
+yarn install
