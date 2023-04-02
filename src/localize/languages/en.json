@@ -8,8 +8,8 @@
   "group_monitor_outgoing": "Outgoing",
   "group_monitor_time": "Time",
   "group_monitor_direction": "Direction",
-  "group_monitor_source": "Source Address",
-  "group_monitor_destination": "Destination Address",
+  "group_monitor_source": "Source",
+  "group_monitor_destination": "Destination",
   "group_monitor_type": "Type",
   "group_monitor_payload": "Payload"
 }
