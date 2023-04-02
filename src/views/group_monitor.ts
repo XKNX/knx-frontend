@@ -52,7 +52,7 @@ export class KNXGroupMonitor extends LitElement {
           filterable: true,
           sortable: true,
           title: html`${localize(this.hass!.language, "group_monitor_time")}`,
-          width: this.narrow ? "30%" : "5%",
+          width: this.narrow ? "30%" : "110px",
         },
         direction: {
           hidden: this.narrow,
