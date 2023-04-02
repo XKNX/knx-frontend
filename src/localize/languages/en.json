@@ -1,3 +1,15 @@
 {
-  "title": "KNX UI"
+  "title": "KNX",
+  "overview_title": "Overview",
+  "overview_connected_to_bus": "Connected to bus",
+  "overview_individual_address": "Individual address",
+  "group_monitor_title": "Group Monitor",
+  "group_monitor_incoming": "Incoming",
+  "group_monitor_outgoing": "Outgoing",
+  "group_monitor_time": "Time",
+  "group_monitor_direction": "Direction",
+  "group_monitor_source": "Source Address",
+  "group_monitor_destination": "Destination Address",
+  "group_monitor_type": "Type",
+  "group_monitor_payload": "Payload"
 }

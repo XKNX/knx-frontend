@@ -1,8 +1,3 @@
-// import "@material/mwc-button";
-// import "@material/mwc-fab";
-// import "@material/mwc-list/mwc-list-item";
-// import "@polymer/app-layout/app-header/app-header";
-// import "@polymer/app-layout/app-toolbar/app-toolbar";
 import { css, html, CSSResultGroup, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
@@ -21,49 +16,16 @@ import { HomeAssistant } from "@ha/types";
 
 import { subscribeKnxTelegrams } from "../services/websocket.service";
 import { KNXTelegram } from "../types/websocket";
+import { localize } from "../localize/localize";
+import "../table/knx-data-table";
 
-@customElement("knx-bus-monitor")
-export class KNXBusMonitor extends LitElement {
+@customElement("knx-group-monitor")
+export class KNXGroupMonitor extends LitElement {
   @property({ type: Object }) public hass!: HomeAssistant;
 
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
 
-  @property() private columns: DataTableColumnContainer = {
-    timestamp: {
-      filterable: true,
-      sortable: true,
-      title: html`Time`,
-      width: "15%",
-    },
-    direction: {
-      filterable: true,
-      sortable: true,
-      title: html`Direction`,
-      width: "15%",
-    },
-    sourceAddress: {
-      filterable: true,
-      sortable: true,
-      title: html`Source Address`,
-      width: "15%",
-    },
-    destinationAddress: {
-      sortable: true,
-      filterable: true,
-      title: html`Destination Address`,
-      width: "15%",
-    },
-    type: {
-      title: html`Type`,
-      filterable: true,
-      grows: true,
-    },
-    payload: {
-      title: html`Payload`,
-      filterable: true,
-      grows: true,
-    },
-  };
+  @property() private columns: DataTableColumnContainer = {};
 
   @state() private subscribed?: () => void;
 
@@ -83,6 +45,46 @@ export class KNXBusMonitor extends LitElement {
         this.telegram_callback(message);
         this.requestUpdate();
       });
+
+      //! We need to lateinit this property due to the fact that this.hass needs to be available
+      this.columns = {
+        timestamp: {
+          filterable: true,
+          sortable: true,
+          title: html`${localize(this.hass!.language, "group_monitor_time")}`,
+          width: this.narrow ? "30%" : "5%",
+        },
+        direction: {
+          hidden: this.narrow,
+          filterable: true,
+          sortable: true,
+          title: html`${localize(this.hass!.language, "group_monitor_direction")}`,
+          width: "15%",
+        },
+        sourceAddress: {
+          filterable: true,
+          sortable: true,
+          title: html`${localize(this.hass!.language, "group_monitor_source")}`,
+          width: this.narrow ? "20%" : "15%",
+        },
+        destinationAddress: {
+          sortable: true,
+          filterable: true,
+          title: html`${localize(this.hass!.language, "group_monitor_destination")}`,
+          width: this.narrow ? "20%" : "15%",
+        },
+        type: {
+          hidden: this.narrow,
+          title: html`${localize(this.hass!.language, "group_monitor_type")}`,
+          filterable: true,
+          grows: true,
+        },
+        payload: {
+          title: html`${localize(this.hass!.language, "group_monitor_payload")}`,
+          filterable: true,
+          grows: true,
+        },
+      };
     }
   }
 
@@ -90,7 +92,7 @@ export class KNXBusMonitor extends LitElement {
     const rows = [...this.rows];
     rows.push({
       destinationAddress: telegram.destination_address,
-      direction: telegram.direction,
+      direction: localize(this.hass!.language || "en", telegram.direction),
       payload: telegram.payload,
       sourceAddress: telegram.source_address,
       timestamp: telegram.timestamp,
@@ -101,7 +103,7 @@ export class KNXBusMonitor extends LitElement {
 
   protected render(): TemplateResult | void {
     return html`
-      <ha-data-table
+      <knx-data-table
         .hass=${this.hass}
         .columns=${this.columns}
         .data=${this.rows}
@@ -109,47 +111,26 @@ export class KNXBusMonitor extends LitElement {
         .id=${this.id}
         .dir=${computeRTLDirection(this.hass)}
       >
-      </ha-data-table>
-      <div class="telegram_counter">
-        <div class="telegram_counter_label">Telegram count:</div>
-        <div>${this.rows.length}</div>
-      </div>
+      </knx-data-table>
     `;
   }
 
   static get styles(): CSSResultGroup {
     return [
+      haStyle,
       css`
-        ha-data-table {
-          height: calc(100vh - 160px);
-        }
-
         .telegram {
           display: flex;
           flex-direction: row;
           justify-content: space-between;
         }
-
-        .telegram_counter {
-          margin-top: 0.4rem;
-          display: flex;
-          flex-direction: row;
-          justify-content: space-between;
-          max-width: 200px;
-        }
-
-        .telegram_counter_label {
-          font-size: 12px;
-          font-weight: bold;
-        }
       `,
-      haStyle,
     ];
   }
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "knx-bus-monitor": KNXBusMonitor;
+    "knx-group-monitor": KNXGroupMonitor;
   }
 }

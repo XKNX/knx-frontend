@@ -49,3 +49,7 @@ pip-delete-this-directory.txt
 .vscode
 .idea
 .DS_Store
+
+# Virtual Envs
+.venv
+venv

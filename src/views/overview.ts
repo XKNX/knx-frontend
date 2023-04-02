@@ -9,6 +9,7 @@ import { HomeAssistant } from "@ha/types";
 
 import { getKnxInfo } from "../services/websocket.service";
 import { KNXInfo } from "../types/websocket";
+import { localize } from "../localize/localize";
 
 @customElement("knx-overview")
 export class KNXOverview extends LitElement {
@@ -39,12 +40,12 @@ export class KNXOverview extends LitElement {
           </div>
 
           <div class="knx-content-row">
-            <div>Connected to Bus</div>
+            <div>${localize(this.hass!.language, "overview_connected_to_bus")}</div>
             <div>${this.knxInfo?.connected ? "Yes" : "No"}</div>
           </div>
 
           <div class="knx-content-row">
-            <div>Individual address</div>
+            <div>${localize(this.hass!.language, "overview_individual_address")}</div>
             <div>${this.knxInfo?.current_address}</div>
           </div>
         </div>
@@ -56,6 +57,8 @@ export class KNXOverview extends LitElement {
     return css`
       .knx-info {
         max-width: 400px;
+        margin-left: 8px;
+        margin-top: 8px;
       }
 
       .knx-info-section {

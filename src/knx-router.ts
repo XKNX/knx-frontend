@@ -31,11 +31,11 @@ class KnxRouter extends HassRouterPage {
         },
       },
       monitor: {
-        tag: "knx-bus-monitor",
+        tag: "knx-group-monitor",
         load: () => {
           // eslint-disable-next-line no-console
-          console.info("Importing knx-bus-monitor");
-          return import("./views/bus_monitor");
+          console.info("Importing knx-group-monitor");
+          return import("./views/group_monitor");
         },
       },
     },

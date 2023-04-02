@@ -1,8 +1,3 @@
-// import "@polymer/app-layout/app-header/app-header";
-// import "@polymer/app-layout/app-toolbar/app-toolbar";
-// import "@material/mwc-list/mwc-list-item";
-// import "@material/mwc-button";
-// import "@material/mwc-fab";
 import { html, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 
@@ -20,6 +15,7 @@ import { HomeAssistant, Route } from "@ha/types";
 import { knxElement } from "./knx";
 import "./knx-router";
 import { LocationChangedEvent } from "./types/navigation";
+import { localize } from "./localize/localize";
 
 @customElement("knx-frontend")
 class KnxFrontend extends knxElement {
@@ -37,11 +33,10 @@ class KnxFrontend extends knxElement {
     if (!this.knx) {
       this._getKNXConfigEntry();
     }
-    // this.knx.language = this.hass.language;
     this.addEventListener("knx-location-changed", (e) => this._setRoute(e as LocationChangedEvent));
 
     makeDialogManager(this, this.shadowRoot!);
-    if (this.route.path === "") {
+    if (this.route.path === "" || this.route.path === "/") {
       navigate("/knx/overview", { replace: true });
     }
 
@@ -55,7 +50,7 @@ class KnxFrontend extends knxElement {
 
     return html`
       <ha-app-layout>
-        <app-header fixed slot="header">
+        <app-header fixed condenses slot="header">
           <app-toolbar>
             <ha-menu-button .hass=${this.hass} .narrow=${this.narrow}></ha-menu-button>
             <div main-title>KNX UI</div>
@@ -66,8 +61,12 @@ class KnxFrontend extends knxElement {
             .selected=${this.route.path}
             @iron-activate=${this.handleNavigationEvent}
           >
-            <paper-tab page-name="/knx/overview"> Overview </paper-tab>
-            <paper-tab page-name="/knx/monitor"> Bus Monitor </paper-tab>
+            <paper-tab page-name="/knx/overview">
+              ${localize(this.hass.language, "overview_title")}
+            </paper-tab>
+            <paper-tab page-name="/knx/monitor">
+              ${localize(this.hass.language, "group_monitor_title")}
+            </paper-tab>
           </ha-tabs>
         </app-header>
       </ha-app-layout>

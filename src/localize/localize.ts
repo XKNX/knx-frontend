@@ -1,7 +1,33 @@
 import IntlMessageFormat from "intl-messageformat";
+import * as en from "./languages/en.json";
+import * as ca from "./languages/ca.json";
+import * as cs from "./languages/cs.json";
+import * as es from "./languages/es.json";
+import * as et from "./languages/et.json";
+import * as fr from "./languages/fr.json";
+import * as it from "./languages/it.json";
+import * as nl from "./languages/nl.json";
+import * as sk from "./languages/sk.json";
+import * as sv from "./languages/sv.json";
+import * as de from "./languages/de.json";
+import * as ru from "./languages/ru.json";
+
 import { KNXLogger } from "../tools/knx-logger";
 
-const languages = {};
+const languages = {
+  ca,
+  cs,
+  en,
+  et,
+  es,
+  fr,
+  it,
+  nl,
+  sk,
+  sv,
+  de,
+  ru,
+};
 const DEFAULT_LANGUAGE = "en";
 const logger = new KNXLogger("localize");
 const warnings: { language: string[]; sting: Record<string, string[]> } = {
