@@ -52,7 +52,7 @@ export class KNXGroupMonitor extends LitElement {
           filterable: true,
           sortable: true,
           title: html`${localize(this.hass!.language, "group_monitor_time")}`,
-          width: this.narrow ? "30%" : "110px",
+          width: "110px",
         },
         direction: {
           hidden: this.narrow,
@@ -65,13 +65,13 @@ export class KNXGroupMonitor extends LitElement {
           filterable: true,
           sortable: true,
           title: html`${localize(this.hass!.language, "group_monitor_source")}`,
-          width: this.narrow ? "20%" : "15%",
+          width: this.narrow ? "22%" : "15%",
         },
         destinationAddress: {
           sortable: true,
           filterable: true,
           title: html`${localize(this.hass!.language, "group_monitor_destination")}`,
-          width: this.narrow ? "20%" : "15%",
+          width: this.narrow ? "22%" : "15%",
         },
         type: {
           hidden: this.narrow,
