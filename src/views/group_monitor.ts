@@ -106,6 +106,9 @@ export class KNXGroupMonitor extends LitElement {
       <knx-data-table
         .hass=${this.hass}
         .columns=${this.columns}
+        .noDataText=${this.subscribed
+          ? localize(this.hass.language, "group_monitor_connected_waiting_telegrams")
+          : localize(this.hass.language, "group_monitor_waiting_to_connect")}
         .data=${this.rows}
         .hasFab=${false}
         .id=${this.id}
