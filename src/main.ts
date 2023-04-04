@@ -53,7 +53,7 @@ class KnxFrontend extends knxElement {
         <app-header fixed condenses slot="header">
           <app-toolbar>
             <ha-menu-button .hass=${this.hass} .narrow=${this.narrow}></ha-menu-button>
-            <div main-title>KNX UI</div>
+            <div main-title>${localize(this.hass.language, "title")}</div>
           </app-toolbar>
           <ha-tabs
             scrollable
