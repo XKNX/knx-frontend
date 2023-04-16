@@ -20,10 +20,15 @@ export class KNXOverview extends LitElement {
   @state() private knxInfo: KNXInfo | null = null;
 
   protected firstUpdated() {
-    getKnxInfo(this.hass).then((knxInfo) => {
-      this.knxInfo = knxInfo;
-      this.requestUpdate();
-    });
+    getKnxInfo(this.hass).then(
+      (knxInfo) => {
+        this.knxInfo = knxInfo;
+        this.requestUpdate();
+      },
+      (err) => {
+        console.error("getKnxInfo", err); // eslint-disable-line no-console
+      }
+    );
   }
 
   protected render(): TemplateResult | void {
