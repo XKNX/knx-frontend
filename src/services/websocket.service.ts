@@ -6,6 +6,17 @@ export const getKnxInfo = (hass: HomeAssistant): Promise<KNXInfo> =>
     type: "knx/info",
   });
 
+export const processProjectFile = (
+  hass: HomeAssistant,
+  file_id: string,
+  password: string
+): Promise<void> =>
+  hass.callWS({
+    type: "knx/process_project_file",
+    file_id: file_id,
+    password: password,
+  });
+
 export const getGroupMonitorInfo = (hass: HomeAssistant): Promise<GroupMonitorInfo> =>
   hass.callWS({
     type: "knx/group_monitor_info",

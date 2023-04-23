@@ -2,6 +2,13 @@ export interface KNXInfo {
   version: string;
   connected: boolean;
   current_address: string;
+  project: KNXProjectInfo | null;
+}
+
+export interface KNXProjectInfo {
+  name: string;
+  last_modified: string;
+  tool_version: string;
 }
 
 export interface GroupMonitorInfo {
