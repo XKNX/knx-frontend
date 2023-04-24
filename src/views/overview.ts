@@ -14,7 +14,7 @@ import { extractApiErrorMessage } from "@ha/data/hassio/common";
 import { showAlertDialog } from "@ha/dialogs/generic/show-dialog-box";
 import { HomeAssistant } from "@ha/types";
 
-import { getKnxInfo, processProjectFile } from "../services/websocket.service";
+import { getKnxInfo, processProjectFile, removeProjectFile } from "../services/websocket.service";
 import { KNXInfo, KNXProjectInfo } from "../types/websocket";
 import { localize } from "../localize/localize";
 
@@ -86,6 +86,11 @@ export class KNXOverview extends LitElement {
           </ha-textfield>
         </div>
         <div class="knx-content-row">
+          <ha-button
+            @click=${this._removeProject}
+            .disabled=${this._uploading || !this.knxInfo?.project}
+            >Delete project file</ha-button
+          >
           <ha-button @click=${this._uploadFile} .disabled=${this._uploading || !this._projectFile}
             >Upload</ha-button
           >
@@ -165,6 +170,20 @@ export class KNXOverview extends LitElement {
     }
   }
 
+  private async _removeProject(_ev) {
+    try {
+      await removeProjectFile(this.hass);
+    } catch (err: any) {
+      showAlertDialog(this, {
+        title: "Deletion failed",
+        text: extractApiErrorMessage(err),
+        confirmText: "ok",
+      });
+    } finally {
+      this.loadKnxInfo();
+    }
+  }
+
   static get styles() {
     return css`
       .knx-info {
@@ -182,6 +201,13 @@ export class KNXOverview extends LitElement {
         display: flex;
         flex-direction: row;
         justify-content: space-between;
+      }
+
+      ha-file-upload,
+      ha-textfield {
+        width: 100%;
+        margin: 8px;
+        margin-top: 0;
       }
     `;
   }

@@ -110,7 +110,7 @@ export class KNXGroupMonitor extends LitElement {
           width: "105px",
         },
         value: {
-          hidden: this.narrow && !has_project_data,
+          hidden: !has_project_data,
           title: html`${localize(this.hass!.language, "group_monitor_value")}`,
           filterable: true,
           width: this.narrow ? "105px" : "150px",

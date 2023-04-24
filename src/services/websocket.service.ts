@@ -12,9 +12,14 @@ export const processProjectFile = (
   password: string
 ): Promise<void> =>
   hass.callWS({
-    type: "knx/process_project_file",
+    type: "knx/project_file_process",
     file_id: file_id,
     password: password,
+  });
+
+export const removeProjectFile = (hass: HomeAssistant): Promise<void> =>
+  hass.callWS({
+    type: "knx/project_file_remove",
   });
 
 export const getGroupMonitorInfo = (hass: HomeAssistant): Promise<GroupMonitorInfo> =>
