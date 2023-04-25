@@ -56,7 +56,7 @@ export class KNXGroupMonitor extends LitElement {
         this.requestUpdate();
       });
 
-      const has_project_data = this.groupMonitorInfo?.project_data;
+      const has_project_data = this.groupMonitorInfo?.project_loaded;
       //! We need to lateinit this property due to the fact that this.hass needs to be available
       this.columns = {
         timestamp: {

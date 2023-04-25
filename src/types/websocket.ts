@@ -12,7 +12,7 @@ export interface KNXProjectInfo {
 }
 
 export interface GroupMonitorInfo {
-  project_data: boolean;
+  project_loaded: boolean;
 }
 
 export interface KNXTelegram {
