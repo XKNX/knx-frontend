@@ -78,7 +78,7 @@ export class KNXOverview extends LitElement {
             .hass=${this.hass}
             .value=${this._projectPassword || ""}
             .label=${"Project Password"}
-            .selector=${{text:{multiline: false, type: "password"}}}
+            .selector=${{ text: { multiline: false, type: "password" } }}
             .required=${false}
             @value-changed=${this._passwordChanged}
           >
