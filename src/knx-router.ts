@@ -4,6 +4,9 @@ import { HassRouterPage, RouterOptions } from "@ha/layouts/hass-router-page";
 import { HomeAssistant, Route } from "@ha/types";
 
 import { KNX } from "./types/knx";
+import { KNXLogger } from "./tools/knx-logger";
+
+const logger = new KNXLogger("router");
 
 @customElement("knx-router")
 class KnxRouter extends HassRouterPage {
@@ -25,16 +28,14 @@ class KnxRouter extends HassRouterPage {
       overview: {
         tag: "knx-overview",
         load: () => {
-          // eslint-disable-next-line no-console
-          console.info("Importing knx-overview");
+          logger.info("Importing knx-overview");
           return import("./views/overview");
         },
       },
       monitor: {
         tag: "knx-group-monitor",
         load: () => {
-          // eslint-disable-next-line no-console
-          console.info("Importing knx-group-monitor");
+          logger.info("Importing knx-group-monitor");
           return import("./views/group_monitor");
         },
       },
@@ -50,18 +51,15 @@ class KnxRouter extends HassRouterPage {
     el.isWide = isWide;
     el.section = section;
 
-    // eslint-disable-next-line no-console
-    console.info("Current Page: " + this._currentPage + " in knx-router");
+    logger.info("Current Page: " + this._currentPage + " in knx-router");
 
-    // eslint-disable-next-line no-console
-    console.info("Route " + this.route.path + " in knx-router");
+    logger.info("Route " + this.route.path + " in knx-router");
 
     if (this._currentPage !== "devices") {
       const routeSplit = this.routeTail.path.split("/");
       el.deviceId = routeSplit[routeSplit.length - 1];
 
-      // eslint-disable-next-line no-console
-      console.info("Device ID: " + el.deviceId + " in knx-router");
+      logger.info("Device ID: " + el.deviceId + " in knx-router");
     }
     el.knx = this.knx;
   }

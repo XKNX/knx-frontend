@@ -18,6 +18,9 @@ import { subscribeKnxTelegrams, getGroupMonitorInfo } from "../services/websocke
 import { KNXTelegram, GroupMonitorInfo } from "../types/websocket";
 import { localize } from "../localize/localize";
 import "../table/knx-data-table";
+import { KNXLogger } from "../tools/knx-logger";
+
+const logger = new KNXLogger("group_monitor");
 
 @customElement("knx-group-monitor")
 export class KNXGroupMonitor extends LitElement {
@@ -48,7 +51,7 @@ export class KNXGroupMonitor extends LitElement {
           this.groupMonitorInfo = groupMonitorInfo;
         },
         (err) => {
-          console.error("getGroupMonitorInfo", err); // eslint-disable-line no-console
+          logger.error("getGroupMonitorInfo", err);
         }
       );
       this.subscribed = await subscribeKnxTelegrams(this.hass, (message) => {

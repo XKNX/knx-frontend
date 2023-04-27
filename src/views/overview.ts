@@ -17,6 +17,9 @@ import { HomeAssistant } from "@ha/types";
 import { getKnxInfo, processProjectFile, removeProjectFile } from "../services/websocket.service";
 import { KNXInfo, KNXProjectInfo } from "../types/websocket";
 import { localize } from "../localize/localize";
+import { KNXLogger } from "../tools/knx-logger";
+
+const logger = new KNXLogger("overview");
 
 @customElement("knx-overview")
 export class KNXOverview extends LitElement {
@@ -87,12 +90,7 @@ export class KNXOverview extends LitElement {
           >
           </ha-selector-text>
         </div>
-        <div class="knx-content-row">
-          <ha-button
-            @click=${this._removeProject}
-            .disabled=${this._uploading || !this.knxInfo?.project}
-            >${localize(this.hass!.language, "overview_project_delete")}</ha-button
-          >
+        <div class="knx-content-button">
           <ha-button @click=${this._uploadFile} .disabled=${this._uploading || !this._projectFile}
             >${localize(this.hass!.language, "overview_project_upload")}</ha-button
           >
@@ -112,16 +110,21 @@ export class KNXOverview extends LitElement {
             <div>${localize(this.hass!.language, "overview_project_data_name")}</div>
             <div>${projectInfo.name}</div>
           </div>
-
           <div class="knx-content-row">
             <div>${localize(this.hass!.language, "overview_project_data_last_modified")}</div>
             <div>${projectInfo.last_modified}</div>
           </div>
-
           <div class="knx-content-row">
             <div>${localize(this.hass!.language, "overview_project_data_tool_version")}</div>
             <div>${projectInfo.tool_version}</div>
           </div>
+        </div>
+        <div class="knx-content-button">
+          <ha-button
+            @click=${this._removeProject}
+            .disabled=${this._uploading || !this.knxInfo?.project}
+            >${localize(this.hass!.language, "overview_project_delete")}</ha-button
+          >
         </div>
       </ha-card>
     `;
@@ -134,7 +137,7 @@ export class KNXOverview extends LitElement {
         this.requestUpdate();
       },
       (err) => {
-        console.error("getKnxInfo", err); // eslint-disable-line no-console
+        logger.error("getKnxInfo", err);
       }
     );
   }
@@ -205,6 +208,12 @@ export class KNXOverview extends LitElement {
       .knx-content-row {
         display: flex;
         flex-direction: row;
+        justify-content: space-between;
+      }
+
+      .knx-content-button {
+        display: flex;
+        flex-direction: row-reverse;
         justify-content: space-between;
       }
 
