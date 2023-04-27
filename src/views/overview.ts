@@ -61,14 +61,17 @@ export class KNXOverview extends LitElement {
         </div>
       </ha-card>
       ${this.knxInfo?.project ? this._projectCard(this.knxInfo.project) : nothing}
-      <ha-card class="knx-info" header="KNX Project Upload">
+      <ha-card
+        class="knx-info"
+        .header=${localize(this.hass!.language, "overview_project_file_header")}
+      >
         <div class="knx-content-row">
           <ha-file-upload
             .hass=${this.hass}
             accept=".knxproj"
             .icon=${mdiFileUpload}
-            label="Project File"
-            .value=${this._projectFile?.name || "Select file..."}
+            .label=${localize(this.hass!.language, "overview_project_file")}
+            .value=${this._projectFile?.name}
             .uploading=${this._uploading}
             @file-picked=${this._filePicked}
           ></ha-file-upload>
@@ -77,7 +80,7 @@ export class KNXOverview extends LitElement {
           <ha-selector-text
             .hass=${this.hass}
             .value=${this._projectPassword || ""}
-            .label=${"Project Password"}
+            .label=${localize(this.hass!.language, "overview_project_password")}
             .selector=${{ text: { multiline: false, type: "password" } }}
             .required=${false}
             @value-changed=${this._passwordChanged}
@@ -88,10 +91,10 @@ export class KNXOverview extends LitElement {
           <ha-button
             @click=${this._removeProject}
             .disabled=${this._uploading || !this.knxInfo?.project}
-            >Delete project file</ha-button
+            >${localize(this.hass!.language, "overview_project_delete")}</ha-button
           >
           <ha-button @click=${this._uploadFile} .disabled=${this._uploading || !this._projectFile}
-            >Upload</ha-button
+            >${localize(this.hass!.language, "overview_project_upload")}</ha-button
           >
         </div>
       </ha-card>
@@ -100,20 +103,23 @@ export class KNXOverview extends LitElement {
 
   private _projectCard(projectInfo: KNXProjectInfo) {
     return html`
-      <ha-card class="knx-info" header="KNX Project File">
+      <ha-card
+        class="knx-info"
+        .header=${localize(this.hass!.language, "overview_project_data_header")}
+      >
         <div class="card-content knx-info-section">
           <div class="knx-content-row">
-            <div>Project name</div>
+            <div>${localize(this.hass!.language, "overview_project_data_name")}</div>
             <div>${projectInfo.name}</div>
           </div>
 
           <div class="knx-content-row">
-            <div>Last modified</div>
+            <div>${localize(this.hass!.language, "overview_project_data_last_modified")}</div>
             <div>${projectInfo.last_modified}</div>
           </div>
 
           <div class="knx-content-row">
-            <div>Tool version</div>
+            <div>${localize(this.hass!.language, "overview_project_data_tool_version")}</div>
             <div>${projectInfo.tool_version}</div>
           </div>
         </div>
