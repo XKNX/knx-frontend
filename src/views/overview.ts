@@ -6,9 +6,9 @@ import "@ha/components/ha-button-menu";
 import "@ha/components/ha-card";
 import "@ha/layouts/ha-app-layout";
 import "@ha/layouts/hass-subpage";
-import "@ha/components/ha-file-upload";
-import "@ha/components/ha-textfield";
 import "@ha/components/ha-button";
+import "@ha/components/ha-file-upload";
+import "@ha/components/ha-selector/ha-selector-text";
 import { uploadFile } from "@ha/data/file_upload";
 import { extractApiErrorMessage } from "@ha/data/hassio/common";
 import { showAlertDialog } from "@ha/dialogs/generic/show-dialog-box";
@@ -74,16 +74,15 @@ export class KNXOverview extends LitElement {
           ></ha-file-upload>
         </div>
         <div class="knx-content-row">
-          <ha-textfield
-            .name=${"project_password"}
-            .label=${"Project Password"}
+          <ha-selector-text
+            .hass=${this.hass}
             .value=${this._projectPassword || ""}
-            placeholder="Project Password"
-            autocapitalize="none"
-            spellcheck="false"
-            @input=${this._passwordChanged}
+            .label=${"Project Password"}
+            .selector=${{text:{multiline: false, type: "password"}}}
+            .required=${false}
+            @value-changed=${this._passwordChanged}
           >
-          </ha-textfield>
+          </ha-selector-text>
         </div>
         <div class="knx-content-row">
           <ha-button
@@ -139,7 +138,7 @@ export class KNXOverview extends LitElement {
   }
 
   private _passwordChanged(ev) {
-    this._projectPassword = ev.target.value;
+    this._projectPassword = ev.detail.value;
   }
 
   private async _uploadFile(_ev) {
@@ -204,7 +203,7 @@ export class KNXOverview extends LitElement {
       }
 
       ha-file-upload,
-      ha-textfield {
+      ha-selector-text {
         width: 100%;
         margin: 8px;
         margin-top: 0;
