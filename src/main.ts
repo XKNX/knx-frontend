@@ -1,4 +1,4 @@
-import { html, nothing } from "lit";
+import { css, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 
 import { applyThemesOnElement } from "@ha/common/dom/apply_themes_on_element";
@@ -85,7 +85,14 @@ class KnxFrontend extends knxElement {
   }
 
   static get styles() {
-    return haStyle;
+    return [
+      haStyle,
+      css`
+        ha-app-layout {
+          z-index: 20;
+        }
+      `,
+    ];
   }
 
   private _setRoute(ev: LocationChangedEvent): void {
