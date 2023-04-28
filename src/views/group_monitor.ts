@@ -14,10 +14,13 @@ import "@ha/layouts/hass-subpage";
 import { haStyle } from "@ha/resources/styles";
 import { HomeAssistant } from "@ha/types";
 
-import { subscribeKnxTelegrams } from "../services/websocket.service";
-import { KNXTelegram } from "../types/websocket";
+import { subscribeKnxTelegrams, getGroupMonitorInfo } from "../services/websocket.service";
+import { KNXTelegram, GroupMonitorInfo } from "../types/websocket";
 import { localize } from "../localize/localize";
 import "../table/knx-data-table";
+import { KNXLogger } from "../tools/knx-logger";
+
+const logger = new KNXLogger("group_monitor");
 
 @customElement("knx-group-monitor")
 export class KNXGroupMonitor extends LitElement {
@@ -26,6 +29,8 @@ export class KNXGroupMonitor extends LitElement {
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
 
   @property() private columns: DataTableColumnContainer = {};
+
+  @state() private groupMonitorInfo: GroupMonitorInfo | null = null;
 
   @state() private subscribed?: () => void;
 
@@ -41,11 +46,20 @@ export class KNXGroupMonitor extends LitElement {
 
   protected async firstUpdated() {
     if (!this.subscribed) {
+      getGroupMonitorInfo(this.hass).then(
+        (groupMonitorInfo) => {
+          this.groupMonitorInfo = groupMonitorInfo;
+        },
+        (err) => {
+          logger.error("getGroupMonitorInfo", err);
+        }
+      );
       this.subscribed = await subscribeKnxTelegrams(this.hass, (message) => {
         this.telegram_callback(message);
         this.requestUpdate();
       });
 
+      const has_project_data = this.groupMonitorInfo?.project_loaded;
       //! We need to lateinit this property due to the fact that this.hass needs to be available
       this.columns = {
         timestamp: {
@@ -57,32 +71,52 @@ export class KNXGroupMonitor extends LitElement {
         direction: {
           hidden: this.narrow,
           filterable: true,
-          sortable: true,
           title: html`${localize(this.hass!.language, "group_monitor_direction")}`,
-          width: "15%",
+          width: "90px",
         },
         sourceAddress: {
           filterable: true,
           sortable: true,
           title: html`${localize(this.hass!.language, "group_monitor_source")}`,
-          width: this.narrow ? "22%" : "15%",
+          width: this.narrow ? "90px" : has_project_data ? "95px" : "20%",
+        },
+        sourceText: {
+          hidden: this.narrow || !has_project_data,
+          filterable: true,
+          sortable: true,
+          title: html`${localize(this.hass!.language, "group_monitor_source")}`,
+          width: "20%",
         },
         destinationAddress: {
           sortable: true,
           filterable: true,
           title: html`${localize(this.hass!.language, "group_monitor_destination")}`,
-          width: this.narrow ? "22%" : "15%",
+          width: this.narrow ? "90px" : has_project_data ? "96px" : "20%",
+        },
+        destinationText: {
+          hidden: this.narrow || !has_project_data,
+          sortable: true,
+          filterable: true,
+          title: html`${localize(this.hass!.language, "group_monitor_destination")}`,
+          width: "20%",
         },
         type: {
           hidden: this.narrow,
           title: html`${localize(this.hass!.language, "group_monitor_type")}`,
           filterable: true,
-          grows: true,
+          width: "155px", // 155px suits for "GroupValueResponse"
         },
         payload: {
+          hidden: this.narrow && has_project_data,
           title: html`${localize(this.hass!.language, "group_monitor_payload")}`,
           filterable: true,
-          grows: true,
+          width: "105px",
+        },
+        value: {
+          hidden: !has_project_data,
+          title: html`${localize(this.hass!.language, "group_monitor_value")}`,
+          filterable: true,
+          width: this.narrow ? "105px" : "150px",
         },
       };
     }
@@ -92,13 +126,22 @@ export class KNXGroupMonitor extends LitElement {
     const rows = [...this.rows];
     rows.push({
       destinationAddress: telegram.destination_address,
+      destinationText: telegram.destination_text,
       direction: localize(this.hass!.language || "en", telegram.direction),
       payload: telegram.payload,
       sourceAddress: telegram.source_address,
+      sourceText: telegram.source_text,
       timestamp: telegram.timestamp,
       type: telegram.type,
+      value: !this.narrow ? telegram.value : this.narrow_value(telegram),
     });
     this.rows = rows;
+  }
+
+  protected narrow_value(telegram: KNXTelegram): string {
+    return (
+      telegram.value || telegram.payload || (telegram.type === "GroupValueRead" ? "GroupRead" : "")
+    );
   }
 
   protected render(): TemplateResult | void {

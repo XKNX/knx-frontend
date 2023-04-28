@@ -3,6 +3,15 @@
   "overview_title": "Overview",
   "overview_connected_to_bus": "Connected to bus",
   "overview_individual_address": "Individual address",
+  "overview_project_data_header": "KNX Project data",
+  "overview_project_data_name": "Project name",
+  "overview_project_data_last_modified": "Last modified",
+  "overview_project_data_tool_version": "Tool version",
+  "overview_project_file_header": "KNX Project file",
+  "overview_project_file": "Project file",
+  "overview_project_password": "Project password",
+  "overview_project_delete": "Delete project data",
+  "overview_project_upload": "Upload",
   "group_monitor_title": "Group Monitor",
   "group_monitor_incoming": "Incoming",
   "group_monitor_outgoing": "Outgoing",
@@ -13,5 +22,6 @@
   "group_monitor_type": "Type",
   "group_monitor_payload": "Payload",
   "group_monitor_connected_waiting_telegrams": "Group monitor is connected and waiting for telegrams",
+  "group_monitor_value": "Value",
   "group_monitor_waiting_to_connect": "Waiting for websocket connection"
 }

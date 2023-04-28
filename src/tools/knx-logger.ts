@@ -9,27 +9,28 @@ export class KNXLogger {
     }
   }
 
-  public info(content: string | unknown) {
-    this.log(content);
+  public info(...content: any[]): void {
+    // eslint-disable-next-line no-console
+    console.info(this.prefix, ...content);
   }
 
-  public log(content: string | unknown) {
+  public log(...content: any[]): void {
     // eslint-disable-next-line no-console
-    console.log(this.prefix, content);
+    console.log(this.prefix, ...content);
   }
 
-  public debug(content: string | unknown) {
+  public debug(...content: any[]): void {
     // eslint-disable-next-line no-console
-    console.debug(this.prefix, content);
+    console.debug(this.prefix, ...content);
   }
 
-  public warn(content: string | unknown) {
+  public warn(...content: any[]): void {
     // eslint-disable-next-line no-console
-    console.warn(this.prefix, content);
+    console.warn(this.prefix, ...content);
   }
 
-  public error(content: string | unknown) {
+  public error(...content: any[]): void {
     // eslint-disable-next-line no-console
-    console.error(this.prefix, content);
+    console.error(this.prefix, ...content);
   }
 }
