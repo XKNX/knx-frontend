@@ -124,7 +124,7 @@ export class KNXGroupMonitor extends LitElement {
 
   protected telegram_callback(telegram: KNXTelegram): void {
     const rows = [...this.rows];
-    rows.push({
+    rows.unshift({
       destinationAddress: telegram.destination_address,
       destinationText: telegram.destination_text,
       direction: localize(this.hass!.language || "en", telegram.direction),
