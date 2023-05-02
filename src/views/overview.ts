@@ -48,73 +48,85 @@ export class KNXOverview extends LitElement {
     return html`
       <div class="columns">
         <ha-card class="knx-info" header="KNX Information">
-        <div class="card-content knx-info-section">
-          <div class="knx-content-row">
-            <div>XKNX Version</div>
-            <div>${this.knxInfo?.version}</div>
-          </div>
+          <div class="card-content knx-info-section">
+            <div class="knx-content-row">
+              <div>XKNX Version</div>
+              <div>${this.knxInfo?.version}</div>
+            </div>
 
-          <div class="knx-content-row">
-            <div>KNX Frontend Version</div>
-            <div>${VERSION}</div>
-          </div>
+            <div class="knx-content-row">
+              <div>KNX Frontend Version</div>
+              <div>${VERSION}</div>
+            </div>
 
-          <div class="knx-content-row">
-            <div>${localize(this.hass!.language, "overview_connected_to_bus")}</div>
-            <div>${this.knxInfo?.connected ? "Yes" : "No"}</div>
-          </div>
+            <div class="knx-content-row">
+              <div>${localize(this.hass!.language, "overview_connected_to_bus")}</div>
+              <div>${this.knxInfo?.connected ? "Yes" : "No"}</div>
+            </div>
 
+            <div class="knx-content-row">
+              <div>${localize(this.hass!.language, "overview_individual_address")}</div>
+              <div>${this.knxInfo?.current_address}</div>
+            </div>
+
+            <div class="knx-bug-report">
+              <div>${localize(this.hass!.language, "overview_issue_tracker")}</div>
+              <ul>
+                <li>
+                  <a href="https://github.com/XKNX/knx-frontend/issues" target="_blank"
+                    >${localize(this.hass!.language, "overview_issue_tracker_knx_frontend")}</a
+                  >
+                </li>
+                <li>
+                  <a href="https://github.com/XKNX/knx-frontend/issues" target="_blank"
+                    >${localize(this.hass!.language, "overview_issue_tracker_xknxproject")}</a
+                  >
+                </li>
+                <li>
+                  <a href="https://github.com/XKNX/knx-frontend/issues" target="_blank"
+                    >${localize(this.hass!.language, "overview_issue_tracker_xknx")}</a
+                  >
+                </li>
+              </ul>
+            </div>
+          </div>
+        </ha-card>
+        ${this.knxInfo?.project ? this._projectCard(this.knxInfo.project) : nothing}
+        <ha-card
+          class="knx-info"
+          .header=${localize(this.hass!.language, "overview_project_file_header")}
+        >
+          <div class="knx-project-description">
+            ${localize(this.hass!.language, "overview_project_upload_description")}
+          </div>
           <div class="knx-content-row">
-            <div>${localize(this.hass!.language, "overview_individual_address")}</div>
-            <div>${this.knxInfo?.current_address}</div>
+            <ha-file-upload
+              .hass=${this.hass}
+              accept=".knxproj"
+              .icon=${mdiFileUpload}
+              .label=${localize(this.hass!.language, "overview_project_file")}
+              .value=${this._projectFile?.name}
+              .uploading=${this._uploading}
+              @file-picked=${this._filePicked}
+            ></ha-file-upload>
           </div>
-          
-          <div class="knx-bug-report">
-            <div>${localize(this.hass!.language, "overview_issue_tracker")}</div>
-            <ul>
-              <li><a href="https://github.com/XKNX/knx-frontend/issues" target="_blank">${localize(this.hass!.language, "overview_issue_tracker_knx_frontend")}</a></li>
-              <li><a href="https://github.com/XKNX/knx-frontend/issues" target="_blank">${localize(this.hass!.language, "overview_issue_tracker_xknxproject")}</a></li>
-              <li><a href="https://github.com/XKNX/knx-frontend/issues" target="_blank">${localize(this.hass!.language, "overview_issue_tracker_xknx")}</a></li>
-            </ul>
+          <div class="knx-content-row">
+            <ha-selector-text
+              .hass=${this.hass}
+              .value=${this._projectPassword || ""}
+              .label=${localize(this.hass!.language, "overview_project_password")}
+              .selector=${{ text: { multiline: false, type: "password" } }}
+              .required=${false}
+              @value-changed=${this._passwordChanged}
+            >
+            </ha-selector-text>
           </div>
-        </div>
-      </ha-card>
-      ${this.knxInfo?.project ? this._projectCard(this.knxInfo.project) : nothing}
-      <ha-card
-        class="knx-info"
-        .header=${localize(this.hass!.language, "overview_project_file_header")}
-      >
-        <div class="knx-project-description">
-          ${localize(this.hass!.language, "overview_project_upload_description")}
-        </div>
-        <div class="knx-content-row">
-          <ha-file-upload
-            .hass=${this.hass}
-            accept=".knxproj"
-            .icon=${mdiFileUpload}
-            .label=${localize(this.hass!.language, "overview_project_file")}
-            .value=${this._projectFile?.name}
-            .uploading=${this._uploading}
-            @file-picked=${this._filePicked}
-          ></ha-file-upload>
-        </div>
-        <div class="knx-content-row">
-          <ha-selector-text
-            .hass=${this.hass}
-            .value=${this._projectPassword || ""}
-            .label=${localize(this.hass!.language, "overview_project_password")}
-            .selector=${{ text: { multiline: false, type: "password" } }}
-            .required=${false}
-            @value-changed=${this._passwordChanged}
-          >
-          </ha-selector-text>
-        </div>
-        <div class="knx-content-button">
-          <ha-button @click=${this._uploadFile} .disabled=${this._uploading || !this._projectFile}
-            >${localize(this.hass!.language, "overview_project_upload")}</ha-button
-          >
-        </div>
-      </ha-card>
+          <div class="knx-content-button">
+            <ha-button @click=${this._uploadFile} .disabled=${this._uploading || !this._projectFile}
+              >${localize(this.hass!.language, "overview_project_upload")}</ha-button
+            >
+          </div>
+        </ha-card>
       </div>
     `;
   }
