@@ -18,6 +18,7 @@ import { getKnxInfo, processProjectFile, removeProjectFile } from "../services/w
 import { KNXInfo, KNXProjectInfo } from "../types/websocket";
 import { localize } from "../localize/localize";
 import { KNXLogger } from "../tools/knx-logger";
+import { VERSION } from "../version";
 
 const logger = new KNXLogger("overview");
 
@@ -45,11 +46,17 @@ export class KNXOverview extends LitElement {
     }
 
     return html`
-      <ha-card class="knx-info" header="KNX Information">
+      <div class="columns">
+        <ha-card class="knx-info" header="KNX Information">
         <div class="card-content knx-info-section">
           <div class="knx-content-row">
             <div>XKNX Version</div>
             <div>${this.knxInfo?.version}</div>
+          </div>
+
+          <div class="knx-content-row">
+            <div>KNX Frontend Version</div>
+            <div>${VERSION}</div>
           </div>
 
           <div class="knx-content-row">
@@ -61,6 +68,15 @@ export class KNXOverview extends LitElement {
             <div>${localize(this.hass!.language, "overview_individual_address")}</div>
             <div>${this.knxInfo?.current_address}</div>
           </div>
+          
+          <div class="knx-bug-report">
+            <div>${localize(this.hass!.language, "overview_issue_tracker")}</div>
+            <ul>
+              <li><a href="https://github.com/XKNX/knx-frontend/issues" target="_blank">${localize(this.hass!.language, "overview_issue_tracker_knx_frontend")}</a></li>
+              <li><a href="https://github.com/XKNX/knx-frontend/issues" target="_blank">${localize(this.hass!.language, "overview_issue_tracker_xknxproject")}</a></li>
+              <li><a href="https://github.com/XKNX/knx-frontend/issues" target="_blank">${localize(this.hass!.language, "overview_issue_tracker_xknx")}</a></li>
+            </ul>
+          </div>
         </div>
       </ha-card>
       ${this.knxInfo?.project ? this._projectCard(this.knxInfo.project) : nothing}
@@ -68,6 +84,9 @@ export class KNXOverview extends LitElement {
         class="knx-info"
         .header=${localize(this.hass!.language, "overview_project_file_header")}
       >
+        <div class="knx-project-description">
+          ${localize(this.hass!.language, "overview_project_upload_description")}
+        </div>
         <div class="knx-content-row">
           <ha-file-upload
             .hass=${this.hass}
@@ -96,6 +115,7 @@ export class KNXOverview extends LitElement {
           >
         </div>
       </ha-card>
+      </div>
     `;
   }
 
@@ -112,15 +132,16 @@ export class KNXOverview extends LitElement {
           </div>
           <div class="knx-content-row">
             <div>${localize(this.hass!.language, "overview_project_data_last_modified")}</div>
-            <div>${projectInfo.last_modified}</div>
+            <div>${new Date(projectInfo.last_modified).toUTCString()}</div>
           </div>
           <div class="knx-content-row">
             <div>${localize(this.hass!.language, "overview_project_data_tool_version")}</div>
             <div>${projectInfo.tool_version}</div>
           </div>
         </div>
-        <div class="knx-content-button">
+        <div class="knx-delete-project-button">
           <ha-button
+            class="knx-warning"
             @click=${this._removeProject}
             .disabled=${this._uploading || !this.knxInfo?.project}
             >${localize(this.hass!.language, "overview_project_delete")}</ha-button
@@ -194,8 +215,41 @@ export class KNXOverview extends LitElement {
 
   static get styles() {
     return css`
+      .columns {
+        display: flex;
+        justify-content: center;
+      }
+
+      .columns > ha-card {
+        min-width: 400px;
+      }
+
+      @media screen and (max-width: 1500px) {
+        .columns {
+          flex-direction: column;
+        }
+
+        .columns > ha-card {
+          width: 96.5%;
+        }
+
+        .knx-delete-project-button {
+          top: 20px;
+        }
+
+        .knx-info {
+          margin-right: 8px;
+          max-width: 96.5%;
+        }
+      }
+
+      @media screen and (min-width: 1501px) {
+        .knx-info {
+          max-width: 400px;
+        }
+      }
+
       .knx-info {
-        max-width: 400px;
         margin-left: 8px;
         margin-top: 8px;
       }
@@ -211,17 +265,44 @@ export class KNXOverview extends LitElement {
         justify-content: space-between;
       }
 
+      .knx-content-row > div:nth-child(2) {
+        margin-left: 1rem;
+      }
+
       .knx-content-button {
         display: flex;
         flex-direction: row-reverse;
         justify-content: space-between;
       }
 
+      .knx-warning {
+        --mdc-theme-primary: var(--error-color);
+      }
+
+      .knx-project-description {
+        margin-top: -8px;
+        padding: 0px 16px 16px;
+      }
+
+      .knx-delete-project-button {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+      }
+
+      .knx-bug-report {
+        margin-top: 20px;
+      }
+
+      .knx-bug-report > ul > li > a {
+        text-decoration: none;
+        color: var(--mdc-theme-primary);
+      }
+
       ha-file-upload,
       ha-selector-text {
         width: 100%;
-        margin: 8px;
-        margin-top: 0;
+        margin: 0 8px 8px;
       }
     `;
   }

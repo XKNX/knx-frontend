@@ -31,7 +31,9 @@ jobs:
       - name: "Set version number from tag"
         run: |
           echo -n '${{ github.ref_name }}' > ./VERSION
+          sed -i 's/dev/${{ github.ref_name }}/g' ./src/version.ts
           cat ./VERSION
+          cat ./src/version.ts
 
       - name: Install dependencies
         run: |
