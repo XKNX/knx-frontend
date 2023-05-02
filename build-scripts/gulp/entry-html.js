@@ -55,4 +55,8 @@ DEV = ${isDev}
     path.resolve(paths.src_dir, `__init__.py`),
     path.resolve(paths.knx_output_root, `__init__.py`)
   );
+  fs.writeFileSync(
+    path.resolve(paths.knx_output_root, "py.typed"),
+    "",
+  );
 }

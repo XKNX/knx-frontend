@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools~=62.3", "wheel~=0.37.1"]
+requires = ["setuptools~=62.3"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -9,19 +9,20 @@ description  = "KNX panel for Home Assistant"
 keywords     = ["Home Assistant", "KNX"]
 readme       = "README.md"
 authors      = [
-    {name = "Marvin Wichmann", email = "me@marvin-wichmann.de"}
+    {name = "Marvin Wichmann", email = "me@marvin-wichmann.de"},
+    {name = "Matthias Alphart", email = "farmio@alphart.net"},
 ]
 requires-python = ">=3.9.0"
 dynamic = ["version"]
 
 [project.urls]
-homepage = "https://github.com/XKNX/knx-frontend"
+Repository = "https://github.com/XKNX/knx-frontend.git"
 
 [tool.setuptools.dynamic]
 version = {file = "VERSION"}
 
 [tool.setuptools.packages.find]
-where = ["knx_frontend"]
+include = ["knx_frontend*"]
 
 [tool.mypy]
 python_version = 3.9
