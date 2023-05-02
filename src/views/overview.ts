@@ -78,12 +78,12 @@ export class KNXOverview extends LitElement {
                   >
                 </li>
                 <li>
-                  <a href="https://github.com/XKNX/knx-frontend/issues" target="_blank"
+                  <a href="https://github.com/XKNX/xknxproject/issues" target="_blank"
                     >${localize(this.hass!.language, "overview_issue_tracker_xknxproject")}</a
                   >
                 </li>
                 <li>
-                  <a href="https://github.com/XKNX/knx-frontend/issues" target="_blank"
+                  <a href="https://github.com/XKNX/xknx/issues" target="_blank"
                     >${localize(this.hass!.language, "overview_issue_tracker_xknx")}</a
                   >
                 </li>
