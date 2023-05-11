@@ -236,7 +236,7 @@ export class KNXInfo extends LitElement {
         min-width: 400px;
       }
 
-      @media screen and (max-width: 1500px) {
+      @media screen and (max-width: 1300px) {
         .columns {
           flex-direction: column;
         }
@@ -255,7 +255,7 @@ export class KNXInfo extends LitElement {
         }
       }
 
-      @media screen and (min-width: 1501px) {
+      @media screen and (min-width: 1301px) {
         .knx-info {
           max-width: 400px;
         }
