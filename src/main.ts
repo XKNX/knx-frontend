@@ -37,7 +37,7 @@ class KnxFrontend extends knxElement {
 
     makeDialogManager(this, this.shadowRoot!);
     if (this.route.path === "" || this.route.path === "/") {
-      navigate("/knx/overview", { replace: true });
+      navigate("/knx/info", { replace: true });
     }
 
     this._applyTheme();
@@ -61,8 +61,8 @@ class KnxFrontend extends knxElement {
             .selected=${this.route.path}
             @iron-activate=${this.handleNavigationEvent}
           >
-            <paper-tab page-name="/knx/overview">
-              ${localize(this.hass.language, "overview_title")}
+            <paper-tab page-name="/knx/info">
+              ${localize(this.hass.language, "info_title")}
             </paper-tab>
             <paper-tab page-name="/knx/monitor">
               ${localize(this.hass.language, "group_monitor_title")}
