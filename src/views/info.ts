@@ -14,7 +14,7 @@ import { extractApiErrorMessage } from "@ha/data/hassio/common";
 import { showAlertDialog } from "@ha/dialogs/generic/show-dialog-box";
 import { HomeAssistant } from "@ha/types";
 
-import { getKnxInfo, processProjectFile, removeProjectFile } from "../services/websocket.service";
+import { getKnxInfoData, processProjectFile, removeProjectFile } from "../services/websocket.service";
 import { KNXInfoData, KNXProjectInfo } from "../types/websocket";
 import { localize } from "../localize/localize";
 import { KNXLogger } from "../tools/knx-logger";
@@ -28,7 +28,7 @@ export class KNXInfo extends LitElement {
 
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
 
-  @state() private knxInfo: KNXInfoData | null = null;
+  @state() private knxInfoData: KNXInfoData | null = null;
 
   @state() private _projectPassword?: string;
 
@@ -41,7 +41,7 @@ export class KNXInfo extends LitElement {
   }
 
   protected render(): TemplateResult | void {
-    if (!this.knxInfo) {
+    if (!this.knxInfoData) {
       return html`Loading...`;
     }
 
@@ -51,7 +51,7 @@ export class KNXInfo extends LitElement {
           <div class="card-content knx-info-section">
             <div class="knx-content-row">
               <div>XKNX Version</div>
-              <div>${this.knxInfo?.version}</div>
+              <div>${this.knxInfoData?.version}</div>
             </div>
 
             <div class="knx-content-row">
@@ -61,12 +61,12 @@ export class KNXInfo extends LitElement {
 
             <div class="knx-content-row">
               <div>${localize(this.hass!.language, "info_connected_to_bus")}</div>
-              <div>${this.knxInfo?.connected ? "Yes" : "No"}</div>
+              <div>${this.knxInfoData?.connected ? "Yes" : "No"}</div>
             </div>
 
             <div class="knx-content-row">
               <div>${localize(this.hass!.language, "info_individual_address")}</div>
-              <div>${this.knxInfo?.current_address}</div>
+              <div>${this.knxInfoData?.current_address}</div>
             </div>
 
             <div class="knx-bug-report">
@@ -91,7 +91,7 @@ export class KNXInfo extends LitElement {
             </div>
           </div>
         </ha-card>
-        ${this.knxInfo?.project ? this._projectCard(this.knxInfo.project) : nothing}
+        ${this.knxInfoData?.project ? this._projectCard(this.knxInfoData.project) : nothing}
         <ha-card
           class="knx-info"
           .header=${localize(this.hass!.language, "info_project_file_header")}
@@ -155,7 +155,7 @@ export class KNXInfo extends LitElement {
           <ha-button
             class="knx-warning"
             @click=${this._removeProject}
-            .disabled=${this._uploading || !this.knxInfo?.project}
+            .disabled=${this._uploading || !this.knxInfoData?.project}
             >${localize(this.hass!.language, "info_project_delete")}</ha-button
           >
         </div>
@@ -164,13 +164,13 @@ export class KNXInfo extends LitElement {
   }
 
   private loadKnxInfo() {
-    getKnxInfo(this.hass).then(
-      (knxInfo) => {
-        this.knxInfo = knxInfo;
+    getKnxInfoData(this.hass).then(
+      (knxInfoData) => {
+        this.knxInfoData = knxInfoData;
         this.requestUpdate();
       },
       (err) => {
-        logger.error("getKnxInfo", err);
+        logger.error("getKnxInfoData", err);
       }
     );
   }

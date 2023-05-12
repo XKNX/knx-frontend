@@ -1,7 +1,7 @@
 import { HomeAssistant } from "@ha/types";
 import { KNXInfoData, KNXTelegram, GroupMonitorInfo } from "../types/websocket";
 
-export const getKnxInfo = (hass: HomeAssistant): Promise<KNXInfoData> =>
+export const getKnxInfoData = (hass: HomeAssistant): Promise<KNXInfoData> =>
   hass.callWS({
     type: "knx/info",
   });
