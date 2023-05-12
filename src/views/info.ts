@@ -14,7 +14,11 @@ import { extractApiErrorMessage } from "@ha/data/hassio/common";
 import { showAlertDialog } from "@ha/dialogs/generic/show-dialog-box";
 import { HomeAssistant } from "@ha/types";
 
-import { getKnxInfoData, processProjectFile, removeProjectFile } from "../services/websocket.service";
+import {
+  getKnxInfoData,
+  processProjectFile,
+  removeProjectFile,
+} from "../services/websocket.service";
 import { KNXInfoData, KNXProjectInfo } from "../types/websocket";
 import { localize } from "../localize/localize";
 import { KNXLogger } from "../tools/knx-logger";
