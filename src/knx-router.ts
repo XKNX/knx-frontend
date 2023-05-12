@@ -23,13 +23,13 @@ class KnxRouter extends HassRouterPage {
   @state() private _wide = false;
 
   protected routerOptions: RouterOptions = {
-    defaultPage: "overview",
+    defaultPage: "info",
     routes: {
-      overview: {
-        tag: "knx-overview",
+      info: {
+        tag: "knx-info",
         load: () => {
-          logger.info("Importing knx-overview");
-          return import("./views/overview");
+          logger.info("Importing knx-info");
+          return import("./views/info");
         },
       },
       monitor: {

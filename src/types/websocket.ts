@@ -1,4 +1,4 @@
-export interface KNXInfo {
+export interface KNXInfoData {
   version: string;
   connected: boolean;
   current_address: string;
