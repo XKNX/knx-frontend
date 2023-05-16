@@ -66,7 +66,7 @@ module.exports.terserOptions = ({latestBuild, isTestBuild}) => ({
   sourceMap: !isTestBuild,
 });
 
-module.exports.babelOptions = ({ latestBuild, isProdBuild, isTestBuild }) => ({
+module.exports.babelOptions = ({ latestBuild }) => ({
   babelrc: false,
   compact: false,
   presets: [
@@ -109,7 +109,6 @@ module.exports.babelOptions = ({ latestBuild, isProdBuild, isTestBuild }) => ({
     /node_modules[\\/]core-js/,
     /node_modules[\\/]webpack[\\/]buildin/,
   ],
-  sourcemaps: !isTestBuild,
 });
 
 const outputPath = (outputRoot, latestBuild) =>
