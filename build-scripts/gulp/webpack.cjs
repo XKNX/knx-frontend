@@ -4,8 +4,8 @@ const fs = require("fs");
 const gulp = require("gulp");
 const webpack = require("webpack");
 const log = require("fancy-log");
-const paths = require("../paths");
-const { createKNXConfig } = require("../webpack");
+const paths = require("../paths.cjs");
+const { createKNXConfig } = require("../webpack.cjs");
 
 const bothBuilds = (createConfigFunc, params) => [
   createConfigFunc({ ...params, latestBuild: true }),

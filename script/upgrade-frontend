@@ -17,7 +17,7 @@ cd ..
 # rm -f yarn.lock
 
 echo "Merging requirements"
-node ./script/merge_requirements.js
+node ./script/merge_requirements.cjs
 
 echo "Installing modules"
 yarn install

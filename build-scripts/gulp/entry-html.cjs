@@ -3,7 +3,7 @@
 const gulp = require("gulp");
 const fs = require("fs-extra");
 const path = require("path");
-const paths = require("../paths.js");
+const paths = require("../paths.cjs");
 
 gulp.task("gen-index-knx-dev", async () => {
   writeKNXEntrypoint(

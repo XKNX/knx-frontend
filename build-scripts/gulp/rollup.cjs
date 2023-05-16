@@ -7,8 +7,8 @@ const rollup = require("rollup");
 const handler = require("serve-handler");
 const http = require("http");
 const log = require("fancy-log");
-const rollupConfig = require("../rollup");
-const paths = require("../paths");
+const rollupConfig = require("../rollup.cjs");
+const paths = require("../paths.cjs");
 
 const bothBuilds = (createConfigFunc, params) =>
   gulp.series(
@@ -43,7 +43,7 @@ function createServer(serveOptions) {
   });
 }
 
-function watchRollup(createConfig, extraWatchSrc = [], serveOptions) {
+function watchRollup(createConfig, extraWatchSrc = [], serveOptions = null) {
   const { inputOptions, outputOptions } = createConfig({
     isProdBuild: false,
     latestBuild: true,

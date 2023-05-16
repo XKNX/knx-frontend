@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const path = require("path");
-const env = require("./env.js");
-const paths = require("./paths.js");
+const env = require("./env.cjs");
+const paths = require("./paths.cjs");
 
 // Files from NPM Packages that should not be imported
 module.exports.ignorePackages = ({ latestBuild }) => [
@@ -59,13 +59,14 @@ module.exports.definedVars = ({ isProdBuild, latestBuild, defineOverlay }) => ({
   ...defineOverlay,
 });
 
-module.exports.terserOptions = (latestBuild) => ({
+module.exports.terserOptions = ({latestBuild, isTestBuild}) => ({
   safari10: !latestBuild,
   ecma: latestBuild ? undefined : 5,
-  output: { comments: false },
+  format: { comments: false },
+  sourceMap: !isTestBuild,
 });
 
-module.exports.babelOptions = ({ latestBuild }) => ({
+module.exports.babelOptions = ({ latestBuild, isProdBuild, isTestBuild }) => ({
   babelrc: false,
   compact: false,
   presets: [
@@ -73,7 +74,7 @@ module.exports.babelOptions = ({ latestBuild }) => ({
       "@babel/preset-env",
       {
         useBuiltIns: "entry",
-        corejs: "3.15",
+        corejs: "3.30",
         bugfixes: true,
       },
     ],
@@ -81,7 +82,7 @@ module.exports.babelOptions = ({ latestBuild }) => ({
   ].filter(Boolean),
   plugins: [
     [
-      path.resolve(paths.polymer_dir, "build-scripts/babel-plugins/inline-constants-plugin.js"),
+      path.resolve(paths.polymer_dir, "build-scripts/babel-plugins/inline-constants-plugin.cjs"),
       {
         modules: ["@mdi/js"],
         ignoreModuleNotFound: true,
@@ -108,6 +109,7 @@ module.exports.babelOptions = ({ latestBuild }) => ({
     /node_modules[\\/]core-js/,
     /node_modules[\\/]webpack[\\/]buildin/,
   ],
+  sourcemaps: !isTestBuild,
 });
 
 const outputPath = (outputRoot, latestBuild) =>

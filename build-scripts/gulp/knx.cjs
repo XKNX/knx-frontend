@@ -1,12 +1,12 @@
 /* eslint @typescript-eslint/no-var-requires: "off", import/extensions: "off" */
 const gulp = require("gulp");
 
-const env = require("../env");
+const env = require("../env.cjs");
 
-require("./clean.js");
-require("./webpack.js");
-require("./compress.js");
-require("./entry-html.js");
+require("./clean.cjs");
+require("./webpack.cjs");
+require("./compress.cjs");
+require("./entry-html.cjs");
 
 gulp.task(
   "develop-knx",
