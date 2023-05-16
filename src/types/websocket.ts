@@ -11,8 +11,9 @@ export interface KNXProjectInfo {
   tool_version: string;
 }
 
-export interface GroupMonitorInfo {
+export interface GroupMonitorInfoData {
   project_loaded: boolean;
+  recent_telegrams: KNXTelegram[];
 }
 
 export interface KNXTelegram {
@@ -23,6 +24,6 @@ export interface KNXTelegram {
   payload: string;
   type: string;
   direction: string;
-  timestamp: Date;
+  timestamp: string;
   value: string;
 }

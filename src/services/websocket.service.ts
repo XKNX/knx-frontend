@@ -1,5 +1,5 @@
 import { HomeAssistant } from "@ha/types";
-import { KNXInfoData, KNXTelegram, GroupMonitorInfo } from "../types/websocket";
+import { KNXInfoData, KNXTelegram, GroupMonitorInfoData } from "../types/websocket";
 
 export const getKnxInfoData = (hass: HomeAssistant): Promise<KNXInfoData> =>
   hass.callWS({
@@ -22,7 +22,7 @@ export const removeProjectFile = (hass: HomeAssistant): Promise<void> =>
     type: "knx/project_file_remove",
   });
 
-export const getGroupMonitorInfo = (hass: HomeAssistant): Promise<GroupMonitorInfo> =>
+export const getGroupMonitorInfo = (hass: HomeAssistant): Promise<GroupMonitorInfoData> =>
   hass.callWS({
     type: "knx/group_monitor_info",
   });

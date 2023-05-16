@@ -15,7 +15,7 @@ import { haStyle } from "@ha/resources/styles";
 import { HomeAssistant } from "@ha/types";
 
 import { subscribeKnxTelegrams, getGroupMonitorInfo } from "../services/websocket.service";
-import { KNXTelegram, GroupMonitorInfo } from "../types/websocket";
+import { KNXTelegram } from "../types/websocket";
 import { localize } from "../localize/localize";
 import "../table/knx-data-table";
 import { KNXLogger } from "../tools/knx-logger";
@@ -30,7 +30,7 @@ export class KNXGroupMonitor extends LitElement {
 
   @property() private columns: DataTableColumnContainer = {};
 
-  @state() private groupMonitorInfo: GroupMonitorInfo | null = null;
+  @state() private projectLoaded = false;
 
   @state() private subscribed?: () => void;
 
@@ -48,7 +48,10 @@ export class KNXGroupMonitor extends LitElement {
     if (!this.subscribed) {
       getGroupMonitorInfo(this.hass).then(
         (groupMonitorInfo) => {
-          this.groupMonitorInfo = groupMonitorInfo;
+          this.projectLoaded = groupMonitorInfo.project_loaded;
+          this.rows = groupMonitorInfo.recent_telegrams.map((telegram) =>
+            this._telegramToRow(telegram)
+          );
         },
         (err) => {
           logger.error("getGroupMonitorInfo", err);
@@ -59,7 +62,6 @@ export class KNXGroupMonitor extends LitElement {
         this.requestUpdate();
       });
 
-      const has_project_data = this.groupMonitorInfo?.project_loaded;
       //! We need to lateinit this property due to the fact that this.hass needs to be available
       this.columns = {
         timestamp: {
@@ -78,10 +80,10 @@ export class KNXGroupMonitor extends LitElement {
           filterable: true,
           sortable: true,
           title: html`${localize(this.hass!.language, "group_monitor_source")}`,
-          width: this.narrow ? "90px" : has_project_data ? "95px" : "20%",
+          width: this.narrow ? "90px" : this.projectLoaded ? "95px" : "20%",
         },
         sourceText: {
-          hidden: this.narrow || !has_project_data,
+          hidden: this.narrow || !this.projectLoaded,
           filterable: true,
           sortable: true,
           title: html`${localize(this.hass!.language, "group_monitor_source")}`,
@@ -91,10 +93,10 @@ export class KNXGroupMonitor extends LitElement {
           sortable: true,
           filterable: true,
           title: html`${localize(this.hass!.language, "group_monitor_destination")}`,
-          width: this.narrow ? "90px" : has_project_data ? "96px" : "20%",
+          width: this.narrow ? "90px" : this.projectLoaded ? "96px" : "20%",
         },
         destinationText: {
-          hidden: this.narrow || !has_project_data,
+          hidden: this.narrow || !this.projectLoaded,
           sortable: true,
           filterable: true,
           title: html`${localize(this.hass!.language, "group_monitor_destination")}`,
@@ -107,13 +109,13 @@ export class KNXGroupMonitor extends LitElement {
           width: "155px", // 155px suits for "GroupValueResponse"
         },
         payload: {
-          hidden: this.narrow && has_project_data,
+          hidden: this.narrow && this.projectLoaded,
           title: html`${localize(this.hass!.language, "group_monitor_payload")}`,
           filterable: true,
           width: "105px",
         },
         value: {
-          hidden: !has_project_data,
+          hidden: !this.projectLoaded,
           title: html`${localize(this.hass!.language, "group_monitor_value")}`,
           filterable: true,
           width: this.narrow ? "105px" : "150px",
@@ -124,7 +126,12 @@ export class KNXGroupMonitor extends LitElement {
 
   protected telegram_callback(telegram: KNXTelegram): void {
     const rows = [...this.rows];
-    rows.unshift({
+    rows.unshift(this._telegramToRow(telegram));
+    this.rows = rows;
+  }
+
+  protected _telegramToRow(telegram: KNXTelegram): DataTableRowData {
+    return {
       destinationAddress: telegram.destination_address,
       destinationText: telegram.destination_text,
       direction: localize(this.hass!.language || "en", telegram.direction),
@@ -134,8 +141,7 @@ export class KNXGroupMonitor extends LitElement {
       timestamp: telegram.timestamp,
       type: telegram.type,
       value: !this.narrow ? telegram.value : this.narrow_value(telegram),
-    });
-    this.rows = rows;
+    };
   }
 
   protected narrow_value(telegram: KNXTelegram): string {
