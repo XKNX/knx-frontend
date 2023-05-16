@@ -8057,14 +8057,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-visitor-keys@npm:^3.3.0, eslint-visitor-keys@npm:^3.4.0":
-  version: 3.4.0
-  resolution: "eslint-visitor-keys@npm:3.4.0"
-  checksum: 33159169462d3989321a1ec1e9aaaf6a24cc403d5d347e9886d1b5bfe18ffa1be73bdc6203143a28a606b142b1af49787f33cff0d6d0813eb5f2e8d2e1a6043c
-  languageName: node
-  linkType: hard
-
-"eslint-visitor-keys@npm:^3.4.1":
+"eslint-visitor-keys@npm:^3.3.0, eslint-visitor-keys@npm:^3.4.0, eslint-visitor-keys@npm:^3.4.1":
   version: 3.4.1
   resolution: "eslint-visitor-keys@npm:3.4.1"
   checksum: f05121d868202736b97de7d750847a328fcfa8593b031c95ea89425333db59676ac087fa905eba438d0a3c5769632f828187e0c1a0d271832a2153c1d3661c2c
@@ -8121,18 +8114,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"espree@npm:^9.5.1":
-  version: 9.5.1
-  resolution: "espree@npm:9.5.1"
-  dependencies:
-    acorn: ^8.8.0
-    acorn-jsx: ^5.3.2
-    eslint-visitor-keys: ^3.4.0
-  checksum: cdf6e43540433d917c4f2ee087c6e987b2063baa85a1d9cdaf51533d78275ebd5910c42154e7baf8e3e89804b386da0a2f7fad2264d8f04420e7506bf87b3b88
-  languageName: node
-  linkType: hard
-
-"espree@npm:^9.5.2":
+"espree@npm:^9.5.1, espree@npm:^9.5.2":
   version: 9.5.2
   resolution: "espree@npm:9.5.2"
   dependencies:
@@ -11372,18 +11354,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lit@npm:^2.0.0, lit@npm:^2.0.0-rc.2, lit@npm:^2.2.1, lit@npm:^2.3.0, lit@npm:^2.5.0":
-  version: 2.7.3
-  resolution: "lit@npm:2.7.3"
-  dependencies:
-    "@lit/reactive-element": ^1.6.0
-    lit-element: ^3.3.0
-    lit-html: ^2.7.0
-  checksum: 325be0255e8b95ba066d56f3e40dd8530cd423d1687ea6d55b2919df8fb1d63a399be439c5601de65a990dfa9a131d07b2e84a1004b1a52d34ce51569cdf4255
-  languageName: node
-  linkType: hard
-
-"lit@npm:^2.2.8, lit@npm:^2.7.0":
+"lit@npm:^2.0.0, lit@npm:^2.0.0-rc.2, lit@npm:^2.2.1, lit@npm:^2.2.8, lit@npm:^2.3.0, lit@npm:^2.5.0, lit@npm:^2.7.0":
   version: 2.7.4
   resolution: "lit@npm:2.7.4"
   dependencies:
@@ -14954,21 +14925,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"terser@npm:^5.0.0, terser@npm:^5.16.5":
-  version: 5.17.1
-  resolution: "terser@npm:5.17.1"
-  dependencies:
-    "@jridgewell/source-map": ^0.3.2
-    acorn: ^8.5.0
-    commander: ^2.20.0
-    source-map-support: ~0.5.20
-  bin:
-    terser: bin/terser
-  checksum: 69b0e80e3c4084db2819de4d6ae8a2ba79f2fcd7ed6df40fe4b602ec7bfd8e889cc63c7d5268f30990ffecbf6eeda18f857adad9386fe2c2331b398d58ed855c
-  languageName: node
-  linkType: hard
-
-"terser@npm:^5.15.1":
+"terser@npm:^5.0.0, terser@npm:^5.15.1, terser@npm:^5.16.5":
   version: 5.17.4
   resolution: "terser@npm:5.17.4"
   dependencies:
