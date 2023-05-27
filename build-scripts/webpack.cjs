@@ -130,6 +130,20 @@ const createWebpackConfig = ({
           "homeassistant-frontend/src/util/empty.js"
         )
       ),
+      // See `src/resources/intl-polyfill-legacy.ts` for explanation
+      !latestBuild &&
+        new webpack.NormalModuleReplacementPlugin(
+          new RegExp(
+            path.resolve(
+              paths.polymer_dir,
+              "homeassistant-frontend/src/resources/intl-polyfill.ts"
+            )
+          ),
+          path.resolve(
+            paths.polymer_dir,
+            "homeassistant-frontend/src/resources/intl-polyfill-legacy.ts"
+          )
+        ),
       !isProdBuild && new LogStartCompilePlugin(),
     ].filter(Boolean),
     resolve: {

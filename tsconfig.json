@@ -20,6 +20,7 @@
     "skipLibCheck": true,
     // Interop with CommonJS and other tools
     "esModuleInterop": true,
+    "isolatedModules": true,
     "baseUrl": "src",
     "paths": {
       "@ha/*": ["../homeassistant-frontend/src/*"],

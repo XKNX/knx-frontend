@@ -61,7 +61,7 @@ module.exports.definedVars = ({ isProdBuild, latestBuild, defineOverlay }) => ({
 
 module.exports.terserOptions = ({latestBuild, isTestBuild}) => ({
   safari10: !latestBuild,
-  ecma: latestBuild ? undefined : 5,
+  ecma: latestBuild ? 2015 : 5,
   format: { comments: false },
   sourceMap: !isTestBuild,
 });
@@ -69,17 +69,25 @@ module.exports.terserOptions = ({latestBuild, isTestBuild}) => ({
 module.exports.babelOptions = ({ latestBuild }) => ({
   babelrc: false,
   compact: false,
+  assumptions: {
+    privateFieldsAsProperties: true,
+    setPublicClassFields: true,
+    setSpreadProperties: true,
+  },
+  browserslistEnv: latestBuild ? "modern" : "legacy",
+  // Must be unambiguous because some dependencies are CommonJS only
+  sourceType: "unambiguous",
   presets: [
-    !latestBuild && [
+    [
       "@babel/preset-env",
       {
-        useBuiltIns: "entry",
-        corejs: "3.30",
+        useBuiltIns: latestBuild ? false : "entry",
+        corejs: latestBuild ? false : { version: "3.30", proposals: true },
         bugfixes: true,
       },
     ],
     "@babel/preset-typescript",
-  ].filter(Boolean),
+  ],
   plugins: [
     [
       path.resolve(paths.polymer_dir, "build-scripts/babel-plugins/inline-constants-plugin.cjs"),
@@ -88,21 +96,13 @@ module.exports.babelOptions = ({ latestBuild }) => ({
         ignoreModuleNotFound: true,
       },
     ],
-    // Part of ES2018. Converts {...a, b: 2} to Object.assign({}, a, {b: 2})
-    !latestBuild && [
-      "@babel/plugin-proposal-object-rest-spread",
-      { loose: true, useBuiltIns: true },
+    // Import helpers and regenerator from runtime package
+    [
+      "@babel/plugin-transform-runtime",
+      { version: require("../package.json").dependencies["@babel/runtime"] },
     ],
-    // Only support the syntax, Webpack will handle it.
-    "@babel/plugin-syntax-import-meta",
-    "@babel/plugin-syntax-dynamic-import",
-    "@babel/plugin-syntax-top-level-await",
-    "@babel/plugin-proposal-optional-chaining",
-    "@babel/plugin-proposal-nullish-coalescing-operator",
+    // Support  some proposals still in TC39 process
     ["@babel/plugin-proposal-decorators", { decoratorsBeforeExport: true }],
-    ["@babel/plugin-proposal-private-methods", { loose: true }],
-    ["@babel/plugin-proposal-private-property-in-object", { loose: true }],
-    ["@babel/plugin-proposal-class-properties", { loose: true }],
   ].filter(Boolean),
   exclude: [
     // \\ for Windows, / for Mac OS and Linux

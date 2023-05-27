@@ -1,14 +1,14 @@
 // Tasks to run Rollup
 /* eslint @typescript-eslint/no-var-requires: "off", prefer-arrow-callback: "off" */
-const path = require("path");
-const open = require("open");
-const gulp = require("gulp");
-const rollup = require("rollup");
-const handler = require("serve-handler");
-const http = require("http");
-const log = require("fancy-log");
-const rollupConfig = require("../rollup.cjs");
-const paths = require("../paths.cjs");
+import log from "fancy-log";
+import gulp from "gulp";
+import http from "http";
+import open from "open";
+import path from "path";
+import { rollup } from "rollup";
+import handler from "serve-handler";
+import paths from "../paths.cjs";
+import rollupConfig from "../rollup.cjs";
 
 const bothBuilds = (createConfigFunc, params) =>
   gulp.series(
