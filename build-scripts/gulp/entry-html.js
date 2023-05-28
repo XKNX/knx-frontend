@@ -17,7 +17,6 @@ gulp.task("gen-index-knx-dev", async () => {
 gulp.task("gen-index-knx-prod", async () => {
   const latestManifest = fs.readJsonSync(path.resolve(paths.knx_output_latest, "manifest.json"));
   const es5Manifest = fs.readJsonSync(path.resolve(paths.knx_output_es5, "manifest.json"));
-  console.error(latestManifest)
   writeKNXEntrypoint(latestManifest["entrypoint.js"], es5Manifest["entrypoint.js"], "False");
 });
 
