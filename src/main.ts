@@ -65,10 +65,8 @@ class KnxFrontend extends knxElement {
             .selected=${this.route.path}
             @iron-activate=${this.handleNavigationEvent}
           >
-            <paper-tab page-name="/knx/info">
-              ${localize(this.hass.language, "info_title")}
-            </paper-tab>
-            <paper-tab page-name="/knx/monitor">
+            <paper-tab page-name="/info"> ${localize(this.hass.language, "info_title")} </paper-tab>
+            <paper-tab page-name="/monitor">
               ${localize(this.hass.language, "group_monitor_title")}
             </paper-tab>
           </ha-tabs>
@@ -84,7 +82,7 @@ class KnxFrontend extends knxElement {
   }
 
   private handleNavigationEvent(event: any) {
-    const path = event.detail.item.getAttribute("page-name");
+    const path = "/knx" + event.detail.item.getAttribute("page-name");
     navigate(path, { replace: true });
   }
 
@@ -94,6 +92,19 @@ class KnxFrontend extends knxElement {
       css`
         ha-app-layout {
           z-index: 20;
+        }
+
+        app-header {
+          background-color: var(--app-header-background-color);
+          font-weight: 400;
+          color: var(--app-header-text-color, white);
+        }
+
+        ha-tabs {
+          --paper-tabs-selection-bar-color: var(
+            --app-header-selection-bar-color,
+            var(--app-header-text-color, #fff)
+          );
         }
       `,
     ];
