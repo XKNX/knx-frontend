@@ -1,11 +1,11 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
 // Tasks to run webpack.
-const fs = require("fs");
-const gulp = require("gulp");
-const webpack = require("webpack");
-const log = require("fancy-log");
-const paths = require("../paths");
-const { createKNXConfig } = require("../webpack");
+
+import log from "fancy-log";
+import fs from "fs";
+import gulp from "gulp";
+import webpack from "webpack";
+import paths from "../paths.cjs";
+import { createKNXConfig } from "../webpack.cjs";
 
 const bothBuilds = (createConfigFunc, params) => [
   createConfigFunc({ ...params, latestBuild: true }),

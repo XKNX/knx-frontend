@@ -1,10 +1,9 @@
 // Tasks to compress
-/* eslint @typescript-eslint/no-var-requires: "off" */
 
-const gulp = require("gulp");
-const zopfli = require("gulp-zopfli-green");
-const path = require("path");
-const paths = require("../paths");
+import gulp from "gulp";
+import zopfli from "gulp-zopfli-green";
+import path from "path";
+import paths from "../paths.cjs";
 
 const zopfliOptions = { threshold: 150 };
 

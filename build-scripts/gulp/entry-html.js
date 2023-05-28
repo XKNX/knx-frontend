@@ -1,9 +1,10 @@
 // Tasks to generate entry HTML
-/* eslint @typescript-eslint/no-var-requires: "off", import/extensions: "off", import/no-dynamic-require: "off" */
-const gulp = require("gulp");
-const fs = require("fs-extra");
-const path = require("path");
-const paths = require("../paths.js");
+
+import fs from "fs-extra";
+import gulp from "gulp";
+import path from "path";
+import paths from "../paths.cjs";
+
 
 gulp.task("gen-index-knx-dev", async () => {
   writeKNXEntrypoint(
@@ -14,8 +15,8 @@ gulp.task("gen-index-knx-dev", async () => {
 });
 
 gulp.task("gen-index-knx-prod", async () => {
-  const latestManifest = require(path.resolve(paths.knx_output_latest, "manifest.json"));
-  const es5Manifest = require(path.resolve(paths.knx_output_es5, "manifest.json"));
+  const latestManifest = fs.readJsonSync(path.resolve(paths.knx_output_latest, "manifest.json"));
+  const es5Manifest = fs.readJsonSync(path.resolve(paths.knx_output_es5, "manifest.json"));
   writeKNXEntrypoint(latestManifest["entrypoint.js"], es5Manifest["entrypoint.js"], "False");
 });
 

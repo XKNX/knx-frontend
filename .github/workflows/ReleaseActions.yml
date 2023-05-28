@@ -21,13 +21,11 @@ jobs:
         uses: actions/setup-python@v4.6.1
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Set up Node ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v3
+      - name: Setup Node
+        uses: actions/setup-node@v3.6.0
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: ".nvmrc"
           cache: yarn
-
       - name: "Set version number from tag"
         run: |
           echo -n '${{ github.ref_name }}' > ./VERSION

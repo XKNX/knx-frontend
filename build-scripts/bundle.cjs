@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const path = require("path");
-const env = require("./env.js");
-const paths = require("./paths.js");
+const env = require("./env.cjs");
+const paths = require("./paths.cjs");
 
 // Files from NPM Packages that should not be imported
 module.exports.ignorePackages = ({ latestBuild }) => [
@@ -59,49 +59,50 @@ module.exports.definedVars = ({ isProdBuild, latestBuild, defineOverlay }) => ({
   ...defineOverlay,
 });
 
-module.exports.terserOptions = (latestBuild) => ({
+module.exports.terserOptions = ({latestBuild, isTestBuild}) => ({
   safari10: !latestBuild,
-  ecma: latestBuild ? undefined : 5,
-  output: { comments: false },
+  ecma: latestBuild ? 2015 : 5,
+  format: { comments: false },
+  sourceMap: !isTestBuild,
 });
 
 module.exports.babelOptions = ({ latestBuild }) => ({
   babelrc: false,
   compact: false,
+  assumptions: {
+    privateFieldsAsProperties: true,
+    setPublicClassFields: true,
+    setSpreadProperties: true,
+  },
+  browserslistEnv: latestBuild ? "modern" : "legacy",
+  // Must be unambiguous because some dependencies are CommonJS only
+  sourceType: "unambiguous",
   presets: [
-    !latestBuild && [
+    [
       "@babel/preset-env",
       {
-        useBuiltIns: "entry",
-        corejs: "3.15",
+        useBuiltIns: latestBuild ? false : "entry",
+        corejs: latestBuild ? false : { version: "3.30", proposals: true },
         bugfixes: true,
       },
     ],
     "@babel/preset-typescript",
-  ].filter(Boolean),
+  ],
   plugins: [
     [
-      path.resolve(paths.polymer_dir, "build-scripts/babel-plugins/inline-constants-plugin.js"),
+      path.resolve(paths.polymer_dir, "build-scripts/babel-plugins/inline-constants-plugin.cjs"),
       {
         modules: ["@mdi/js"],
         ignoreModuleNotFound: true,
       },
     ],
-    // Part of ES2018. Converts {...a, b: 2} to Object.assign({}, a, {b: 2})
-    !latestBuild && [
-      "@babel/plugin-proposal-object-rest-spread",
-      { loose: true, useBuiltIns: true },
+    // Import helpers and regenerator from runtime package
+    [
+      "@babel/plugin-transform-runtime",
+      { version: require("../package.json").dependencies["@babel/runtime"] },
     ],
-    // Only support the syntax, Webpack will handle it.
-    "@babel/plugin-syntax-import-meta",
-    "@babel/plugin-syntax-dynamic-import",
-    "@babel/plugin-syntax-top-level-await",
-    "@babel/plugin-proposal-optional-chaining",
-    "@babel/plugin-proposal-nullish-coalescing-operator",
+    // Support  some proposals still in TC39 process
     ["@babel/plugin-proposal-decorators", { decoratorsBeforeExport: true }],
-    ["@babel/plugin-proposal-private-methods", { loose: true }],
-    ["@babel/plugin-proposal-private-property-in-object", { loose: true }],
-    ["@babel/plugin-proposal-class-properties", { loose: true }],
   ].filter(Boolean),
   exclude: [
     // \\ for Windows, / for Mac OS and Linux

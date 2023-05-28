@@ -6,8 +6,8 @@ const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 const { WebpackManifestPlugin } = require("webpack-manifest-plugin");
 const log = require("fancy-log");
 const WebpackBar = require("webpackbar");
-const paths = require("./paths.js");
-const bundle = require("./bundle.js");
+const paths = require("./paths.cjs");
+const bundle = require("./bundle.cjs");
 
 class LogStartCompilePlugin {
   ignoredFirst = false;
@@ -57,6 +57,9 @@ const createWebpackConfig = ({
               cacheDirectory: !isProdBuild,
               cacheCompression: false,
             },
+          },
+          resolve: {
+            fullySpecified: false,
           },
         },
         {
@@ -127,6 +130,20 @@ const createWebpackConfig = ({
           "homeassistant-frontend/src/util/empty.js"
         )
       ),
+      // See `src/resources/intl-polyfill-legacy.ts` for explanation
+      !latestBuild &&
+        new webpack.NormalModuleReplacementPlugin(
+          new RegExp(
+            path.resolve(
+              paths.polymer_dir,
+              "homeassistant-frontend/src/resources/intl-polyfill.ts"
+            )
+          ),
+          path.resolve(
+            paths.polymer_dir,
+            "homeassistant-frontend/src/resources/intl-polyfill-legacy.ts"
+          )
+        ),
       !isProdBuild && new LogStartCompilePlugin(),
     ].filter(Boolean),
     resolve: {
