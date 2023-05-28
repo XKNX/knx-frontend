@@ -33,7 +33,7 @@ cd ..
 # KNX Frontend
 
 echo "Merging requirements"
-node ./script/merge_requirements.cjs
+node ./script/merge_requirements.js
 
 echo "Installing modules"
 yarn install
