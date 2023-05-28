@@ -39,3 +39,4 @@ echo "Installing modules"
 yarn install
 
 echo "\nUpdated HA frontend from $previousTag to $newTag"
+echo "Here is the diff: https://github.com/home-assistant/frontend/compare/$previousTag..$newTag"
