@@ -11,13 +11,16 @@ cd homeassistant-frontend
 git fetch --tags
 latestTag=$(git describe --tags `git rev-list --tags --max-count=1`)
 git checkout $latestTag
+
+echo "Installing upstream modules"
+yarn install
+
 cd ..
 
-# echo "Removing yarn.lock"
-# rm -f yarn.lock
+# KNX Frontend
 
 echo "Merging requirements"
 node ./script/merge_requirements.cjs
 
-echo "Installing modules"
+echo "Installing knx-frontend modules"
 yarn install
