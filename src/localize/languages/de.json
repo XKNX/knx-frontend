@@ -9,7 +9,7 @@
   "info_project_data_tool_version": "Tool-Version",
   "info_project_file_header": "KNX Projektdatei",
   "info_project_file": "Projektdatei",
-  "info_project_password": "Password",
+  "info_project_password": "Passwort",
   "info_project_delete": "Projektdaten löschen",
   "info_project_upload": "Upload",
   "info_project_upload_description": "Wir extrahieren Details wie Namen, Gruppenadressen, Geräte, Gruppenobjekte, Topologie und Gebäudestruktur aus deiner Projektdatei. Home Assistant speichert jedoch aus Sicherheitsgründen weder die Projektdatei selbst, noch das optionale Passwort.",
