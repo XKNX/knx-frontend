@@ -1,5 +1,7 @@
 {
   "title": "KNX",
+  "common_yes": "Yes",
+  "common_no": "No",
   "info_title": "Info",
   "info_connected_to_bus": "Connected to bus",
   "info_individual_address": "Individual address",

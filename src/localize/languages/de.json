@@ -1,5 +1,7 @@
 {
   "title": "KNX",
+  "common_yes": "Ja",
+  "common_no": "Nein",
   "info_title": "Info",
   "info_connected_to_bus": "Verbunden",
   "info_individual_address": "Physikalische Adresse",

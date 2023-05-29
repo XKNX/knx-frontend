@@ -51,8 +51,8 @@ export class KNXInfo extends LitElement {
 
     return html`
       <div class="columns">
-        <ha-card 
-          class="knx-info" 
+        <ha-card
+          class="knx-info"
           .header=${localize(this.hass!.language, "info_information_header")}
         >
           <div class="card-content knx-info-section">
@@ -68,7 +68,12 @@ export class KNXInfo extends LitElement {
 
             <div class="knx-content-row">
               <div>${localize(this.hass!.language, "info_connected_to_bus")}</div>
-              <div>${this.knxInfoData?.connected ? "Yes" : "No"}</div>
+              <div>
+                ${localize(
+                  this.hass!.language,
+                  this.knxInfoData?.connected ? "common_yes" : "common_no"
+                )}
+              </div>
             </div>
 
             <div class="knx-content-row">
