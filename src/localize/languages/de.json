@@ -1,7 +1,5 @@
 {
   "title": "KNX",
-  "common_yes": "Ja",
-  "common_no": "Nein",
   "info_title": "Info",
   "info_connected_to_bus": "Verbunden",
   "info_individual_address": "Physikalische Adresse",
@@ -12,9 +10,7 @@
   "info_project_data_tool_version": "Tool-Version",
   "info_project_file_header": "Projektdatei",
   "info_project_file": "Projektdatei",
-  "info_project_password": "Passwort",
   "info_project_delete": "Projektdaten löschen",
-  "info_project_upload": "Upload",
   "info_project_upload_description": "Wir extrahieren Details wie Namen, Gruppenadressen, Geräte, Gruppenobjekte, Topologie und Gebäudestruktur aus deiner Projektdatei. Home Assistant speichert jedoch aus Sicherheitsgründen weder die Projektdatei selbst, noch das optionale Passwort.",
   "info_issue_tracker": "Problemmeldungen und Feature-Requests für ",
   "info_issue_tracker_knx_frontend": "das KNX Frontend Panel",
