@@ -12,7 +12,7 @@
   "info_project_password": "Project password",
   "info_project_delete": "Delete project data",
   "info_project_upload": "Upload",
-  "info_project_upload_description": "We gather details such as names, group addresses, devices, group objects, topology, and building structure from your project file. This information is used by the Group Monitor. However, Home Assistant does not store the project itself nor its optional password for security reasons.",
+  "info_project_upload_description": "We extract details such as names, group addresses, devices, group objects, topology, and building structure from your project file. Home Assistant does not store the project file itself nor its optional password for security reasons.",
   "info_issue_tracker": "Found an issue or feature request for ",
   "info_issue_tracker_knx_frontend": "the KNX frontend panel",
   "info_issue_tracker_xknxproject": "your project data",
