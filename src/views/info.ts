@@ -51,7 +51,10 @@ export class KNXInfo extends LitElement {
 
     return html`
       <div class="columns">
-        <ha-card class="knx-info" header="KNX Information">
+        <ha-card 
+          class="knx-info" 
+          .header=${localize(this.hass!.language, "info_information_header")}
+        >
           <div class="card-content knx-info-section">
             <div class="knx-content-row">
               <div>XKNX Version</div>
@@ -59,7 +62,7 @@ export class KNXInfo extends LitElement {
             </div>
 
             <div class="knx-content-row">
-              <div>KNX Frontend Version</div>
+              <div>KNX-Frontend Version</div>
               <div>${VERSION}</div>
             </div>
 
