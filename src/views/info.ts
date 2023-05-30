@@ -11,7 +11,7 @@ import "@ha/components/ha-file-upload";
 import "@ha/components/ha-selector/ha-selector-text";
 import { uploadFile } from "@ha/data/file_upload";
 import { extractApiErrorMessage } from "@ha/data/hassio/common";
-import { showAlertDialog } from "@ha/dialogs/generic/show-dialog-box";
+import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 import { HomeAssistant } from "@ha/types";
 
 import {
@@ -216,6 +216,14 @@ export class KNXInfo extends LitElement {
   }
 
   private async _removeProject(_ev) {
+    const confirmed = await showConfirmationDialog(this, {
+      text: localize(this.hass!.language, "info_project_delete"),
+    });
+    if (!confirmed) {
+      logger.debug("User cancelled deletion");
+      return;
+    }
+
     try {
       await removeProjectFile(this.hass);
     } catch (err: any) {
