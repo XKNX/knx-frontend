@@ -161,6 +161,7 @@ export class KNXGroupMonitor extends LitElement {
         .data=${this.rows}
         .hasFab=${false}
         .id=${this.id}
+        .searchLabel=${this.hass.localize("ui.components.data-table.search")}
         .dir=${computeRTLDirection(this.hass)}
       >
       </knx-data-table>
