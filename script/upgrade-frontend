@@ -1,5 +1,6 @@
 #!/bin/sh
-# Resolve all frontend dependencies that the application requires to develop.
+# Update homeassistant-frontend submodule.
+# Pass a specific tag to update to that version. If omitted it will update to the latest tag.
 
 # Stop on errors
 set -e
@@ -8,19 +9,34 @@ cd "$(dirname "$0")/.."
 
 echo "Updating frontend submodule"
 cd homeassistant-frontend
-git fetch --tags
-latestTag=$(git describe --tags `git rev-list --tags --max-count=1`)
-git checkout $latestTag
 
-echo "Installing upstream modules"
-yarn install
+previousTag=$(git describe --tags)
+git fetch --tags
+if [ "$1" != "" ]; then
+    tagSource="required"
+    newTag=$1
+else
+    tagSource="latest"
+    newTag=$(git describe --tags `git rev-list --tags --max-count=1`)
+fi
+if [ "$previousTag" == "$newTag" ]; then
+    echo "Skipping update. Already on $tagSource tag: $newTag"
+    exit 0
+fi
+
+git checkout $newTag
+# This has cost me a couple of hours already, so let's make sure node_modules in submodule is gone
+rm -rf node_modules
 
 cd ..
 
 # KNX Frontend
 
 echo "Merging requirements"
-node ./script/merge_requirements.cjs
+node ./script/merge_requirements.js
 
-echo "Installing knx-frontend modules"
+echo "Installing modules"
 yarn install
+
+echo "\nUpdated HA frontend from $previousTag to $newTag"
+echo "Here is the diff: https://github.com/home-assistant/frontend/compare/$previousTag..$newTag"
