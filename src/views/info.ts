@@ -51,7 +51,10 @@ export class KNXInfo extends LitElement {
 
     return html`
       <div class="columns">
-        <ha-card class="knx-info" header="KNX Information">
+        <ha-card
+          class="knx-info"
+          .header=${localize(this.hass!.language, "info_information_header")}
+        >
           <div class="card-content knx-info-section">
             <div class="knx-content-row">
               <div>XKNX Version</div>
@@ -59,13 +62,17 @@ export class KNXInfo extends LitElement {
             </div>
 
             <div class="knx-content-row">
-              <div>KNX Frontend Version</div>
+              <div>KNX-Frontend Version</div>
               <div>${VERSION}</div>
             </div>
 
             <div class="knx-content-row">
               <div>${localize(this.hass!.language, "info_connected_to_bus")}</div>
-              <div>${this.knxInfoData?.connected ? "Yes" : "No"}</div>
+              <div>
+                ${this.hass!.localize(
+                  this.knxInfoData?.connected ? "ui.common.yes" : "ui.common.no"
+                )}
+              </div>
             </div>
 
             <div class="knx-content-row">
@@ -118,7 +125,7 @@ export class KNXInfo extends LitElement {
             <ha-selector-text
               .hass=${this.hass}
               .value=${this._projectPassword || ""}
-              .label=${localize(this.hass!.language, "info_project_password")}
+              .label=${this.hass!.localize("ui.login-form.password")}
               .selector=${{ text: { multiline: false, type: "password" } }}
               .required=${false}
               @value-changed=${this._passwordChanged}
@@ -127,7 +134,7 @@ export class KNXInfo extends LitElement {
           </div>
           <div class="knx-content-button">
             <ha-button @click=${this._uploadFile} .disabled=${this._uploading || !this._projectFile}
-              >${localize(this.hass!.language, "info_project_upload")}</ha-button
+              >${this.hass!.localize("ui.common.submit")}</ha-button
             >
           </div>
         </ha-card>
