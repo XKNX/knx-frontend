@@ -37,6 +37,7 @@ node ./script/merge_requirements.js
 
 echo "Installing modules"
 yarn install
+yarn dedupe
 
 echo "\nUpdated HA frontend from $previousTag to $newTag"
 echo "Here is the diff: https://github.com/home-assistant/frontend/compare/$previousTag..$newTag"
