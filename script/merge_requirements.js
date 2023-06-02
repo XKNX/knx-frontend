@@ -24,6 +24,7 @@ fs.writeFileSync(
         ...packageKnx.devDependenciesOverride,
       },
       resolutions: { ...subdir_resolutions, ...packageKnx.resolutionsOverride },
+      packageManager: packageCore.packageManager,
     },
     null,
     2

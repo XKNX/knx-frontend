@@ -251,5 +251,6 @@
     "@polymer/polymer": "patch:@polymer/polymer@3.5.1#./homeassistant-frontend/.yarn/patches/@polymer/polymer/pr-5569.patch",
     "@material/mwc-button@^0.25.3": "^0.27.0",
     "sortablejs@1.15.0": "patch:sortablejs@npm%3A1.15.0#./homeassistant-frontend/.yarn/patches/sortablejs-npm-1.15.0-f3a393abcc.patch"
-  }
+  },
+  "packageManager": "yarn@3.5.1"
 }
