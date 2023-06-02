@@ -20,16 +20,11 @@
   "author": "Marvin Wichmann <me@marvin-wichmann.de>",
   "license": "MIT",
   "type": "module",
-  "resolutions": {
-    "@polymer/polymer": "patch:@polymer/polymer@3.5.1#./homeassistant-frontend/.yarn/patches/@polymer/polymer/pr-5569.patch",
-    "@material/mwc-button@^0.25.3": "^0.27.0",
-    "sortablejs@1.15.0": "patch:sortablejs@npm%3A1.15.0#./homeassistant-frontend/.yarn/patches/sortablejs-npm-1.15.0-f3a393abcc.patch"
-  },
-  "resolutionsOverride": {},
   "dependenciesOverride": {},
   "devDependenciesOverride": {
     "tsconfig-paths-webpack-plugin": "^4.0.1"
   },
+  "resolutionsOverride": {},
   "dependencies": {
     "@babel/runtime": "7.22.3",
     "@braintree/sanitize-url": "6.0.2",
@@ -251,5 +246,10 @@
     "webpackbar": "5.0.2",
     "workbox-build": "6.6.0",
     "tsconfig-paths-webpack-plugin": "^4.0.1"
+  },
+  "resolutions": {
+    "@polymer/polymer": "patch:@polymer/polymer@3.5.1#./homeassistant-frontend/.yarn/patches/@polymer/polymer/pr-5569.patch",
+    "@material/mwc-button@^0.25.3": "^0.27.0",
+    "sortablejs@1.15.0": "patch:sortablejs@npm%3A1.15.0#./homeassistant-frontend/.yarn/patches/sortablejs-npm-1.15.0-f3a393abcc.patch"
   }
 }

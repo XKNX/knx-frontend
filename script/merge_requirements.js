@@ -18,12 +18,12 @@ fs.writeFileSync(
   JSON.stringify(
     {
       ...packageKnx,
-      resolutions: { ...subdir_resolutions, ...packageKnx.resolutionsOverride },
       dependencies: { ...packageCore.dependencies, ...packageKnx.dependenciesOverride },
       devDependencies: {
         ...packageCore.devDependencies,
         ...packageKnx.devDependenciesOverride,
       },
+      resolutions: { ...subdir_resolutions, ...packageKnx.resolutionsOverride },
     },
     null,
     2
