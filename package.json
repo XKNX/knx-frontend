@@ -236,6 +236,7 @@
     "tar": "6.1.15",
     "terser-webpack-plugin": "5.3.9",
     "ts-lit-plugin": "1.2.1",
+    "tsconfig-paths-webpack-plugin": "^4.0.1",
     "typescript": "4.9.5",
     "vinyl-buffer": "1.0.1",
     "vinyl-source-stream": "2.0.0",
@@ -244,8 +245,7 @@
     "webpack-dev-server": "4.15.0",
     "webpack-manifest-plugin": "5.0.0",
     "webpackbar": "5.0.2",
-    "workbox-build": "6.6.0",
-    "tsconfig-paths-webpack-plugin": "^4.0.1"
+    "workbox-build": "6.6.0"
   },
   "resolutions": {
     "@polymer/polymer": "patch:@polymer/polymer@3.5.1#./homeassistant-frontend/.yarn/patches/@polymer/polymer/pr-5569.patch",
