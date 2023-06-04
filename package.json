@@ -20,19 +20,11 @@
   "author": "Marvin Wichmann <me@marvin-wichmann.de>",
   "license": "MIT",
   "type": "module",
-  "resolutions": {
-    "@polymer/polymer": "patch:@polymer/polymer@3.4.1#./homeassistant-frontend/.yarn/patches/@polymer/polymer/pr-5569.patch",
-    "@material/mwc-button@^0.25.3": "^0.27.0",
-    "sortablejs@1.15.0": "patch:sortablejs@npm%3A1.15.0#./homeassistant-frontend/.yarn/patches/sortablejs-npm-1.15.0-f3a393abcc.patch"
-  },
-  "resolutionsOverride": {
-    "@polymer/polymer": "patch:@polymer/polymer@3.4.1#./homeassistant-frontend/.yarn/patches/@polymer/polymer/pr-5569.patch",
-    "sortablejs@1.15.0": "patch:sortablejs@npm%3A1.15.0#./homeassistant-frontend/.yarn/patches/sortablejs-npm-1.15.0-f3a393abcc.patch"
-  },
   "dependenciesOverride": {},
   "devDependenciesOverride": {
     "tsconfig-paths-webpack-plugin": "^4.0.1"
   },
+  "resolutionsOverride": {},
   "dependencies": {
     "@babel/runtime": "7.22.3",
     "@braintree/sanitize-url": "6.0.2",
@@ -160,8 +152,8 @@
   "devDependencies": {
     "@babel/core": "7.22.1",
     "@babel/plugin-proposal-decorators": "7.22.3",
-    "@babel/plugin-transform-runtime": "7.22.2",
-    "@babel/preset-env": "7.22.2",
+    "@babel/plugin-transform-runtime": "7.22.4",
+    "@babel/preset-env": "7.22.4",
     "@babel/preset-typescript": "7.21.5",
     "@koa/cors": "4.0.0",
     "@octokit/auth-oauth-device": "4.0.4",
@@ -254,5 +246,11 @@
     "webpack-manifest-plugin": "5.0.0",
     "webpackbar": "5.0.2",
     "workbox-build": "6.6.0"
-  }
+  },
+  "resolutions": {
+    "@polymer/polymer": "patch:@polymer/polymer@3.5.1#./homeassistant-frontend/.yarn/patches/@polymer/polymer/pr-5569.patch",
+    "@material/mwc-button@^0.25.3": "^0.27.0",
+    "sortablejs@1.15.0": "patch:sortablejs@npm%3A1.15.0#./homeassistant-frontend/.yarn/patches/sortablejs-npm-1.15.0-f3a393abcc.patch"
+  },
+  "packageManager": "yarn@3.5.1"
 }
