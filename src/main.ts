@@ -14,12 +14,14 @@ import { HomeAssistant, Route } from "@ha/types";
 
 import { knxElement } from "./knx";
 import "./knx-router";
+import { KNX } from "./types/knx";
 import { LocationChangedEvent } from "./types/navigation";
-import { localize } from "./localize/localize";
 
 @customElement("knx-frontend")
 class KnxFrontend extends knxElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
+
+  @property({ attribute: false }) public knx!: KNX;
 
   @property({ attribute: false }) public narrow!: boolean;
 
@@ -57,7 +59,7 @@ class KnxFrontend extends knxElement {
               .hass=${this.hass}
               .narrow=${this.narrow}
             ></ha-menu-button>
-            <div slot="title">${localize(this.hass.language, "title")}</div>
+            <div slot="title">${this.knx.localize("title")}</div>
           </ha-top-app-bar-fixed>
           <ha-tabs
             scrollable
@@ -65,9 +67,9 @@ class KnxFrontend extends knxElement {
             .selected=${this.route.path}
             @iron-activate=${this.handleNavigationEvent}
           >
-            <paper-tab page-name="/info"> ${localize(this.hass.language, "info_title")} </paper-tab>
+            <paper-tab page-name="/info"> ${this.knx.localize("info_title")} </paper-tab>
             <paper-tab page-name="/monitor">
-              ${localize(this.hass.language, "group_monitor_title")}
+              ${this.knx.localize("group_monitor_title")}
             </paper-tab>
           </ha-tabs>
         </app-header>

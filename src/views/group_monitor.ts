@@ -15,8 +15,8 @@ import { haStyle } from "@ha/resources/styles";
 import { HomeAssistant } from "@ha/types";
 
 import { subscribeKnxTelegrams, getGroupMonitorInfo } from "../services/websocket.service";
+import { KNX } from "../types/knx";
 import { KNXTelegram } from "../types/websocket";
-import { localize } from "../localize/localize";
 import "../table/knx-data-table";
 import { KNXLogger } from "../tools/knx-logger";
 
@@ -25,6 +25,8 @@ const logger = new KNXLogger("group_monitor");
 @customElement("knx-group-monitor")
 export class KNXGroupMonitor extends LitElement {
   @property({ type: Object }) public hass!: HomeAssistant;
+
+  @property({ attribute: false }) public knx!: KNX;
 
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
 
@@ -67,56 +69,56 @@ export class KNXGroupMonitor extends LitElement {
         timestamp: {
           filterable: true,
           sortable: true,
-          title: html`${localize(this.hass!.language, "group_monitor_time")}`,
+          title: html`${this.knx.localize("group_monitor_time")}`,
           width: "110px",
         },
         direction: {
           hidden: this.narrow,
           filterable: true,
-          title: html`${localize(this.hass!.language, "group_monitor_direction")}`,
+          title: html`${this.knx.localize("group_monitor_direction")}`,
           width: "90px",
         },
         sourceAddress: {
           filterable: true,
           sortable: true,
-          title: html`${localize(this.hass!.language, "group_monitor_source")}`,
+          title: html`${this.knx.localize("group_monitor_source")}`,
           width: this.narrow ? "90px" : this.projectLoaded ? "95px" : "20%",
         },
         sourceText: {
           hidden: this.narrow || !this.projectLoaded,
           filterable: true,
           sortable: true,
-          title: html`${localize(this.hass!.language, "group_monitor_source")}`,
+          title: html`${this.knx.localize("group_monitor_source")}`,
           width: "20%",
         },
         destinationAddress: {
           sortable: true,
           filterable: true,
-          title: html`${localize(this.hass!.language, "group_monitor_destination")}`,
+          title: html`${this.knx.localize("group_monitor_destination")}`,
           width: this.narrow ? "90px" : this.projectLoaded ? "96px" : "20%",
         },
         destinationText: {
           hidden: this.narrow || !this.projectLoaded,
           sortable: true,
           filterable: true,
-          title: html`${localize(this.hass!.language, "group_monitor_destination")}`,
+          title: html`${this.knx.localize("group_monitor_destination")}`,
           width: "20%",
         },
         type: {
           hidden: this.narrow,
-          title: html`${localize(this.hass!.language, "group_monitor_type")}`,
+          title: html`${this.knx.localize("group_monitor_type")}`,
           filterable: true,
           width: "155px", // 155px suits for "GroupValueResponse"
         },
         payload: {
           hidden: this.narrow && this.projectLoaded,
-          title: html`${localize(this.hass!.language, "group_monitor_payload")}`,
+          title: html`${this.knx.localize("group_monitor_payload")}`,
           filterable: true,
           width: "105px",
         },
         value: {
           hidden: !this.projectLoaded,
-          title: html`${localize(this.hass!.language, "group_monitor_value")}`,
+          title: html`${this.knx.localize("group_monitor_value")}`,
           filterable: true,
           width: this.narrow ? "105px" : "150px",
         },
@@ -134,7 +136,7 @@ export class KNXGroupMonitor extends LitElement {
     return {
       destinationAddress: telegram.destination_address,
       destinationText: telegram.destination_text,
-      direction: localize(this.hass!.language || "en", telegram.direction),
+      direction: this.knx.localize(telegram.direction),
       payload: telegram.payload,
       sourceAddress: telegram.source_address,
       sourceText: telegram.source_text,
@@ -156,8 +158,8 @@ export class KNXGroupMonitor extends LitElement {
         .hass=${this.hass}
         .columns=${this.columns}
         .noDataText=${this.subscribed
-          ? localize(this.hass.language, "group_monitor_connected_waiting_telegrams")
-          : localize(this.hass.language, "group_monitor_waiting_to_connect")}
+          ? this.knx.localize("group_monitor_connected_waiting_telegrams")
+          : this.knx.localize("group_monitor_waiting_to_connect")}
         .data=${this.rows}
         .hasFab=${false}
         .id=${this.id}

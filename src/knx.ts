@@ -24,14 +24,14 @@ export class knxElement extends ProvideHassLitMixin(LitElement) {
     getConfigEntries(this.hass).then((configEntries) => {
       const knxEntry = configEntries.filter((entry) => entry.domain === "knx")[0];
       this.knx = {
-        language: "en",
+        language: this.hass.language,
         updates: [],
         resources: [],
         removed: [],
         sections: [],
         config_entry: knxEntry,
         localize: (string: string, replace?: Record<string, any>) =>
-          localize(this.knx?.language || "en", string, replace),
+          localize(this.knx.language || "en", string, replace),
         log: new KNXLogger(),
       };
     });
