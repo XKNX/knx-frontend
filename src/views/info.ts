@@ -2,10 +2,7 @@ import { mdiFileUpload } from "@mdi/js";
 import { css, nothing, html, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
-import "@ha/components/ha-button-menu";
 import "@ha/components/ha-card";
-import "@ha/layouts/ha-app-layout";
-import "@ha/layouts/hass-subpage";
 import "@ha/components/ha-button";
 import "@ha/components/ha-file-upload";
 import "@ha/components/ha-selector/ha-selector-text";

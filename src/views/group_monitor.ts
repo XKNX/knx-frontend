@@ -2,15 +2,10 @@ import { css, html, CSSResultGroup, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
 import { computeRTLDirection } from "@ha/common/util/compute_rtl";
-import "@ha/components/data-table/ha-data-table";
 import type {
   DataTableColumnContainer,
   DataTableRowData,
 } from "@ha/components/data-table/ha-data-table";
-import "@ha/components/ha-button-menu";
-import "@ha/components/ha-card";
-import "@ha/layouts/ha-app-layout";
-import "@ha/layouts/hass-subpage";
 import { haStyle } from "@ha/resources/styles";
 import { HomeAssistant } from "@ha/types";
 
