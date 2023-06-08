@@ -16,8 +16,9 @@ import {
   processProjectFile,
   removeProjectFile,
 } from "../services/websocket.service";
+
+import { KNX } from "../types/knx";
 import { KNXInfoData, KNXProjectInfo } from "../types/websocket";
-import { localize } from "../localize/localize";
 import { KNXLogger } from "../tools/knx-logger";
 import { VERSION } from "../version";
 
@@ -26,6 +27,8 @@ const logger = new KNXLogger("info");
 @customElement("knx-info")
 export class KNXInfo extends LitElement {
   @property({ type: Object }) public hass!: HomeAssistant;
+
+  @property({ attribute: false }) public knx!: KNX;
 
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
 
@@ -48,10 +51,7 @@ export class KNXInfo extends LitElement {
 
     return html`
       <div class="columns">
-        <ha-card
-          class="knx-info"
-          .header=${localize(this.hass!.language, "info_information_header")}
-        >
+        <ha-card class="knx-info" .header=${this.knx.localize("info_information_header")}>
           <div class="card-content knx-info-section">
             <div class="knx-content-row">
               <div>XKNX Version</div>
@@ -64,35 +64,35 @@ export class KNXInfo extends LitElement {
             </div>
 
             <div class="knx-content-row">
-              <div>${localize(this.hass!.language, "info_connected_to_bus")}</div>
+              <div>${this.knx.localize("info_connected_to_bus")}</div>
               <div>
-                ${this.hass!.localize(
+                ${this.hass.localize(
                   this.knxInfoData?.connected ? "ui.common.yes" : "ui.common.no"
                 )}
               </div>
             </div>
 
             <div class="knx-content-row">
-              <div>${localize(this.hass!.language, "info_individual_address")}</div>
+              <div>${this.knx.localize("info_individual_address")}</div>
               <div>${this.knxInfoData?.current_address}</div>
             </div>
 
             <div class="knx-bug-report">
-              <div>${localize(this.hass!.language, "info_issue_tracker")}</div>
+              <div>${this.knx.localize("info_issue_tracker")}</div>
               <ul>
                 <li>
                   <a href="https://github.com/XKNX/knx-frontend/issues" target="_blank"
-                    >${localize(this.hass!.language, "info_issue_tracker_knx_frontend")}</a
+                    >${this.knx.localize("info_issue_tracker_knx_frontend")}</a
                   >
                 </li>
                 <li>
                   <a href="https://github.com/XKNX/xknxproject/issues" target="_blank"
-                    >${localize(this.hass!.language, "info_issue_tracker_xknxproject")}</a
+                    >${this.knx.localize("info_issue_tracker_xknxproject")}</a
                   >
                 </li>
                 <li>
                   <a href="https://github.com/XKNX/xknx/issues" target="_blank"
-                    >${localize(this.hass!.language, "info_issue_tracker_xknx")}</a
+                    >${this.knx.localize("info_issue_tracker_xknx")}</a
                   >
                 </li>
               </ul>
@@ -100,19 +100,16 @@ export class KNXInfo extends LitElement {
           </div>
         </ha-card>
         ${this.knxInfoData?.project ? this._projectCard(this.knxInfoData.project) : nothing}
-        <ha-card
-          class="knx-info"
-          .header=${localize(this.hass!.language, "info_project_file_header")}
-        >
+        <ha-card class="knx-info" .header=${this.knx.localize("info_project_file_header")}>
           <div class="knx-project-description">
-            ${localize(this.hass!.language, "info_project_upload_description")}
+            ${this.knx.localize("info_project_upload_description")}
           </div>
           <div class="knx-content-row">
             <ha-file-upload
               .hass=${this.hass}
               accept=".knxproj"
               .icon=${mdiFileUpload}
-              .label=${localize(this.hass!.language, "info_project_file")}
+              .label=${this.knx.localize("info_project_file")}
               .value=${this._projectFile?.name}
               .uploading=${this._uploading}
               @file-picked=${this._filePicked}
@@ -122,7 +119,7 @@ export class KNXInfo extends LitElement {
             <ha-selector-text
               .hass=${this.hass}
               .value=${this._projectPassword || ""}
-              .label=${this.hass!.localize("ui.login-form.password")}
+              .label=${this.hass.localize("ui.login-form.password")}
               .selector=${{ text: { multiline: false, type: "password" } }}
               .required=${false}
               @value-changed=${this._passwordChanged}
@@ -131,7 +128,7 @@ export class KNXInfo extends LitElement {
           </div>
           <div class="knx-content-button">
             <ha-button @click=${this._uploadFile} .disabled=${this._uploading || !this._projectFile}
-              >${this.hass!.localize("ui.common.submit")}</ha-button
+              >${this.hass.localize("ui.common.submit")}</ha-button
             >
           </div>
         </ha-card>
@@ -141,21 +138,18 @@ export class KNXInfo extends LitElement {
 
   private _projectCard(projectInfo: KNXProjectInfo) {
     return html`
-      <ha-card
-        class="knx-info"
-        .header=${localize(this.hass!.language, "info_project_data_header")}
-      >
+      <ha-card class="knx-info" .header=${this.knx.localize("info_project_data_header")}>
         <div class="card-content knx-info-section">
           <div class="knx-content-row">
-            <div>${localize(this.hass!.language, "info_project_data_name")}</div>
+            <div>${this.knx.localize("info_project_data_name")}</div>
             <div>${projectInfo.name}</div>
           </div>
           <div class="knx-content-row">
-            <div>${localize(this.hass!.language, "info_project_data_last_modified")}</div>
+            <div>${this.knx.localize("info_project_data_last_modified")}</div>
             <div>${new Date(projectInfo.last_modified).toUTCString()}</div>
           </div>
           <div class="knx-content-row">
-            <div>${localize(this.hass!.language, "info_project_data_tool_version")}</div>
+            <div>${this.knx.localize("info_project_data_tool_version")}</div>
             <div>${projectInfo.tool_version}</div>
           </div>
         </div>
@@ -164,7 +158,7 @@ export class KNXInfo extends LitElement {
             class="knx-warning"
             @click=${this._removeProject}
             .disabled=${this._uploading || !this.knxInfoData?.project}
-            >${localize(this.hass!.language, "info_project_delete")}</ha-button
+            >${this.knx.localize("info_project_delete")}</ha-button
           >
         </div>
       </ha-card>
@@ -221,7 +215,7 @@ export class KNXInfo extends LitElement {
 
   private async _removeProject(_ev) {
     const confirmed = await showConfirmationDialog(this, {
-      text: localize(this.hass!.language, "info_project_delete"),
+      text: this.knx.localize("info_project_delete"),
     });
     if (!confirmed) {
       logger.debug("User cancelled deletion");
