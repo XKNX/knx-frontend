@@ -44,9 +44,9 @@ export class KNXGroupMonitor extends LitElement {
       getGroupMonitorInfo(this.hass).then(
         (groupMonitorInfo) => {
           this.projectLoaded = groupMonitorInfo.project_loaded;
-          this.rows = groupMonitorInfo.recent_telegrams.map((telegram) =>
-            this._telegramToRow(telegram)
-          );
+          this.rows = groupMonitorInfo.recent_telegrams
+            .reverse()
+            .map((telegram, index) => this._telegramToRow(telegram, index));
         },
         (err) => {
           logger.error("getGroupMonitorInfo", err);
@@ -59,6 +59,14 @@ export class KNXGroupMonitor extends LitElement {
 
       //! We need to lateinit this property due to the fact that this.hass needs to be available
       this.columns = {
+        rowIndex: {
+          hidden: this.narrow,
+          title: "#",
+          sortable: true,
+          direction: "desc",
+          type: "numeric",
+          width: "60px", // 4 digits
+        },
         timestamp: {
           filterable: true,
           sortable: true,
@@ -107,6 +115,7 @@ export class KNXGroupMonitor extends LitElement {
           hidden: this.narrow && this.projectLoaded,
           title: html`${localize(this.hass!.language, "group_monitor_payload")}`,
           filterable: true,
+          type: "numeric",
           width: "105px",
         },
         value: {
@@ -121,12 +130,13 @@ export class KNXGroupMonitor extends LitElement {
 
   protected telegram_callback(telegram: KNXTelegram): void {
     const rows = [...this.rows];
-    rows.unshift(this._telegramToRow(telegram));
+    rows.push(this._telegramToRow(telegram, rows.length));
     this.rows = rows;
   }
 
-  protected _telegramToRow(telegram: KNXTelegram): DataTableRowData {
+  protected _telegramToRow(telegram: KNXTelegram, index: number): DataTableRowData {
     return {
+      rowIndex: index,
       destinationAddress: telegram.destination_address,
       destinationText: telegram.destination_text,
       direction: localize(this.hass!.language || "en", telegram.direction),
@@ -155,9 +165,9 @@ export class KNXGroupMonitor extends LitElement {
           : localize(this.hass.language, "group_monitor_waiting_to_connect")}
         .data=${this.rows}
         .hasFab=${false}
-        .id=${this.id}
         .searchLabel=${this.hass.localize("ui.components.data-table.search")}
         .dir=${computeRTLDirection(this.hass)}
+        id="rowIndex"
       >
       </knx-data-table>
     `;
