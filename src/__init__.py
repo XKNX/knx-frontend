@@ -1,5 +1,5 @@
 """KNX Frontend."""
-from .constants import DEV, FILE_HASH
+from .constants import FILE_HASH
 
 
 def locate_dir() -> str:
@@ -8,7 +8,15 @@ def locate_dir() -> str:
 
 
 def get_build_id() -> str:
-    """Get the KNX panel build id."""
-    if DEV:
-        return "dev"
+    """Get the panel build id."""
     return FILE_HASH
+
+
+def is_dev_build() -> bool:
+    """Check if this is a dev build."""
+    return FILE_HASH == "dev"
+
+
+def entrypoint_js() -> str:
+    """Return the name of the entrypoint js file."""
+    return f"entrypoint-{FILE_HASH}.js"
