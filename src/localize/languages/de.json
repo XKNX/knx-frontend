@@ -16,7 +16,7 @@
   "info_issue_tracker_knx_frontend": "das KNX Frontend Panel",
   "info_issue_tracker_xknxproject": "das Auslesen der Projektdaten",
   "info_issue_tracker_xknx": "die KNX Verbindung oder DPT Dekodierung",
-  "group_monitor_title": "Grouppenmonitor",
+  "group_monitor_title": "Gruppenmonitor",
   "group_monitor_incoming": "Eingehend",
   "group_monitor_outgoing": "Ausgehend",
   "group_monitor_time": "Zeit",
