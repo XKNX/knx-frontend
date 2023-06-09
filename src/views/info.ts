@@ -107,7 +107,7 @@ export class KNXInfo extends LitElement {
           <div class="knx-content-row">
             <ha-file-upload
               .hass=${this.hass}
-              accept=".knxproj"
+              accept=".knxproj, .knxprojarchive"
               .icon=${mdiFileUpload}
               .label=${this.knx.localize("info_project_file")}
               .value=${this._projectFile?.name}
