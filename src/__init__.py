@@ -1,4 +1,6 @@
 """KNX Frontend."""
+from typing import Final
+
 from .constants import FILE_HASH
 
 
@@ -7,16 +9,11 @@ def locate_dir() -> str:
     return __path__[0]
 
 
-def get_build_id() -> str:
-    """Get the panel build id."""
-    return FILE_HASH
+# Filename of the entrypoint.js to import the panel
+entrypoint_js: Final = f"entrypoint-{FILE_HASH}.js"
 
+# The webcomponent name that loads the panel (main.ts)
+webcomponent_name: Final = "knx-frontend"
 
-def is_dev_build() -> bool:
-    """Check if this is a dev build."""
-    return FILE_HASH == "dev"
-
-
-def entrypoint_js() -> str:
-    """Return the name of the entrypoint js file."""
-    return f"entrypoint-{FILE_HASH}.js"
+is_dev_build: Final = FILE_HASH == "dev"
+is_prod_build: Final = not is_dev_build
