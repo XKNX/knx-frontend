@@ -8,7 +8,9 @@ import type {
 } from "@ha/components/data-table/ha-data-table";
 import { haStyle } from "@ha/resources/styles";
 import { HomeAssistant } from "@ha/types";
+import { showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 
+import { loadKnxTelegramInfoDialog, showTelegramInfoDialog } from "dialogs/show-knx-dialog";
 import { subscribeKnxTelegrams, getGroupMonitorInfo } from "../services/websocket.service";
 import { KNX } from "../types/knx";
 import { KNXTelegram } from "../types/websocket";
@@ -42,6 +44,7 @@ export class KNXGroupMonitor extends LitElement {
   }
 
   protected async firstUpdated() {
+    loadKnxTelegramInfoDialog();
     if (!this.subscribed) {
       getGroupMonitorInfo(this.hass).then(
         (groupMonitorInfo) => {
@@ -158,6 +161,7 @@ export class KNXGroupMonitor extends LitElement {
   }
 
   protected render(): TemplateResult | void {
+    logger.debug("render", this.rows.length);
     return html`
       <knx-data-table
         .hass=${this.hass}
@@ -170,9 +174,17 @@ export class KNXGroupMonitor extends LitElement {
         .searchLabel=${this.hass.localize("ui.components.data-table.search")}
         .dir=${computeRTLDirection(this.hass)}
         id="rowIndex"
+        .clickable=${true}
+        @row-click=${this._rowClicked}
       >
       </knx-data-table>
     `;
+  }
+
+  private async _rowClicked(ev: CustomEvent): Promise<void> {
+    const rowId: number = ev.detail.id;
+    logger.debug("Row clicked", rowId, this.rows[rowId]);
+    showTelegramInfoDialog(this, { rowId: rowId });
   }
 
   static get styles(): CSSResultGroup {
