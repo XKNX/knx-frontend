@@ -8,6 +8,8 @@ import { HomeAssistant } from "@ha/types";
 
 import type { TelegramInfoDialogParams } from "./show-knx-dialog";
 import { KNXLogger } from "../tools/knx-logger";
+import { HaDialog } from "@ha/components/ha-dialog";
+import { HaDialogHeader } from "@ha/components/ha-dialog-header";
 
 const logger = new KNXLogger("knx-telegram-info-dialog");
 
@@ -38,12 +40,31 @@ class TelegramInfoDialog extends LitElement {
     if (this._rowId == null) {
       return nothing;
     }
-    return html` <ha-dialog>Hello</ha-dialog>`;
+    return html`<ha-dialog
+        open
+        scrimClickAction
+        heading="Test"
+      >
+        <ha-dialog-header slot="heading">
+          <ha-icon-button
+            slot="navigationIcon"
+            dialogAction="cancel"
+            .label=${this.hass.localize("ui.common.close")}
+          ></ha-icon-button>
+          <span slot="title">Test</span>
+        </ha-dialog-header>
+        <div class="content">
+          <div class="element-preview">
+          </div>
+        </div>
+    </ha-dialog>`;
   }
 
   static get styles() {
     return [
       haStyleDialog,
+      HaDialog.styles,
+      HaDialogHeader.styles,
       css`
         ha-dialog {
           /* Set the top top of the dialog to a fixed position, so it doesnt jump when the content changes size */
@@ -53,6 +74,7 @@ class TelegramInfoDialog extends LitElement {
           --dialog-surface-position: static;
           --dialog-content-position: static;
           --dialog-content-padding: 0;
+          --dialog-z-index: 20;
           --chart-base-position: static;
         }
 
