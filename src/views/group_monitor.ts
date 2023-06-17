@@ -33,6 +33,8 @@ export class KNXGroupMonitor extends LitElement {
 
   @state() private subscribed?: () => void;
 
+  @state() private telegrams: KNXTelegram[] = [];
+
   @state() private rows: DataTableRowData[] = [];
 
   public disconnectedCallback() {
@@ -49,9 +51,8 @@ export class KNXGroupMonitor extends LitElement {
       getGroupMonitorInfo(this.hass).then(
         (groupMonitorInfo) => {
           this.projectLoaded = groupMonitorInfo.project_loaded;
-          this.rows = groupMonitorInfo.recent_telegrams
-            .reverse()
-            .map((telegram, index) => this._telegramToRow(telegram, index));
+          this.telegrams = groupMonitorInfo.recent_telegrams.reverse();
+          this.rows = this.telegrams.map((telegram, index) => this._telegramToRow(telegram, index));
         },
         (err) => {
           logger.error("getGroupMonitorInfo", err);
@@ -64,7 +65,7 @@ export class KNXGroupMonitor extends LitElement {
 
       //! We need to lateinit this property due to the fact that this.hass needs to be available
       this.columns = {
-        rowIndex: {
+        index: {
           hidden: this.narrow,
           title: "#",
           sortable: true,
@@ -134,6 +135,7 @@ export class KNXGroupMonitor extends LitElement {
   }
 
   protected telegram_callback(telegram: KNXTelegram): void {
+    this.telegrams.push(telegram);
     const rows = [...this.rows];
     rows.push(this._telegramToRow(telegram, rows.length));
     this.rows = rows;
@@ -141,7 +143,7 @@ export class KNXGroupMonitor extends LitElement {
 
   protected _telegramToRow(telegram: KNXTelegram, index: number): DataTableRowData {
     return {
-      rowIndex: index,
+      index: index,
       destinationAddress: telegram.destination_address,
       destinationText: telegram.destination_text,
       direction: this.knx.localize(telegram.direction),
@@ -173,7 +175,7 @@ export class KNXGroupMonitor extends LitElement {
         .hasFab=${false}
         .searchLabel=${this.hass.localize("ui.components.data-table.search")}
         .dir=${computeRTLDirection(this.hass)}
-        id="rowIndex"
+        id="index"
         .clickable=${true}
         @row-click=${this._rowClicked}
       >
@@ -182,9 +184,24 @@ export class KNXGroupMonitor extends LitElement {
   }
 
   private async _rowClicked(ev: CustomEvent): Promise<void> {
-    const rowId: number = ev.detail.id;
-    logger.debug("Row clicked", rowId, this.rows[rowId]);
-    showTelegramInfoDialog(this, { rowId: rowId });
+    const telegramIndex: number = ev.detail.id;
+    logger.debug("Row clicked", telegramIndex);
+    this._showTelegramDetails(telegramIndex);
+  }
+
+  private _showTelegramDetails(index: number): void {
+    showTelegramInfoDialog(this, {
+      index,
+      next: () => {
+        logger.debug("next");
+        this._showTelegramDetails(index + 1);
+      },
+      previous: () => {
+        logger.debug("previous");
+        this._showTelegramDetails(index - 1);
+      },
+      telegram: this.telegrams[index],
+    });
   }
 
   static get styles(): CSSResultGroup {

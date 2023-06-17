@@ -1,10 +1,14 @@
 import { fireEvent } from "@ha/common/dom/fire_event";
+import { KNXTelegram } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("show-knx-dialog");
 
 export interface TelegramInfoDialogParams {
-  rowId: number | null;
+  index: number;
+  next: () => void;
+  previous: () => void;
+  telegram: KNXTelegram;
 }
 export const loadKnxTelegramInfoDialog = () => import("./knx-telegram-info-dialog");
 

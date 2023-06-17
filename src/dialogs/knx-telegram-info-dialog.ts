@@ -1,3 +1,4 @@
+import "@material/mwc-button/mwc-button";
 import { LitElement, nothing, html, css } from "lit";
 import { customElement, state, property } from "lit/decorators";
 
@@ -8,7 +9,8 @@ import { HomeAssistant } from "@ha/types";
 
 import type { TelegramInfoDialogParams } from "./show-knx-dialog";
 import { KNXLogger } from "../tools/knx-logger";
-import { HaDialog } from "@ha/components/ha-dialog";
+import { KNXTelegram } from "../types/websocket";
+import { HaDialog, createCloseHeading } from "@ha/components/ha-dialog";
 import { HaDialogHeader } from "@ha/components/ha-dialog-header";
 
 const logger = new KNXLogger("knx-telegram-info-dialog");
@@ -17,46 +19,54 @@ const logger = new KNXLogger("knx-telegram-info-dialog");
 class TelegramInfoDialog extends LitElement {
   public hass!: HomeAssistant;
 
-  @state() private _rowId?: number | null = null;
+  @state() private _params?: TelegramInfoDialogParams;
 
   public showDialog(params: TelegramInfoDialogParams) {
     logger.debug("showDialog", params);
-    this._rowId = params.rowId;
-    if (this._rowId === null) {
+    this._params = params;
+    if (this._params == null) {
       this.closeDialog();
       return;
     }
-    logger.debug("showDialog - showing dialog", this._rowId);
+    logger.debug("showDialog - showing dialog", this._params.index);
   }
 
   public closeDialog() {
     logger.debug("closeDialog");
-    this._rowId = undefined;
+    this._params = undefined;
     fireEvent(this, "dialog-closed", { dialog: this.localName });
   }
 
   protected render() {
-    logger.debug("render info dialog", this._rowId);
-    if (this._rowId == null) {
+    logger.debug("render info dialog", this._params?.index);
+    if (this._params == null) {
       return nothing;
     }
     return html`<ha-dialog
-        open
-        scrimClickAction
-        heading="Test"
+      open
+      @closed=${this.closeDialog}
+      .heading=${createCloseHeading(this.hass, "Telegram " + this._params.index)}
+    >
+      <div class="content">
+        <div>Source address ${this._params.telegram.source_address}</div>
+        <div>Source text ${this._params.telegram.source_text}</div>
+        <div>Destination address ${this._params.telegram.destination_address}</div>
+        <div>Destination text ${this._params.telegram.destination_text}</div>
+      </div>
+      <mwc-button
+        slot="secondaryAction"
+        @click=${this._params.previous}
+        .disabled=${this._params.previous == null}
       >
-        <ha-dialog-header slot="heading">
-          <ha-icon-button
-            slot="navigationIcon"
-            dialogAction="cancel"
-            .label=${this.hass.localize("ui.common.close")}
-          ></ha-icon-button>
-          <span slot="title">Test</span>
-        </ha-dialog-header>
-        <div class="content">
-          <div class="element-preview">
-          </div>
-        </div>
+        ${this.hass.localize("ui.common.previous")}
+      </mwc-button>
+      <mwc-button
+        slot="primaryAction"
+        @click=${this._params.next}
+        .disabled=${this._params.next == null}
+      >
+        ${this.hass.localize("ui.common.next")}
+      </mwc-button>
     </ha-dialog>`;
   }
 
@@ -70,12 +80,7 @@ class TelegramInfoDialog extends LitElement {
           /* Set the top top of the dialog to a fixed position, so it doesnt jump when the content changes size */
           --vertical-align-dialog: flex-start;
           --dialog-surface-margin-top: 40px;
-          /* This is needed for the tooltip of the history charts to be positioned correctly */
-          --dialog-surface-position: static;
-          --dialog-content-position: static;
-          --dialog-content-padding: 0;
           --dialog-z-index: 20;
-          --chart-base-position: static;
         }
 
         .content {
