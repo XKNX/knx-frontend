@@ -19,55 +19,86 @@ const logger = new KNXLogger("knx-telegram-info-dialog");
 class TelegramInfoDialog extends LitElement {
   public hass!: HomeAssistant;
 
-  @state() private _params?: TelegramInfoDialogParams;
+  @property() private _telegram?: KNXTelegram;
+
+  @property() private _index?: number;
+
+  @property() private _previous?: (prevIndex: number) => TelegramInfoDialogParams;
+
+  @property() private _next?: (prevIndex: number) => TelegramInfoDialogParams;
 
   public showDialog(params: TelegramInfoDialogParams) {
     logger.debug("showDialog", params);
-    this._params = params;
-    if (this._params == null) {
+    this._updateDialog(params);
+    if (this._telegram == null || this._index == null) {
       this.closeDialog();
       return;
     }
-    logger.debug("showDialog - showing dialog", this._params.index);
+    logger.debug("showDialog - showing dialog", this._index);
+  }
+
+  private _updateDialog(params: TelegramInfoDialogParams) {
+    this._telegram = params.telegram;
+    this._index = params.index;
+    this._previous = params.previous;
+    this._next = params.next;
   }
 
   public closeDialog() {
     logger.debug("closeDialog");
-    this._params = undefined;
+    this._telegram = undefined;
+    this._index = undefined;
     fireEvent(this, "dialog-closed", { dialog: this.localName });
   }
 
   protected render() {
-    logger.debug("render info dialog", this._params?.index);
-    if (this._params == null) {
+    logger.debug("render info dialog", this._index);
+    if (this._telegram == null) {
+      this.closeDialog();
       return nothing;
     }
     return html`<ha-dialog
       open
       @closed=${this.closeDialog}
-      .heading=${createCloseHeading(this.hass, "Telegram " + this._params.index)}
+      .heading=${createCloseHeading(this.hass, "Telegram " + this._index)}
     >
       <div class="content">
-        <div>Source address ${this._params.telegram.source_address}</div>
-        <div>Source text ${this._params.telegram.source_text}</div>
-        <div>Destination address ${this._params.telegram.destination_address}</div>
-        <div>Destination text ${this._params.telegram.destination_text}</div>
+        <div>Source address ${this._telegram.source_address}</div>
+        <div>Source text ${this._telegram.source_text}</div>
+        <div>Destination address ${this._telegram.destination_address}</div>
+        <div>Destination text ${this._telegram.destination_text}</div>
       </div>
       <mwc-button
         slot="secondaryAction"
-        @click=${this._params.previous}
-        .disabled=${this._params.previous == null}
+        @click=${this._previousTelegram}
+        .disabled=${this._previous === undefined}
       >
         ${this.hass.localize("ui.common.previous")}
       </mwc-button>
       <mwc-button
         slot="primaryAction"
-        @click=${this._params.next}
-        .disabled=${this._params.next == null}
+        @click=${this._nextTelegram}
+        .disabled=${this._next === undefined}
       >
         ${this.hass.localize("ui.common.next")}
       </mwc-button>
     </ha-dialog>`;
+  }
+
+  private _nextTelegram() {
+    if (this._next === undefined) {
+      return;
+    }
+    const params = this._next(this._index!);
+    this._updateDialog(params);
+  }
+
+  private _previousTelegram() {
+    if (this._previous === undefined) {
+      return;
+    }
+    const params = this._previous(this._index!);
+    this._updateDialog(params);
   }
 
   static get styles() {

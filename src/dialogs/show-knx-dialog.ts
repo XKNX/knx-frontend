@@ -6,8 +6,8 @@ const logger = new KNXLogger("show-knx-dialog");
 
 export interface TelegramInfoDialogParams {
   index: number;
-  next: () => void;
-  previous: () => void;
+  next?: (prevIndex: number) => TelegramInfoDialogParams;
+  previous?: (prevIndex: number) => TelegramInfoDialogParams;
   telegram: KNXTelegram;
 }
 export const loadKnxTelegramInfoDialog = () => import("./knx-telegram-info-dialog");

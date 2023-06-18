@@ -10,7 +10,11 @@ import { haStyle } from "@ha/resources/styles";
 import { HomeAssistant } from "@ha/types";
 import { showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 
-import { loadKnxTelegramInfoDialog, showTelegramInfoDialog } from "dialogs/show-knx-dialog";
+import {
+  TelegramInfoDialogParams,
+  loadKnxTelegramInfoDialog,
+  showTelegramInfoDialog,
+} from "dialogs/show-knx-dialog";
 import { subscribeKnxTelegrams, getGroupMonitorInfo } from "../services/websocket.service";
 import { KNX } from "../types/knx";
 import { KNXTelegram } from "../types/websocket";
@@ -186,22 +190,28 @@ export class KNXGroupMonitor extends LitElement {
   private async _rowClicked(ev: CustomEvent): Promise<void> {
     const telegramIndex: number = ev.detail.id;
     logger.debug("Row clicked", telegramIndex);
-    this._showTelegramDetails(telegramIndex);
+    showTelegramInfoDialog(this, this._telegramInfoParams(telegramIndex));
   }
 
-  private _showTelegramDetails(index: number): void {
-    showTelegramInfoDialog(this, {
+  private _telegramInfoParams(index: number): TelegramInfoDialogParams {
+    return {
       index,
-      next: () => {
-        logger.debug("next");
-        this._showTelegramDetails(index + 1);
-      },
-      previous: () => {
-        logger.debug("previous");
-        this._showTelegramDetails(index - 1);
-      },
+      next:
+        this.telegrams.length - 1 > index
+          ? (prevIndex) => {
+              logger.debug("next");
+              return this._telegramInfoParams(prevIndex + 1);
+            }
+          : undefined,
+      previous:
+        index > 0
+          ? (prevIndex) => {
+              logger.debug("previous");
+              return this._telegramInfoParams(prevIndex - 1);
+            }
+          : undefined,
       telegram: this.telegrams[index],
-    });
+    };
   }
 
   static get styles(): CSSResultGroup {
