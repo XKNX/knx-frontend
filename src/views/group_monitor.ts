@@ -1,4 +1,4 @@
-import { css, html, CSSResultGroup, LitElement, TemplateResult } from "lit";
+import { css, html, CSSResultGroup, LitElement, TemplateResult, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
 import { computeRTLDirection } from "@ha/common/util/compute_rtl";
@@ -8,17 +8,12 @@ import type {
 } from "@ha/components/data-table/ha-data-table";
 import { haStyle } from "@ha/resources/styles";
 import { HomeAssistant } from "@ha/types";
-import { showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 
-import {
-  TelegramInfoDialogParams,
-  loadKnxTelegramInfoDialog,
-  showTelegramInfoDialog,
-} from "dialogs/show-knx-dialog";
 import { subscribeKnxTelegrams, getGroupMonitorInfo } from "../services/websocket.service";
 import { KNX } from "../types/knx";
 import { KNXTelegram } from "../types/websocket";
 import "../table/knx-data-table";
+import "../dialogs/knx-telegram-info-dialog";
 import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("group_monitor");
@@ -41,6 +36,8 @@ export class KNXGroupMonitor extends LitElement {
 
   @state() private rows: DataTableRowData[] = [];
 
+  @property() private _dialogIndex: number | null = null;
+
   public disconnectedCallback() {
     super.disconnectedCallback();
     if (this.subscribed) {
@@ -50,7 +47,6 @@ export class KNXGroupMonitor extends LitElement {
   }
 
   protected async firstUpdated() {
-    loadKnxTelegramInfoDialog();
     if (!this.subscribed) {
       getGroupMonitorInfo(this.hass).then(
         (groupMonitorInfo) => {
@@ -167,7 +163,6 @@ export class KNXGroupMonitor extends LitElement {
   }
 
   protected render(): TemplateResult | void {
-    logger.debug("render", this.rows.length);
     return html`
       <knx-data-table
         .hass=${this.hass}
@@ -184,34 +179,38 @@ export class KNXGroupMonitor extends LitElement {
         @row-click=${this._rowClicked}
       >
       </knx-data-table>
+      ${this._dialogIndex !== null ? this._renderTelegramInfoDialog(this._dialogIndex) : nothing}
     `;
+  }
+
+  private _renderTelegramInfoDialog(index: number): TemplateResult {
+    return html` <knx-telegram-info-dialog
+      .hass=${this.hass}
+      .telegram=${this.telegrams[index]}
+      .index=${index}
+      .disableNext=${index! + 1 >= this.telegrams.length}
+      .disablePrevious=${index <= 0}
+      @next-telegram=${this._dialogNext}
+      @previous-telegram=${this._dialogPrevious}
+      @dialog-closed=${this._dialogClosed}
+    ></knx-telegram-info-dialog>`;
   }
 
   private async _rowClicked(ev: CustomEvent): Promise<void> {
     const telegramIndex: number = ev.detail.id;
-    logger.debug("Row clicked", telegramIndex);
-    showTelegramInfoDialog(this, this._telegramInfoParams(telegramIndex));
+    this._dialogIndex = telegramIndex;
   }
 
-  private _telegramInfoParams(index: number): TelegramInfoDialogParams {
-    return {
-      index,
-      next:
-        this.telegrams.length - 1 > index
-          ? (prevIndex) => {
-              logger.debug("next");
-              return this._telegramInfoParams(prevIndex + 1);
-            }
-          : undefined,
-      previous:
-        index > 0
-          ? (prevIndex) => {
-              logger.debug("previous");
-              return this._telegramInfoParams(prevIndex - 1);
-            }
-          : undefined,
-      telegram: this.telegrams[index],
-    };
+  private _dialogNext(): void {
+    this._dialogIndex = this._dialogIndex! + 1;
+  }
+
+  private _dialogPrevious(): void {
+    this._dialogIndex = this._dialogIndex! - 1;
+  }
+
+  private _dialogClosed(): void {
+    this._dialogIndex = null;
   }
 
   static get styles(): CSSResultGroup {

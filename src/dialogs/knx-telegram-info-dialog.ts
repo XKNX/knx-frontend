@@ -1,104 +1,77 @@
 import "@material/mwc-button/mwc-button";
 import { LitElement, nothing, html, css } from "lit";
-import { customElement, state, property } from "lit/decorators";
+import { customElement, property } from "lit/decorators";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
 import { haStyleDialog } from "@ha/resources/styles";
-import { ShowDialogParams } from "@ha/dialogs/make-dialog-manager";
 import { HomeAssistant } from "@ha/types";
 
-import type { TelegramInfoDialogParams } from "./show-knx-dialog";
-import { KNXLogger } from "../tools/knx-logger";
-import { KNXTelegram } from "../types/websocket";
 import { HaDialog, createCloseHeading } from "@ha/components/ha-dialog";
 import { HaDialogHeader } from "@ha/components/ha-dialog-header";
+import { KNXTelegram } from "../types/websocket";
 
-const logger = new KNXLogger("knx-telegram-info-dialog");
+declare global {
+  // for fire event
+  interface HASSDomEvents {
+    "next-telegram": undefined;
+    "previous-telegram": undefined;
+    "dialog-close": undefined;
+  }
+}
 
 @customElement("knx-telegram-info-dialog")
 class TelegramInfoDialog extends LitElement {
   public hass!: HomeAssistant;
 
-  @property() private _telegram?: KNXTelegram;
+  @property() public index?: number;
 
-  @property() private _index?: number;
+  @property() public telegram?: KNXTelegram;
 
-  @property() private _previous?: (prevIndex: number) => TelegramInfoDialogParams;
+  @property() public disableNext = false;
 
-  @property() private _next?: (prevIndex: number) => TelegramInfoDialogParams;
-
-  public showDialog(params: TelegramInfoDialogParams) {
-    logger.debug("showDialog", params);
-    this._updateDialog(params);
-    if (this._telegram == null || this._index == null) {
-      this.closeDialog();
-      return;
-    }
-    logger.debug("showDialog - showing dialog", this._index);
-  }
-
-  private _updateDialog(params: TelegramInfoDialogParams) {
-    this._telegram = params.telegram;
-    this._index = params.index;
-    this._previous = params.previous;
-    this._next = params.next;
-  }
+  @property() public disablePrevious = false;
 
   public closeDialog() {
-    logger.debug("closeDialog");
-    this._telegram = undefined;
-    this._index = undefined;
-    fireEvent(this, "dialog-closed", { dialog: this.localName });
+    this.telegram = undefined;
+    this.index = undefined;
+    fireEvent(this, "dialog-closed", { dialog: this.localName }, { bubbles: false });
   }
 
   protected render() {
-    logger.debug("render info dialog", this._index);
-    if (this._telegram == null) {
+    if (this.telegram == null) {
       this.closeDialog();
       return nothing;
     }
     return html`<ha-dialog
       open
       @closed=${this.closeDialog}
-      .heading=${createCloseHeading(this.hass, "Telegram " + this._index)}
+      .heading=${createCloseHeading(this.hass, "Telegram " + this.index)}
     >
       <div class="content">
-        <div>Source address ${this._telegram.source_address}</div>
-        <div>Source text ${this._telegram.source_text}</div>
-        <div>Destination address ${this._telegram.destination_address}</div>
-        <div>Destination text ${this._telegram.destination_text}</div>
+        <div>Source address ${this.telegram.source_address}</div>
+        <div>Source text ${this.telegram.source_text}</div>
+        <div>Destination address ${this.telegram.destination_address}</div>
+        <div>Destination text ${this.telegram.destination_text}</div>
       </div>
       <mwc-button
         slot="secondaryAction"
-        @click=${this._previousTelegram}
-        .disabled=${this._previous === undefined}
+        @click=${this.previousTelegram}
+        .disabled=${this.disablePrevious}
       >
         ${this.hass.localize("ui.common.previous")}
       </mwc-button>
-      <mwc-button
-        slot="primaryAction"
-        @click=${this._nextTelegram}
-        .disabled=${this._next === undefined}
-      >
+      <mwc-button slot="primaryAction" @click=${this.nextTelegram} .disabled=${this.disableNext}>
         ${this.hass.localize("ui.common.next")}
       </mwc-button>
     </ha-dialog>`;
   }
 
-  private _nextTelegram() {
-    if (this._next === undefined) {
-      return;
-    }
-    const params = this._next(this._index!);
-    this._updateDialog(params);
+  private nextTelegram() {
+    fireEvent(this, "next-telegram");
   }
 
-  private _previousTelegram() {
-    if (this._previous === undefined) {
-      return;
-    }
-    const params = this._previous(this._index!);
-    this._updateDialog(params);
+  private previousTelegram() {
+    fireEvent(this, "previous-telegram");
   }
 
   static get styles() {
