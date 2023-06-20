@@ -23,6 +23,8 @@
   "group_monitor_direction": "Direction",
   "group_monitor_source": "Source",
   "group_monitor_destination": "Destination",
+  "group_monitor_message": "Message",
+  "group_monitor_telegram": "Telegram",
   "group_monitor_type": "Type",
   "group_monitor_payload": "Payload",
   "group_monitor_connected_waiting_telegrams": "Group monitor is connected and waiting for telegrams",

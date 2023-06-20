@@ -186,6 +186,7 @@ export class KNXGroupMonitor extends LitElement {
   private _renderTelegramInfoDialog(index: number): TemplateResult {
     return html` <knx-telegram-info-dialog
       .hass=${this.hass}
+      .knx=${this.knx}
       .telegram=${this.telegrams[index]}
       .index=${index}
       .disableNext=${index! + 1 >= this.telegrams.length}

@@ -5,9 +5,10 @@ import { customElement, property } from "lit/decorators";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import { haStyleDialog } from "@ha/resources/styles";
 import { HomeAssistant } from "@ha/types";
-
 import { HaDialog, createCloseHeading } from "@ha/components/ha-dialog";
 import { HaDialogHeader } from "@ha/components/ha-dialog-header";
+
+import { KNX } from "../types/knx";
 import { KNXTelegram } from "../types/websocket";
 
 declare global {
@@ -22,6 +23,8 @@ declare global {
 @customElement("knx-telegram-info-dialog")
 class TelegramInfoDialog extends LitElement {
   public hass!: HomeAssistant;
+
+  @property({ attribute: false }) public knx!: KNX;
 
   @property() public index?: number;
 
@@ -45,13 +48,38 @@ class TelegramInfoDialog extends LitElement {
     return html`<ha-dialog
       open
       @closed=${this.closeDialog}
-      .heading=${createCloseHeading(this.hass, "Telegram " + this.index)}
+      .heading=${createCloseHeading(
+        this.hass,
+        this.knx.localize("group_monitor_telegram") + " " + this.index
+      )}
     >
       <div class="content">
-        <div>Source address ${this.telegram.source_address}</div>
-        <div>Source text ${this.telegram.source_text}</div>
-        <div>Destination address ${this.telegram.destination_address}</div>
-        <div>Destination text ${this.telegram.destination_text}</div>
+        <div class="row">
+          <div>${this.telegram.timestamp}</div>
+          <div>${this.knx.localize(this.telegram.direction)}</div>
+        </div>
+        <div class="section">
+          <h4>${this.knx.localize("group_monitor_source")}</h4>
+          <div>${this.telegram.source_address}</div>
+          <div>${this.telegram.source_text}</div>
+        </div>
+        <div class="section">
+          <h4>${this.knx.localize("group_monitor_destination")}</h4>
+          <div>${this.telegram.destination_address}</div>
+          <div>${this.telegram.destination_text}</div>
+        </div>
+        <div class="section">
+          <h4>${this.knx.localize("group_monitor_message")}</h4>
+          <div>${this.telegram.type}</div>
+          <div class="row">
+            <div>${this.knx.localize("group_monitor_value")}</div>
+            <div>${this.telegram.value}</div>
+          </div>
+          <div class="row">
+            <div>${this.knx.localize("group_monitor_payload")}</div>
+            <div>${this.telegram.payload}</div>
+          </div>
+        </div>
       </div>
       <mwc-button
         slot="secondaryAction"
@@ -94,15 +122,20 @@ class TelegramInfoDialog extends LitElement {
           flex: 1;
         }
 
-        .child-view {
-          display: flex;
-          flex-direction: column;
-          flex: 1;
+        h4 {
+          margin-top: 24px;
+          margin-bottom: 4px;
+          border-bottom: 1px solid var(--divider-color);
         }
 
-        ha-more-info-history-and-logbook {
-          padding: 8px 24px 24px 24px;
-          display: block;
+        .section > div {
+          padding-bottom: 12px;
+        }
+        .row {
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          flex-wrap: wrap;
         }
 
         @media all and (max-width: 450px), all and (max-height: 500px) {
