@@ -124,12 +124,13 @@ class TelegramInfoDialog extends LitElement {
 
         h4 {
           margin-top: 24px;
-          margin-bottom: 4px;
+          margin-bottom: 12px;
           border-bottom: 1px solid var(--divider-color);
+          color: var(--secondary-text-color);
         }
 
         .section > div {
-          padding-bottom: 12px;
+          margin-bottom: 12px;
         }
         .row {
           display: flex;
