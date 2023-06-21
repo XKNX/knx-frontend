@@ -5,8 +5,7 @@ import { customElement, property } from "lit/decorators";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import { haStyleDialog } from "@ha/resources/styles";
 import { HomeAssistant } from "@ha/types";
-import { HaDialog, createCloseHeading } from "@ha/components/ha-dialog";
-import { HaDialogHeader } from "@ha/components/ha-dialog-header";
+import { createCloseHeading } from "@ha/components/ha-dialog";
 
 import { KNX } from "../types/knx";
 import { KNXTelegram } from "../types/websocket";
@@ -105,8 +104,6 @@ class TelegramInfoDialog extends LitElement {
   static get styles() {
     return [
       haStyleDialog,
-      HaDialog.styles,
-      HaDialogHeader.styles,
       css`
         ha-dialog {
           /* Set the top top of the dialog to a fixed position, so it doesnt jump when the content changes size */
