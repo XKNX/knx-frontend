@@ -1,4 +1,4 @@
-import { css, html, CSSResultGroup, LitElement, TemplateResult } from "lit";
+import { css, html, CSSResultGroup, LitElement, TemplateResult, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
 import { computeRTLDirection } from "@ha/common/util/compute_rtl";
@@ -13,6 +13,7 @@ import { subscribeKnxTelegrams, getGroupMonitorInfo } from "../services/websocke
 import { KNX } from "../types/knx";
 import { KNXTelegram } from "../types/websocket";
 import "../table/knx-data-table";
+import "../dialogs/knx-telegram-info-dialog";
 import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("group_monitor");
@@ -31,7 +32,11 @@ export class KNXGroupMonitor extends LitElement {
 
   @state() private subscribed?: () => void;
 
+  @state() private telegrams: KNXTelegram[] = [];
+
   @state() private rows: DataTableRowData[] = [];
+
+  @property() private _dialogIndex: number | null = null;
 
   public disconnectedCallback() {
     super.disconnectedCallback();
@@ -46,9 +51,8 @@ export class KNXGroupMonitor extends LitElement {
       getGroupMonitorInfo(this.hass).then(
         (groupMonitorInfo) => {
           this.projectLoaded = groupMonitorInfo.project_loaded;
-          this.rows = groupMonitorInfo.recent_telegrams
-            .reverse()
-            .map((telegram, index) => this._telegramToRow(telegram, index));
+          this.telegrams = groupMonitorInfo.recent_telegrams.reverse();
+          this.rows = this.telegrams.map((telegram, index) => this._telegramToRow(telegram, index));
         },
         (err) => {
           logger.error("getGroupMonitorInfo", err);
@@ -61,7 +65,7 @@ export class KNXGroupMonitor extends LitElement {
 
       //! We need to lateinit this property due to the fact that this.hass needs to be available
       this.columns = {
-        rowIndex: {
+        index: {
           hidden: this.narrow,
           title: "#",
           sortable: true,
@@ -131,6 +135,7 @@ export class KNXGroupMonitor extends LitElement {
   }
 
   protected telegram_callback(telegram: KNXTelegram): void {
+    this.telegrams.push(telegram);
     const rows = [...this.rows];
     rows.push(this._telegramToRow(telegram, rows.length));
     this.rows = rows;
@@ -138,7 +143,7 @@ export class KNXGroupMonitor extends LitElement {
 
   protected _telegramToRow(telegram: KNXTelegram, index: number): DataTableRowData {
     return {
-      rowIndex: index,
+      index: index,
       destinationAddress: telegram.destination_address,
       destinationText: telegram.destination_text,
       direction: this.knx.localize(telegram.direction),
@@ -169,10 +174,44 @@ export class KNXGroupMonitor extends LitElement {
         .hasFab=${false}
         .searchLabel=${this.hass.localize("ui.components.data-table.search")}
         .dir=${computeRTLDirection(this.hass)}
-        id="rowIndex"
+        id="index"
+        .clickable=${true}
+        @row-click=${this._rowClicked}
       >
       </knx-data-table>
+      ${this._dialogIndex !== null ? this._renderTelegramInfoDialog(this._dialogIndex) : nothing}
     `;
+  }
+
+  private _renderTelegramInfoDialog(index: number): TemplateResult {
+    return html` <knx-telegram-info-dialog
+      .hass=${this.hass}
+      .knx=${this.knx}
+      .telegram=${this.telegrams[index]}
+      .index=${index}
+      .disableNext=${index! + 1 >= this.telegrams.length}
+      .disablePrevious=${index <= 0}
+      @next-telegram=${this._dialogNext}
+      @previous-telegram=${this._dialogPrevious}
+      @dialog-closed=${this._dialogClosed}
+    ></knx-telegram-info-dialog>`;
+  }
+
+  private async _rowClicked(ev: CustomEvent): Promise<void> {
+    const telegramIndex: number = ev.detail.id;
+    this._dialogIndex = telegramIndex;
+  }
+
+  private _dialogNext(): void {
+    this._dialogIndex = this._dialogIndex! + 1;
+  }
+
+  private _dialogPrevious(): void {
+    this._dialogIndex = this._dialogIndex! - 1;
+  }
+
+  private _dialogClosed(): void {
+    this._dialogIndex = null;
   }
 
   static get styles(): CSSResultGroup {

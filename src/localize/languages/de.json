@@ -23,6 +23,8 @@
   "group_monitor_direction": "Richtung",
   "group_monitor_source": "Quelle",
   "group_monitor_destination": "Ziel",
+  "group_monitor_message": "Nachricht",
+  "group_monitor_telegram": "Telegramm",
   "group_monitor_type": "Typ",
   "group_monitor_payload": "Daten",
   "group_monitor_connected_waiting_telegrams": "Grouppenmonitor ist verbunden und wartet auf Telegramme",
