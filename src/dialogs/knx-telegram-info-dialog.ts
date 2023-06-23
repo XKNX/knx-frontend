@@ -55,7 +55,7 @@ class TelegramInfoDialog extends LitElement {
     >
       <div class="content">
         <div class="row">
-          <div>${TelegramDictFormatter.timestamp(this.telegram, this.hass)}</div>
+          <div>${TelegramDictFormatter.dateWithMilliseconds(this.telegram)}</div>
           <div>${this.knx.localize(this.telegram.direction)}</div>
         </div>
         <div class="section">

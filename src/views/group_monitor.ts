@@ -156,7 +156,7 @@ export class KNXGroupMonitor extends LitElement {
       payload: payload,
       sourceAddress: telegram.source,
       sourceText: telegram.source_name,
-      timestamp: TelegramDictFormatter.timestamp(telegram),
+      timestamp: TelegramDictFormatter.timeWithMilliseconds(telegram),
       type: telegram.telegramtype,
       value: !this.narrow
         ? value
