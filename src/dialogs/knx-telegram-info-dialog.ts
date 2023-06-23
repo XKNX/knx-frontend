@@ -74,14 +74,18 @@ class TelegramInfoDialog extends LitElement {
             <div>${this.telegram.telegramtype}</div>
             <div>${TelegramDictFormatter.dptNameNumber(this.telegram)}</div>
           </div>
-          <div class="row">
-            <div>${this.knx.localize("group_monitor_value")}</div>
-            <div>${TelegramDictFormatter.valueWithUnit(this.telegram)}</div>
-          </div>
-          <div class="row">
-            <div>${this.knx.localize("group_monitor_payload")}</div>
-            <div>${TelegramDictFormatter.payload(this.telegram)}</div>
-          </div>
+          ${this.telegram.value != null
+            ? html` <div class="row">
+                <div>${this.knx.localize("group_monitor_value")}</div>
+                <div>${TelegramDictFormatter.valueWithUnit(this.telegram)}</div>
+              </div>`
+            : nothing}
+          ${this.telegram.payload != null
+            ? html` <div class="row">
+                <div>${this.knx.localize("group_monitor_payload")}</div>
+                <div>${TelegramDictFormatter.payload(this.telegram)}</div>
+              </div>`
+            : nothing}
         </div>
       </div>
       <mwc-button
