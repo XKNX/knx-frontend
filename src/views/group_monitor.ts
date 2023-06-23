@@ -11,7 +11,8 @@ import { HomeAssistant } from "@ha/types";
 
 import { subscribeKnxTelegrams, getGroupMonitorInfo } from "../services/websocket.service";
 import { KNX } from "../types/knx";
-import { KNXTelegram } from "../types/websocket";
+import { TelegramDict } from "../types/websocket";
+import { TelegramDictFormatter } from "../utils/format";
 import "../table/knx-data-table";
 import "../dialogs/knx-telegram-info-dialog";
 import { KNXLogger } from "../tools/knx-logger";
@@ -32,7 +33,7 @@ export class KNXGroupMonitor extends LitElement {
 
   @state() private subscribed?: () => void;
 
-  @state() private telegrams: KNXTelegram[] = [];
+  @state() private telegrams: TelegramDict[] = [];
 
   @state() private rows: DataTableRowData[] = [];
 
@@ -51,7 +52,7 @@ export class KNXGroupMonitor extends LitElement {
       getGroupMonitorInfo(this.hass).then(
         (groupMonitorInfo) => {
           this.projectLoaded = groupMonitorInfo.project_loaded;
-          this.telegrams = groupMonitorInfo.recent_telegrams.reverse();
+          this.telegrams = groupMonitorInfo.recent_telegrams;
           this.rows = this.telegrams.map((telegram, index) => this._telegramToRow(telegram, index));
         },
         (err) => {
@@ -134,32 +135,30 @@ export class KNXGroupMonitor extends LitElement {
     }
   }
 
-  protected telegram_callback(telegram: KNXTelegram): void {
+  protected telegram_callback(telegram: TelegramDict): void {
     this.telegrams.push(telegram);
     const rows = [...this.rows];
     rows.push(this._telegramToRow(telegram, rows.length));
     this.rows = rows;
   }
 
-  protected _telegramToRow(telegram: KNXTelegram, index: number): DataTableRowData {
+  protected _telegramToRow(telegram: TelegramDict, index: number): DataTableRowData {
+    const value = TelegramDictFormatter.valueWithUnit(telegram);
+    const payload = TelegramDictFormatter.payload(telegram);
     return {
       index: index,
-      destinationAddress: telegram.destination_address,
-      destinationText: telegram.destination_text,
+      destinationAddress: telegram.destination,
+      destinationText: telegram.destination_name,
       direction: this.knx.localize(telegram.direction),
-      payload: telegram.payload,
-      sourceAddress: telegram.source_address,
-      sourceText: telegram.source_text,
-      timestamp: telegram.timestamp,
-      type: telegram.type,
-      value: !this.narrow ? telegram.value : this.narrow_value(telegram),
+      payload: payload,
+      sourceAddress: telegram.source,
+      sourceText: telegram.source_name,
+      timestamp: TelegramDictFormatter.timeWithMilliseconds(telegram),
+      type: telegram.telegramtype,
+      value: !this.narrow
+        ? value
+        : value || payload || (telegram.telegramtype === "GroupValueRead" ? "GroupRead" : ""),
     };
-  }
-
-  protected narrow_value(telegram: KNXTelegram): string {
-    return (
-      telegram.value || telegram.payload || (telegram.type === "GroupValueRead" ? "GroupRead" : "")
-    );
   }
 
   protected render(): TemplateResult | void {

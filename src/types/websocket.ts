@@ -13,17 +13,22 @@ export interface KNXProjectInfo {
 
 export interface GroupMonitorInfoData {
   project_loaded: boolean;
-  recent_telegrams: KNXTelegram[];
+  recent_telegrams: TelegramDict[];
 }
 
-export interface KNXTelegram {
-  destination_address: string;
-  destination_text: string;
-  source_address: string;
-  source_text: string;
-  payload: string;
-  type: string;
+// this has to match `TelegramDict` in the integrations `telegram.py`
+export interface TelegramDict {
+  destination: string;
+  destination_name: string;
   direction: string;
-  timestamp: string;
-  value: string;
+  dpt_main: number | null;
+  dpt_sub: number | null;
+  dpt_name: string | null;
+  source: string;
+  source_name: string;
+  payload: number | number[] | null;
+  telegramtype: string;
+  timestamp: string; // ISO 8601 eg. "2023-06-21T22:28:45.446257+02:00" from `dt_util.as_local(dt_util.utcnow())`
+  unit: string | null;
+  value: string | number | boolean | null;
 }
