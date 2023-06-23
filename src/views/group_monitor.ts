@@ -143,9 +143,6 @@ export class KNXGroupMonitor extends LitElement {
   }
 
   protected _telegramToRow(telegram: TelegramDict, index: number): DataTableRowData {
-    logger.info("telegram", telegram);
-    logger.warn("timestamp", telegram.timestamp);
-    logger.warn("payload", telegram.payload);
     const value = TelegramDictFormatter.valueWithUnit(telegram);
     const payload = TelegramDictFormatter.payload(telegram);
     return {

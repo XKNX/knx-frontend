@@ -36,4 +36,17 @@ export const TelegramDictFormatter = {
       fractionalSecondDigits: 3,
     });
   },
+
+  dptNumber: (telegram: TelegramDict): string => {
+    if (telegram.dpt_main == null) return "";
+    return telegram.dpt_sub == null
+      ? telegram.dpt_main.toString()
+      : telegram.dpt_main.toString() + "." + telegram.dpt_sub.toString().padStart(3, "0");
+  },
+
+  dptNameNumber: (telegram: TelegramDict): string => {
+    const dptNumber = TelegramDictFormatter.dptNumber(telegram);
+    if (telegram.dpt_name == null) return dptNumber;
+    return dptNumber ? telegram.dpt_name + " - " + dptNumber : telegram.dpt_name;
+  },
 };

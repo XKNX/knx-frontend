@@ -32,8 +32,3 @@ export interface TelegramDict {
   unit: string | null;
   value: string | number | boolean | null;
 }
-
-// TODO:
-// - format timestamp
-// - format / translate direction
-// - use DPT

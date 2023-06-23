@@ -70,7 +70,10 @@ class TelegramInfoDialog extends LitElement {
         </div>
         <div class="section">
           <h4>${this.knx.localize("group_monitor_message")}</h4>
-          <div>${this.telegram.telegramtype}</div>
+          <div class="row">
+            <div>${this.telegram.telegramtype}</div>
+            <div>${TelegramDictFormatter.dptNameNumber(this.telegram)}</div>
+          </div>
           <div class="row">
             <div>${this.knx.localize("group_monitor_value")}</div>
             <div>${TelegramDictFormatter.valueWithUnit(this.telegram)}</div>
