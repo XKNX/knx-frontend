@@ -17,8 +17,6 @@
   "info_issue_tracker_xknxproject": "das Auslesen der Projektdaten",
   "info_issue_tracker_xknx": "die KNX Verbindung oder DPT Dekodierung",
   "group_monitor_title": "Gruppenmonitor",
-  "group_monitor_incoming": "Eingehend",
-  "group_monitor_outgoing": "Ausgehend",
   "group_monitor_time": "Zeit",
   "group_monitor_direction": "Richtung",
   "group_monitor_source": "Quelle",
@@ -29,5 +27,7 @@
   "group_monitor_payload": "Daten",
   "group_monitor_connected_waiting_telegrams": "Grouppenmonitor ist verbunden und wartet auf Telegramme",
   "group_monitor_value": "Wert",
-  "group_monitor_waiting_to_connect": "Warte auf Websocket-Verbindung"
+  "group_monitor_waiting_to_connect": "Warte auf Websocket-Verbindung",
+  "Incoming": "Eingehend",
+  "Outgoing": "Ausgehend"
 }

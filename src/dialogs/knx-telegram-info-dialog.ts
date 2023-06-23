@@ -8,7 +8,8 @@ import { HomeAssistant } from "@ha/types";
 import { createCloseHeading } from "@ha/components/ha-dialog";
 
 import { KNX } from "../types/knx";
-import { KNXTelegram } from "../types/websocket";
+import { TelegramDict } from "../types/websocket";
+import { TelegramDictFormatter } from "../utils/format";
 
 declare global {
   // for fire event
@@ -27,7 +28,7 @@ class TelegramInfoDialog extends LitElement {
 
   @property() public index?: number;
 
-  @property() public telegram?: KNXTelegram;
+  @property() public telegram?: TelegramDict;
 
   @property() public disableNext = false;
 
@@ -54,29 +55,29 @@ class TelegramInfoDialog extends LitElement {
     >
       <div class="content">
         <div class="row">
-          <div>${this.telegram.timestamp}</div>
+          <div>${TelegramDictFormatter.timestamp(this.telegram, this.hass)}</div>
           <div>${this.knx.localize(this.telegram.direction)}</div>
         </div>
         <div class="section">
           <h4>${this.knx.localize("group_monitor_source")}</h4>
-          <div>${this.telegram.source_address}</div>
-          <div>${this.telegram.source_text}</div>
+          <div>${this.telegram.source}</div>
+          <div>${this.telegram.source_name}</div>
         </div>
         <div class="section">
           <h4>${this.knx.localize("group_monitor_destination")}</h4>
-          <div>${this.telegram.destination_address}</div>
-          <div>${this.telegram.destination_text}</div>
+          <div>${this.telegram.destination}</div>
+          <div>${this.telegram.destination_name}</div>
         </div>
         <div class="section">
           <h4>${this.knx.localize("group_monitor_message")}</h4>
-          <div>${this.telegram.type}</div>
+          <div>${this.telegram.telegramtype}</div>
           <div class="row">
             <div>${this.knx.localize("group_monitor_value")}</div>
-            <div>${this.telegram.value}</div>
+            <div>${TelegramDictFormatter.valueWithUnit(this.telegram)}</div>
           </div>
           <div class="row">
             <div>${this.knx.localize("group_monitor_payload")}</div>
-            <div>${this.telegram.payload}</div>
+            <div>${TelegramDictFormatter.payload(this.telegram)}</div>
           </div>
         </div>
       </div>

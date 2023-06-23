@@ -17,8 +17,6 @@
   "info_issue_tracker_xknxproject": "project data parsing",
   "info_issue_tracker_xknx": "KNX connection or DPT decoding",
   "group_monitor_title": "Group Monitor",
-  "group_monitor_incoming": "Incoming",
-  "group_monitor_outgoing": "Outgoing",
   "group_monitor_time": "Time",
   "group_monitor_direction": "Direction",
   "group_monitor_source": "Source",
@@ -29,5 +27,7 @@
   "group_monitor_payload": "Payload",
   "group_monitor_connected_waiting_telegrams": "Group monitor is connected and waiting for telegrams",
   "group_monitor_value": "Value",
-  "group_monitor_waiting_to_connect": "Waiting for websocket connection"
+  "group_monitor_waiting_to_connect": "Waiting for websocket connection",
+  "Incoming": "Incoming",
+  "Outgoing": "Outgoing"
 }
