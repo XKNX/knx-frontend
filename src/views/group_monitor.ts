@@ -84,7 +84,7 @@ export class KNXGroupMonitor extends LitElement {
           hidden: this.narrow,
           filterable: true,
           title: html`${this.knx.localize("group_monitor_direction")}`,
-          width: "90px",
+          width: "120px",
         },
         sourceAddress: {
           filterable: true,
