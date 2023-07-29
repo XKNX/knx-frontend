@@ -32,6 +32,9 @@ cd ..
 
 # KNX Frontend
 
+echo "Copying browserslist"
+cp homeassistant-frontend/.browserslistrc .
+
 echo "Merging requirements"
 node ./script/merge_requirements.js
 
