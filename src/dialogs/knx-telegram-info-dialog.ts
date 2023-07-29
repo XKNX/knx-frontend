@@ -50,7 +50,7 @@ class TelegramInfoDialog extends LitElement {
       @closed=${this.closeDialog}
       .heading=${createCloseHeading(
         this.hass,
-        this.knx.localize("group_monitor_telegram") + " " + this.index
+        this.knx.localize("group_monitor_telegram") + " " + this.index,
       )}
     >
       <div class="content">

@@ -40,7 +40,7 @@ const createWebpackConfig = ({
   const ignorePackages = bundle.ignorePackages({ latestBuild });
   return {
     mode: isProdBuild ? "production" : "development",
-    target: ["web", latestBuild ? "es2017" : "es5"],
+    target: `browserslist:${latestBuild ? "modern" : "legacy"}`,
     devtool: isProdBuild
       ? "cheap-module-source-map"
       : "eval-cheap-module-source-map",
@@ -78,6 +78,13 @@ const createWebpackConfig = ({
       ],
       moduleIds: isProdBuild && !isStatsBuild ? "deterministic" : "named",
       chunkIds: isProdBuild && !isStatsBuild ? "deterministic" : "named",
+      splitChunks: {
+        // Disable splitting for web workers with ESM output
+        // Imports of external chunks are broken
+        chunks: latestBuild
+          ? (chunk) => !chunk.canBeInitial() && !/^.+-worker$/.test(chunk.name)
+          : undefined,
+      },
     },
     plugins: [
       new WebpackBar({ fancy: !isProdBuild }),
@@ -161,6 +168,8 @@ const createWebpackConfig = ({
         "lit/polyfill-support$": "lit/polyfill-support.js",
         "@lit-labs/virtualizer/layouts/grid":
           "@lit-labs/virtualizer/layouts/grid.js",
+        "@lit-labs/virtualizer/polyfills/resize-observer-polyfill/ResizeObserver":
+          "@lit-labs/virtualizer/polyfills/resize-observer-polyfill/ResizeObserver.js",
       },
       plugins: [new TsconfigPathsPlugin({ 
         configFile: 'tsconfig.json',
@@ -168,6 +177,7 @@ const createWebpackConfig = ({
       })],
     },
     output: {
+      module: latestBuild,
       filename: ({ chunk }) => {
         if (!isProdBuild || isStatsBuild || dontHash.has(chunk.name)) {
           return `${chunk.name}-dev.js`;
@@ -182,6 +192,7 @@ const createWebpackConfig = ({
       globalObject: "self",
     },
     experiments: {
+      outputModule: true,
       topLevelAwait: true,
     },
   };
@@ -191,5 +202,6 @@ const createKNXConfig = ({ isProdBuild, latestBuild }) =>
   createWebpackConfig(bundle.config.knx({ isProdBuild, latestBuild }));
 
 module.exports = {
-  createKNXConfig: createKNXConfig,
+  createKNXConfig,
+  createWebpackConfig,
 };
