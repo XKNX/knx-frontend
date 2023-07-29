@@ -8,10 +8,6 @@ export class KnxDataTable extends HaDataTable {
     return [
       HaDataTable.styles,
       css`
-        :host {
-          height: calc(100vh - 104px);
-        }
-
         .mdc-data-table__row {
           height: 35px;
         }

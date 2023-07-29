@@ -1,14 +1,16 @@
 import { css, html, CSSResultGroup, LitElement, TemplateResult, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
+import "@ha/layouts/hass-tabs-subpage";
 import { computeRTLDirection } from "@ha/common/util/compute_rtl";
 import type {
   DataTableColumnContainer,
   DataTableRowData,
 } from "@ha/components/data-table/ha-data-table";
 import { haStyle } from "@ha/resources/styles";
-import { HomeAssistant } from "@ha/types";
+import { HomeAssistant, Route } from "@ha/types";
 
+import { knxMainTabs } from "../knx-router";
 import { subscribeKnxTelegrams, getGroupMonitorInfo } from "../services/websocket.service";
 import { KNX } from "../types/knx";
 import { TelegramDict } from "../types/websocket";
@@ -26,6 +28,8 @@ export class KNXGroupMonitor extends LitElement {
   @property({ attribute: false }) public knx!: KNX;
 
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
+
+  @property({ type: Object }) public route?: Route;
 
   @property() private columns: DataTableColumnContainer = {};
 
@@ -163,22 +167,30 @@ export class KNXGroupMonitor extends LitElement {
 
   protected render(): TemplateResult | void {
     return html`
-      <knx-data-table
+      <hass-tabs-subpage
         .hass=${this.hass}
-        .columns=${this.columns}
-        .noDataText=${this.subscribed
-          ? this.knx.localize("group_monitor_connected_waiting_telegrams")
-          : this.knx.localize("group_monitor_waiting_to_connect")}
-        .data=${this.rows}
-        .hasFab=${false}
-        .searchLabel=${this.hass.localize("ui.components.data-table.search")}
-        .dir=${computeRTLDirection(this.hass)}
-        id="index"
-        .clickable=${true}
-        @row-click=${this._rowClicked}
+        .narrow=${this.narrow!}
+        .route=${this.route!}
+        .tabs=${knxMainTabs}
+        .localizeFunc=${this.knx.localize}
       >
-      </knx-data-table>
-      ${this._dialogIndex !== null ? this._renderTelegramInfoDialog(this._dialogIndex) : nothing}
+        <knx-data-table
+          .hass=${this.hass}
+          .columns=${this.columns}
+          .noDataText=${this.subscribed
+            ? this.knx.localize("group_monitor_connected_waiting_telegrams")
+            : this.knx.localize("group_monitor_waiting_to_connect")}
+          .data=${this.rows}
+          .hasFab=${false}
+          .searchLabel=${this.hass.localize("ui.components.data-table.search")}
+          .dir=${computeRTLDirection(this.hass)}
+          id="index"
+          .clickable=${true}
+          @row-click=${this._rowClicked}
+        >
+        </knx-data-table>
+        ${this._dialogIndex !== null ? this._renderTelegramInfoDialog(this._dialogIndex) : nothing}
+      </hass-tabs-subpage>
     `;
   }
 
