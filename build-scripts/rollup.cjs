@@ -106,5 +106,6 @@ const createKNXConfig = ({ isProdBuild, latestBuild }) =>
   createRollupConfig(bundle.config.knx({ isProdBuild, latestBuild }));
 
 module.exports = {
-  createKNXConfig: createKNXConfig,
+  createKNXConfig,
+  createRollupConfig,
 };
