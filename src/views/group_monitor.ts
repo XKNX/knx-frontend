@@ -57,7 +57,7 @@ export class KNXGroupMonitor extends LitElement {
         },
         (err) => {
           logger.error("getGroupMonitorInfo", err);
-        }
+        },
       );
       this.subscribed = await subscribeKnxTelegrams(this.hass, (message) => {
         this.telegram_callback(message);

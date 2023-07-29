@@ -9,7 +9,7 @@ export const getKnxInfoData = (hass: HomeAssistant): Promise<KNXInfoData> =>
 export const processProjectFile = (
   hass: HomeAssistant,
   file_id: string,
-  password: string
+  password: string,
 ): Promise<void> =>
   hass.callWS({
     type: "knx/project_file_process",
@@ -29,7 +29,7 @@ export const getGroupMonitorInfo = (hass: HomeAssistant): Promise<GroupMonitorIn
 
 export const subscribeKnxTelegrams = (
   hass: HomeAssistant,
-  callback: (telegram: TelegramDict) => void
+  callback: (telegram: TelegramDict) => void,
 ) =>
   hass.connection.subscribeMessage<TelegramDict>(callback, {
     type: "knx/subscribe_telegrams",

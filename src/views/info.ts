@@ -67,7 +67,7 @@ export class KNXInfo extends LitElement {
               <div>${this.knx.localize("info_connected_to_bus")}</div>
               <div>
                 ${this.hass.localize(
-                  this.knxInfoData?.connected ? "ui.common.yes" : "ui.common.no"
+                  this.knxInfoData?.connected ? "ui.common.yes" : "ui.common.no",
                 )}
               </div>
             </div>
@@ -173,7 +173,7 @@ export class KNXInfo extends LitElement {
       },
       (err) => {
         logger.error("getKnxInfoData", err);
-      }
+      },
     );
   }
 
