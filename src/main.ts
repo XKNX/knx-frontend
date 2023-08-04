@@ -1,4 +1,4 @@
-import { css, html, nothing } from "lit";
+import { html, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 
 import { applyThemesOnElement } from "@ha/common/dom/apply_themes_on_element";
@@ -9,7 +9,6 @@ import "@ha/components/ha-tabs";
 import { navigate } from "@ha/common/navigate";
 import { makeDialogManager } from "@ha/dialogs/make-dialog-manager";
 import "@ha/resources/ha-style";
-import { haStyle } from "@ha/resources/styles";
 import { HomeAssistant, Route } from "@ha/types";
 
 import { knxElement } from "./knx";
@@ -51,29 +50,6 @@ class KnxFrontend extends knxElement {
     }
 
     return html`
-      <ha-app-layout>
-        <app-header fixed condenses slot="header">
-          <ha-top-app-bar-fixed>
-            <ha-menu-button
-              slot="navigationIcon"
-              .hass=${this.hass}
-              .narrow=${this.narrow}
-            ></ha-menu-button>
-            <div slot="title">${this.knx.localize("title")}</div>
-          </ha-top-app-bar-fixed>
-          <ha-tabs
-            scrollable
-            attr-for-selected="page-name"
-            .selected=${this.route.path}
-            @iron-activate=${this.handleNavigationEvent}
-          >
-            <paper-tab page-name="/info"> ${this.knx.localize("info_title")} </paper-tab>
-            <paper-tab page-name="/monitor">
-              ${this.knx.localize("group_monitor_title")}
-            </paper-tab>
-          </ha-tabs>
-        </app-header>
-      </ha-app-layout>
       <knx-router
         .hass=${this.hass}
         .knx=${this.knx}
@@ -81,35 +57,6 @@ class KnxFrontend extends knxElement {
         .narrow=${this.narrow}
       ></knx-router>
     `;
-  }
-
-  private handleNavigationEvent(event: any) {
-    const path = "/knx" + event.detail.item.getAttribute("page-name");
-    navigate(path, { replace: true });
-  }
-
-  static get styles() {
-    return [
-      haStyle,
-      css`
-        ha-app-layout {
-          z-index: 20;
-        }
-
-        app-header {
-          background-color: var(--app-header-background-color);
-          font-weight: 400;
-          color: var(--app-header-text-color, white);
-        }
-
-        ha-tabs {
-          --paper-tabs-selection-bar-color: var(
-            --app-header-selection-bar-color,
-            var(--app-header-text-color, #fff)
-          );
-        }
-      `,
-    ];
   }
 
   private _setRoute(ev: LocationChangedEvent): void {

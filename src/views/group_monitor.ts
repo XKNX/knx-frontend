@@ -1,19 +1,22 @@
-import { css, html, CSSResultGroup, LitElement, TemplateResult, nothing } from "lit";
+import { html, CSSResultGroup, LitElement, TemplateResult, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
+import "@ha/layouts/hass-tabs-subpage-data-table";
+import { HASSDomEvent } from "@ha/common/dom/fire_event";
 import { computeRTLDirection } from "@ha/common/util/compute_rtl";
 import type {
   DataTableColumnContainer,
   DataTableRowData,
+  RowClickedEvent,
 } from "@ha/components/data-table/ha-data-table";
 import { haStyle } from "@ha/resources/styles";
-import { HomeAssistant } from "@ha/types";
+import { HomeAssistant, Route } from "@ha/types";
 
+import { knxMainTabs } from "../knx-router";
 import { subscribeKnxTelegrams, getGroupMonitorInfo } from "../services/websocket.service";
 import { KNX } from "../types/knx";
 import { TelegramDict } from "../types/websocket";
 import { TelegramDictFormatter } from "../utils/format";
-import "../table/knx-data-table";
 import "../dialogs/knx-telegram-info-dialog";
 import { KNXLogger } from "../tools/knx-logger";
 
@@ -26,6 +29,8 @@ export class KNXGroupMonitor extends LitElement {
   @property({ attribute: false }) public knx!: KNX;
 
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
+
+  @property({ type: Object }) public route?: Route;
 
   @property() private columns: DataTableColumnContainer = {};
 
@@ -163,8 +168,12 @@ export class KNXGroupMonitor extends LitElement {
 
   protected render(): TemplateResult | void {
     return html`
-      <knx-data-table
+      <hass-tabs-subpage-data-table
         .hass=${this.hass}
+        .narrow=${this.narrow!}
+        .route=${this.route!}
+        .tabs=${knxMainTabs}
+        .localizeFunc=${this.knx.localize}
         .columns=${this.columns}
         .noDataText=${this.subscribed
           ? this.knx.localize("group_monitor_connected_waiting_telegrams")
@@ -176,8 +185,7 @@ export class KNXGroupMonitor extends LitElement {
         id="index"
         .clickable=${true}
         @row-click=${this._rowClicked}
-      >
-      </knx-data-table>
+      ></hass-tabs-subpage-data-table>
       ${this._dialogIndex !== null ? this._renderTelegramInfoDialog(this._dialogIndex) : nothing}
     `;
   }
@@ -196,8 +204,8 @@ export class KNXGroupMonitor extends LitElement {
     ></knx-telegram-info-dialog>`;
   }
 
-  private async _rowClicked(ev: CustomEvent): Promise<void> {
-    const telegramIndex: number = ev.detail.id;
+  private async _rowClicked(ev: HASSDomEvent<RowClickedEvent>): Promise<void> {
+    const telegramIndex: number = Number(ev.detail.id);
     this._dialogIndex = telegramIndex;
   }
 
@@ -214,16 +222,7 @@ export class KNXGroupMonitor extends LitElement {
   }
 
   static get styles(): CSSResultGroup {
-    return [
-      haStyle,
-      css`
-        .telegram {
-          display: flex;
-          flex-direction: row;
-          justify-content: space-between;
-        }
-      `,
-    ];
+    return haStyle;
   }
 }
 

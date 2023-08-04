@@ -1,12 +1,27 @@
+import { mdiNetwork, mdiFolderMultipleOutline } from "@mdi/js";
 import { customElement, property, state } from "lit/decorators";
 
 import { HassRouterPage, RouterOptions } from "@ha/layouts/hass-router-page";
+import { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import { HomeAssistant, Route } from "@ha/types";
 
 import { KNX } from "./types/knx";
 import { KNXLogger } from "./tools/knx-logger";
 
 const logger = new KNXLogger("router");
+
+export const knxMainTabs: PageNavigation[] = [
+  {
+    translationKey: "info_title",
+    path: `/knx/info`,
+    iconPath: mdiFolderMultipleOutline,
+  },
+  {
+    translationKey: "group_monitor_title",
+    path: `/knx/group_monitor`,
+    iconPath: mdiNetwork,
+  },
+];
 
 @customElement("knx-router")
 class KnxRouter extends HassRouterPage {
@@ -32,7 +47,7 @@ class KnxRouter extends HassRouterPage {
           return import("./views/info");
         },
       },
-      monitor: {
+      group_monitor: {
         tag: "knx-group-monitor",
         load: () => {
           logger.info("Importing knx-group-monitor");
