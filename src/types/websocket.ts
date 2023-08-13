@@ -32,3 +32,71 @@ export interface TelegramDict {
   unit: string | null;
   value: string | number | boolean | null;
 }
+
+export const enum ConnectionType {
+  Automatic = "automatic",
+  RoutingPlain = "routing",
+  RoutingSecure = "routing_secure",
+  TunnellingUDP = "tunneling",
+  TunnellingTCP = "tunneling_tcp",
+  TunnellingSecure = "tunneling_tcp_secure",
+}
+
+export interface SettingsInfoData {
+  config_entry: ConfigEntryData;
+  local_interfaces: string[];
+}
+
+export type ConfigEntryData = ConnectionData & IntegrationSettingsData;
+
+export interface ConnectionData {
+  connection_type: ConnectionType;
+  individual_address?: string;
+  local_ip?: string | null; // not required
+  multicast_group: string | null;
+  multicast_port: number;
+  route_back?: boolean | null; // not required
+  host?: string | null; // only required for tunnelling
+  port?: number | null; // only required for tunnelling
+  tunnel_endpoint_ia?: string | null;
+  // KNX secure
+  user_id?: number | null; // not required
+  user_password?: string | null; // not required
+  device_authentication?: string | null; // not required
+  knxkeys_filename?: string; // not required
+  knxkeys_password?: string; // not required
+  backbone_key?: string | null; // not required
+  sync_latency_tolerance?: number | null; // not required
+}
+
+export interface IntegrationSettingsData {
+  // OptionsFlow only
+  state_updater: boolean;
+  rate_limit?: number;
+  //   Integration only (not forwarded to xknx)
+  telegram_log_size?: number; // not required
+}
+
+export interface GatewayDescriptor {
+  name: string;
+  ip_addr: string;
+  port: number;
+  individual_address: string; // todo convert
+  local_interface: string;
+  local_ip: string;
+  supports_routing: boolean;
+  supports_tunnelling: boolean;
+  supports_tunnelling_tcp: boolean;
+  supports_secure: boolean;
+  core_version: number;
+  routing_requires_secure: boolean; // todo unwrap
+  tunnelling_requires_secure: boolean; // todo unwrap
+  tunnelling_slots: TunnelingSlot[]; // todo flatten
+}
+
+interface TunnelingSlot {
+  individual_address: string;
+  authorized: boolean;
+  free: boolean;
+  usable: boolean;
+}

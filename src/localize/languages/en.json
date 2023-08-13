@@ -16,6 +16,7 @@
   "info_issue_tracker_knx_frontend": "the KNX frontend panel",
   "info_issue_tracker_xknxproject": "project data parsing",
   "info_issue_tracker_xknx": "KNX connection or DPT decoding",
+  "settings_title": "Settings",
   "group_monitor_title": "Group Monitor",
   "group_monitor_time": "Time",
   "group_monitor_direction": "Direction",
