@@ -196,6 +196,7 @@ export class KNXSettingsView extends LitElement {
           <ha-card class="knx-info" .header=${"Connection"}>
             <div class="card-content knx-info-section">
               ${this.connectionSettingsCardContent()}
+              <!-- TODO: remove -->
               ${Object.entries(this.newConnectionData).map(
                 ([key, val]) => html`
                   <div class="knx-content-row">
@@ -217,6 +218,15 @@ export class KNXSettingsView extends LitElement {
           <ha-card class="knx-info" .header=${"Integration settings"}>
             <div class="card-content knx-info-section">
               ${this.integrationSettingsCardContent()}
+              <!-- TODO: remove -->
+              ${Object.entries(this.newSettingsData).map(
+                ([key, val]) => html`
+                  <div class="knx-content-row">
+                    <div>${key}</div>
+                    <div>${val}</div>
+                  </div>
+                `,
+              )}
             </div>
             <div class="card-actions">
               <ha-progress-button
@@ -267,13 +277,28 @@ export class KNXSettingsView extends LitElement {
   }
 
   private integrationSettingsCardContent(): TemplateResult {
-    return html` <ha-selector
-      .hass=${this.hass}
-      .label=${"Telegram log size"}
-      .selector=${{ number: { min: 0, max: 5000, step: 1, unit_of_measurement: "telegrams" } }}
-      .value=${this.newSettingsData.telegram_log_size}
-      @value-changed=${this._updateIntegrationSetting("telegram_log_size")}
-    ></ha-selector>`;
+    return html`<ha-selector
+        .hass=${this.hass}
+        .label=${"Telegram log size"}
+        .selector=${{ number: { min: 0, max: 5000, step: 1, unit_of_measurement: "telegrams" } }}
+        .value=${this.newSettingsData.telegram_log_size}
+        @value-changed=${this._updateIntegrationSetting("telegram_log_size")}
+      ></ha-selector>
+      ${this._advanecedIntegrationSettings()}`;
+  }
+
+  private _advanecedIntegrationSettings() {
+    return this.hass.userData?.showAdvanced
+      ? html`<ha-selector
+          .hass=${this.hass}
+          .label=${"Rate limit"}
+          .selector=${{
+            number: { min: 0, max: 50, step: 1, unit_of_measurement: "telegrams / second" },
+          }}
+          .value=${this.newSettingsData.rate_limit}
+          @value-changed=${this._updateIntegrationSetting("rate_limit")}
+        ></ha-selector>`
+      : nothing;
   }
 
   protected _mainConnectionTypeFromInfoData(): ConnectionMainType {
