@@ -1,4 +1,4 @@
-import { mdiNetwork, mdiFolderMultipleOutline } from "@mdi/js";
+import { mdiCogOutline, mdiNetwork, mdiFolderMultipleOutline } from "@mdi/js";
 import { customElement, property, state } from "lit/decorators";
 
 import { HassRouterPage, RouterOptions } from "@ha/layouts/hass-router-page";
@@ -15,6 +15,11 @@ export const knxMainTabs: PageNavigation[] = [
     translationKey: "info_title",
     path: `/knx/info`,
     iconPath: mdiFolderMultipleOutline,
+  },
+  {
+    translationKey: "settings_title",
+    path: `/knx/settings`,
+    iconPath: mdiCogOutline,
   },
   {
     translationKey: "group_monitor_title",
@@ -43,14 +48,21 @@ class KnxRouter extends HassRouterPage {
       info: {
         tag: "knx-info",
         load: () => {
-          logger.info("Importing knx-info");
+          logger.info("Importing info view");
           return import("./views/info");
+        },
+      },
+      settings: {
+        tag: "knx-settings",
+        load: () => {
+          logger.info("Importing settings view");
+          return import("./views/settings");
         },
       },
       group_monitor: {
         tag: "knx-group-monitor",
         load: () => {
-          logger.info("Importing knx-group-monitor");
+          logger.info("Importing group-monitor view");
           return import("./views/group_monitor");
         },
       },
