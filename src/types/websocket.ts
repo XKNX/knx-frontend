@@ -45,6 +45,7 @@ export const enum ConnectionType {
 export interface SettingsInfoData {
   config_entry: ConfigEntryData;
   local_interfaces: string[];
+  keyfile_data: KeyfileData | null;
 }
 
 export type ConfigEntryData = ConnectionData & IntegrationSettingsData;
@@ -75,6 +76,27 @@ export interface IntegrationSettingsData {
   rate_limit?: number;
   //   Integration only (not forwarded to xknx)
   telegram_log_size?: number; // not required
+}
+
+export interface KeyfileData {
+  project_name: string;
+  timestamp: string;
+  created_by: string;
+  secure_backbone: SecureBackbone | null;
+  tunnel_interfaces: TunnelInterface[];
+  ds_group_addresses: string[]; // ["1/2/3"]
+}
+
+export interface SecureBackbone {
+  multicast_address: string;
+  latency: number;
+}
+
+export interface TunnelInterface {
+  host: string; // "1.1.10"
+  individual_address: string;
+  user_id: number | null; // no user_id -> plain tunnelling
+  ds_group_addresses: string[];
 }
 
 export interface GatewayDescriptor {

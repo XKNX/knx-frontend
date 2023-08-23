@@ -14,12 +14,15 @@ import { extractApiErrorMessage } from "@ha/data/hassio/common";
 import { SelectSelector } from "@ha/data/selector";
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 import { HomeAssistant, Route } from "@ha/types";
+import { haStyle } from "@ha/resources/styles";
 
 import { knxMainTabs } from "../knx-router";
 import {
   getSettingsInfoData,
   subscribeGatewayScanner,
   writeConnectionData,
+  processKeyringFile,
+  removeKeyringFile,
 } from "../services/websocket.service";
 
 import { KNX } from "../types/knx";
@@ -28,11 +31,11 @@ import {
   SettingsInfoData,
   IntegrationSettingsData,
   ConnectionData,
+  KeyfileData,
 } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
-import { haStyle } from "@ha/resources/styles";
 
-const logger = new KNXLogger("connection");
+const logger = new KNXLogger("settings");
 
 const enum ConnectionMainType {
   Automatic = "automatic",
@@ -80,6 +83,8 @@ export class KNXSettingsView extends LitElement {
 
   @state() private _localInterfaces: string[] = [];
 
+  @state() private _keyfile_data: KeyfileData | null = null;
+
   @state() private newConnectionData!: ConnectionData;
 
   @state() private oldConnectionData!: ConnectionData;
@@ -87,6 +92,12 @@ export class KNXSettingsView extends LitElement {
   @state() private newSettingsData!: IntegrationSettingsData;
 
   @state() private oldSettingsData!: IntegrationSettingsData;
+
+  @state() private _uploadingKeyring = false;
+
+  @state() private _uploadKeyringFile?: File;
+
+  @state() private _uploadKeyringPassword?: string;
 
   public disconnectedCallback() {
     super.disconnectedCallback();
@@ -97,7 +108,7 @@ export class KNXSettingsView extends LitElement {
   }
 
   protected async firstUpdated() {
-    this._loadKnxConnectionInfo();
+    this._loadKnxSettingsInfo();
     this.unsubscribe = await subscribeGatewayScanner(
       this.hass,
       this.oldConnectionData?.local_ip ?? null,
@@ -108,10 +119,10 @@ export class KNXSettingsView extends LitElement {
     );
   }
 
-  private _loadKnxConnectionInfo() {
+  private _loadKnxSettingsInfo() {
     getSettingsInfoData(this.hass).then(
       (settingsInfoData) => {
-        const { config_entry, local_interfaces } = settingsInfoData;
+        const { config_entry, local_interfaces, keyfile_data } = settingsInfoData;
         // split ConfigEntryData into ConnectionData and IntegrationSettingsData to be
         // able to have independent save buttons activation states
         const connectionData: ConnectionData = {
@@ -144,6 +155,8 @@ export class KNXSettingsView extends LitElement {
         this.oldSettingsData = { ...settingsData };
 
         this._localInterfaces = local_interfaces;
+
+        this._keyfile_data = keyfile_data;
 
         logger.debug("settingsInfoData", settingsInfoData);
         this.requestUpdate();
@@ -237,6 +250,7 @@ export class KNXSettingsView extends LitElement {
               </ha-progress-button>
             </div>
           </ha-card>
+          <ha-card class="knx-info" .header=${"Keyring"}> ${this.keyringCardContent()} </ha-card>
         </div>
       </hass-tabs-subpage>
     `;
@@ -327,7 +341,7 @@ export class KNXSettingsView extends LitElement {
         @value-changed=${this._changeConnectionMain}
       ></ha-selector>
       ${this.connectionSettingsForType(currentMainTypeSelection)}
-      ${this._advanecedConnectionSettings()}
+      ${this._advancedConnectionSettings()}
     `;
   }
 
@@ -505,7 +519,7 @@ export class KNXSettingsView extends LitElement {
     `;
   }
 
-  private _advanecedConnectionSettings() {
+  private _advancedConnectionSettings() {
     const interfaces = this._localInterfaces.map((iface) => ({ label: iface, value: iface }));
     interfaces.unshift({ label: "Automatic", value: "" }); // empty string is automatic -> null
 
@@ -528,43 +542,116 @@ export class KNXSettingsView extends LitElement {
       : nothing;
   }
 
-  // private _filePicked(ev) {
-  //   this._projectFile = ev.detail.files[0];
-  // }
+  protected keyringCardContent(): TemplateResult {
+    return html` <div class="card-content knx-info-section">
+        ${this._keyfile_data ? this._keyringInfoContent(this._keyfile_data) : nothing}
+        <div class="knx-content-row">
+          <ha-file-upload
+            .hass=${this.hass}
+            accept=".knxkeys"
+            .icon=${mdiFileUpload}
+            .label=${this.knx.localize("info_project_file")}
+            .value=${this._uploadKeyringFile?.name}
+            .uploading=${this._uploadingKeyring}
+            @file-picked=${this._keyfilePicked}
+            @change=${this._keyfileCleared}
+          ></ha-file-upload>
+          </div>
+          ${
+            this._uploadKeyringFile
+              ? html`<div class="knx-content-row">
+                  <ha-selector-text
+                    .hass=${this.hass}
+                    .value=${this._uploadKeyringPassword || ""}
+                    .label=${this.hass.localize("ui.login-form.password")}
+                    .selector=${{ text: { multiline: false, type: "password" } }}
+                    .required=${false}
+                    @value-changed=${this._uploadKeyringPasswordChanged}
+                  >
+                  </ha-selector-text>
+                </div>`
+              : nothing
+          }
+        </div>
+      </div>
+      <div class="card-actions">
+        ${
+          this._keyfile_data
+            ? html` <ha-button @click=${this._removeKeyring}>
+                ${this.hass.localize("ui.common.delete")}
+              </ha-button>`
+            : nothing
+        }
+        <ha-button
+          @click=${this._uploadKeyring}
+          .disabled=${
+            this._uploadingKeyring || !this._uploadKeyringFile || !this._uploadKeyringPassword
+          }
+        >
+          ${this._keyfile_data ? "Replace Keyfile" : "Upload Keyfile"}
+        </ha-button>
+      </div>`;
+  }
 
-  // private _passwordChanged(ev) {
-  //   this._projectPassword = ev.detail.value;
-  // }
+  private _keyfilePicked(ev) {
+    this._uploadKeyringFile = ev.detail.files[0];
+    logger.debug("_keyfilePicked", ev.detail.files[0]);
+  }
 
-  // private async _uploadFile(_ev) {
-  //   const file = this._projectFile;
-  //   if (typeof file === "undefined") {
-  //     return;
-  //   }
+  private _keyfileCleared(ev) {
+    this._uploadKeyringFile = undefined;
+    logger.debug("_keyfileCleared", ev.detail);
+  }
 
-  //   let error: Error | undefined;
-  //   this._uploading = true;
-  //   try {
-  //     const project_file_id = await uploadFile(this.hass, file);
-  //     await processProjectFile(this.hass, project_file_id, this._projectPassword || "");
-  //   } catch (err: any) {
-  //     error = err;
-  //     showAlertDialog(this, {
-  //       title: "Upload failed",
-  //       text: extractApiErrorMessage(err),
-  //       confirmText: "ok",
-  //     });
-  //   } finally {
-  //     if (!error) {
-  //       this._projectFile = undefined;
-  //       this._projectPassword = undefined;
-  //     }
-  //     this._uploading = false;
-  //     this.loadKnxInfo();
-  //   }
-  // }
+  private _uploadKeyringPasswordChanged(ev) {
+    this._uploadKeyringPassword = ev.detail.value;
+  }
 
-  // private async _removeProject(_ev) {
+  private async _uploadKeyring(_ev) {
+    const file = this._uploadKeyringFile;
+    if (typeof file === "undefined") {
+      return;
+    }
+
+    let error: Error | undefined;
+    this._uploadingKeyring = true;
+    try {
+      const keyring_file_id = await uploadFile(this.hass, file);
+      await processKeyringFile(this.hass, keyring_file_id, this._uploadKeyringPassword || "");
+    } catch (err: any) {
+      error = err;
+      showAlertDialog(this, {
+        title: "Upload failed",
+        text: extractApiErrorMessage(err),
+        confirmText: "ok",
+      });
+    } finally {
+      if (!error) {
+        this._uploadKeyringFile = undefined;
+        this._uploadKeyringPassword = undefined;
+      }
+      this._uploadingKeyring = false;
+      // this.loadKnxInfo();
+    }
+  }
+
+  protected _keyringInfoContent(keyfile_data: KeyfileData): TemplateResult {
+    const timestamp = new Date(keyfile_data.timestamp).toLocaleString();
+
+    return html` <div class="knx-content-row">
+        <div>Project name</div>
+        <div>${keyfile_data.project_name}</div>
+      </div>
+      <div class="knx-content-row">
+        <div>Timestamp</div>
+        <div>${timestamp}</div>
+      </div>
+      <div class="knx-content-row">
+        <div>Created by</div>
+        <div>${keyfile_data.created_by}</div>
+      </div>`;
+  }
+  // private async _removeKeyring(_ev) {
   //   const confirmed = await showConfirmationDialog(this, {
   //     text: this.knx.localize("info_project_delete"),
   //   });
@@ -594,11 +681,13 @@ export class KNXSettingsView extends LitElement {
       .columns {
         display: flex;
         justify-content: center;
+        align-items: flex-start;
       }
 
       @media screen and (max-width: 1232px) {
         .columns {
           flex-direction: column;
+          align-items: stretch;
         }
 
         .knx-delete-project-button {

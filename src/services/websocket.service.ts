@@ -8,6 +8,8 @@ import {
   ConfigEntryData,
 } from "../types/websocket";
 
+// INFO
+
 export const getKnxInfoData = (hass: HomeAssistant): Promise<KNXInfoData> =>
   hass.callWS({
     type: "knx/info",
@@ -29,6 +31,8 @@ export const removeProjectFile = (hass: HomeAssistant): Promise<void> =>
     type: "knx/project_file_remove",
   });
 
+// SETTINGS
+
 export const getSettingsInfoData = (hass: HomeAssistant): Promise<SettingsInfoData> =>
   hass.callWS({
     type: "knx/settings/info",
@@ -44,6 +48,22 @@ export const subscribeGatewayScanner = (
     local_interface: local_interface,
   });
 
+export const processKeyringFile = (
+  hass: HomeAssistant,
+  file_id: string,
+  password: string,
+): Promise<void> =>
+  hass.callWS({
+    type: "knx/settings/keyring_file_process",
+    file_id: file_id,
+    password: password,
+  });
+
+export const removeKeyringFile = (hass: HomeAssistant): Promise<void> =>
+  hass.callWS({
+    type: "knx/settings/keyring_file_remove",
+  });
+
 export const writeConnectionData = (
   hass: HomeAssistant,
   changeset: Partial<ConfigEntryData>,
@@ -52,6 +72,8 @@ export const writeConnectionData = (
     type: "knx/settings/write_config_entry_data",
     changeset: changeset,
   });
+
+// GROUP MONITOR
 
 export const getGroupMonitorInfo = (hass: HomeAssistant): Promise<GroupMonitorInfoData> =>
   hass.callWS({
