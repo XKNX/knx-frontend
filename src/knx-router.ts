@@ -8,10 +8,9 @@ import { HomeAssistant, Route } from "@ha/types";
 import { KNX } from "./types/knx";
 import { KNXLogger } from "./tools/knx-logger";
 
-
 const logger = new KNXLogger("router");
 
-export const BASE_URL: string = "/knx"
+export const BASE_URL: string = "/knx";
 
 export const knxMainTabs: PageNavigation[] = [
   {
@@ -104,7 +103,7 @@ declare global {
   }
 }
 
-export function getTabPath(name: string) : string {
-  const result = knxMainTabs?.filter(obj => obj.name === name);
+export function getTabPath(name: string): string {
+  const result = knxMainTabs?.filter((obj) => obj.name === name);
   return result ? result[0].path : BASE_URL;
 }

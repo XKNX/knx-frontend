@@ -36,14 +36,13 @@ export interface TelegramDict {
 
 export interface KNXProjectRespone {
   project_loaded: boolean;
-  knxproject: KNXProject
+  knxproject: KNXProject;
 }
 
 export interface KNXProject {
-  group_addresses: { [key: string]: GroupAddress};
-  group_ranges: { [key: string]: GroupRange };  
+  group_addresses: { [key: string]: GroupAddress };
+  group_ranges: { [key: string]: GroupRange };
 }
-
 
 export interface GroupRange {
   name: string;
@@ -61,12 +60,12 @@ export interface GroupAddress {
   address: number;
   project_uid: number;
   dpt: DPTType | null;
-  communication_object_ids: string[]
+  communication_object_ids: string[];
   description: string;
   comment: string;
 }
 
 export interface DPTType {
-  main: number
+  main: number;
   sub: number | null;
 }
