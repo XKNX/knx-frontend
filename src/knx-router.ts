@@ -12,13 +12,21 @@ const logger = new KNXLogger("router");
 
 export const knxMainTabs: PageNavigation[] = [
   {
+    name: "info",
     translationKey: "info_title",
     path: `/knx/info`,
     iconPath: mdiFolderMultipleOutline,
   },
   {
+    name: "monitor",
     translationKey: "group_monitor_title",
     path: `/knx/group_monitor`,
+    iconPath: mdiNetwork,
+  },
+  {
+    name: "explore",
+    translationKey: "project_explore_title",
+    path: `/knx/project_explore`,
     iconPath: mdiNetwork,
   },
 ];
@@ -54,6 +62,13 @@ class KnxRouter extends HassRouterPage {
           return import("./views/group_monitor");
         },
       },
+      project_explore: {
+        tag: "knx-project-explore",
+        load: () => {
+          logger.info("Importing knx-project-explore");
+          return import("./views/project_explore");
+        },
+      },
     },
   };
 
@@ -84,4 +99,9 @@ declare global {
   interface HTMLElementTagNameMap {
     "knx-router": KnxRouter;
   }
+}
+
+export function getTabPath(name: string) : string | undefined {
+  const result = knxMainTabs?.filter(obj => {return obj.name === name});
+  return result ? result[0].path : undefined;
 }
