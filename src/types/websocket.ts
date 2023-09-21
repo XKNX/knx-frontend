@@ -40,6 +40,7 @@ export interface KNXProjectRespone {
 }
 
 export interface KNXProject {
+  info: KNXProjectInfo;
   group_addresses: { [key: string]: GroupAddress };
   group_ranges: { [key: string]: GroupRange };
 }
@@ -59,13 +60,7 @@ export interface GroupAddress {
   raw_address: number;
   address: number;
   project_uid: number;
-  dpt: DPTType | null;
   communication_object_ids: string[];
   description: string;
   comment: string;
-}
-
-export interface DPTType {
-  main: number;
-  sub: number | null;
 }

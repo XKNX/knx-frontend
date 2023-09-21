@@ -4,6 +4,7 @@ import { customElement, property, state } from "lit/decorators";
 
 import "@ha/components/ha-card";
 import "@ha/layouts/hass-tabs-subpage";
+import * as HATS from "@ha/layouts/hass-tabs-subpage";
 import "@ha/components/ha-button";
 import "@ha/components/ha-file-upload";
 import "@ha/components/ha-selector/ha-selector-text";
@@ -13,7 +14,6 @@ import { extractApiErrorMessage } from "@ha/data/hassio/common";
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 import { HomeAssistant, Route } from "@ha/types";
 
-import { knxMainTabs, getTabPath } from "../knx-router";
 import {
   getKnxInfoData,
   processProjectFile,
@@ -37,6 +37,8 @@ export class KNXInfo extends LitElement {
 
   @property({ type: Object }) public route?: Route;
 
+  @property({ type: Array, reflect: false }) public tabs!: HATS.PageNavigation[];
+
   @state() private knxInfoData: KNXInfoData | null = null;
 
   @state() private _projectPassword?: string;
@@ -55,7 +57,7 @@ export class KNXInfo extends LitElement {
         .hass=${this.hass}
         .narrow=${this.narrow!}
         .route=${this.route!}
-        .tabs=${knxMainTabs}
+        .tabs=${this.tabs}
         .localizeFunc=${this.knx.localize}
       >
         <div class="columns">
@@ -150,11 +152,6 @@ export class KNXInfo extends LitElement {
               <div>${projectInfo.xknxproject_version}</div>
             </div>
             <div class="knx-button-row">
-              <a href=${getTabPath("explore")}>
-                <ha-button class="knx-project-explore">
-                  ${this.knx.localize("project_explore_title")}
-                </ha-button>
-              </a>
               <ha-button
                 class="knx-warning push-right"
                 @click=${this._removeProject}

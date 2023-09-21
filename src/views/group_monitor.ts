@@ -12,7 +12,7 @@ import type {
 import { haStyle } from "@ha/resources/styles";
 import { HomeAssistant, Route } from "@ha/types";
 
-import { knxMainTabs } from "../knx-router";
+import { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import { subscribeKnxTelegrams, getGroupMonitorInfo } from "../services/websocket.service";
 import { KNX } from "../types/knx";
 import { TelegramDict } from "../types/websocket";
@@ -31,6 +31,8 @@ export class KNXGroupMonitor extends LitElement {
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
 
   @property({ type: Object }) public route?: Route;
+
+  @property({ type: Array, reflect: false }) public tabs!: PageNavigation[];
 
   @property() private columns: DataTableColumnContainer = {};
 
@@ -172,7 +174,7 @@ export class KNXGroupMonitor extends LitElement {
         .hass=${this.hass}
         .narrow=${this.narrow!}
         .route=${this.route!}
-        .tabs=${knxMainTabs}
+        .tabs=${this.tabs}
         .localizeFunc=${this.knx.localize}
         .columns=${this.columns}
         .noDataText=${this.subscribed

@@ -13,7 +13,6 @@
   "info_project_file_header": "ETS Projektdatei",
   "info_project_file": "ETS Projektdatei",
   "info_project_delete": "Projektdaten löschen",
-  "info_project_explore": "Exploriere Projekt",
   "info_project_upload_description": "Wir extrahieren Details wie Namen, Gruppenadressen, Geräte, Gruppenobjekte, Topologie und Gebäudestruktur aus deiner Projektdatei. Home Assistant speichert jedoch aus Sicherheitsgründen weder die Projektdatei selbst, noch das optionale Passwort.",
   "info_issue_tracker": "Problemmeldungen und Feature-Requests für",
   "info_issue_tracker_knx_frontend": "das KNX Frontend Panel",
@@ -34,6 +33,9 @@
   "project_explore_title": "Exploriere ETS Project",
   "project_explore_tree_view_title": "Gruppenadressen",
   "project_explore_upload": "Um das ETS project zu explorieren bitte zuerst das KNX Projekt auf Info hochladen!",
+  "project_explore_version_l1": "Die XKNXProject Version welche während des Uploads und Verarbeitung des ETS Projektes verwendet wurde, war:",
+  "project_explore_version_l2": "minimal erwartete Version",
+  "project_explore_version_l3": "Bitte Löschen und erneutes Hochladen des ETS Projektes auf Info um das ETS Projekt Werkzeug zu nutzen!",
   "Incoming": "Eingehend",
   "Outgoing": "Ausgehend"
 }

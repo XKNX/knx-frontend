@@ -41,8 +41,7 @@ export class KNXProjectTreeView extends LitElement {
         display: block;
       }
       summary:hover {
-        background-color: #363636;
-        border: 1px;
+        background-color: rgba(var(--rgb-primary-text-color), 0.1);
       }
       summary.ga {
         margin-left: 10pt;

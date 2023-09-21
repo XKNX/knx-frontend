@@ -1,4 +1,4 @@
-import { mdiNetwork, mdiFolderMultipleOutline } from "@mdi/js";
+import { mdiNetwork, mdiFolderMultipleOutline, mdiFileTreeOutline } from "@mdi/js";
 import { customElement, property, state } from "lit/decorators";
 
 import { HassRouterPage, RouterOptions } from "@ha/layouts/hass-router-page";
@@ -14,22 +14,19 @@ export const BASE_URL: string = "/knx";
 
 export const knxMainTabs: PageNavigation[] = [
   {
-    name: "info",
     translationKey: "info_title",
     path: `${BASE_URL}/info`,
     iconPath: mdiFolderMultipleOutline,
   },
   {
-    name: "monitor",
     translationKey: "group_monitor_title",
     path: `${BASE_URL}/group_monitor`,
     iconPath: mdiNetwork,
   },
   {
-    name: "explore",
     translationKey: "project_explore_title",
-    path: `${BASE_URL}/project_explore`,
-    iconPath: mdiNetwork,
+    path: `${BASE_URL}/project`,
+    iconPath: mdiFileTreeOutline,
   },
 ];
 
@@ -42,6 +39,9 @@ class KnxRouter extends HassRouterPage {
   @property({ attribute: false }) public route!: Route;
 
   @property({ type: Boolean }) public narrow!: boolean;
+
+  // at later point could dynamically add and delete tabs
+  @state() private _tabs: PageNavigation[] = knxMainTabs;
 
   @state() private _wideSidebar = false;
 
@@ -64,7 +64,7 @@ class KnxRouter extends HassRouterPage {
           return import("./views/group_monitor");
         },
       },
-      project_explore: {
+      project: {
         tag: "knx-project-explore",
         load: () => {
           logger.info("Importing knx-project-explore");
@@ -82,6 +82,7 @@ class KnxRouter extends HassRouterPage {
     el.narrow = this.narrow;
     el.isWide = isWide;
     el.section = section;
+    el.tabs = this._tabs;
 
     logger.info("Current Page: " + this._currentPage + " in knx-router");
 
@@ -101,9 +102,4 @@ declare global {
   interface HTMLElementTagNameMap {
     "knx-router": KnxRouter;
   }
-}
-
-export function getTabPath(name: string): string {
-  const result = knxMainTabs?.filter((obj) => obj.name === name);
-  return result ? result[0].path : BASE_URL;
 }
