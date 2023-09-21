@@ -59,6 +59,6 @@ export class KNXProjectTreeView extends LitElement {
 
 declare global {
     interface HTMLElementTagNameMap {
-        "ha-tree-view": KNXProjectTreeView;
+        "knx-project-tree-view": KNXProjectTreeView;
     }
 }

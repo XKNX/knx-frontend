@@ -9,7 +9,7 @@ import "../components/knx-project-tree-view";
 import { HomeAssistant, Route } from "@ha/types";
 import { KNX } from "../types/knx";
 import { knxMainTabs } from "../knx-router";
-import { KNXProject } from "../types/websocket";
+import { KNXProjectRespone } from "../types/websocket";
 import {
   getKnxProject,
 } from "../services/websocket.service";
@@ -27,7 +27,7 @@ export class KNXProjectExplore extends LitElement {
 
     @property({ type: Object }) public route?: Route;
 
-    @state() private _knxProject: KNXProject | null = null;
+    @state() private _knxProjectResp: KNXProjectRespone | null = null;
 
     protected firstUpdated() {
       this._getKnxProject();
@@ -35,8 +35,8 @@ export class KNXProjectExplore extends LitElement {
 
     private _getKnxProject() {
       getKnxProject(this.hass).then(
-        (knxProject) => {
-          this._knxProject = knxProject;
+        (knxProjectResp) => {
+          this._knxProjectResp = knxProjectResp;
           this.requestUpdate();
         },
         (err) => {
@@ -47,11 +47,11 @@ export class KNXProjectExplore extends LitElement {
 
     private _renderTreeView(): TemplateResult {
       return html`
-        ${this._knxProject?.project_loaded 
+        ${this._knxProjectResp?.project_loaded 
           ? html`
           <ha-card class="knx-project-tree" .header=${this.knx.localize("project_explore_tree_view_title")}>
             <div class="card-content">
-              <knx-project-tree-view .data=${this._knxProject.knxproject}></knx-project-tree-view>
+              <knx-project-tree-view .data=${this._knxProjectResp.knxproject}></knx-project-tree-view>
             </div>
           </ha-card>`
           : html`
@@ -74,7 +74,7 @@ export class KNXProjectExplore extends LitElement {
                 .localizeFunc=${this.knx.localize}
             >
               <div class="columns">
-                ${this._knxProject 
+                ${this._knxProjectResp
                   ? this._renderTreeView() 
                   : html`<ha-circular-progress alt="Loading..." size="large" active></ha-circular-progress>`
                 }

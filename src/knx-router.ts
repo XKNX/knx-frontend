@@ -8,25 +8,28 @@ import { HomeAssistant, Route } from "@ha/types";
 import { KNX } from "./types/knx";
 import { KNXLogger } from "./tools/knx-logger";
 
+
 const logger = new KNXLogger("router");
+
+export const BASE_URL: string = "/knx"
 
 export const knxMainTabs: PageNavigation[] = [
   {
     name: "info",
     translationKey: "info_title",
-    path: `/knx/info`,
+    path: `${BASE_URL}/info`,
     iconPath: mdiFolderMultipleOutline,
   },
   {
     name: "monitor",
     translationKey: "group_monitor_title",
-    path: `/knx/group_monitor`,
+    path: `${BASE_URL}/group_monitor`,
     iconPath: mdiNetwork,
   },
   {
     name: "explore",
     translationKey: "project_explore_title",
-    path: `/knx/project_explore`,
+    path: `${BASE_URL}/project_explore`,
     iconPath: mdiNetwork,
   },
 ];
@@ -101,7 +104,7 @@ declare global {
   }
 }
 
-export function getTabPath(name: string) : string | undefined {
+export function getTabPath(name: string) : string {
   const result = knxMainTabs?.filter(obj => obj.name === name);
-  return result ? result[0].path : undefined;
+  return result ? result[0].path : BASE_URL;
 }
