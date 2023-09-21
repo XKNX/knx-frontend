@@ -102,6 +102,6 @@ declare global {
 }
 
 export function getTabPath(name: string) : string | undefined {
-  const result = knxMainTabs?.filter(obj => {return obj.name === name});
+  const result = knxMainTabs?.filter(obj => obj.name === name);
   return result ? result[0].path : undefined;
 }

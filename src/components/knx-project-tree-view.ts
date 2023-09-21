@@ -3,15 +3,16 @@ import {
     CSSResultGroup,
     html,
     LitElement,
+    nothing,
     TemplateResult,
 } from "lit";
 import { customElement, property } from "lit/decorators";
-import { GroupRange } from "../types/websocket";
+import { GroupRange, KNXProject } from "../types/websocket";
 
 @customElement("knx-project-tree-view")
 export class KNXProjectTreeView extends LitElement {
 
-    @property({ type: Object, reflect: false }) data;
+    @property({ reflect: false }) data;
 
     protected render(): TemplateResult {
         return html`<div class="container ha-tree-view">${this._recurseData(this.data.group_ranges)}</div>`;
@@ -23,15 +24,15 @@ export class KNXProjectTreeView extends LitElement {
                 const ga_name = this.data.group_addresses[ga]!.name
                 return html`<summary class="ga">${ga} - ${ga_name}</summary>`;
             })
-            : html``
+            : nothing
         return html`${tmpl}`
     }
 
-    protected _recurseData(data: Object): TemplateResult {
+    protected _recurseData(data: KNXProject): TemplateResult {
         const childTemplates = Object.keys(data).map(
             (key) => html`<details>
                 <summary>${key} - ${data[key].name}</summary>
-                ${data[key].group_ranges ? this._recurseData(data[key].group_ranges) : html``}
+                ${data[key].group_ranges ? this._recurseData(data[key].group_ranges) : nothing}
                 ${this._renderGAs(data[key])}
             </details>`
         )

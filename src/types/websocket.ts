@@ -34,13 +34,16 @@ export interface TelegramDict {
   value: string | number | boolean | null;
 }
 
-export interface KNXProject {
+export interface KNXProjectRespone {
   project_loaded: boolean;
-  knxproject: {
-    group_addresses: { [key: string]: GroupAddress};
-    group_ranges: { [key: string]: GroupRange };  
-  };
+  knxproject: KNXProject
 }
+
+export interface KNXProject {
+  group_addresses: { [key: string]: GroupAddress};
+  group_ranges: { [key: string]: GroupRange };  
+}
+
 
 export interface GroupRange {
   name: string;

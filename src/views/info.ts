@@ -153,7 +153,7 @@ export class KNXInfo extends LitElement {
               <div>${projectInfo.xknxproject_version}</div>
             </div>
             <div class="knx-button-row">
-              <a href="${getTabPath("explore")}">
+              <a href=${getTabPath("explore")}>
                 <ha-button class="knx-project-explore">
                   ${this.knx.localize("project_explore_title")}
                 </ha-button>
