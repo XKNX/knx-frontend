@@ -95,14 +95,17 @@ export class KNXProjectExplore extends LitElement {
         .tabs=${this.tabs}
         .localizeFunc=${this.knx.localize}
       >
-        <div class="columns">
+        <div class="rows">
           ${this._knxProjectResp
             ? this._renderTreeView()
-            : html`<ha-circular-progress
-                alt="Loading..."
-                size="large"
-                active
-              ></ha-circular-progress>`}
+            : html`
+              <div style="display: flex; justify-content: center;">
+                <ha-circular-progress
+                  alt="Loading..."
+                  size="large"
+                  active
+                ></ha-circular-progress>
+            </div>`}
         </div>
       </hass-tabs-subpage>
     `;
@@ -110,7 +113,7 @@ export class KNXProjectExplore extends LitElement {
 
   static get styles() {
     return css`
-      .columns {
+      .rows {
         display: flex;
         justify-content: center;
         flex-direction: column;
@@ -120,6 +123,10 @@ export class KNXProjectExplore extends LitElement {
         margin-right: 8px;
         margin-left: 8px;
         margin-top: 8px;
+      }
+
+      ha-circular-progress {
+        margin-top: 32px;
       }
     `;
   }
