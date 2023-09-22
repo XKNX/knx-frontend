@@ -14,12 +14,20 @@
     "lint:types": "tsc --project tsconfig.json",
     "lint:lit": "lit-analyzer \"./src/**/*.ts\" --format markdown --outFile result.md",
     "lint": "yarn run lint:eslint && yarn run lint:prettier",
-    "format": "yarn run format:eslint && yarn run format:prettier"
+    "format": "yarn run format:eslint && yarn run format:prettier",
+    "postinstall": "husky install",
+    "prepack": "pinst --disable",
+    "postpack": "pinst --enable"
   },
   "repository": "https://github.com/XKNX/knx-frontend.git",
   "author": "Marvin Wichmann <me@marvin-wichmann.de>",
   "license": "MIT",
   "type": "module",
+  "husky": {
+    "hooks": {
+      "pre-commit": "echo '[Husky] pre-commit'"
+    }
+  },
   "dependenciesOverride": {
     "compare-versions": "6.1.0"
   },

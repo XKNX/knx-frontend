@@ -86,5 +86,4 @@ $ hass -c config
 Now `hass` (Home Assistant Core) should run on your machine and the knx panel is
 accessible at http://localhost:8123/knx.
 
-
 [hassos_dev_env]: https://developers.home-assistant.io/docs/development_environment/
