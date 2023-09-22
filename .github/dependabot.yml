@@ -2,9 +2,6 @@ version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
-    labels:
-      - "pr: dependency-update"
     schedule:
-      interval: daily
-      time: "06:00"
+      interval: monthly
     open-pull-requests-limit: 10
