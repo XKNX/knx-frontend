@@ -23,11 +23,6 @@
   "author": "Marvin Wichmann <me@marvin-wichmann.de>",
   "license": "MIT",
   "type": "module",
-  "husky": {
-    "hooks": {
-      "pre-commit": "echo '[Husky] pre-commit'"
-    }
-  },
   "dependenciesOverride": {
     "compare-versions": "6.1.0"
   },
