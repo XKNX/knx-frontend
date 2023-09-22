@@ -20,7 +20,9 @@
   "author": "Marvin Wichmann <me@marvin-wichmann.de>",
   "license": "MIT",
   "type": "module",
-  "dependenciesOverride": {},
+  "dependenciesOverride": {
+    "compare-versions": "6.1.0"
+  },
   "devDependenciesOverride": {
     "tsconfig-paths-webpack-plugin": "^4.0.1"
   },
