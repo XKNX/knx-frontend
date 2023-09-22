@@ -98,14 +98,9 @@ export class KNXProjectExplore extends LitElement {
         <div class="rows">
           ${this._knxProjectResp
             ? this._renderTreeView()
-            : html`
-              <div style="display: flex; justify-content: center;">
-                <ha-circular-progress
-                  alt="Loading..."
-                  size="large"
-                  active
-                ></ha-circular-progress>
-            </div>`}
+            : html` <div style="display: flex; justify-content: center;">
+                <ha-circular-progress alt="Loading..." size="large" active></ha-circular-progress>
+              </div>`}
         </div>
       </hass-tabs-subpage>
     `;
