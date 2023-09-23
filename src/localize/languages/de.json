@@ -30,12 +30,12 @@
   "group_monitor_connected_waiting_telegrams": "Grouppenmonitor ist verbunden und wartet auf Telegramme",
   "group_monitor_value": "Wert",
   "group_monitor_waiting_to_connect": "Warte auf Websocket-Verbindung",
-  "project_explore_title": "Exploriere ETS Project",
+  "project_explore_title": "ETS Project",
   "project_explore_tree_view_title": "Gruppenadressen",
-  "project_explore_upload": "Um das ETS project zu explorieren bitte zuerst das KNX Projekt auf Info hochladen!",
-  "project_explore_version_l1": "Die XKNXProject Version welche während des Uploads und Verarbeitung des ETS Projektes verwendet wurde, war:",
-  "project_explore_version_l2": "minimal erwartete Version",
-  "project_explore_version_l3": "Bitte Löschen und erneutes Hochladen des ETS Projektes auf Info um das ETS Projekt Werkzeug zu nutzen!",
+  "project_explore_upload": "Keine Projektdaten gefunden. Wechsle zum Info Tab und lade eine Projektdatei hoch.",
+  "project_explore_version_l1": "Die Version von `XKNXProject` welche für die Verarbeitung des ETS Projektes verwendet wurde, war:",
+  "project_explore_version_l2": "minimal unterstützte Version",
+  "project_explore_version_l3": "Lade die Projektdatei erneut hoch, um das ETS Projekt Werkzeug zu nutzen",
   "Incoming": "Eingehend",
   "Outgoing": "Ausgehend"
 }

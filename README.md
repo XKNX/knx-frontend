@@ -64,7 +64,7 @@ $ script/bootstrap
 ### Testing the panel
 
 First of all we recommend to follow the instructions for
-[preparing a home assistant development environment](hassos_dev_env).
+[preparing a home assistant development environment][hassos_dev_env].
 
 You can test the panel by symlinking the build result directory `knx_frontend`
 into your Home Assistant configuration directory.
