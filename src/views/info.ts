@@ -4,7 +4,7 @@ import { customElement, property, state } from "lit/decorators";
 
 import "@ha/components/ha-card";
 import "@ha/layouts/hass-tabs-subpage";
-import * as HATS from "@ha/layouts/hass-tabs-subpage";
+import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import "@ha/components/ha-button";
 import "@ha/components/ha-file-upload";
 import "@ha/components/ha-selector/ha-selector-text";
@@ -37,7 +37,7 @@ export class KNXInfo extends LitElement {
 
   @property({ type: Object }) public route?: Route;
 
-  @property({ type: Array, reflect: false }) public tabs!: HATS.PageNavigation[];
+  @property({ type: Array, reflect: false }) public tabs!: PageNavigation[];
 
   @state() private knxInfoData: KNXInfoData | null = null;
 
