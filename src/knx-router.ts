@@ -1,4 +1,4 @@
-import { mdiNetwork, mdiFolderMultipleOutline } from "@mdi/js";
+import { mdiNetwork, mdiFolderMultipleOutline, mdiFileTreeOutline } from "@mdi/js";
 import { customElement, property, state } from "lit/decorators";
 
 import { HassRouterPage, RouterOptions } from "@ha/layouts/hass-router-page";
@@ -10,16 +10,23 @@ import { KNXLogger } from "./tools/knx-logger";
 
 const logger = new KNXLogger("router");
 
+export const BASE_URL: string = "/knx";
+
 export const knxMainTabs: PageNavigation[] = [
   {
     translationKey: "info_title",
-    path: `/knx/info`,
+    path: `${BASE_URL}/info`,
     iconPath: mdiFolderMultipleOutline,
   },
   {
     translationKey: "group_monitor_title",
-    path: `/knx/group_monitor`,
+    path: `${BASE_URL}/group_monitor`,
     iconPath: mdiNetwork,
+  },
+  {
+    translationKey: "project_explore_title",
+    path: `${BASE_URL}/project`,
+    iconPath: mdiFileTreeOutline,
   },
 ];
 
@@ -32,6 +39,9 @@ class KnxRouter extends HassRouterPage {
   @property({ attribute: false }) public route!: Route;
 
   @property({ type: Boolean }) public narrow!: boolean;
+
+  // at later point could dynamically add and delete tabs
+  @state() private _tabs: PageNavigation[] = knxMainTabs;
 
   @state() private _wideSidebar = false;
 
@@ -54,6 +64,13 @@ class KnxRouter extends HassRouterPage {
           return import("./views/group_monitor");
         },
       },
+      project: {
+        tag: "knx-project-explore",
+        load: () => {
+          logger.info("Importing knx-project-explore");
+          return import("./views/project_explore");
+        },
+      },
     },
   };
 
@@ -65,6 +82,7 @@ class KnxRouter extends HassRouterPage {
     el.narrow = this.narrow;
     el.isWide = isWide;
     el.section = section;
+    el.tabs = this._tabs;
 
     logger.info("Current Page: " + this._currentPage + " in knx-router");
 

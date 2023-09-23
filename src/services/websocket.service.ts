@@ -1,5 +1,10 @@
 import { HomeAssistant } from "@ha/types";
-import { KNXInfoData, TelegramDict, GroupMonitorInfoData } from "../types/websocket";
+import {
+  KNXInfoData,
+  TelegramDict,
+  GroupMonitorInfoData,
+  KNXProjectRespone,
+} from "../types/websocket";
 
 export const getKnxInfoData = (hass: HomeAssistant): Promise<KNXInfoData> =>
   hass.callWS({
@@ -33,4 +38,9 @@ export const subscribeKnxTelegrams = (
 ) =>
   hass.connection.subscribeMessage<TelegramDict>(callback, {
     type: "knx/subscribe_telegrams",
+  });
+
+export const getKnxProject = (hass: HomeAssistant): Promise<KNXProjectRespone> =>
+  hass.callWS({
+    type: "knx/get_knx_project",
   });

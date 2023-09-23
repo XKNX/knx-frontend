@@ -9,6 +9,7 @@ export interface KNXProjectInfo {
   name: string;
   last_modified: string;
   tool_version: string;
+  xknxproject_version: string;
 }
 
 export interface GroupMonitorInfoData {
@@ -31,4 +32,35 @@ export interface TelegramDict {
   timestamp: string; // ISO 8601 eg. "2023-06-21T22:28:45.446257+02:00" from `dt_util.as_local(dt_util.utcnow())`
   unit: string | null;
   value: string | number | boolean | null;
+}
+
+export interface KNXProjectRespone {
+  project_loaded: boolean;
+  knxproject: KNXProject;
+}
+
+export interface KNXProject {
+  info: KNXProjectInfo;
+  group_addresses: { [key: string]: GroupAddress };
+  group_ranges: { [key: string]: GroupRange };
+}
+
+export interface GroupRange {
+  name: string;
+  address_start: number;
+  address_end: number;
+  comment: string;
+  group_addresses: string[];
+  group_ranges: { [key: string]: GroupRange };
+}
+
+export interface GroupAddress {
+  name: string;
+  identifier: string;
+  raw_address: number;
+  address: number;
+  project_uid: number;
+  communication_object_ids: string[];
+  description: string;
+  comment: string;
 }

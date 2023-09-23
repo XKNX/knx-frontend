@@ -14,13 +14,18 @@
     "lint:types": "tsc --project tsconfig.json",
     "lint:lit": "lit-analyzer \"./src/**/*.ts\" --format markdown --outFile result.md",
     "lint": "yarn run lint:eslint && yarn run lint:prettier",
-    "format": "yarn run format:eslint && yarn run format:prettier"
+    "format": "yarn run format:eslint && yarn run format:prettier",
+    "postinstall": "husky install",
+    "prepack": "pinst --disable",
+    "postpack": "pinst --enable"
   },
   "repository": "https://github.com/XKNX/knx-frontend.git",
   "author": "Marvin Wichmann <me@marvin-wichmann.de>",
   "license": "MIT",
   "type": "module",
-  "dependenciesOverride": {},
+  "dependenciesOverride": {
+    "compare-versions": "6.1.0"
+  },
   "devDependenciesOverride": {
     "tsconfig-paths-webpack-plugin": "^4.0.1"
   },
@@ -106,6 +111,7 @@
     "app-datepicker": "5.1.1",
     "chart.js": "3.3.2",
     "comlink": "4.4.1",
+    "compare-versions": "6.1.0",
     "core-js": "3.31.1",
     "cropperjs": "1.5.13",
     "date-fns": "2.30.0",
