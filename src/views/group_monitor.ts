@@ -12,7 +12,7 @@ import type {
 import { haStyle } from "@ha/resources/styles";
 import { HomeAssistant, Route } from "@ha/types";
 
-import { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
+import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import { subscribeKnxTelegrams, getGroupMonitorInfo } from "../services/websocket.service";
 import { KNX } from "../types/knx";
 import { TelegramDict } from "../types/websocket";

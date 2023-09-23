@@ -2,7 +2,7 @@ import { LitElement, TemplateResult, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
 import "@ha/layouts/hass-tabs-subpage";
-import * as HATS from "@ha/layouts/hass-tabs-subpage";
+import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import "@ha/components/ha-card";
 import "@ha/components/ha-circular-progress";
 import "../components/knx-project-tree-view";
@@ -29,7 +29,7 @@ export class KNXProjectExplore extends LitElement {
 
   @property({ type: Object }) public route?: Route;
 
-  @property({ type: Array, reflect: false }) public tabs!: HATS.PageNavigation[];
+  @property({ type: Array, reflect: false }) public tabs!: PageNavigation[];
 
   @state() private _knxProjectResp: KNXProjectRespone | null = null;
 
