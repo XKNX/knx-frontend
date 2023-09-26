@@ -4,7 +4,7 @@ import { GroupRange, KNXProject } from "../types/websocket";
 
 @customElement("knx-project-tree-view")
 export class KNXProjectTreeView extends LitElement {
-  @property({ reflect: false }) data;
+  @property({ reflect: false }) data!: KNXProject;
 
   protected render(): TemplateResult {
     return html`<div class="container ha-tree-view">
@@ -22,7 +22,7 @@ export class KNXProjectTreeView extends LitElement {
     return html`${tmpl}`;
   }
 
-  protected _recurseData(data: KNXProject): TemplateResult {
+  protected _recurseData(data: { [key: string]: GroupRange }): TemplateResult {
     const childTemplates = Object.keys(data).map(
       (key) =>
         html`<details>
