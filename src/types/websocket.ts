@@ -58,9 +58,15 @@ export interface GroupAddress {
   name: string;
   identifier: string;
   raw_address: number;
-  address: number;
+  address: string;
   project_uid: number;
+  dpt: DPT | null;
   communication_object_ids: string[];
   description: string;
   comment: string;
+}
+
+export interface DPT {
+  main: number;
+  sub: number | null;
 }
