@@ -1,5 +1,6 @@
 import { css, CSSResultGroup, html, LitElement, nothing, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators";
+import { classMap } from "lit/directives/class-map";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
 
@@ -47,55 +48,55 @@ export class KNXProjectTreeView extends LitElement {
       });
     };
     initSelectableRanges(this.data.group_ranges);
-    logger.log("ragnes", this._selectableRanges);
+    logger.log("ranges", this._selectableRanges);
   }
 
   protected render(): TemplateResult {
-    return html`<div class="container ha-tree-view">
-      ${this._recurseData(this.data.group_ranges)}
-    </div>`;
+    return html`<div class="ha-tree-view">${this._recurseData(this.data.group_ranges)}</div>`;
   }
 
-  protected _recurseData(data: { [key: string]: GroupRange }): TemplateResult {
+  protected _recurseData(data: { [key: string]: GroupRange }, level: number = 0): TemplateResult {
     const childTemplates = Object.entries(data).map(([key, groupRange]) => {
       const hasSubRange = Object.keys(groupRange.group_ranges).length > 0;
+      const empty = !(hasSubRange || groupRange.group_addresses.length > 0);
+      if (empty) {
+        return nothing;
+      }
       const selectable = key in this._selectableRanges;
-
-      const checkbox = selectable
-        ? html`<input
-            type="checkbox"
-            .id=${key}
-            .checked=${this._selectableRanges[key].selected}
-            @change=${this._selectionChanged}
-          />`
-        : nothing;
-      const _rangeName = key + " - " + groupRange.name;
-      const rangeContent = selectable
-        ? html`<label>${checkbox} ${_rangeName}</label>`
-        : html`${_rangeName}`;
+      const selected = selectable ? this._selectableRanges[key].selected : false;
+      const rangeClasses = {
+        "range-text": true,
+        "root-range": level === 0,
+        "sub-range": level > 0,
+        selectable: selectable,
+        "selected-range": selected,
+        "non-selected-range": selectable && !selected,
+      };
+      const rangeContent = html`<div
+        class=${classMap(rangeClasses)}
+        toggle-range=${selectable ? key : nothing}
+        @click=${selectable ? this._selectionChanged : nothing}
+      >
+        ${key + " " + groupRange.name}
+      </div>`;
 
       if (hasSubRange) {
-        const subselected = Object.keys(groupRange.group_ranges).reduce(
-          (accumulator, rangeKey) =>
-            rangeKey in this._selectableRanges
-              ? this._selectableRanges[rangeKey].selected
-                ? accumulator + 1
-                : accumulator
-              : accumulator,
-          0,
-        );
-        return html`<details>
-          <summary>${rangeContent} ${subselected ? "(" + subselected + ")" : nothing}</summary>
-          ${this._recurseData(groupRange.group_ranges)}
-        </details>`;
+        const groupClasses = {
+          "root-group": level === 0,
+          "sub-group": level !== 0,
+        };
+        return html`<div class=${classMap(groupClasses)}>
+          ${rangeContent} ${this._recurseData(groupRange.group_ranges, level + 1)}
+        </div>`;
       }
+
       return html`${rangeContent}`;
     });
     return html`${childTemplates}`;
   }
 
   private _selectionChanged(ev) {
-    const rangeKey = ev.target.id;
+    const rangeKey = (ev.target as Element).getAttribute("toggle-range")!;
     this._selectableRanges[rangeKey].selected = !this._selectableRanges[rangeKey].selected;
     this._selectionUpdate();
     this.requestUpdate();
@@ -113,21 +114,57 @@ export class KNXProjectTreeView extends LitElement {
 
   static get styles(): CSSResultGroup {
     return css`
-      details {
-        margin-left: 10pt;
+      .ha-tree-view {
+        cursor: default;
+      }
+
+      .root-group {
+        margin-bottom: 10px;
+        margin-top: 5px;
+      }
+
+      .root-group > * {
+        padding-top: 5px;
+        padding-bottom: 5px;
+      }
+
+      .range-text {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        font-size: 15px;
         display: block;
       }
-      summary:hover,
-      p:hover {
-        background-color: rgba(var(--rgb-primary-text-color), 0.1);
+
+      .root-range {
+        padding-left: 8px;
+        font-weight: 500;
+        background-color: rgba(var(--rgb-primary-text-color), 0.07);
       }
-      summary {
-        margin-left: 10pt;
-        display: block;
+
+      .sub-range {
+        padding-left: 16px;
       }
-      label {
-        margin-left: 20pt;
-        display: block;
+
+      .selectable {
+        cursor: pointer;
+      }
+
+      .selectable:hover {
+        background-color: rgba(var(--rgb-primary-text-color), 0.04);
+      }
+
+      .selected-range {
+        color: var(--primary-color);
+        background-color: rgba(var(--rgb-primary-color), 0.12);
+      }
+
+      .selected-range:hover {
+        background-color: rgba(var(--rgb-primary-color), 0.07);
+      }
+
+      .non-selected-range {
+        background-color: var(--card-background-color);
       }
     `;
   }

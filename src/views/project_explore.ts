@@ -1,9 +1,10 @@
-import { LitElement, TemplateResult, html, css } from "lit";
+import { LitElement, TemplateResult, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
 import { HASSDomEvent } from "@ha/common/dom/fire_event";
 import "@ha/layouts/hass-tabs-subpage";
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
+import "@ha/components/ha-alert";
 import "@ha/components/ha-card";
 import "@ha/components/ha-circular-progress";
 import "@ha/components/ha-expansion-panel";
@@ -46,6 +47,8 @@ export class KNXProjectExplore extends LitElement {
 
   @state() private _visibleGroupAddresses: string[] = [];
 
+  @state() private _groupRangeAvailable: boolean = false;
+
   protected firstUpdated() {
     this._getKnxProject();
 
@@ -81,6 +84,11 @@ export class KNXProjectExplore extends LitElement {
     getKnxProject(this.hass).then(
       (knxProjectResp) => {
         this._knxProjectResp = knxProjectResp;
+        this._groupRangeAvailable = compare(
+          knxProjectResp.knxproject.info.xknxproject_version ?? "0.0.0",
+          MIN_XKNXPROJECT_VERSION,
+          ">=",
+        );
         this.requestUpdate();
       },
       (err) => {
@@ -115,56 +123,6 @@ export class KNXProjectExplore extends LitElement {
     this._visibleGroupAddresses = ev.detail.groupAddresses;
   }
 
-  private _renderTreeView(): TemplateResult {
-    const filtered = this._getRows(this._visibleGroupAddresses);
-    return html`
-      ${this._knxProjectResp?.project_loaded
-        ? html` <ha-expansion-panel
-              class="knx-project-tree"
-              outlined
-              .header=${this.knx.localize("project_explore_tree_view_title")}
-            >
-              <div class="card-content">
-                ${compare(
-                  this._knxProjectResp?.knxproject.info.xknxproject_version ?? "0.0.0",
-                  MIN_XKNXPROJECT_VERSION,
-                  ">=",
-                )
-                  ? html`
-                      <knx-project-tree-view
-                        .data=${this._knxProjectResp.knxproject}
-                        @knx-group-range-selection-changed=${this._visibleAddressesChanged}
-                      ></knx-project-tree-view>
-                    `
-                  : html`
-                      <p>${this.knx.localize("project_explore_version_l1")}</p>
-                      <p style="margin-left: 16px;font-weight: bold">
-                        ${this._knxProjectResp?.knxproject.info.xknxproject_version} &lt;
-                        ${MIN_XKNXPROJECT_VERSION}
-                        (${this.knx.localize("project_explore_version_l2")})
-                      </p>
-                      <p>${this.knx.localize("project_explore_version_l3")}</p>
-                    `}
-              </div>
-            </ha-expansion-panel>
-            <ha-data-table
-              class="ga-table"
-              .hass=${this.hass}
-              .columns=${this._columns}
-              .data=${filtered}
-              .hasFab=${false}
-              .searchLabel=${this.hass.localize("ui.components.data-table.search")}
-              id="index"
-              .clickable=${false}
-            ></ha-data-table>`
-        : html` <ha-card class="knx-project-tree" .header=${this.knx.localize("attention")}>
-            <div class="card-content">
-              <p>${this.knx.localize("project_explore_upload")}</p>
-            </div>
-          </ha-card>`}
-    `;
-  }
-
   protected render(): TemplateResult | void {
     return html`
       <hass-tabs-subpage
@@ -174,29 +132,61 @@ export class KNXProjectExplore extends LitElement {
         .tabs=${this.tabs}
         .localizeFunc=${this.knx.localize}
       >
-        <div class="rows">
-          ${this._knxProjectResp
-            ? this._renderTreeView()
-            : html` <div style="display: flex; justify-content: center;">
-                <ha-circular-progress alt="Loading..." size="large" active></ha-circular-progress>
-              </div>`}
-        </div>
+        ${this._knxProjectResp
+          ? this._renderProjectView()
+          : html` <div style="display: flex; justify-content: center;">
+              <ha-circular-progress alt="Loading..." size="large" active></ha-circular-progress>
+            </div>`}
       </hass-tabs-subpage>
+    `;
+  }
+
+  private _renderProjectView(): TemplateResult {
+    const filtered = this._getRows(this._visibleGroupAddresses);
+    return html`
+      ${this._knxProjectResp?.project_loaded
+        ? html` <div class="sections">
+            ${this._groupRangeAvailable
+              ? html`
+                  <knx-project-tree-view
+                    .data=${this._knxProjectResp.knxproject}
+                    @knx-group-range-selection-changed=${this._visibleAddressesChanged}
+                  ></knx-project-tree-view>
+                `
+              : nothing}
+            <ha-data-table
+              class="ga-table"
+              .hass=${this.hass}
+              .columns=${this._columns}
+              .data=${filtered}
+              .hasFab=${false}
+              .searchLabel=${this.hass.localize("ui.components.data-table.search")}
+              id="index"
+              .clickable=${false}
+            ></ha-data-table>
+          </div>`
+        : html` <ha-card .header=${this.knx.localize("attention")}>
+            <div class="card-content">
+              <p>${this.knx.localize("project_explore_upload")}</p>
+            </div>
+          </ha-card>`}
     `;
   }
 
   static get styles() {
     return css`
-      .rows {
+      .sections {
         display: flex;
         /* justify-content: center; */
-        flex-direction: column;
+        flex-direction: row;
         height: 100%;
       }
 
-      .knx-project-tree {
-        margin: 8px;
-        flex: 0;
+      knx-project-tree-view {
+        margin: 0;
+        overflow-y: scroll;
+        width: 255px;
+        /* flex: 1; */
       }
 
       .ga-table {

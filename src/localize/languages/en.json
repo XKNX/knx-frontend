@@ -33,9 +33,9 @@
   "project_explore_title": "ETS Project",
   "project_explore_tree_view_title": "Group Addresses",
   "project_explore_upload": "To use the project explorer please upload a KNX project on Info tab first!",
-  "project_explore_version_l1": "The `XKNXProject` version used for parsing of the ETS project was:",
+  "project_explore_version_l1": "The `XKNXProject` version used for parsing the ETS project was:",
   "project_explore_version_l2": "minimum version required",
-  "project_explore_version_l3": "Please resubmit the ETS project on Info again to use the ETS Project tool.",
+  "project_explore_version_l3": "Please resubmit your ETS project file.",
   "Incoming": "Incoming",
   "Outgoing": "Outgoing"
 }
