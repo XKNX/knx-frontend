@@ -1,3 +1,4 @@
+import { mdiFilterVariant } from "@mdi/js";
 import { LitElement, TemplateResult, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
@@ -8,6 +9,7 @@ import "@ha/components/ha-alert";
 import "@ha/components/ha-card";
 import "@ha/components/ha-circular-progress";
 import "@ha/components/ha-expansion-panel";
+import "@ha/components/ha-icon-button";
 import "@ha/components/data-table/ha-data-table";
 import type {
   DataTableColumnContainer,
@@ -40,6 +42,8 @@ export class KNXProjectExplore extends LitElement {
   @property({ type: Object }) public route?: Route;
 
   @property({ type: Array, reflect: false }) public tabs!: PageNavigation[];
+
+  @property({ type: Boolean, reflect: true }) private rangeSelectorHidden = true;
 
   @state() private _knxProjectResp: KNXProjectRespone | null = null;
 
@@ -145,26 +149,33 @@ export class KNXProjectExplore extends LitElement {
     const filtered = this._getRows(this._visibleGroupAddresses);
     return html`
       ${this._knxProjectResp?.project_loaded
-        ? html` <div class="sections">
-            ${this._groupRangeAvailable
-              ? html`
-                  <knx-project-tree-view
-                    .data=${this._knxProjectResp.knxproject}
-                    @knx-group-range-selection-changed=${this._visibleAddressesChanged}
-                  ></knx-project-tree-view>
-                `
+        ? html`${this.narrow && this._groupRangeAvailable
+              ? html`<ha-icon-button
+                  slot="toolbar-icon"
+                  .label=${this.hass.localize("ui.components.related-filter-menu.filter")}
+                  .path=${mdiFilterVariant}
+                  @click=${this._toggleRangeSelector}
+                ></ha-icon-button>`
               : nothing}
-            <ha-data-table
-              class="ga-table"
-              .hass=${this.hass}
-              .columns=${this._columns}
-              .data=${filtered}
-              .hasFab=${false}
-              .searchLabel=${this.hass.localize("ui.components.data-table.search")}
-              id="index"
-              .clickable=${false}
-            ></ha-data-table>
-          </div>`
+            <div class="sections">
+              ${this._groupRangeAvailable
+                ? html`
+                    <knx-project-tree-view
+                      .data=${this._knxProjectResp.knxproject}
+                      @knx-group-range-selection-changed=${this._visibleAddressesChanged}
+                    ></knx-project-tree-view>
+                  `
+                : nothing}
+              <ha-data-table
+                class="ga-table"
+                .hass=${this.hass}
+                .columns=${this._columns}
+                .data=${filtered}
+                .hasFab=${false}
+                .searchLabel=${this.hass.localize("ui.components.data-table.search")}
+                .clickable=${false}
+              ></ha-data-table>
+            </div>`
         : html` <ha-card .header=${this.knx.localize("attention")}>
             <div class="card-content">
               <p>${this.knx.localize("project_explore_upload")}</p>
@@ -173,20 +184,33 @@ export class KNXProjectExplore extends LitElement {
     `;
   }
 
+  private _toggleRangeSelector() {
+    this.rangeSelectorHidden = !this.rangeSelectorHidden;
+  }
+
   static get styles() {
     return css`
       .sections {
         display: flex;
-        /* justify-content: center; */
         flex-direction: row;
         height: 100%;
       }
 
-      knx-project-tree-view {
-        margin: 0;
-        overflow-y: scroll;
-        width: 255px;
-        /* flex: 1; */
+      :host([narrow]) knx-project-tree-view {
+        position: absolute;
+        max-width: calc(100% - 60px); // 100% -> max 871px before not narrow
+        z-index: 1;
+        right: 0;
+        transition: 0.5s;
+        border-left: 1px solid var(--divider-color);
+      }
+
+      :host([narrow][rangeSelectorHidden]) knx-project-tree-view {
+        width: 0;
+      }
+
+      :host(:not([narrow])) knx-project-tree-view {
+        max-width: 255px; // min 616px - 816px for tree-view + ga-table (depending on side menu)
       }
 
       .ga-table {

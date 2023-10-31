@@ -114,6 +114,14 @@ export class KNXProjectTreeView extends LitElement {
 
   static get styles(): CSSResultGroup {
     return css`
+      :host {
+        margin: 0;
+        height: 100%;
+        overflow-y: scroll;
+        overflow-x: hidden;
+        background-color: var(--card-background-color);
+      }
+
       .ha-tree-view {
         cursor: default;
       }
