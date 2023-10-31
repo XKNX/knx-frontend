@@ -61,25 +61,26 @@ export class KNXProjectExplore extends LitElement {
         filterable: true,
         sortable: true,
         title: "Address",
-        width: "10%",
+        width: "95px",
       },
       text: {
         filterable: true,
         sortable: true,
         title: "Name",
-        width: "40%",
+        width: "calc(50% - 80px)",
       },
       description: {
         filterable: true,
         sortable: true,
         title: "Description",
-        width: "40%",
+        width: "calc(50% - 95px)",
       },
       dpt: {
         sortable: true,
         filterable: true,
         title: "DPT",
-        width: "10%",
+        type: "numeric",
+        width: "80px",
       },
     };
   }
