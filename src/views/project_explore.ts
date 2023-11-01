@@ -2,6 +2,8 @@ import { mdiFilterVariant } from "@mdi/js";
 import { LitElement, TemplateResult, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
+import memoize from "memoize-one";
+
 import { HASSDomEvent } from "@ha/common/dom/fire_event";
 import "@ha/layouts/hass-tabs-subpage";
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
@@ -53,34 +55,42 @@ export class KNXProjectExplore extends LitElement {
     this._getKnxProject();
   }
 
-  private _columns: DataTableColumnContainer<GroupAddress> = {
-    address: {
-      filterable: true,
-      sortable: true,
-      title: "Address",
-      width: "95px",
-    },
-    name: {
-      filterable: true,
-      sortable: true,
-      title: "Name",
-      width: "calc(50% - 80px)",
-    },
-    description: {
-      filterable: true,
-      sortable: true,
-      title: "Description",
-      width: "calc(50% - 95px)",
-    },
-    dpt: {
-      sortable: true,
-      filterable: true,
-      title: "DPT",
-      type: "numeric",
-      width: "80px",
-      template: (dpt: DPT | null) => dptToString(dpt),
-    },
-  };
+  private _columns = memoize((narrow, _language): DataTableColumnContainer<GroupAddress> => {
+    const addressWidth = "95px";
+    const dptWidth = "80px";
+
+    return {
+      address: {
+        filterable: true,
+        sortable: true,
+        title: "Address",
+        width: "95px",
+      },
+      name: {
+        filterable: true,
+        sortable: true,
+        title: "Name",
+        width: narrow
+          ? "calc(100% - " + dptWidth + " - " + addressWidth + ")"
+          : "calc(50% - " + dptWidth + ")",
+      },
+      description: {
+        filterable: true,
+        sortable: true,
+        hidden: narrow,
+        title: "Description",
+        width: "calc(50% - " + addressWidth + ")",
+      },
+      dpt: {
+        sortable: true,
+        filterable: true,
+        title: "DPT",
+        type: "numeric",
+        width: "80px",
+        template: (dpt: DPT | null) => dptToString(dpt),
+      },
+    };
+  });
 
   private _getKnxProject() {
     getKnxProject(this.hass).then(
@@ -161,7 +171,7 @@ export class KNXProjectExplore extends LitElement {
               <ha-data-table
                 class="ga-table"
                 .hass=${this.hass}
-                .columns=${this._columns}
+                .columns=${this._columns(this.narrow, this.hass.language)}
                 .data=${filtered}
                 .hasFab=${false}
                 .searchLabel=${this.hass.localize("ui.components.data-table.search")}
