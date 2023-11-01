@@ -27,12 +27,12 @@ import { dptToString } from "../utils/format";
 import { getKnxProject } from "../services/websocket.service";
 import { KNXLogger } from "../tools/knx-logger";
 
-const logger = new KNXLogger("knx-project-explore");
+const logger = new KNXLogger("knx-project-view");
 // Minimum XKNXProject Version needed which was used for parsing the ETS Project
 const MIN_XKNXPROJECT_VERSION = "3.3.0";
 
-@customElement("knx-project-explore")
-export class KNXProjectExplore extends LitElement {
+@customElement("knx-project-view")
+export class KNXProjectView extends LitElement {
   @property({ type: Object }) public hass!: HomeAssistant;
 
   @property({ attribute: false }) public knx!: KNX;
@@ -180,7 +180,7 @@ export class KNXProjectExplore extends LitElement {
             </div>`
         : html` <ha-card .header=${this.knx.localize("attention")}>
             <div class="card-content">
-              <p>${this.knx.localize("project_explore_upload")}</p>
+              <p>${this.knx.localize("project_view_upload")}</p>
             </div>
           </ha-card>`}
     `;
@@ -228,6 +228,6 @@ export class KNXProjectExplore extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    "knx-project-explore": KNXProjectExplore;
+    "knx-project-view": KNXProjectView;
   }
 }
