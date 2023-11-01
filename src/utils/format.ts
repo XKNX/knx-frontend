@@ -1,4 +1,4 @@
-import { TelegramDict } from "../types/websocket";
+import { DPT, TelegramDict } from "../types/websocket";
 
 export const TelegramDictFormatter = {
   payload: (telegram: TelegramDict): string => {
@@ -49,4 +49,9 @@ export const TelegramDictFormatter = {
     if (telegram.dpt_name == null) return dptNumber;
     return dptNumber ? telegram.dpt_name + " - " + dptNumber : telegram.dpt_name;
   },
+};
+
+export const dptToString = (dpt: DPT | null): string => {
+  if (dpt == null) return "";
+  return dpt.main + (dpt.sub ? "." + dpt.sub.toString().padStart(3, "0") : "");
 };

@@ -11,10 +11,7 @@ import "@ha/components/ha-circular-progress";
 import "@ha/components/ha-expansion-panel";
 import "@ha/components/ha-icon-button";
 import "@ha/components/data-table/ha-data-table";
-import type {
-  DataTableColumnContainer,
-  DataTableRowData,
-} from "@ha/components/data-table/ha-data-table";
+import type { DataTableColumnContainer } from "@ha/components/data-table/ha-data-table";
 
 import "../components/knx-project-tree-view";
 
@@ -23,7 +20,8 @@ import { compare } from "compare-versions";
 import { HomeAssistant, Route } from "@ha/types";
 import { KNX } from "../types/knx";
 import type { GroupRangeSelectionChangedEvent } from "../components/knx-project-tree-view";
-import { GroupAddress, KNXProjectRespone } from "../types/websocket";
+import { DPT, GroupAddress, KNXProjectRespone } from "../types/websocket";
+import { dptToString } from "../utils/format";
 import { getKnxProject } from "../services/websocket.service";
 import { KNXLogger } from "../tools/knx-logger";
 
@@ -47,43 +45,42 @@ export class KNXProjectExplore extends LitElement {
 
   @state() private _knxProjectResp: KNXProjectRespone | null = null;
 
-  @state() private _columns: DataTableColumnContainer = {};
-
   @state() private _visibleGroupAddresses: string[] = [];
 
   @state() private _groupRangeAvailable: boolean = false;
 
   protected firstUpdated() {
     this._getKnxProject();
-
-    this._columns = {
-      address: {
-        filterable: true,
-        sortable: true,
-        title: "Address",
-        width: "95px",
-      },
-      text: {
-        filterable: true,
-        sortable: true,
-        title: "Name",
-        width: "calc(50% - 80px)",
-      },
-      description: {
-        filterable: true,
-        sortable: true,
-        title: "Description",
-        width: "calc(50% - 95px)",
-      },
-      dpt: {
-        sortable: true,
-        filterable: true,
-        title: "DPT",
-        type: "numeric",
-        width: "80px",
-      },
-    };
   }
+
+  private _columns: DataTableColumnContainer<GroupAddress> = {
+    address: {
+      filterable: true,
+      sortable: true,
+      title: "Address",
+      width: "95px",
+    },
+    name: {
+      filterable: true,
+      sortable: true,
+      title: "Name",
+      width: "calc(50% - 80px)",
+    },
+    description: {
+      filterable: true,
+      sortable: true,
+      title: "Description",
+      width: "calc(50% - 95px)",
+    },
+    dpt: {
+      sortable: true,
+      filterable: true,
+      title: "DPT",
+      type: "numeric",
+      width: "80px",
+      template: (dpt: DPT | null) => dptToString(dpt),
+    },
+  };
 
   private _getKnxProject() {
     getKnxProject(this.hass).then(
@@ -102,26 +99,20 @@ export class KNXProjectExplore extends LitElement {
     );
   }
 
-  private _groupAddressToRow(groupAddress: GroupAddress, _index: number): DataTableRowData {
-    const dpt = groupAddress.dpt
-      ? groupAddress.dpt.main +
-        (groupAddress.dpt.sub ? "." + groupAddress.dpt.sub.toString().padStart(3, "0") : "")
-      : "";
-    return {
-      address: groupAddress.address,
-      text: groupAddress.name,
-      description: groupAddress.description,
-      dpt: dpt,
-    };
-  }
+  private _getRows(visibleGroupAddresses: string[]): GroupAddress[] {
+    if (!visibleGroupAddresses.length)
+      // if none is set, default to show all
+      return Object.values(this._knxProjectResp!.knxproject.group_addresses);
 
-  private _getRows(visibleGroupAddresses: string[]): DataTableRowData[] {
-    return Object.entries(this._knxProjectResp!.knxproject.group_addresses)
-      .filter(([key, _val]) =>
-        // if none is set, default to show all
-        visibleGroupAddresses.length ? visibleGroupAddresses.includes(key) : true,
-      )
-      .map(([_ga, groupAddress], index) => this._groupAddressToRow(groupAddress, index));
+    return Object.entries(this._knxProjectResp!.knxproject.group_addresses).reduce(
+      (result, [key, groupAddress]) => {
+        if (visibleGroupAddresses.includes(key)) {
+          result.push(groupAddress);
+        }
+        return result;
+      },
+      [] as GroupAddress[],
+    );
   }
 
   private _visibleAddressesChanged(ev: HASSDomEvent<GroupRangeSelectionChangedEvent>) {
