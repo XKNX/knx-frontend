@@ -56,20 +56,20 @@ export class KNXProjectView extends LitElement {
   }
 
   private _columns = memoize((narrow, _language): DataTableColumnContainer<GroupAddress> => {
-    const addressWidth = "95px";
+    const addressWidth = "100px";
     const dptWidth = "80px";
 
     return {
       address: {
         filterable: true,
         sortable: true,
-        title: "Address",
-        width: "95px",
+        title: this.knx.localize("project_view_table_address"),
+        width: addressWidth,
       },
       name: {
         filterable: true,
         sortable: true,
-        title: "Name",
+        title: this.knx.localize("project_view_table_name"),
         width: narrow
           ? "calc(100% - " + dptWidth + " - " + addressWidth + ")"
           : "calc(50% - " + dptWidth + ")",
@@ -78,15 +78,15 @@ export class KNXProjectView extends LitElement {
         filterable: true,
         sortable: true,
         hidden: narrow,
-        title: "Description",
+        title: this.knx.localize("project_view_table_description"),
         width: "calc(50% - " + addressWidth + ")",
       },
       dpt: {
         sortable: true,
         filterable: true,
-        title: "DPT",
+        title: this.knx.localize("project_view_table_dpt"),
         type: "numeric",
-        width: "80px",
+        width: dptWidth,
         template: (dpt: DPT | null) => dptToString(dpt),
       },
     };
