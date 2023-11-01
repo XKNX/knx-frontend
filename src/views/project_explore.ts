@@ -190,7 +190,7 @@ export class KNXProjectExplore extends LitElement {
 
       :host([narrow]) knx-project-tree-view {
         position: absolute;
-        max-width: calc(100% - 60px); // 100% -> max 871px before not narrow
+        max-width: calc(100% - 60px); /* 100% -> max 871px before not narrow */
         z-index: 1;
         right: 0;
         transition: 0.5s;
@@ -202,7 +202,7 @@ export class KNXProjectExplore extends LitElement {
       }
 
       :host(:not([narrow])) knx-project-tree-view {
-        max-width: 255px; // min 616px - 816px for tree-view + ga-table (depending on side menu)
+        max-width: 255px; /* min 616px - 816px for tree-view + ga-table (depending on side menu) */
       }
 
       .ga-table {
