@@ -27,9 +27,7 @@ interface RangeInfo {
 
 @customElement("knx-project-tree-view")
 export class KNXProjectTreeView extends LitElement {
-  @property({ reflect: false }) data!: KNXProject;
-
-  @state() _selectedRanges: GroupRange[] = [];
+  @property({ attribute: false }) data!: KNXProject;
 
   @state() private _selectableRanges: { [key: string]: RangeInfo } = {};
 
@@ -48,7 +46,7 @@ export class KNXProjectTreeView extends LitElement {
       });
     };
     initSelectableRanges(this.data.group_ranges);
-    logger.log("ranges", this._selectableRanges);
+    logger.debug("ranges", this._selectableRanges);
   }
 
   protected render(): TemplateResult {
