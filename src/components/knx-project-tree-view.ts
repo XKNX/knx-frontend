@@ -63,7 +63,7 @@ export class KNXProjectTreeView extends LitElement {
       const selectable = key in this._selectableRanges;
       const selected = selectable ? this._selectableRanges[key].selected : false;
       const rangeClasses = {
-        "range-text": true,
+        "range-item": true,
         "root-range": level === 0,
         "sub-range": level > 0,
         selectable: selectable,
@@ -75,7 +75,8 @@ export class KNXProjectTreeView extends LitElement {
         toggle-range=${selectable ? key : nothing}
         @click=${selectable ? this._selectionChanged : nothing}
       >
-        ${key + " " + groupRange.name}
+        <span class="range-key">${key}</span>
+        <span class="range-text">${groupRange.name}</span>
       </div>`;
 
       if (hasSubRange) {
@@ -134,18 +135,38 @@ export class KNXProjectTreeView extends LitElement {
         padding-bottom: 5px;
       }
 
-      .range-text {
+      .range-item {
+        display: block;
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
-        font-size: 15px;
-        display: block;
+        font-size: 0.875rem;
+      }
+
+      .range-item > * {
+        vertical-align: middle;
+        pointer-events: none;
+      }
+
+      .range-key {
+        color: var(--text-primary-color);
+        font-size: 0.75rem;
+        font-weight: 700;
+        background-color: var(--label-badge-grey);
+        border-radius: 4px;
+        padding: 1px 4px;
+        margin-right: 2px;
       }
 
       .root-range {
         padding-left: 8px;
         font-weight: 500;
-        background-color: rgba(var(--rgb-primary-text-color), 0.07);
+        background-color: var(--secondary-background-color);
+
+        & .range-key {
+          color: var(--primary-text-color);
+          background-color: var(--card-background-color);
+        }
       }
 
       .sub-range {
@@ -161,8 +182,11 @@ export class KNXProjectTreeView extends LitElement {
       }
 
       .selected-range {
-        color: var(--primary-color);
         background-color: rgba(var(--rgb-primary-color), 0.12);
+
+        & .range-key {
+          background-color: var(--primary-color);
+        }
       }
 
       .selected-range:hover {
