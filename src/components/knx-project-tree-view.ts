@@ -29,6 +29,8 @@ interface RangeInfo {
 export class KNXProjectTreeView extends LitElement {
   @property({ attribute: false }) data!: KNXProject;
 
+  @property({ attribute: false }) multiselect = false;
+
   @state() private _selectableRanges: { [key: string]: RangeInfo } = {};
 
   connectedCallback() {
@@ -73,7 +75,11 @@ export class KNXProjectTreeView extends LitElement {
       const rangeContent = html`<div
         class=${classMap(rangeClasses)}
         toggle-range=${selectable ? key : nothing}
-        @click=${selectable ? this._selectionChanged : nothing}
+        @click=${selectable
+          ? this.multiselect
+            ? this._selectionChangedMulti
+            : this._selectionChangedSingle
+          : nothing}
       >
         <span class="range-key">${key}</span>
         <span class="range-text">${groupRange.name}</span>
@@ -94,9 +100,20 @@ export class KNXProjectTreeView extends LitElement {
     return html`${childTemplates}`;
   }
 
-  private _selectionChanged(ev) {
+  private _selectionChangedMulti(ev) {
     const rangeKey = (ev.target as Element).getAttribute("toggle-range")!;
     this._selectableRanges[rangeKey].selected = !this._selectableRanges[rangeKey].selected;
+    this._selectionUpdate();
+    this.requestUpdate();
+  }
+
+  private _selectionChangedSingle(ev) {
+    const rangeKey = (ev.target as Element).getAttribute("toggle-range")!;
+    const rangePreviouslySelected = this._selectableRanges[rangeKey].selected;
+    Object.values(this._selectableRanges).forEach((rangeInfo) => {
+      rangeInfo.selected = false;
+    });
+    this._selectableRanges[rangeKey].selected = !rangePreviouslySelected;
     this._selectionUpdate();
     this.requestUpdate();
   }
