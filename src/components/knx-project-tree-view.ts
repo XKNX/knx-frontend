@@ -126,8 +126,7 @@ export class KNXProjectTreeView extends LitElement {
       }
 
       .root-group {
-        margin-bottom: 10px;
-        margin-top: 5px;
+        margin-bottom: 8px;
       }
 
       .root-group > * {
