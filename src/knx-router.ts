@@ -24,7 +24,7 @@ export const knxMainTabs: PageNavigation[] = [
     iconPath: mdiNetwork,
   },
   {
-    translationKey: "project_explore_title",
+    translationKey: "project_view_title",
     path: `${BASE_URL}/project`,
     iconPath: mdiFileTreeOutline,
   },
@@ -65,10 +65,10 @@ class KnxRouter extends HassRouterPage {
         },
       },
       project: {
-        tag: "knx-project-explore",
+        tag: "knx-project-view",
         load: () => {
-          logger.info("Importing knx-project-explore");
-          return import("./views/project_explore");
+          logger.info("Importing knx-project-view");
+          return import("./views/project_view");
         },
       },
     },
