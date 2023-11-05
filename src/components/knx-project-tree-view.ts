@@ -186,7 +186,7 @@ export class KNXProjectTreeView extends LitElement {
       }
 
       .sub-range {
-        padding-left: 16px;
+        padding-left: 13px;
       }
 
       .selectable {
