@@ -43,31 +43,27 @@ class KnxRouter extends HassRouterPage {
   // at later point could dynamically add and delete tabs
   @state() private _tabs: PageNavigation[] = knxMainTabs;
 
-  @state() private _wideSidebar = false;
-
-  @state() private _wide = false;
-
   protected routerOptions: RouterOptions = {
     defaultPage: "info",
     routes: {
       info: {
         tag: "knx-info",
         load: () => {
-          logger.info("Importing knx-info");
+          logger.debug("Importing knx-info");
           return import("./views/info");
         },
       },
       group_monitor: {
         tag: "knx-group-monitor",
         load: () => {
-          logger.info("Importing knx-group-monitor");
+          logger.debug("Importing knx-group-monitor");
           return import("./views/group_monitor");
         },
       },
       project: {
         tag: "knx-project-view",
         load: () => {
-          logger.info("Importing knx-project-view");
+          logger.debug("Importing knx-project-view");
           return import("./views/project_view");
         },
       },
@@ -75,26 +71,13 @@ class KnxRouter extends HassRouterPage {
   };
 
   protected updatePageEl(el) {
-    const section = this.route.path.replace("/", "");
-    const isWide = this.hass.dockedSidebar === "docked" ? this._wideSidebar : this._wide;
     el.hass = this.hass;
+    el.knx = this.knx;
     el.route = this.routeTail;
     el.narrow = this.narrow;
-    el.isWide = isWide;
-    el.section = section;
     el.tabs = this._tabs;
 
-    logger.info("Current Page: " + this._currentPage + " in knx-router");
-
-    logger.info("Route " + this.route.path + " in knx-router");
-
-    if (this._currentPage !== "devices") {
-      const routeSplit = this.routeTail.path.split("/");
-      el.deviceId = routeSplit[routeSplit.length - 1];
-
-      logger.info("Device ID: " + el.deviceId + " in knx-router");
-    }
-    el.knx = this.knx;
+    logger.debug(`Current Page: ${this._currentPage} Route: ${this.route.path}`);
   }
 }
 
