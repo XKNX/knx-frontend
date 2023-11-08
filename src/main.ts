@@ -6,6 +6,7 @@ import "@ha/layouts/ha-app-layout";
 import "@ha/components/ha-top-app-bar-fixed";
 import "@ha/components/ha-menu-button";
 import "@ha/components/ha-tabs";
+import { listenMediaQuery } from "@ha/common/dom/media_query";
 import { navigate } from "@ha/common/navigate";
 import { makeDialogManager } from "@ha/dialogs/make-dialog-manager";
 import "@ha/resources/ha-style";
@@ -36,12 +37,14 @@ class KnxFrontend extends knxElement {
     }
     this.addEventListener("knx-location-changed", (e) => this._setRoute(e as LocationChangedEvent));
 
-    makeDialogManager(this, this.shadowRoot!);
     if (this.route.path === "" || this.route.path === "/") {
       navigate("/knx/info", { replace: true });
     }
 
-    this._applyTheme();
+    listenMediaQuery("(prefers-color-scheme: dark)", (_matches) => {
+      this._applyTheme();
+    });
+    makeDialogManager(this, this.shadowRoot!);
   }
 
   protected render() {
@@ -60,32 +63,29 @@ class KnxFrontend extends knxElement {
   }
 
   private _setRoute(ev: LocationChangedEvent): void {
-    this.route = ev.detail!.route;
+    if (!ev.detail?.route) {
+      return;
+    }
+    this.route = ev.detail.route;
     navigate(this.route.path, { replace: true });
     this.requestUpdate();
   }
 
   private _applyTheme() {
-    let options: Partial<HomeAssistant["selectedTheme"]> | undefined;
-
-    const themeName =
+    applyThemesOnElement(
+      this.parentElement,
+      this.hass.themes,
       this.hass.selectedTheme?.theme ||
-      (this.hass.themes.darkMode && this.hass.themes.default_dark_theme
-        ? this.hass.themes.default_dark_theme!
-        : this.hass.themes.default_theme);
-
-    options = this.hass.selectedTheme;
-    if (themeName === "default" && options?.dark === undefined) {
-      options = {
+        (this.hass.themes.darkMode && this.hass.themes.default_dark_theme
+          ? this.hass.themes.default_dark_theme!
+          : this.hass.themes.default_theme),
+      {
         ...this.hass.selectedTheme,
-      };
-    }
-
-    applyThemesOnElement(this.parentElement, this.hass.themes, themeName, {
-      ...options,
-      dark: this.hass.themes.darkMode,
-    });
+        dark: this.hass.themes.darkMode,
+      },
+    );
     this.parentElement!.style.backgroundColor = "var(--primary-background-color)";
+    this.parentElement!.style.color = "var(--primary-text-color)";
   }
 }
 
