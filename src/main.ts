@@ -6,6 +6,7 @@ import "@ha/layouts/ha-app-layout";
 import "@ha/components/ha-top-app-bar-fixed";
 import "@ha/components/ha-menu-button";
 import "@ha/components/ha-tabs";
+import { listenMediaQuery } from "@ha/common/dom/media_query";
 import { navigate } from "@ha/common/navigate";
 import { makeDialogManager } from "@ha/dialogs/make-dialog-manager";
 import "@ha/resources/ha-style";
@@ -41,7 +42,9 @@ class KnxFrontend extends knxElement {
       navigate("/knx/info", { replace: true });
     }
 
-    this._applyTheme();
+    listenMediaQuery("(prefers-color-scheme: dark)", (_matches) => {
+      this._applyTheme();
+    });
   }
 
   protected render() {
