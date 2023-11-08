@@ -37,7 +37,6 @@ class KnxFrontend extends knxElement {
     }
     this.addEventListener("knx-location-changed", (e) => this._setRoute(e as LocationChangedEvent));
 
-    makeDialogManager(this, this.shadowRoot!);
     if (this.route.path === "" || this.route.path === "/") {
       navigate("/knx/info", { replace: true });
     }
@@ -45,6 +44,7 @@ class KnxFrontend extends knxElement {
     listenMediaQuery("(prefers-color-scheme: dark)", (_matches) => {
       this._applyTheme();
     });
+    makeDialogManager(this, this.shadowRoot!);
   }
 
   protected render() {
