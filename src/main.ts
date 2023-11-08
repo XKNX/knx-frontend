@@ -63,32 +63,29 @@ class KnxFrontend extends knxElement {
   }
 
   private _setRoute(ev: LocationChangedEvent): void {
-    this.route = ev.detail!.route;
+    if (!ev.detail?.route) {
+      return;
+    }
+    this.route = ev.detail.route;
     navigate(this.route.path, { replace: true });
     this.requestUpdate();
   }
 
   private _applyTheme() {
-    let options: Partial<HomeAssistant["selectedTheme"]> | undefined;
-
-    const themeName =
+    applyThemesOnElement(
+      this.parentElement,
+      this.hass.themes,
       this.hass.selectedTheme?.theme ||
-      (this.hass.themes.darkMode && this.hass.themes.default_dark_theme
-        ? this.hass.themes.default_dark_theme!
-        : this.hass.themes.default_theme);
-
-    options = this.hass.selectedTheme;
-    if (themeName === "default" && options?.dark === undefined) {
-      options = {
+        (this.hass.themes.darkMode && this.hass.themes.default_dark_theme
+          ? this.hass.themes.default_dark_theme!
+          : this.hass.themes.default_theme),
+      {
         ...this.hass.selectedTheme,
-      };
-    }
-
-    applyThemesOnElement(this.parentElement, this.hass.themes, themeName, {
-      ...options,
-      dark: this.hass.themes.darkMode,
-    });
+        dark: this.hass.themes.darkMode,
+      },
+    );
     this.parentElement!.style.backgroundColor = "var(--primary-background-color)";
+    this.parentElement!.style.color = "var(--primary-text-color)";
   }
 }
 
