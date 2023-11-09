@@ -20,9 +20,8 @@ import { compare } from "compare-versions";
 import { HomeAssistant, Route } from "@ha/types";
 import { KNX } from "../types/knx";
 import type { GroupRangeSelectionChangedEvent } from "../components/knx-project-tree-view";
-import { DPT, GroupAddress, KNXProjectRespone } from "../types/websocket";
+import { DPT, GroupAddress } from "../types/websocket";
 import { dptToString } from "../utils/format";
-import { getKnxProject } from "../services/websocket.service";
 import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("knx-project-view");
@@ -43,14 +42,26 @@ export class KNXProjectView extends LitElement {
 
   @property({ type: Boolean, reflect: true }) private rangeSelectorHidden = true;
 
-  @state() private _knxProjectResp: KNXProjectRespone | null = null;
-
   @state() private _visibleGroupAddresses: string[] = [];
 
   @state() private _groupRangeAvailable: boolean = false;
 
   protected firstUpdated() {
-    this._getKnxProject();
+    if (!this.knx.project) {
+      this.knx.loadProject().then(() => {
+        this._isGroupRangeAvailable();
+        this.requestUpdate();
+      });
+    } else {
+      // project was already loaded
+      this._isGroupRangeAvailable();
+    }
+  }
+
+  private _isGroupRangeAvailable() {
+    const projectVersion = this.knx.project?.knxproject.info.xknxproject_version ?? "0.0.0";
+    logger.debug("project version: " + projectVersion);
+    this._groupRangeAvailable = compare(projectVersion, MIN_XKNXPROJECT_VERSION, ">=");
   }
 
   private _columns = memoize((narrow, _language): DataTableColumnContainer<GroupAddress> => {
@@ -90,29 +101,12 @@ export class KNXProjectView extends LitElement {
     };
   });
 
-  private _getKnxProject() {
-    getKnxProject(this.hass).then(
-      (knxProjectResp) => {
-        this._knxProjectResp = knxProjectResp;
-        this._groupRangeAvailable = compare(
-          knxProjectResp.knxproject.info.xknxproject_version ?? "0.0.0",
-          MIN_XKNXPROJECT_VERSION,
-          ">=",
-        );
-        this.requestUpdate();
-      },
-      (err) => {
-        logger.error("getKnxProject", err);
-      },
-    );
-  }
-
   private _getRows(visibleGroupAddresses: string[]): GroupAddress[] {
     if (!visibleGroupAddresses.length)
       // if none is set, default to show all
-      return Object.values(this._knxProjectResp!.knxproject.group_addresses);
+      return Object.values(this.knx.project!.knxproject.group_addresses);
 
-    return Object.entries(this._knxProjectResp!.knxproject.group_addresses).reduce(
+    return Object.entries(this.knx.project!.knxproject.group_addresses).reduce(
       (result, [key, groupAddress]) => {
         if (visibleGroupAddresses.includes(key)) {
           result.push(groupAddress);
@@ -128,11 +122,12 @@ export class KNXProjectView extends LitElement {
   }
 
   protected render(): TemplateResult | void {
-    if (!this.hass || !this._knxProjectResp) {
+    if (!this.hass || !this.knx.project) {
       return html` <hass-loading-screen></hass-loading-screen> `;
     }
 
     const filtered = this._getRows(this._visibleGroupAddresses);
+
     return html`
       <hass-tabs-subpage
         .hass=${this.hass}
@@ -141,7 +136,7 @@ export class KNXProjectView extends LitElement {
         .tabs=${this.tabs}
         .localizeFunc=${this.knx.localize}
       >
-        ${this._knxProjectResp.project_loaded
+        ${this.knx.project.project_loaded
           ? html`${this.narrow && this._groupRangeAvailable
                 ? html`<ha-icon-button
                     slot="toolbar-icon"
@@ -154,7 +149,7 @@ export class KNXProjectView extends LitElement {
                 ${this._groupRangeAvailable
                   ? html`
                       <knx-project-tree-view
-                        .data=${this._knxProjectResp.knxproject}
+                        .data=${this.knx.project.knxproject}
                         @knx-group-range-selection-changed=${this._visibleAddressesChanged}
                       ></knx-project-tree-view>
                     `
