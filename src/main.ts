@@ -27,13 +27,12 @@ class KnxFrontend extends knxElement {
 
   @property({ attribute: false }) public route!: Route;
 
-  protected firstUpdated(changedProps) {
-    super.firstUpdated(changedProps);
+  protected firstUpdated(_changedProps) {
     if (!this.hass) {
       return;
     }
     if (!this.knx) {
-      this._getKNXConfigEntry();
+      this._initKnx();
     }
     this.addEventListener("knx-location-changed", (e) => this._setRoute(e as LocationChangedEvent));
 
