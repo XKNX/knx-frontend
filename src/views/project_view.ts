@@ -1,15 +1,18 @@
-import { mdiFilterVariant } from "@mdi/js";
+import { mdiFilterVariant, mdiPlus } from "@mdi/js";
 import { LitElement, TemplateResult, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
 import memoize from "memoize-one";
 
 import { HASSDomEvent } from "@ha/common/dom/fire_event";
+import { navigate } from "@ha/common/navigate";
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-tabs-subpage";
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import "@ha/components/ha-card";
 import "@ha/components/ha-icon-button";
+import "@ha/components/ha-icon-overflow-menu";
+import type { IconOverflowMenuItem } from "@ha/components/ha-icon-overflow-menu";
 import "@ha/components/data-table/ha-data-table";
 import type { DataTableColumnContainer } from "@ha/components/data-table/ha-data-table";
 
@@ -20,7 +23,7 @@ import { compare } from "compare-versions";
 import { HomeAssistant, Route } from "@ha/types";
 import { KNX } from "../types/knx";
 import type { GroupRangeSelectionChangedEvent } from "../components/knx-project-tree-view";
-import { GroupAddress } from "../types/websocket";
+import { DPT, GroupAddress } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("knx-project-view");
@@ -63,9 +66,10 @@ export class KNXProjectView extends LitElement {
     this._groupRangeAvailable = compare(projectVersion, MIN_XKNXPROJECT_VERSION, ">=");
   }
 
-  private _columns = memoize((narrow, _language): DataTableColumnContainer<GroupAddress> => {
+  private _columns = memoize((_narrow, _language): DataTableColumnContainer<GroupAddress> => {
     const addressWidth = "100px";
     const dptWidth = "82px";
+    const overflowMenuWidth = "72px";
 
     return {
       address: {
@@ -78,31 +82,51 @@ export class KNXProjectView extends LitElement {
         filterable: true,
         sortable: true,
         title: this.knx.localize("project_view_table_name"),
-        width: narrow
-          ? "calc(100% - " + dptWidth + " - " + addressWidth + ")"
-          : "calc(50% - " + dptWidth + ")",
-      },
-      description: {
-        filterable: true,
-        sortable: true,
-        hidden: narrow,
-        title: this.knx.localize("project_view_table_description"),
-        width: "calc(50% - " + addressWidth + ")",
+        width: `calc(100% - ${dptWidth} - ${addressWidth} - ${overflowMenuWidth})`,
       },
       dpt: {
         sortable: true,
         filterable: true,
         title: this.knx.localize("project_view_table_dpt"),
         width: dptWidth,
-        template: (ga: GroupAddress) =>
-          ga.dpt
-            ? html`<span style="display:inline-block;width:24px;text-align:right;"
-                  >${ga.dpt.main}</span
-                >${ga.dpt.sub ? "." + ga.dpt.sub.toString().padStart(3, "0") : ""} `
+        template: (dpt: DPT | null) =>
+          dpt
+            ? html`<span style="display:inline-block;width:24px;text-align:right;">${dpt.main}</span
+                >${dpt.sub ? "." + dpt.sub.toString().padStart(3, "0") : ""} `
             : "",
+      },
+      actions: {
+        title: "",
+        width: overflowMenuWidth,
+        type: "overflow-menu",
+        template: (_: any, ga: GroupAddress) => this._groupAddressMenu(ga),
       },
     };
   });
+
+  private _groupAddressMenu(groupAddress: GroupAddress): TemplateResult | typeof nothing {
+    const items: IconOverflowMenuItem[] = [];
+    if (groupAddress.dpt?.main === 1) {
+      items.push({
+        path: mdiPlus,
+        label: this.knx.localize("project_view_add_switch"),
+        action: () => {
+          navigate("/knx/create-entity?ga=" + groupAddress.address);
+        },
+      });
+      // items.push({
+      //   path: mdiPlus,
+      //   label: "Add binary sensor",
+      //   action: () => logger.warn(groupAddress.address),
+      // });
+    }
+
+    return items.length
+      ? html`
+          <ha-icon-overflow-menu .hass=${this.hass} narrow .items=${items}> </ha-icon-overflow-menu>
+        `
+      : nothing;
+  }
 
   private _getRows(visibleGroupAddresses: string[]): GroupAddress[] {
     if (!visibleGroupAddresses.length)

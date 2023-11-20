@@ -67,6 +67,13 @@ class KnxRouter extends HassRouterPage {
           return import("./views/project_view");
         },
       },
+      "create-entity": {
+        tag: "knx-create-entity",
+        load: () => {
+          logger.debug("Importing knx-create-entity");
+          return import("./views/create_entity");
+        },
+      },
     },
   };
 
