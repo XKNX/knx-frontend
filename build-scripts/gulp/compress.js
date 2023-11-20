@@ -7,9 +7,10 @@ import paths from "../paths.cjs";
 
 const zopfliOptions = { threshold: 150 };
 
-gulp.task("compress-knx", () =>
+const compressDist = (rootDir) =>
   gulp
-    .src(path.resolve(paths.knx_output_root, "**/*.js"))
+    .src([`${rootDir}/**/*.{js,json,css,svg}`])
     .pipe(zopfli(zopfliOptions))
-    .pipe(gulp.dest(paths.knx_output_root))
-);
+    .pipe(gulp.dest(rootDir));
+
+gulp.task("compress-knx", () => compressDist(paths.knx_output_root));

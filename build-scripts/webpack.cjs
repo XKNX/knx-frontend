@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-const webpack = require("webpack");
+const { existsSync } = require("fs");
 const path = require("path");
+const webpack = require("webpack");
+const { StatsWriterPlugin } = require("webpack-stats-plugin");
+const filterStats = require("@bundle-stats/plugin-webpack-filter").default;
 const TerserPlugin = require("terser-webpack-plugin");
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 const { WebpackManifestPlugin } = require("webpack-manifest-plugin");
@@ -165,11 +168,14 @@ const createWebpackConfig = ({
         "lit/directives/guard$": "lit/directives/guard.js",
         "lit/directives/cache$": "lit/directives/cache.js",
         "lit/directives/repeat$": "lit/directives/repeat.js",
+        "lit/directives/live$": "lit/directives/live.js",
         "lit/polyfill-support$": "lit/polyfill-support.js",
         "@lit-labs/virtualizer/layouts/grid":
           "@lit-labs/virtualizer/layouts/grid.js",
         "@lit-labs/virtualizer/polyfills/resize-observer-polyfill/ResizeObserver":
           "@lit-labs/virtualizer/polyfills/resize-observer-polyfill/ResizeObserver.js",
+        "@lit-labs/observers/resize-controller":
+          "@lit-labs/observers/resize-controller.js",
       },
       plugins: [new TsconfigPathsPlugin({ 
         configFile: 'tsconfig.json',
@@ -186,6 +192,12 @@ const createWebpackConfig = ({
       },
       chunkFilename:
         isProdBuild && !isStatsBuild ? "[chunkhash:8].js" : "[id].chunk.js",
+      assetModuleFilename:
+        isProdBuild && !isStatsBuild ? "[id]-[contenthash][ext]" : "[id][ext]",
+      crossOriginLoading: "use-credentials",
+      hashFunction: "xxhash64",
+      hashDigest: "base64url",
+      hashDigestLength: 11, // full length of 64 bit base64url
       path: outputPath,
       publicPath,
       // To silence warning in worker plugin
