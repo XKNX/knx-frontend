@@ -23,7 +23,7 @@ import { compare } from "compare-versions";
 import { HomeAssistant, Route } from "@ha/types";
 import { KNX } from "../types/knx";
 import type { GroupRangeSelectionChangedEvent } from "../components/knx-project-tree-view";
-import { DPT, GroupAddress } from "../types/websocket";
+import { GroupAddress } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("knx-project-view");
@@ -89,17 +89,18 @@ export class KNXProjectView extends LitElement {
         filterable: true,
         title: this.knx.localize("project_view_table_dpt"),
         width: dptWidth,
-        template: (dpt: DPT | null) =>
-          dpt
-            ? html`<span style="display:inline-block;width:24px;text-align:right;">${dpt.main}</span
-                >${dpt.sub ? "." + dpt.sub.toString().padStart(3, "0") : ""} `
+        template: (ga: GroupAddress) =>
+          ga.dpt
+            ? html`<span style="display:inline-block;width:24px;text-align:right;"
+                  >${ga.dpt.main}</span
+                >${ga.dpt.sub ? "." + ga.dpt.sub.toString().padStart(3, "0") : ""} `
             : "",
       },
       actions: {
         title: "",
         width: overflowMenuWidth,
         type: "overflow-menu",
-        template: (_: any, ga: GroupAddress) => this._groupAddressMenu(ga),
+        template: (ga: GroupAddress) => this._groupAddressMenu(ga),
       },
     };
   });
