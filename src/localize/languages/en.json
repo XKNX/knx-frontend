@@ -39,6 +39,7 @@
   "project_view_table_name": "Name",
   "project_view_table_description": "Description",
   "project_view_table_dpt": "DPT",
+  "project_view_add_switch": "Add switch",
   "Incoming": "Incoming",
   "Outgoing": "Outgoing"
 }
