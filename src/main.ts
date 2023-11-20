@@ -2,7 +2,6 @@ import { html, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 
 import { applyThemesOnElement } from "@ha/common/dom/apply_themes_on_element";
-import "@ha/layouts/ha-app-layout";
 import "@ha/components/ha-top-app-bar-fixed";
 import "@ha/components/ha-menu-button";
 import "@ha/components/ha-tabs";
