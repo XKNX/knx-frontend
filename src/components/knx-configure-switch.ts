@@ -105,29 +105,6 @@ export class KNXConfigureSwitch extends LitElement {
             .value=${this.config.sync_state ?? true}
             @value-changed=${this._updateConfig}
           ></knx-sync-state-selector-row>
-          <!-- <ha-settings-row narrow>
-            <div slot="heading">Entity settings</div>
-            <div slot="description">Description</div>
-            <ha-selector
-              .hass=${this.hass}
-              .label=${"Entity category"}
-              .selector=${{
-            select: {
-              multiple: false,
-              custom_value: false,
-              mode: "dropdown",
-              options: [
-                { value: null, label: "None" }, // null not valid for selector - doesn't fire event
-                { value: "config", label: "Config" },
-                { value: "diagnostic", label: "Diagnostic" },
-              ],
-            },
-          }}
-              .key=${"entity_category"}
-              .value=${this.config.entity_category ?? null}
-              @value-changed=${this._updateConfig}
-            ></ha-selector>
-          </ha-settings-row> -->
         </ha-expansion-panel>
       </ha-card>
       <ha-card outlined>
@@ -150,6 +127,32 @@ export class KNXConfigureSwitch extends LitElement {
             @value-changed=${this._updateConfig}
           ></ha-selector>
         </ha-settings-row>
+        <ha-expansion-panel .header=${"Advanced"} outlined>
+          <ha-settings-row narrow>
+            <div slot="heading">Entity settings</div>
+            <div slot="description">Description</div>
+            <ha-selector
+              .hass=${this.hass}
+              .label=${"Entity category"}
+              .helper=${"Leave empty for standard behaviour."}
+              .required=${false}
+              .selector=${{
+                select: {
+                  multiple: false,
+                  custom_value: false,
+                  mode: "dropdown",
+                  options: [
+                    { value: "config", label: "Config" },
+                    { value: "diagnostic", label: "Diagnostic" },
+                  ],
+                },
+              }}
+              .key=${"entity_category"}
+              .value=${this.config.entity_category}
+              @value-changed=${this._updateConfig}
+            ></ha-selector>
+          </ha-settings-row>
+        </ha-expansion-panel>
       </ha-card>
     `;
   }
