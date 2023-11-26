@@ -1,4 +1,4 @@
-import { html, nothing } from "lit";
+import { LitElement, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 
 import { applyThemesOnElement } from "@ha/common/dom/apply_themes_on_element";
@@ -6,6 +6,7 @@ import "@ha/components/ha-top-app-bar-fixed";
 import "@ha/components/ha-menu-button";
 import "@ha/components/ha-tabs";
 import { listenMediaQuery } from "@ha/common/dom/media_query";
+import { computeRTL, computeDirectionStyles } from "@ha/common/util/compute_rtl";
 import { navigate } from "@ha/common/navigate";
 import { makeDialogManager } from "@ha/dialogs/make-dialog-manager";
 import "@ha/resources/ha-style";
@@ -38,6 +39,8 @@ class KnxFrontend extends knxElement {
     if (this.route.path === "" || this.route.path === "/") {
       navigate("/knx/info", { replace: true });
     }
+
+    computeDirectionStyles(computeRTL(this.hass), this.parentElement as LitElement);
 
     listenMediaQuery("(prefers-color-scheme: dark)", (_matches) => {
       this._applyTheme();
