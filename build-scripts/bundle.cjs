@@ -4,10 +4,7 @@ const env = require("./env.cjs");
 const paths = require("./paths.cjs");
 
 // Files from NPM Packages that should not be imported
-module.exports.ignorePackages = ({ latestBuild }) => [
-  // Part of yaml.js and only used for !!js functions that we don't use
-  require.resolve("esprima"),
-];
+module.exports.ignorePackages = () => [];
 
 // Files from NPM packages that we should replace with empty file
 module.exports.emptyPackages = ({ latestBuild, isHassioBuild }) =>
@@ -26,8 +23,6 @@ module.exports.emptyPackages = ({ latestBuild, isHassioBuild }) =>
       require.resolve(
         path.resolve(paths.polymer_dir, "homeassistant-frontend/src/resources/compatibility.ts")
       ),
-    // This polyfill is loaded in workers to support ES5, filter it out.
-    latestBuild && require.resolve("proxy-polyfill/src/index.js"),
     // Icons in supervisor conflict with icons in HA so we don't load.
     isHassioBuild &&
       require.resolve(
@@ -76,14 +71,12 @@ module.exports.babelOptions = ({ latestBuild }) => ({
     setSpreadProperties: true,
   },
   browserslistEnv: latestBuild ? "modern" : "legacy",
-  // Must be unambiguous because some dependencies are CommonJS only
-  sourceType: "unambiguous",
   presets: [
     [
       "@babel/preset-env",
       {
-        useBuiltIns: latestBuild ? false : "entry",
-        corejs: latestBuild ? false : { version: "3.33", proposals: true },
+        useBuiltIns: latestBuild ? false : "usage",
+        corejs: latestBuild ? false : "3.33",
         bugfixes: true,
         shippedProposals: true,
       },
@@ -98,6 +91,13 @@ module.exports.babelOptions = ({ latestBuild }) => ({
         ignoreModuleNotFound: true,
       },
     ],
+    [
+      path.resolve(
+        paths.polymer_dir,
+        "build-scripts/babel-plugins/custom-polyfill-plugin.js"
+      ),
+      { method: "usage-global" },
+    ],
     // Import helpers and regenerator from runtime package
     [
       "@babel/plugin-transform-runtime",
@@ -110,6 +110,18 @@ module.exports.babelOptions = ({ latestBuild }) => ({
     // \\ for Windows, / for Mac OS and Linux
     /node_modules[\\/]core-js/,
     /node_modules[\\/]webpack[\\/]buildin/,
+  ],
+  overrides: [
+    {
+      // Use unambiguous for dependencies so that require() is correctly injected into CommonJS files
+      // Exclusions are needed in some cases where ES modules have no static imports or exports, such as polyfills
+      sourceType: "unambiguous",
+      include: /\/node_modules\//,
+      exclude: [
+        "element-internals-polyfill",
+        "@?lit(?:-labs|-element|-html)?",
+      ].map((p) => new RegExp(`/node_modules/${p}/`)),
+    },
   ],
 });
 
