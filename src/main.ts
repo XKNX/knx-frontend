@@ -36,10 +36,6 @@ class KnxFrontend extends knxElement {
     }
     this.addEventListener("knx-location-changed", (e) => this._setRoute(e as LocationChangedEvent));
 
-    if (this.route.path === "" || this.route.path === "/") {
-      navigate("/knx/info", { replace: true });
-    }
-
     computeDirectionStyles(computeRTL(this.hass), this.parentElement as LitElement);
 
     listenMediaQuery("(prefers-color-scheme: dark)", (_matches) => {

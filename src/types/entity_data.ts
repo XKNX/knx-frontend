@@ -29,8 +29,3 @@ export interface CreateEntityData {
 export interface UpdateEntityData extends CreateEntityData {
   unique_id: string;
 }
-
-export interface LookupEntityData {
-  platform: supportedPlatform;
-  unique_id: string;
-}

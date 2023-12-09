@@ -1,5 +1,5 @@
 import { css, html, LitElement, TemplateResult } from "lit";
-import { customElement, property, state } from "lit/decorators";
+import { customElement, property } from "lit/decorators";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
 import "@ha/components/ha-button";
@@ -36,7 +36,7 @@ export class KNXConfigureSwitch extends LitElement {
 
   @property({ attribute: false }) public knx!: KNX;
 
-  @state() private config: Partial<SwitchEntityData> = {};
+  @property({ type: Object }) public config: Partial<SwitchEntityData> = {};
 
   protected render(): TemplateResult | void {
     const dpt1gas = Object.values(this.knx.project!.knxproject.group_addresses).filter(
@@ -46,6 +46,7 @@ export class KNXConfigureSwitch extends LitElement {
       value: groupAddress.address,
       label: `${groupAddress.address} - ${groupAddress.name}`,
     }));
+    logger.debug("config", this.config);
     return html`
       <ha-card outlined>
         <h1 class="card-header">
@@ -62,7 +63,7 @@ export class KNXConfigureSwitch extends LitElement {
             .hass=${this.hass}
             .label=${"Address"}
             .selector=${{
-              select: { multiple: false, custom_value: true, options: addressOptions },
+              select: { multiple: true, custom_value: true, options: addressOptions },
             }}
             .key=${"switch_address"}
             .value=${this.config.switch_address}
@@ -73,7 +74,7 @@ export class KNXConfigureSwitch extends LitElement {
             .hass=${this.hass}
             .label=${"State address"}
             .selector=${{
-              select: { multiple: false, custom_value: true, options: addressOptions },
+              select: { multiple: true, custom_value: true, options: addressOptions },
             }}
             .key=${"switch_state_address"}
             .value=${this.config.switch_state_address}

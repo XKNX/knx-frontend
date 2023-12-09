@@ -28,10 +28,15 @@ export const knxMainTabs: PageNavigation[] = [
     path: `${BASE_URL}/project`,
     iconPath: mdiFileTreeOutline,
   },
+  {
+    translationKey: "entities_view_title",
+    path: `${BASE_URL}/entities`,
+    iconPath: mdiFileTreeOutline,
+  },
 ];
 
 @customElement("knx-router")
-class KnxRouter extends HassRouterPage {
+export class KnxRouter extends HassRouterPage {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
   @property({ attribute: false }) public knx!: KNX;
@@ -45,6 +50,7 @@ class KnxRouter extends HassRouterPage {
 
   protected routerOptions: RouterOptions = {
     defaultPage: "info",
+    beforeRender: (page: string) => (page === "" ? this.routerOptions.defaultPage : undefined),
     routes: {
       info: {
         tag: "knx-info",
@@ -67,11 +73,11 @@ class KnxRouter extends HassRouterPage {
           return import("./views/project_view");
         },
       },
-      "create-entity": {
-        tag: "knx-create-entity",
+      entities: {
+        tag: "knx-entities-router",
         load: () => {
-          logger.debug("Importing knx-create-entity");
-          return import("./views/create_entity");
+          logger.debug("Importing knx-entities-view");
+          return import("./views/entities_router");
         },
       },
     },

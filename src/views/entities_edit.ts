@@ -1,4 +1,4 @@
-import { mdiPlus } from "@mdi/js";
+import { mdiFloppy } from "@mdi/js";
 import { LitElement, TemplateResult, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
@@ -7,6 +7,7 @@ import "@ha/layouts/hass-subpage";
 import "@ha/components/ha-button";
 import "@ha/components/ha-card";
 import "@ha/components/ha-fab";
+import "@ha/components/ha-form/ha-form";
 import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-expansion-panel";
 import "@ha/components/ha-navigation-list";
@@ -16,21 +17,21 @@ import "@ha/components/ha-selector/ha-selector";
 import "@ha/components/ha-selector/ha-selector-select";
 import "@ha/components/ha-settings-row";
 import "@ha/panels/config/ha-config-section";
+import { navigate } from "@ha/common/navigate";
 
 import "../components/knx-project-tree-view";
 import "../components/knx-configure-switch";
 
 import { HomeAssistant, Route } from "@ha/types";
-import { createEntity } from "services/websocket.service";
+import { updateEntity, getEntityConfig } from "services/websocket.service";
 import { CreateEntityData } from "types/entity_data";
 import { KNX } from "../types/knx";
-import { platformConstants } from "../utils/common";
 import { KNXLogger } from "../tools/knx-logger";
 
-const logger = new KNXLogger("knx-create-entity");
+const logger = new KNXLogger("knx-edit-entity");
 
-@customElement("knx-create-entity")
-export class KNXCreateEntity extends LitElement {
+@customElement("knx-edit-entity")
+export class KNXEditEntity extends LitElement {
   @property({ type: Object }) public hass!: HomeAssistant;
 
   @property({ attribute: false }) public knx!: KNX;
@@ -43,7 +44,9 @@ export class KNXCreateEntity extends LitElement {
 
   @state() private _config?: CreateEntityData;
 
-  entityType?: string;
+  entityId?: string;
+
+  uniqueId?: string;
 
   protected firstUpdated() {
     if (!this.knx.project) {
@@ -51,34 +54,34 @@ export class KNXCreateEntity extends LitElement {
         this.requestUpdate();
       });
     }
-  }
-
-  protected willUpdate() {
-    // const urlParams = new URLSearchParams(mainWindow.location.search);
-    // const referrerGA = urlParams.get("ga");
-    // console.log(referrerGA);
-    this.entityType = this.route.path.split("/")[1];
+    this.entityId = this.route.path.split("/")[1];
+    getEntityConfig(this.hass, this.entityId).then((entityConfigData) => {
+      this._config = entityConfigData;
+      this.uniqueId = entityConfigData.unique_id;
+      logger.debug("entity config", entityConfigData);
+      this.requestUpdate();
+    });
   }
 
   protected render(): TemplateResult | void {
-    if (!this.hass || !this.knx.project) {
+    if (!this.hass || !this.knx.project || !this._config) {
       return html` <hass-loading-screen></hass-loading-screen> `;
     }
     let content: TemplateResult;
-    switch (this.entityType) {
+    switch (this._config.platform) {
       case "switch": {
         content = this._renderSwitch();
         break;
       }
       default: {
-        content = this._renderTypeSelection();
+        content = this._renderNotFound();
       }
     }
 
     return content;
   }
 
-  private _renderTypeSelection(): TemplateResult {
+  private _renderNotFound(): TemplateResult {
     return html`
       <hass-subpage
         .hass=${this.hass}
@@ -86,33 +89,7 @@ export class KNXCreateEntity extends LitElement {
         .back-path=${this.backPath}
         .header=${"Select entity type"}
       >
-        <ha-config-section .narrow=${this.narrow} .isWide=${false}>
-          <ha-card outlined .header=${"Create KNX entity"}>
-            <!-- <p>Some help text</p> -->
-            <ha-navigation-list
-              .hass=${this.hass}
-              .narrow=${this.narrow}
-              .pages=${[
-                {
-                  name: platformConstants.switch.name,
-                  description: "Description",
-                  iconPath: platformConstants.switch.iconPath,
-                  iconColor: platformConstants.switch.color,
-                  path: "/knx/create-entity/switch",
-                },
-                // {
-                //   name: platformConstants.light.name,
-                //   description: "Description",
-                //   iconPath: platformConstants.light.iconPath,
-                //   iconColor: platformConstants.light.color,
-                //   path: "/knx/create-entity/light",
-                // },
-              ]}
-              hasSecondary
-              .label=${"Select entity type"}
-            ></ha-navigation-list>
-          </ha-card>
-        </ha-config-section>
+        <ha-card outlined .header=${"Error"}>Entity not found.</ha-card>
       </hass-subpage>
     `;
   }
@@ -122,24 +99,25 @@ export class KNXCreateEntity extends LitElement {
       .hass=${this.hass}
       .narrow=${this.narrow!}
       .back-path=${this.backPath}
-      .header=${"Switch entity configuration"}
+      .header=${"Edit " + this.entityId}
     >
       <ha-config-section .narrow=${this.narrow} .isWide=${false}>
         <knx-configure-switch
           .hass=${this.hass}
           .knx=${this.knx}
+          .config=${this._config!.data}
           @knx-entity-configuration-changed=${this._configChanged}
         ></knx-configure-switch>
       </ha-config-section>
 
       <ha-fab
         slot="fab"
-        .label=${"Create"}
+        .label=${"Save"}
         extended
-        @click=${this._entityCreate}
+        @click=${this._entityUpdate}
         ?disabled=${this._config === undefined}
       >
-        <ha-svg-icon slot="icon" .path=${mdiPlus}></ha-svg-icon>
+        <ha-svg-icon slot="icon" .path=${mdiFloppy}></ha-svg-icon>
       </ha-fab>
     </hass-subpage>`;
   }
@@ -147,19 +125,22 @@ export class KNXCreateEntity extends LitElement {
   private _configChanged(ev) {
     ev.stopPropagation();
     logger.warn("configChanged", ev.detail);
-    this._config = ev.detail;
+    this._config = { unique_id: this.uniqueId, ...ev.detail };
   }
 
-  private _entityCreate(ev) {
+  private _entityUpdate(ev) {
     ev.stopPropagation();
-    if (this._config === undefined) {
+    if (this._config === undefined || this.uniqueId === undefined) {
       logger.error("No config found.");
       return;
     }
-    createEntity(this.hass, this._config)
-      .then(() => logger.error("created entity!"))
+    updateEntity(this.hass, { unique_id: this.uniqueId, ...this._config })
+      .then(() => {
+        logger.debug("successfully updated entity!");
+        navigate("/knx/entities", { replace: true });
+      })
       .catch((err) => {
-        logger.error("Error creating entity", err);
+        logger.error("Error updating entity", err);
       });
   }
 
@@ -195,6 +176,6 @@ export class KNXCreateEntity extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    "knx-create-entity": KNXCreateEntity;
+    "knx-edit-entity": KNXEditEntity;
   }
 }

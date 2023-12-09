@@ -1,16 +1,12 @@
 import { HomeAssistant } from "@ha/types";
+import { ExtEntityRegistryEntry } from "@ha/data/entity_registry";
 import {
   KNXInfoData,
   TelegramDict,
   GroupMonitorInfoData,
   KNXProjectRespone,
 } from "../types/websocket";
-import {
-  CreateEntityData,
-  UpdateEntityData,
-  LookupEntityData,
-  EntityData,
-} from "../types/entity_data";
+import { CreateEntityData, UpdateEntityData } from "../types/entity_data";
 
 export const getKnxInfoData = (hass: HomeAssistant): Promise<KNXInfoData> =>
   hass.callWS({
@@ -67,17 +63,19 @@ export const updateEntity = (hass: HomeAssistant, entityData: UpdateEntityData) 
     ...entityData,
   });
 
-export const deleteEntity = (hass: HomeAssistant, entityInfo: LookupEntityData) =>
+export const deleteEntity = (hass: HomeAssistant, entityId: string) =>
   hass.callWS({
     type: "knx/delete_entity",
-    ...entityInfo,
+    entity_id: entityId,
   });
 
-export const getEntityData = (
-  hass: HomeAssistant,
-  entityInfo: LookupEntityData,
-): Promise<EntityData> =>
+export const getEntityConfig = (hass: HomeAssistant, entityId: string): Promise<UpdateEntityData> =>
   hass.callWS({
     type: "knx/get_entity_config",
-    ...entityInfo,
+    entity_id: entityId,
+  });
+
+export const getEntityEntries = (hass: HomeAssistant): Promise<ExtEntityRegistryEntry[]> =>
+  hass.callWS({
+    type: "knx/get_entity_entries",
   });
