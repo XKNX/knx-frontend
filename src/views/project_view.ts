@@ -112,7 +112,7 @@ export class KNXProjectView extends LitElement {
         path: mdiPlus,
         label: this.knx.localize("project_view_add_switch"),
         action: () => {
-          navigate("/knx/create-entity?ga=" + groupAddress.address);
+          navigate("/knx/entities/create?ga=" + groupAddress.address);
         },
       });
       // items.push({
