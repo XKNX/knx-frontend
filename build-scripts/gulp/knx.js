@@ -6,6 +6,7 @@ import "./clean.js";
 import "./webpack.js";
 import "./compress.js";
 import "./entry-html.js";
+import "./gen-icons-json.js";
 
 gulp.task(
   "develop-knx",
@@ -14,6 +15,7 @@ gulp.task(
       process.env.NODE_ENV = "development";
     },
     "clean-knx",
+    "gen-icons-json",
     "gen-index-knx-dev",
     "webpack-watch-knx"
   )
@@ -27,6 +29,7 @@ gulp.task(
     },
     "clean-knx",
     "ensure-knx-build-dir",
+    "gen-icons-json",
     "webpack-prod-knx",
     "gen-index-knx-prod",
     ...// Don't compress running tests
