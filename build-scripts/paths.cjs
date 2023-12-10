@@ -7,6 +7,7 @@ module.exports = {
   src_dir: path.resolve(__dirname, "../src"),
 
   build_dir: path.resolve(__dirname, "../knx_frontend"),
+  upstream_build_dir: path.resolve(__dirname, "../homeassistant-frontend/build"),
   app_output_root: path.resolve(__dirname, "../knx_frontend"),
   app_output_static: path.resolve(__dirname, "../knx_frontend/static"),
   app_output_latest: path.resolve(__dirname, "../knx_frontend/frontend_latest"),
