@@ -4,22 +4,12 @@ import { customElement, property, state } from "lit/decorators";
 
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-subpage";
-import "@ha/components/ha-button";
 import "@ha/components/ha-card";
 import "@ha/components/ha-fab";
-import "@ha/components/ha-form/ha-form";
 import "@ha/components/ha-svg-icon";
-import "@ha/components/ha-expansion-panel";
 import "@ha/components/ha-navigation-list";
-import "@ha/components/ha-icon-button";
-import "@ha/components/ha-icon-overflow-menu";
-import "@ha/components/ha-selector/ha-selector";
-import "@ha/components/ha-selector/ha-selector-select";
-import "@ha/components/ha-settings-row";
-import "@ha/panels/config/ha-config-section";
 import { navigate } from "@ha/common/navigate";
 
-import "../components/knx-project-tree-view";
 import "../components/knx-configure-switch";
 
 import { HomeAssistant, Route } from "@ha/types";
@@ -87,9 +77,11 @@ export class KNXEditEntity extends LitElement {
         .hass=${this.hass}
         .narrow=${this.narrow!}
         .back-path=${this.backPath}
-        .header=${"Select entity type"}
+        .header=${"Edit entity"}
       >
-        <ha-card outlined .header=${"Error"}>Entity not found.</ha-card>
+        <div class="content">
+          <ha-card outlined .header=${"Error"}>Entity not found.</ha-card>
+        </div>
       </hass-subpage>
     `;
   }
@@ -101,14 +93,14 @@ export class KNXEditEntity extends LitElement {
       .back-path=${this.backPath}
       .header=${"Edit " + this.entityId}
     >
-      <ha-config-section .narrow=${this.narrow} .isWide=${false}>
+      <div class="content">
         <knx-configure-switch
           .hass=${this.hass}
           .knx=${this.knx}
           .config=${this._config!.data}
           @knx-entity-configuration-changed=${this._configChanged}
         ></knx-configure-switch>
-      </ha-config-section>
+      </div>
 
       <ha-fab
         slot="fab"
@@ -151,24 +143,10 @@ export class KNXEditEntity extends LitElement {
         --app-header-text-color: var(--sidebar-text-color);
       }
 
-      ha-expansion-panel {
-        margin: 16px;
-      }
-
-      .spacer {
-        height: 16px;
-      }
-
-      ha-config-section:last-of-type {
-        margin-bottom: 48px;
-      }
-
-      ha-card > ha-settings-row:first-child {
-        border-top: 0;
-      }
-
-      ha-settings-row {
-        margin-bottom: 16px;
+      .content {
+        margin: auto;
+        margin-bottom: 80px; /* leave space for fab */
+        max-width: 720px;
       }
     `;
   }
