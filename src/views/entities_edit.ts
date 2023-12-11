@@ -4,7 +4,7 @@ import { customElement, property, state } from "lit/decorators";
 
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-subpage";
-import "@ha/components/ha-card";
+import "@ha/components/ha-alert";
 import "@ha/components/ha-fab";
 import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-navigation-list";
@@ -45,12 +45,17 @@ export class KNXEditEntity extends LitElement {
       });
     }
     this.entityId = this.route.path.split("/")[1];
-    getEntityConfig(this.hass, this.entityId).then((entityConfigData) => {
-      this._config = entityConfigData;
-      this.uniqueId = entityConfigData.unique_id;
-      logger.debug("entity config", entityConfigData);
-      this.requestUpdate();
-    });
+    getEntityConfig(this.hass, this.entityId)
+      .then((entityConfigData) => {
+        this._config = entityConfigData;
+        this.uniqueId = entityConfigData.unique_id;
+        this.requestUpdate();
+      })
+      .catch((err) => {
+        logger.warn("Fetching entity config failed.", err);
+        this._config = {};
+        this.requestUpdate();
+      });
   }
 
   protected render(): TemplateResult | void {
@@ -80,7 +85,7 @@ export class KNXEditEntity extends LitElement {
         .header=${"Edit entity"}
       >
         <div class="content">
-          <ha-card outlined .header=${"Error"}>Entity not found.</ha-card>
+          <ha-alert alert-type="error">Entity not found: <code>${this.entityId}</code></ha-alert>
         </div>
       </hass-subpage>
     `;
