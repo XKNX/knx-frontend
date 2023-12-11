@@ -49,13 +49,12 @@ export class KNXEditEntity extends LitElement {
       .then((entityConfigData) => {
         this._config = entityConfigData;
         this.uniqueId = entityConfigData.unique_id;
-        this.requestUpdate();
       })
       .catch((err) => {
         logger.warn("Fetching entity config failed.", err);
         this._config = {};
-        this.requestUpdate();
-      });
+      })
+      .finally(() => this.requestUpdate());
   }
 
   protected render(): TemplateResult | void {
@@ -149,8 +148,7 @@ export class KNXEditEntity extends LitElement {
       }
 
       .content {
-        margin: auto;
-        margin-bottom: 80px; /* leave space for fab */
+        margin: 20px auto 80px; /* leave space for fab */
         max-width: 720px;
       }
     `;

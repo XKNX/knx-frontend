@@ -42,110 +42,108 @@ export class KNXConfigureSwitch extends LitElement {
     }));
     logger.debug("config", this.config);
     return html`
-      <div class="content">
-        <div class="header">
-          <h1><ha-svg-icon .path=${platformConstants.switch.iconPath}></ha-svg-icon>Switch</h1>
-          <p>The KNX switch platform is used as an interface to switching actuators.</p>
-        </div>
-        <ha-card outlined>
-          <h1 class="card-header">KNX configuration</h1>
-          <ha-settings-row narrow>
-            <div slot="heading">Switching</div>
-            <div slot="description">DPT 1 group addresses controlling the switch function.</div>
-            <ha-selector
-              .hass=${this.hass}
-              .label=${"Address"}
-              .selector=${{
-                select: { multiple: true, custom_value: true, options: addressOptions },
-              }}
-              .key=${"switch_address"}
-              .value=${this.config.switch_address}
-              @value-changed=${this._updateConfig}
-            ></ha-selector>
-            <div class="spacer"></div>
-            <ha-selector
-              .hass=${this.hass}
-              .label=${"State address"}
-              .selector=${{
-                select: { multiple: true, custom_value: true, options: addressOptions },
-              }}
-              .key=${"switch_state_address"}
-              .value=${this.config.switch_state_address}
-              @value-changed=${this._updateConfig}
-            ></ha-selector>
-            <ha-selector
-              .hass=${this.hass}
-              .label=${"Invert"}
-              .helper=${"Invert payloads before processing or sending."}
-              .selector=${{ boolean: {} }}
-              .key=${"invert"}
-              .value=${this.config.invert}
-              @value-changed=${this._updateConfig}
-            ></ha-selector>
-            <ha-selector
-              .hass=${this.hass}
-              .label=${"Respond to read"}
-              .helper=${"Respond to GroupValueRead telegrams received to the configured address."}
-              .selector=${{ boolean: {} }}
-              .key=${"respond_to_read"}
-              .value=${this.config.respond_to_read}
-              @value-changed=${this._updateConfig}
-            ></ha-selector>
-          </ha-settings-row>
-          <ha-expansion-panel .header=${"Advanced"} outlined>
-            <knx-sync-state-selector-row
-              .hass=${this.hass}
-              .key=${"sync_state"}
-              .value=${this.config.sync_state ?? true}
-              @value-changed=${this._updateConfig}
-            ></knx-sync-state-selector-row>
-          </ha-expansion-panel>
-        </ha-card>
-        <ha-card outlined>
-          <h1 class="card-header">Entity configuration</h1>
-          <p class="card-content">Home Assistant entity specific settings.</p>
-          <ha-settings-row narrow>
-            <div slot="heading">Name</div>
-            <div slot="description">Name of the entity.</div>
-            <ha-selector
-              .hass=${this.hass}
-              .label=${"Name"}
-              .selector=${{
-                text: { type: "text" },
-              }}
-              .key=${"name"}
-              .value=${this.config.name}
-              @value-changed=${this._updateConfig}
-            ></ha-selector>
-          </ha-settings-row>
-          <ha-expansion-panel .header=${"Advanced"} outlined>
-            <ha-settings-row narrow>
-              <div slot="heading">Entity settings</div>
-              <div slot="description">Description</div>
-              <ha-selector
-                .hass=${this.hass}
-                .label=${"Entity category"}
-                .helper=${"Leave empty for standard behaviour."}
-                .required=${false}
-                .selector=${{
-                  select: {
-                    multiple: false,
-                    custom_value: false,
-                    mode: "dropdown",
-                    options: [
-                      { value: "config", label: "Config" },
-                      { value: "diagnostic", label: "Diagnostic" },
-                    ],
-                  },
-                }}
-                .key=${"entity_category"}
-                .value=${this.config.entity_category}
-                @value-changed=${this._updateConfig}
-              ></ha-selector>
-            </ha-settings-row>
-          </ha-expansion-panel>
-        </ha-card>
+      <div class="header">
+        <h1><ha-svg-icon .path=${platformConstants.switch.iconPath}></ha-svg-icon>Switch</h1>
+        <p>The KNX switch platform is used as an interface to switching actuators.</p>
       </div>
+      <ha-card outlined>
+        <h1 class="card-header">KNX configuration</h1>
+        <ha-settings-row narrow>
+          <div slot="heading">Switching</div>
+          <div slot="description">DPT 1 group addresses controlling the switch function.</div>
+          <ha-selector
+            .hass=${this.hass}
+            .label=${"Address"}
+            .selector=${{
+              select: { multiple: true, custom_value: true, options: addressOptions },
+            }}
+            .key=${"switch_address"}
+            .value=${this.config.switch_address}
+            @value-changed=${this._updateConfig}
+          ></ha-selector>
+          <div class="spacer"></div>
+          <ha-selector
+            .hass=${this.hass}
+            .label=${"State address"}
+            .selector=${{
+              select: { multiple: true, custom_value: true, options: addressOptions },
+            }}
+            .key=${"switch_state_address"}
+            .value=${this.config.switch_state_address}
+            @value-changed=${this._updateConfig}
+          ></ha-selector>
+          <ha-selector
+            .hass=${this.hass}
+            .label=${"Invert"}
+            .helper=${"Invert payloads before processing or sending."}
+            .selector=${{ boolean: {} }}
+            .key=${"invert"}
+            .value=${this.config.invert}
+            @value-changed=${this._updateConfig}
+          ></ha-selector>
+          <ha-selector
+            .hass=${this.hass}
+            .label=${"Respond to read"}
+            .helper=${"Respond to GroupValueRead telegrams received to the configured address."}
+            .selector=${{ boolean: {} }}
+            .key=${"respond_to_read"}
+            .value=${this.config.respond_to_read}
+            @value-changed=${this._updateConfig}
+          ></ha-selector>
+        </ha-settings-row>
+        <ha-expansion-panel .header=${"Advanced"} outlined>
+          <knx-sync-state-selector-row
+            .hass=${this.hass}
+            .key=${"sync_state"}
+            .value=${this.config.sync_state ?? true}
+            @value-changed=${this._updateConfig}
+          ></knx-sync-state-selector-row>
+        </ha-expansion-panel>
+      </ha-card>
+      <ha-card outlined>
+        <h1 class="card-header">Entity configuration</h1>
+        <p class="card-content">Home Assistant entity specific settings.</p>
+        <ha-settings-row narrow>
+          <div slot="heading">Name</div>
+          <div slot="description">Name of the entity.</div>
+          <ha-selector
+            .hass=${this.hass}
+            .label=${"Name"}
+            .selector=${{
+              text: { type: "text" },
+            }}
+            .key=${"name"}
+            .value=${this.config.name}
+            @value-changed=${this._updateConfig}
+          ></ha-selector>
+        </ha-settings-row>
+        <ha-expansion-panel .header=${"Advanced"} outlined>
+          <ha-settings-row narrow>
+            <div slot="heading">Entity settings</div>
+            <div slot="description">Description</div>
+            <ha-selector
+              .hass=${this.hass}
+              .label=${"Entity category"}
+              .helper=${"Leave empty for standard behaviour."}
+              .required=${false}
+              .selector=${{
+                select: {
+                  multiple: false,
+                  custom_value: false,
+                  mode: "dropdown",
+                  options: [
+                    { value: "config", label: "Config" },
+                    { value: "diagnostic", label: "Diagnostic" },
+                  ],
+                },
+              }}
+              .key=${"entity_category"}
+              .value=${this.config.entity_category}
+              @value-changed=${this._updateConfig}
+            ></ha-selector>
+          </ha-settings-row>
+        </ha-expansion-panel>
+      </ha-card>
     `;
   }
 
@@ -187,7 +185,7 @@ export class KNXConfigureSwitch extends LitElement {
       .header {
         color: var(--ha-card-header-color, --primary-text-color);
         font-family: var(--ha-card-header-font-family, inherit);
-        padding: 16px;
+        padding: 0 16px 16px;
         & h1 {
           display: inline-flex;
           align-items: center;
