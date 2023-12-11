@@ -241,7 +241,6 @@ export class KNXInfo extends LitElement {
       showAlertDialog(this, {
         title: "Upload failed",
         text: extractApiErrorMessage(err),
-        confirmText: "ok",
       });
     } finally {
       if (!error) {
@@ -268,7 +267,6 @@ export class KNXInfo extends LitElement {
       showAlertDialog(this, {
         title: "Deletion failed",
         text: extractApiErrorMessage(err),
-        confirmText: "ok",
       });
     } finally {
       this.loadKnxInfo();

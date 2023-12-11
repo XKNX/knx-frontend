@@ -22,6 +22,7 @@ import "@ha/components/ha-state-icon";
 import "@ha/components/ha-svg-icon";
 import "@ha/components/data-table/ha-data-table";
 import type { DataTableColumnContainer } from "@ha/components/data-table/ha-data-table";
+import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 
 import "../components/knx-project-tree-view";
 
@@ -163,9 +164,22 @@ export class KNXEntitiesView extends LitElement {
   private _entityDelete = (ev: Event) => {
     ev.stopPropagation();
     const entry = ev.target.entityEntry as EntityRow;
-    deleteEntity(this.hass, entry.entity_id).then(() => {
-      logger.debug("entity deleted", entry.entity_id);
-      this._fetchEntities();
+    showConfirmationDialog(this, {
+      text: `${this.hass.localize("ui.common.delete")} ${entry.entity_id}?`,
+    }).then((confirmed) => {
+      if (confirmed) {
+        deleteEntity(this.hass, entry.entity_id)
+          .then(() => {
+            logger.debug("entity deleted", entry.entity_id);
+            this._fetchEntities();
+          })
+          .catch((err: any) => {
+            showAlertDialog(this, {
+              title: "Deletion failed",
+              text: err,
+            });
+          });
+      }
     });
   };
 
