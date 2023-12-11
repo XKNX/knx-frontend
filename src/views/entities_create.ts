@@ -169,8 +169,7 @@ export class KNXCreateEntity extends LitElement {
       }
 
       .content {
-        margin: auto;
-        margin-bottom: 80px; /* leave space for fab */
+        margin: 20px auto 80px; /* leave space for fab */
         max-width: 720px;
       }
     `;
