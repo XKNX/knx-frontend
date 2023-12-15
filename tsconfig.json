@@ -31,7 +31,7 @@
         "strict": false,
         "rules": {
           "no-unknown-tag-name": "error",
-          "no-missing-import": "error",
+          // "no-missing-import": "error", // not supported with paths (@ha/*) https://github.com/runem/lit-analyzer/issues/293
           "no-unclosed-tag": "error",
           "no-incompatible-type-binding": "warning",
           "no-invalid-css": "warning",
