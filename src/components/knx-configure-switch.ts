@@ -46,8 +46,8 @@ export class KNXConfigureSwitch extends LitElement {
       label: `${groupAddress.address} - ${groupAddress.name}`,
     }));
     logger.debug("config", this.config);
-    const device = this.config.device
-      ? deviceFromIdentifier(this.hass, this.config.device)
+    const device = this.config.device_id
+      ? deviceFromIdentifier(this.hass, this.config.device_id)
       : undefined;
     const deviceName = device ? device.name_by_user ?? device.name : "";
 
@@ -122,8 +122,8 @@ export class KNXConfigureSwitch extends LitElement {
           <div slot="description">A device allows to group multiple entities.</div>
           <knx-device-picker
             .hass=${this.hass}
-            .key=${"device"}
-            .value=${this.config.device}
+            .key=${"device_id"}
+            .value=${this.config.device_id}
             @value-changed=${this._updateConfig}
           ></knx-device-picker>
         </ha-settings-row>
@@ -133,7 +133,7 @@ export class KNXConfigureSwitch extends LitElement {
           <ha-selector
             .hass=${this.hass}
             .label=${"Name"}
-            .required=${!this.config.device}
+            .required=${!this.config.device_id}
             .selector=${{
               text: { type: "text", prefix: deviceName },
             }}
