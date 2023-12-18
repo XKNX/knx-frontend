@@ -59,7 +59,7 @@ class KnxDevicePicker extends LitElement {
   @state() private _showCreateDeviceDialog = false;
 
   // value is the knx identifier, not the device id
-  @state() private _deviceId?: string;
+  private _deviceId?: string;
 
   private _suggestion?: string;
 
@@ -120,6 +120,11 @@ class KnxDevicePicker extends LitElement {
     if ((!this._init && this.hass) || (this._init && changedProps.has("_opened") && this._opened)) {
       this._init = true;
       const devices = this._getDevices(knxDevices(this.hass), this.hass.areas);
+      const deviceId = this.value
+        ? devices.find((d) => d.identifier === this.value)?.id
+        : undefined;
+      this.comboBox.value = deviceId;
+      this._deviceId = deviceId;
       this.comboBox.items = devices;
       this.comboBox.filteredItems = devices;
     }
