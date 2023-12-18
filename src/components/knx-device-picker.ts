@@ -24,12 +24,13 @@ import { AreaRegistryEntry } from "@ha/data/area_registry";
 import type { DeviceRegistryEntry } from "@ha/data/device_registry";
 import type { HaComboBox } from "@ha/components/ha-combo-box";
 
-import { knxDevices } from "../utils/device";
+import { knxDevices, getKnxDeviceIdentifier } from "../utils/device";
 
 interface Device {
   name: string;
   area: string;
   id: string;
+  identifier?: string;
 }
 
 type ScorableDevice = ScorableTextItem & Device;
@@ -57,16 +58,23 @@ class KnxDevicePicker extends LitElement {
 
   @state() private _showCreateDeviceDialog = false;
 
+  // value is the knx identifier, not the device id
+  @state() private _deviceId?: string;
+
   private _suggestion?: string;
 
   private _init = false;
 
   private _getDevices = memoizeOne(
-    (devices: DeviceRegistryEntry[], areas: AreaRegistryEntry[]): ScorableDevice[] => {
+    (
+      devices: DeviceRegistryEntry[],
+      areas: { [id: string]: AreaRegistryEntry },
+    ): ScorableDevice[] => {
       const outputDevices = devices.map((device) => {
         const name = device.name_by_user ?? device.name ?? "";
         return {
           id: device.id,
+          identifier: getKnxDeviceIdentifier(device),
           name: name,
           area:
             device.area_id && areas[device.area_id]
@@ -91,7 +99,7 @@ class KnxDevicePicker extends LitElement {
 
   private async _addDevice(device: DeviceRegistryEntry) {
     const deviceEntries = [...knxDevices(this.hass), device];
-    const devices = this._getDevices(deviceEntries, Object.values(this.hass.areas));
+    const devices = this._getDevices(deviceEntries, this.hass.areas);
     this.comboBox.items = devices;
     this.comboBox.filteredItems = devices;
     await this.updateComplete;
@@ -111,7 +119,7 @@ class KnxDevicePicker extends LitElement {
   protected updated(changedProps: PropertyValues) {
     if ((!this._init && this.hass) || (this._init && changedProps.has("_opened") && this._opened)) {
       this._init = true;
-      const devices = this._getDevices(knxDevices(this.hass), Object.values(this.hass.areas));
+      const devices = this._getDevices(knxDevices(this.hass), this.hass.areas);
       this.comboBox.items = devices;
       this.comboBox.filteredItems = devices;
     }
@@ -124,7 +132,7 @@ class KnxDevicePicker extends LitElement {
         .label=${this.label === undefined && this.hass
           ? this.hass.localize("ui.components.device-picker.device")
           : this.label}
-        .value=${this._value}
+        .value=${this._deviceId}
         .renderer=${rowRenderer}
         item-id-path="id"
         item-value-path="id"
@@ -135,10 +143,6 @@ class KnxDevicePicker extends LitElement {
       ></ha-combo-box>
       ${this._showCreateDeviceDialog ? this._renderCreateDeviceDialog() : nothing}
     `;
-  }
-
-  private get _value() {
-    return this.value || "";
   }
 
   private _filterChanged(ev: CustomEvent): void {
@@ -173,20 +177,23 @@ class KnxDevicePicker extends LitElement {
     }
 
     if (!["add_new_suggestion", "add_new"].includes(newValue)) {
-      if (newValue !== this._value) {
+      if (newValue !== this._deviceId) {
         this._setValue(newValue);
       }
       return;
     }
 
-    (ev.target as any).value = this._value;
+    (ev.target as any).value = this._deviceId;
     this._openCreateDeviceDialog();
   }
 
-  private _setValue(value?: string) {
-    this.value = value;
+  private _setValue(deviceId: string | undefined) {
+    const device: Device | undefined = this.comboBox.items!.find((d) => d.id === deviceId);
+    const identifier = device?.identifier;
+    this.value = identifier;
+    this._deviceId = device?.id;
     setTimeout(() => {
-      fireEvent(this, "value-changed", { value });
+      fireEvent(this, "value-changed", { value: identifier });
       fireEvent(this, "change");
     }, 0);
   }
@@ -206,7 +213,7 @@ class KnxDevicePicker extends LitElement {
   }
 
   private async _closeCreateDeviceDialog(ev: CustomEvent) {
-    const newDevice = ev.detail.newDevice;
+    const newDevice: DeviceRegistryEntry | undefined = ev.detail.newDevice;
     if (newDevice) {
       await this._addDevice(newDevice);
     }
