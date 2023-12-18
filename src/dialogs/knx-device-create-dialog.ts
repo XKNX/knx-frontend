@@ -28,18 +28,24 @@ class DeviceCreateDialog extends LitElement {
 
   @state() private area?: string;
 
-  public closeDialog(device: DeviceRegistryEntry | undefined = undefined) {
-    fireEvent(this, "create-device-dialog-closed", { newDevice: device }, { bubbles: false });
+  _deviceEntry?: DeviceRegistryEntry;
+
+  public closeDialog(_ev) {
+    fireEvent(
+      this,
+      "create-device-dialog-closed",
+      { newDevice: this._deviceEntry },
+      { bubbles: false },
+    );
   }
 
   private _createDevice() {
-    let device: DeviceRegistryEntry | undefined;
     createDevice(this.hass, { name: this.deviceName!, area_id: this.area })
       .then((resultDevice) => {
-        device = resultDevice;
+        this._deviceEntry = resultDevice;
       })
       .finally(() => {
-        this.closeDialog(device);
+        this.closeDialog(undefined);
       });
   }
 

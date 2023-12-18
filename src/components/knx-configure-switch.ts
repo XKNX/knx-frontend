@@ -17,6 +17,7 @@ import "./knx-device-picker";
 import { SwitchEntityData, CreateEntityData } from "../types/entity_data";
 import { KNX } from "../types/knx";
 import { platformConstants } from "../utils/common";
+import { deviceFromIdentifier } from "../utils/device";
 import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("knx-configure-switch");
@@ -45,10 +46,10 @@ export class KNXConfigureSwitch extends LitElement {
       label: `${groupAddress.address} - ${groupAddress.name}`,
     }));
     logger.debug("config", this.config);
-    const deviceName = this.config.device
-      ? this.hass.devices[this.config.device].name_by_user ??
-        this.hass.devices[this.config.device].name
-      : "";
+    const device = this.config.device
+      ? deviceFromIdentifier(this.hass, this.config.device)
+      : undefined;
+    const deviceName = device ? device.name_by_user ?? device.name : "";
 
     return html`
       <div class="header">
