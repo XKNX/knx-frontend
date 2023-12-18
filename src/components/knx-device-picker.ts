@@ -63,19 +63,8 @@ class KnxDevicePicker extends LitElement {
 
   private _getDevices = memoizeOne(
     (devices: DeviceRegistryEntry[], areas: AreaRegistryEntry[]): ScorableDevice[] => {
-      if (!devices.length) {
-        return [
-          {
-            id: "no_devices",
-            area: "",
-            name: this.hass.localize("ui.components.device-picker.no_devices"),
-            strings: [],
-          },
-        ];
-      }
-      let outputDevices = devices.map((device) => {
+      const outputDevices = devices.map((device) => {
         const name = device.name_by_user ?? device.name ?? "";
-
         return {
           id: device.id,
           name: name,
@@ -86,26 +75,16 @@ class KnxDevicePicker extends LitElement {
           strings: [name || ""],
         };
       });
-      if (!outputDevices.length) {
-        outputDevices = [
-          {
-            id: "no_devices",
-            area: "",
-            name: this.hass.localize("ui.components.device-picker.no_match"),
-            strings: [],
-          },
-        ];
-      }
       return [
-        ...outputDevices.sort((a, b) =>
-          stringCompare(a.name || "", b.name || "", this.hass.locale.language),
-        ),
         {
           id: "add_new",
           name: "Add new device…",
           area: "",
           strings: [],
         },
+        ...outputDevices.sort((a, b) =>
+          stringCompare(a.name || "", b.name || "", this.hass.locale.language),
+        ),
       ];
     },
   );
