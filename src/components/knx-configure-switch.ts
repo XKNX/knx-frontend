@@ -9,8 +9,11 @@ import "@ha/components/ha-selector/ha-selector";
 import "@ha/components/ha-selector/ha-selector-select";
 import "@ha/components/ha-settings-row";
 
+import "@ha/components/device/ha-device-picker";
+
 import { HomeAssistant } from "@ha/types";
 import "./knx-sync-state-selector-row";
+import "./knx-device-picker";
 import { SwitchEntityData, CreateEntityData } from "../types/entity_data";
 import { KNX } from "../types/knx";
 import { platformConstants } from "../utils/common";
@@ -24,6 +27,7 @@ declare global {
     "knx-entity-configuration-changed": CreateEntityData;
   }
 }
+
 @customElement("knx-configure-switch")
 export class KNXConfigureSwitch extends LitElement {
   @property({ type: Object }) public hass!: HomeAssistant;
@@ -41,6 +45,11 @@ export class KNXConfigureSwitch extends LitElement {
       label: `${groupAddress.address} - ${groupAddress.name}`,
     }));
     logger.debug("config", this.config);
+    const deviceName = this.config.device
+      ? this.hass.devices[this.config.device].name_by_user ??
+        this.hass.devices[this.config.device].name
+      : "";
+
     return html`
       <div class="header">
         <h1><ha-svg-icon .path=${platformConstants.switch.iconPath}></ha-svg-icon>Switch</h1>
@@ -66,7 +75,11 @@ export class KNXConfigureSwitch extends LitElement {
             .hass=${this.hass}
             .label=${"State address"}
             .selector=${{
-              select: { multiple: true, custom_value: true, options: addressOptions },
+              select: {
+                multiple: true,
+                custom_value: true,
+                options: addressOptions,
+              },
             }}
             .key=${"switch_state_address"}
             .value=${this.config.switch_state_address}
@@ -102,15 +115,26 @@ export class KNXConfigureSwitch extends LitElement {
       </ha-card>
       <ha-card outlined>
         <h1 class="card-header">Entity configuration</h1>
-        <p class="card-content">Home Assistant entity specific settings.</p>
+        <p class="card-content">Home Assistant specific settings.</p>
+        <ha-settings-row narrow>
+          <div slot="heading">Device</div>
+          <div slot="description">A device allows to group multiple entities.</div>
+          <knx-device-picker
+            .hass=${this.hass}
+            .key=${"device"}
+            .value=${this.config.device}
+            @value-changed=${this._updateConfig}
+          ></knx-device-picker>
+        </ha-settings-row>
         <ha-settings-row narrow>
           <div slot="heading">Name</div>
           <div slot="description">Name of the entity.</div>
           <ha-selector
             .hass=${this.hass}
             .label=${"Name"}
+            .required=${!this.config.device}
             .selector=${{
-              text: { type: "text" },
+              text: { type: "text", prefix: deviceName },
             }}
             .key=${"name"}
             .value=${this.config.name}

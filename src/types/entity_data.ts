@@ -29,3 +29,8 @@ export interface CreateEntityData {
 export interface UpdateEntityData extends CreateEntityData {
   unique_id: string;
 }
+
+export interface DeviceCreateData {
+  name: string;
+  area_id?: string;
+}
