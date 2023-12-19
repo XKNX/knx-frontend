@@ -221,6 +221,8 @@ class KnxDevicePicker extends LitElement {
     const newDevice: DeviceRegistryEntry | undefined = ev.detail.newDevice;
     if (newDevice) {
       await this._addDevice(newDevice);
+    } else {
+      this.comboBox.setInputValue("");
     }
     this._setValue(newDevice?.id);
     this._suggestion = undefined;
