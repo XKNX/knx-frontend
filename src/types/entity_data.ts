@@ -5,7 +5,7 @@ export type supportedPlatform = "switch";
 type groupAddresses = string | string[];
 
 interface BaseEntityData {
-  device_id: string | null;
+  device_info: string | null;
   entity_category: entityCategory | null;
   name: string;
   sync_state: string | boolean;

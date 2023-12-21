@@ -58,7 +58,7 @@ class KnxDevicePicker extends LitElement {
 
   @state() private _showCreateDeviceDialog = false;
 
-  // value is the knx identifier, not the device id
+  // value is the knx identifier (device_info), not the device id
   private _deviceId?: string;
 
   private _suggestion?: string;
