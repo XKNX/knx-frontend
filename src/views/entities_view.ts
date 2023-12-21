@@ -104,14 +104,6 @@ export class KNXEntitiesView extends LitElement {
         width: textColumnWith,
         template: (entry) => entry.entityState?.attributes.friendly_name ?? "",
       },
-      name: {
-        filterable: true,
-        sortable: true,
-        title: "Name",
-        width: textColumnWith,
-        // template: (entry) => this.hass.states[entry.entity_id].attributes.friendly_name,
-        template: (entry) => entry.name ?? entry.original_name ?? "",
-      },
       entity_id: {
         filterable: true,
         sortable: true,
@@ -119,18 +111,25 @@ export class KNXEntitiesView extends LitElement {
         width: textColumnWith,
         // template: (entry) => entry.entity_id,
       },
-      area: {
-        title: "Area",
-        sortable: true,
+      device: {
         filterable: true,
+        sortable: true,
+        title: "Device",
         width: textColumnWith,
-        template: (entry) => entry.area?.name ?? "",
+        template: (entry) => (entry.device_id ? this.hass.devices[entry.device_id].name ?? "" : ""),
       },
       device_id: {
         hidden: true, // for filtering only
         title: "Device ID",
         filterable: true,
         template: (entry) => entry.device_id ?? "",
+      },
+      area: {
+        title: "Area",
+        sortable: true,
+        filterable: true,
+        width: textColumnWith,
+        template: (entry) => entry.area?.name ?? "",
       },
       actions: {
         title: "",
