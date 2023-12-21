@@ -1,24 +1,21 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators";
 
-import { fireEvent } from "@ha/common/dom/fire_event";
 import "@ha/components/ha-card";
 import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-expansion-panel";
 import "@ha/components/ha-selector/ha-selector";
-import "@ha/components/ha-selector/ha-selector-select";
 import "@ha/components/ha-settings-row";
 
-import "@ha/components/device/ha-device-picker";
-
+import { fireEvent } from "@ha/common/dom/fire_event";
 import { HomeAssistant } from "@ha/types";
+
 import "./knx-sync-state-selector-row";
-import "./knx-device-picker";
+import { renderConfigureEntityCard } from "./knx-configure-entity-card";
+import { KNXLogger } from "../tools/knx-logger";
 import { SwitchEntityData, CreateEntityData } from "../types/entity_data";
 import { KNX } from "../types/knx";
 import { platformConstants } from "../utils/common";
-import { deviceFromIdentifier } from "../utils/device";
-import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("knx-configure-switch");
 
@@ -45,11 +42,6 @@ export class KNXConfigureSwitch extends LitElement {
       value: groupAddress.address,
       label: `${groupAddress.address} - ${groupAddress.name}`,
     }));
-    logger.debug("config", this.config);
-    const device = this.config.device_info
-      ? deviceFromIdentifier(this.hass, this.config.device_info)
-      : undefined;
-    const deviceName = device ? device.name_by_user ?? device.name : "";
 
     return html`
       <div class="header">
@@ -114,61 +106,7 @@ export class KNXConfigureSwitch extends LitElement {
           ></knx-sync-state-selector-row>
         </ha-expansion-panel>
       </ha-card>
-      <ha-card outlined>
-        <h1 class="card-header">Entity configuration</h1>
-        <p class="card-content">Home Assistant specific settings.</p>
-        <ha-settings-row narrow>
-          <div slot="heading">Device</div>
-          <div slot="description">A device allows to group multiple entities.</div>
-          <knx-device-picker
-            .hass=${this.hass}
-            .key=${"device_info"}
-            .value=${this.config.device_info}
-            @value-changed=${this._updateConfig}
-          ></knx-device-picker>
-        </ha-settings-row>
-        <ha-settings-row narrow>
-          <div slot="heading">Name</div>
-          <div slot="description">Name of the entity.</div>
-          <ha-selector
-            .hass=${this.hass}
-            .label=${"Name"}
-            .required=${!this.config.device_info}
-            .selector=${{
-              text: { type: "text", prefix: deviceName },
-            }}
-            .key=${"name"}
-            .value=${this.config.name}
-            @value-changed=${this._updateConfig}
-          ></ha-selector>
-        </ha-settings-row>
-        <ha-expansion-panel .header=${"Advanced"} outlined>
-          <ha-settings-row narrow>
-            <div slot="heading">Entity settings</div>
-            <div slot="description">Description</div>
-            <ha-selector
-              .hass=${this.hass}
-              .label=${"Entity category"}
-              .helper=${"Leave empty for standard behaviour."}
-              .required=${false}
-              .selector=${{
-                select: {
-                  multiple: false,
-                  custom_value: false,
-                  mode: "dropdown",
-                  options: [
-                    { value: "config", label: "Config" },
-                    { value: "diagnostic", label: "Diagnostic" },
-                  ],
-                },
-              }}
-              .key=${"entity_category"}
-              .value=${this.config.entity_category}
-              @value-changed=${this._updateConfig}
-            ></ha-selector>
-          </ha-settings-row>
-        </ha-expansion-panel>
-      </ha-card>
+      ${renderConfigureEntityCard(this.hass, this.config, this._updateConfig)}
     `;
   }
 

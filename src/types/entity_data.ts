@@ -4,11 +4,10 @@ export type supportedPlatform = "switch";
 
 type groupAddresses = string | string[];
 
-interface BaseEntityData {
+export interface BaseEntityData {
   device_info: string | null;
   entity_category: entityCategory | null;
   name: string;
-  sync_state: string | boolean;
 }
 
 export interface SwitchEntityData extends BaseEntityData {
@@ -17,6 +16,7 @@ export interface SwitchEntityData extends BaseEntityData {
   respond_to_read: boolean;
   switch_address: groupAddresses;
   switch_state_address: groupAddresses | null;
+  sync_state: string | boolean;
 }
 
 export type EntityData = SwitchEntityData;
