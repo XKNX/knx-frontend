@@ -3,17 +3,11 @@ import { LitElement, TemplateResult, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { ifDefined } from "lit/directives/if-defined";
 
-import memoize from "memoize-one";
 import { HassEntity } from "home-assistant-js-websocket";
+import memoize from "memoize-one";
 
-import { fireEvent } from "@ha/common/dom/fire_event";
-import { navigate } from "@ha/common/navigate";
-import { AreaRegistryEntry } from "@ha/data/area_registry";
-import { ExtEntityRegistryEntry } from "@ha/data/entity_registry";
-import { mainWindow } from "@ha/common/dom/get_main_window";
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-tabs-subpage";
-import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import "@ha/components/ha-card";
 import "@ha/components/ha-fab";
 import "@ha/components/ha-icon-button";
@@ -21,14 +15,20 @@ import "@ha/components/ha-icon-overflow-menu";
 import "@ha/components/ha-state-icon";
 import "@ha/components/ha-svg-icon";
 import "@ha/components/data-table/ha-data-table";
+import { navigate } from "@ha/common/navigate";
+import { mainWindow } from "@ha/common/dom/get_main_window";
+import { fireEvent } from "@ha/common/dom/fire_event";
 import type { DataTableColumnContainer } from "@ha/components/data-table/ha-data-table";
+import { AreaRegistryEntry } from "@ha/data/area_registry";
+import { ExtEntityRegistryEntry } from "@ha/data/entity_registry";
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
+import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
+import { HomeAssistant, Route } from "@ha/types";
 
 import "../components/knx-project-tree-view";
 
-import { HomeAssistant, Route } from "@ha/types";
-import { KNX } from "../types/knx";
 import { getEntityEntries, deleteEntity } from "../services/websocket.service";
+import { KNX } from "../types/knx";
 import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("knx-entities-view");
@@ -52,8 +52,15 @@ export class KNXEntitiesView extends LitElement {
 
   @state() private knx_entities: EntityRow[] = [];
 
+  @state() private filterDevice: string | null = null;
+
   protected firstUpdated() {
     this._fetchEntities();
+  }
+
+  protected willUpdate() {
+    const urlParams = new URLSearchParams(mainWindow.location.search);
+    this.filterDevice = urlParams.get("device_id");
   }
 
   private async _fetchEntities() {
@@ -118,6 +125,12 @@ export class KNXEntitiesView extends LitElement {
         filterable: true,
         width: textColumnWith,
         template: (entry) => entry.area?.name ?? "",
+      },
+      device_id: {
+        hidden: true, // for filtering only
+        title: "Device ID",
+        filterable: true,
+        template: (entry) => entry.device_id ?? "",
       },
       actions: {
         title: "",
@@ -205,6 +218,7 @@ export class KNXEntitiesView extends LitElement {
             .hasFab=${true}
             .searchLabel=${this.hass.localize("ui.components.data-table.search")}
             .clickable=${false}
+            .filter=${this.filterDevice}
           ></ha-data-table>
         </div>
         <ha-fab
