@@ -8,10 +8,11 @@ export interface BaseEntityData {
   device_info: string | null;
   entity_category: entityCategory | null;
   name: string;
+  device_class: string | null;
 }
 
-export interface SwitchEntityData extends BaseEntityData {
-  device_class: "outlet" | "switch" | null; // TODO: maybe load from core
+export interface SwitchEntityData {
+  entity: BaseEntityData;
   invert: boolean;
   respond_to_read: boolean;
   switch_address: groupAddresses;
@@ -28,9 +29,18 @@ export interface CreateEntityData {
 
 export interface UpdateEntityData extends CreateEntityData {
   unique_id: string;
+  schema_options: SchemaOptions | null;
 }
 
 export interface DeviceCreateData {
   name: string;
   area_id?: string;
+}
+
+export interface SchemaOptions {
+  entity?: EntitySchemaOptions;
+}
+
+export interface EntitySchemaOptions {
+  device_class?: string[];
 }

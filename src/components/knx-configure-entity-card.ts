@@ -1,4 +1,4 @@
-import { html } from "lit";
+import { html, nothing } from "lit";
 
 import "@ha/components/ha-card";
 import "@ha/components/ha-expansion-panel";
@@ -10,12 +10,13 @@ import { HomeAssistant } from "@ha/types";
 import "./knx-sync-state-selector-row";
 import "./knx-device-picker";
 
-import { BaseEntityData } from "../types/entity_data";
+import { BaseEntityData, EntitySchemaOptions } from "../types/entity_data";
 import { deviceFromIdentifier } from "../utils/device";
 
 export const renderConfigureEntityCard = (
   hass: HomeAssistant,
   config: Partial<BaseEntityData>,
+  schemaOptions: EntitySchemaOptions | undefined,
   updateConfig: (ev: CustomEvent) => void,
 ) => {
   const device = config.device_info ? deviceFromIdentifier(hass, config.device_info) : undefined;
@@ -41,7 +42,7 @@ export const renderConfigureEntityCard = (
         <ha-selector
           .hass=${hass}
           .label=${"Name"}
-          .required=${!config.device_info}
+          .required=${!device}
           .selector=${{
             text: { type: "text", prefix: deviceName },
           }}
@@ -50,6 +51,25 @@ export const renderConfigureEntityCard = (
           @value-changed=${updateConfig}
         ></ha-selector>
       </ha-settings-row>
+      ${schemaOptions?.device_class
+        ? html` <ha-settings-row narrow>
+            <ha-selector
+              .hass=${hass}
+              .label=${"Device class"}
+              .required=${false}
+              .selector=${{
+                select: {
+                  multiple: false,
+                  custom_value: false,
+                  options: schemaOptions.device_class,
+                },
+              }}
+              .key=${"device_class"}
+              .value=${config.device_class}
+              @value-changed=${updateConfig}
+            ></ha-selector>
+          </ha-settings-row>`
+        : nothing}
       <ha-expansion-panel .header=${"Advanced"} outlined>
         <ha-settings-row narrow>
           <div slot="heading">Entity settings</div>

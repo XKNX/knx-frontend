@@ -14,7 +14,7 @@ import "../components/knx-configure-switch";
 
 import { HomeAssistant, Route } from "@ha/types";
 import { updateEntity, getEntityConfig } from "services/websocket.service";
-import { CreateEntityData } from "types/entity_data";
+import { CreateEntityData, SchemaOptions } from "types/entity_data";
 import { KNX } from "../types/knx";
 import { KNXLogger } from "../tools/knx-logger";
 
@@ -34,6 +34,8 @@ export class KNXEditEntity extends LitElement {
 
   @state() private _config?: CreateEntityData;
 
+  @state() private _schemaOptions!: SchemaOptions;
+
   entityId?: string;
 
   uniqueId?: string;
@@ -47,8 +49,10 @@ export class KNXEditEntity extends LitElement {
     this.entityId = this.route.path.split("/")[1];
     getEntityConfig(this.hass, this.entityId)
       .then((entityConfigData) => {
-        this._config = entityConfigData;
-        this.uniqueId = entityConfigData.unique_id;
+        const { schema_options: schemaOptions, unique_id: uniqueId, ...config } = entityConfigData;
+        this._config = config;
+        this._schemaOptions = schemaOptions ?? {};
+        this.uniqueId = uniqueId;
       })
       .catch((err) => {
         logger.warn("Fetching entity config failed.", err);
@@ -102,6 +106,7 @@ export class KNXEditEntity extends LitElement {
           .hass=${this.hass}
           .knx=${this.knx}
           .config=${this._config!.data}
+          .schemaOptions=${this._schemaOptions}
           @knx-entity-configuration-changed=${this._configChanged}
         ></knx-configure-switch>
       </div>
