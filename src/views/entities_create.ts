@@ -13,8 +13,8 @@ import { navigate } from "@ha/common/navigate";
 import "../components/knx-configure-switch";
 
 import { HomeAssistant, Route } from "@ha/types";
-import { createEntity } from "services/websocket.service";
-import { CreateEntityData } from "types/entity_data";
+import { createEntity, getPlatformSchemaOptions } from "services/websocket.service";
+import { CreateEntityData, SchemaOptions } from "types/entity_data";
 import { KNX } from "../types/knx";
 import { platformConstants } from "../utils/common";
 import { KNXLogger } from "../tools/knx-logger";
@@ -35,6 +35,8 @@ export class KNXCreateEntity extends LitElement {
 
   @state() private _config?: CreateEntityData;
 
+  @state() private _schemaOptions?: SchemaOptions;
+
   entityPlatform?: string;
 
   protected firstUpdated() {
@@ -49,11 +51,20 @@ export class KNXCreateEntity extends LitElement {
     // const urlParams = new URLSearchParams(mainWindow.location.search);
     // const referrerGA = urlParams.get("ga");
     // console.log(referrerGA);
-    this.entityPlatform = this.route.path.split("/")[1];
+    const entityPlatform = this.route.path.split("/")[1];
+    if (!entityPlatform) {
+      this._schemaOptions = undefined;
+    } else if (entityPlatform !== this.entityPlatform) {
+      getPlatformSchemaOptions(this.hass, entityPlatform).then((schemaOptions) => {
+        logger.debug("schemaOptions", schemaOptions);
+        this._schemaOptions = schemaOptions ?? {};
+      });
+    }
+    this.entityPlatform = entityPlatform;
   }
 
   protected render(): TemplateResult | void {
-    if (!this.hass || !this.knx.project) {
+    if (!this.hass || !this.knx.project || (!!this.entityPlatform && !this._schemaOptions)) {
       return html` <hass-loading-screen></hass-loading-screen> `;
     }
     let content: TemplateResult;
@@ -124,6 +135,8 @@ export class KNXCreateEntity extends LitElement {
         <knx-configure-switch
           .hass=${this.hass}
           .knx=${this.knx}
+          .platform=${this.entityPlatform}
+          .schemaOptions=${this._schemaOptions}
           @knx-entity-configuration-changed=${this._configChanged}
         ></knx-configure-switch>
       </div>

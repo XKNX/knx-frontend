@@ -13,7 +13,7 @@ import { HomeAssistant } from "@ha/types";
 import "./knx-sync-state-selector-row";
 import { renderConfigureEntityCard } from "./knx-configure-entity-card";
 import { KNXLogger } from "../tools/knx-logger";
-import { SwitchEntityData, CreateEntityData } from "../types/entity_data";
+import { SwitchEntityData, CreateEntityData, SchemaOptions } from "../types/entity_data";
 import { KNX } from "../types/knx";
 import { platformConstants } from "../utils/common";
 
@@ -33,6 +33,8 @@ export class KNXConfigureSwitch extends LitElement {
   @property({ attribute: false }) public knx!: KNX;
 
   @property({ type: Object }) public config: Partial<SwitchEntityData> = {};
+
+  @property({ type: Object }) public schemaOptions: SchemaOptions = {};
 
   protected render(): TemplateResult | void {
     const dpt1gas = Object.values(this.knx.project!.knxproject.group_addresses).filter(
@@ -106,16 +108,33 @@ export class KNXConfigureSwitch extends LitElement {
           ></knx-sync-state-selector-row>
         </ha-expansion-panel>
       </ha-card>
-      ${renderConfigureEntityCard(this.hass, this.config, this._updateConfig)}
+      ${renderConfigureEntityCard(
+        this.hass,
+        this.config.entity ?? {},
+        this.schemaOptions?.entity,
+        this._updateEntityConfig,
+      )}
     `;
   }
 
   private _updateConfig(ev) {
     ev.stopPropagation();
     this.config[ev.target.key] = ev.detail.value;
-    logger.warn(ev.target);
-    logger.warn("update key", ev.target.key);
-    logger.warn("update value", ev.detail.value);
+    logger.warn(`update base key "${ev.target.key}" with "${ev.detail.value}"`);
+    this._propageteNewConfig();
+  }
+
+  private _updateEntityConfig(ev) {
+    ev.stopPropagation();
+    if (!this.config.entity) {
+      this.config.entity = {};
+    }
+    this.config.entity[ev.target.key] = ev.detail.value;
+    logger.warn(`update entity key "${ev.target.key}" with "${ev.detail.value}"`);
+    this._propageteNewConfig();
+  }
+
+  private _propageteNewConfig() {
     logger.warn("new_config", this.config);
     if (true) {
       // validate
