@@ -9,6 +9,8 @@ import "@ha/components/ha-fab";
 import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-navigation-list";
 import { navigate } from "@ha/common/navigate";
+import { mainWindow } from "@ha/common/dom/get_main_window";
+import { fireEvent } from "@ha/common/dom/fire_event";
 
 import "../components/knx-configure-switch";
 
@@ -135,7 +137,6 @@ export class KNXCreateEntity extends LitElement {
         <knx-configure-switch
           .hass=${this.hass}
           .knx=${this.knx}
-          .platform=${this.entityPlatform}
           .schemaOptions=${this._schemaOptions}
           @knx-entity-configuration-changed=${this._configChanged}
         ></knx-configure-switch>
@@ -165,13 +166,25 @@ export class KNXCreateEntity extends LitElement {
       return;
     }
     createEntity(this.hass, this._config)
-      .then(() => {
+      .then((entityId) => {
         logger.debug("created entity!");
         navigate("/knx/entities", { replace: true });
+        if (!entityId) {
+          logger.error("entity_id not found after creation.");
+          return;
+        }
+        this._entityMoreInfoSettings(entityId);
       })
       .catch((err) => {
         logger.error("Error creating entity", err);
       });
+  }
+
+  private _entityMoreInfoSettings(entityId: string) {
+    fireEvent(mainWindow.document.querySelector("home-assistant")!, "hass-more-info", {
+      entityId,
+      view: "settings",
+    });
   }
 
   static get styles() {

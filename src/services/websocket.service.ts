@@ -61,7 +61,10 @@ export const getPlatformSchemaOptions = (
     platform: platform,
   });
 
-export const createEntity = (hass: HomeAssistant, entityData: CreateEntityData) =>
+export const createEntity = (
+  hass: HomeAssistant,
+  entityData: CreateEntityData,
+): Promise<string | null> =>
   hass.callWS({
     type: "knx/create_entity",
     ...entityData,
