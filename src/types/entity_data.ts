@@ -8,7 +8,6 @@ export interface BaseEntityData {
   device_info: string | null;
   entity_category: entityCategory | null;
   name: string;
-  device_class: string | null;
 }
 
 export interface SwitchEntityData {
@@ -29,6 +28,9 @@ export interface CreateEntityData {
 
 export interface UpdateEntityData extends CreateEntityData {
   unique_id: string;
+}
+
+export interface EditEntityData extends UpdateEntityData {
   schema_options: SchemaOptions | null;
 }
 
@@ -42,5 +44,5 @@ export interface SchemaOptions {
 }
 
 export interface EntitySchemaOptions {
-  device_class?: string[];
+  // nothing yet
 }
