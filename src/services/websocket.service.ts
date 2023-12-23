@@ -8,7 +8,12 @@ import {
   KNXProjectRespone,
   SchemaOptions,
 } from "../types/websocket";
-import { CreateEntityData, UpdateEntityData, DeviceCreateData } from "../types/entity_data";
+import {
+  CreateEntityData,
+  EditEntityData,
+  UpdateEntityData,
+  DeviceCreateData,
+} from "../types/entity_data";
 
 export const getKnxInfoData = (hass: HomeAssistant): Promise<KNXInfoData> =>
   hass.callWS({
@@ -82,7 +87,7 @@ export const deleteEntity = (hass: HomeAssistant, entityId: string) =>
     entity_id: entityId,
   });
 
-export const getEntityConfig = (hass: HomeAssistant, entityId: string): Promise<UpdateEntityData> =>
+export const getEntityConfig = (hass: HomeAssistant, entityId: string): Promise<EditEntityData> =>
   hass.callWS({
     type: "knx/get_entity_config",
     entity_id: entityId,

@@ -34,6 +34,7 @@ export class KNXConfigureSwitch extends LitElement {
 
   @property({ type: Object }) public config: Partial<SwitchEntityData> = {};
 
+  // no schema options for switch - yet
   @property({ type: Object }) public schemaOptions: SchemaOptions = {};
 
   protected render(): TemplateResult | void {
@@ -108,12 +109,7 @@ export class KNXConfigureSwitch extends LitElement {
           ></knx-sync-state-selector-row>
         </ha-expansion-panel>
       </ha-card>
-      ${renderConfigureEntityCard(
-        this.hass,
-        this.config.entity ?? {},
-        this.schemaOptions?.entity,
-        this._updateEntityConfig,
-      )}
+      ${renderConfigureEntityCard(this.hass, this.config.entity ?? {}, this._updateEntityConfig)}
     `;
   }
 
