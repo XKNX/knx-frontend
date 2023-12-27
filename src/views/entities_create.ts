@@ -167,7 +167,7 @@ export class KNXCreateEntity extends LitElement {
     }
     createEntity(this.hass, this._config)
       .then((entityId) => {
-        logger.debug("created entity!");
+        logger.debug("created entity", entityId);
         navigate("/knx/entities", { replace: true });
         if (!entityId) {
           logger.error("entity_id not found after creation.");

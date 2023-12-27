@@ -2,7 +2,11 @@ export type entityCategory = "config" | "diagnostic";
 
 export type supportedPlatform = "switch";
 
-type groupAddresses = string | string[];
+export interface GASchema {
+  send?: string;
+  read?: string;
+  passive?: string[];
+}
 
 export interface BaseEntityData {
   device_info: string | null;
@@ -14,8 +18,7 @@ export interface SwitchEntityData {
   entity: BaseEntityData;
   invert: boolean;
   respond_to_read: boolean;
-  switch_address: groupAddresses;
-  switch_state_address: groupAddresses | null;
+  ga_switch: GASchema;
   sync_state: string | boolean;
 }
 
