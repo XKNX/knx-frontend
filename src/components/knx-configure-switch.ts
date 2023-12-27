@@ -48,8 +48,8 @@ export class KNXConfigureSwitch extends LitElement {
             .key=${"ga_switch"}
             .config=${this.config.ga_switch ?? {}}
             .options=${{
-              send: { required: true },
-              read: { required: false },
+              write: { required: true },
+              state: { required: false },
               passive: true,
               validDPTs: [{ main: 1, sub: null }],
             }}

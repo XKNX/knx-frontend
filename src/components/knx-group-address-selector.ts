@@ -1,7 +1,9 @@
+import { mdiChevronDown, mdiChevronUp } from "@mdi/js";
 import { LitElement, html, css, nothing } from "lit";
-import { customElement, property } from "lit/decorators";
+import { customElement, property, state } from "lit/decorators";
 
 import "@ha/components/ha-selector/ha-selector";
+import "@ha/components/ha-icon-button";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import { HomeAssistant } from "@ha/types";
 
@@ -10,8 +12,8 @@ import { DPT, KNXProject, GroupAddress } from "../types/websocket";
 import { GASchema } from "../types/entity_data";
 
 interface GroupAddressSelectorOptions {
-  read?: { required: boolean };
-  send?: { required: boolean };
+  write?: { required: boolean };
+  state?: { required: boolean };
   passive?: boolean;
   validDPTs: DPT[];
 }
@@ -36,6 +38,8 @@ export class GroupAddressSelector extends LitElement {
 
   @property({ type: Object }) public options!: GroupAddressSelectorOptions;
 
+  @state() private _showPassive = false;
+
   private addressOptions() {
     if (!this.knx.project) {
       return [];
@@ -50,50 +54,61 @@ export class GroupAddressSelector extends LitElement {
 
   render() {
     const addressOptions = this.addressOptions();
-    return html`
-      ${this.options.send
-        ? html`<ha-selector
+    const alwaysShowPassive = this.config.passive && this.config.passive.length > 0;
+
+    return html`<div class="selectors">
+        ${this.options.write
+          ? html`<ha-selector
+                .hass=${this.hass}
+                .label=${"Send address"}
+                .required=${this.options.write.required}
+                .selector=${{
+                  select: { multiple: false, custom_value: true, options: addressOptions },
+                }}
+                .key=${"write"}
+                .value=${this.config.write}
+                @value-changed=${this._updateConfig}
+              ></ha-selector
+              >${this.options.state || this.options.passive
+                ? html`<div class="spacer"></div>`
+                : nothing}`
+          : nothing}
+        ${this.options.state
+          ? html`<ha-selector
               .hass=${this.hass}
-              .label=${"Send address"}
-              .required=${this.options.send.required}
+              .label=${"State address"}
+              .required=${this.options.state.required}
               .selector=${{
                 select: { multiple: false, custom_value: true, options: addressOptions },
               }}
-              .key=${"send"}
-              .value=${this.config.send}
+              .key=${"state"}
+              .value=${this.config.state}
               @value-changed=${this._updateConfig}
-            ></ha-selector
-            >${this.options.read || this.options.passive
-              ? html`<div class="spacer"></div>`
-              : nothing}`
-        : nothing}
-      ${this.options.read
-        ? html`<ha-selector
-              .hass=${this.hass}
-              .label=${"Read address"}
-              .required=${this.options.read.required}
-              .selector=${{
-                select: { multiple: false, custom_value: true, options: addressOptions },
-              }}
-              .key=${"read"}
-              .value=${this.config.read}
-              @value-changed=${this._updateConfig}
-            ></ha-selector
-            >${this.options.passive ? html`<div class="spacer"></div>` : nothing}`
-        : nothing}
-      ${this.options.passive
-        ? html`<ha-selector
-            .hass=${this.hass}
-            .label=${"Passive addresses"}
-            .selector=${{
-              select: { multiple: true, custom_value: true, options: addressOptions },
-            }}
-            .key=${"passive"}
-            .value=${this.config.passive}
-            @value-changed=${this._updateConfig}
-          ></ha-selector>`
-        : nothing}
-    `;
+            ></ha-selector>`
+          : nothing}
+        ${alwaysShowPassive || this._showPassive
+          ? html`<div class="spacer"></div>
+              <ha-selector
+                .hass=${this.hass}
+                .label=${"Passive addresses"}
+                .selector=${{
+                  select: { multiple: true, custom_value: true, options: addressOptions },
+                }}
+                .key=${"passive"}
+                .value=${this.config.passive}
+                @value-changed=${this._updateConfig}
+              ></ha-selector>`
+          : nothing}
+      </div>
+      <div class="options">
+        ${alwaysShowPassive
+          ? nothing
+          : html` <ha-icon-button
+              .path=${this._showPassive ? mdiChevronUp : mdiChevronDown}
+              .label=${"Toggle passive address visibility"}
+              @click=${this._togglePassiveVisibility}
+            ></ha-icon-button>`}
+      </div> `;
   }
 
   private _updateConfig(ev: CustomEvent) {
@@ -108,8 +123,32 @@ export class GroupAddressSelector extends LitElement {
     this.requestUpdate();
   }
 
+  private _togglePassiveVisibility(ev: CustomEvent) {
+    ev.stopPropagation();
+    this._showPassive = !this._showPassive;
+  }
+
   static styles = css`
+    :host {
+      display: flex;
+      flex-direction: row;
+    }
+
+    .selectors {
+      flex: 1;
+      padding-right: 16px;
+    }
+
+    .options {
+      width: 48px;
+      display: flex;
+      flex-direction: column-reverse;
+      justify-content: space-between;
+      align-items: center;
+    }
+
     .spacer {
+      /* ha-selector ignores margin */
       height: 16px;
     }
   `;
