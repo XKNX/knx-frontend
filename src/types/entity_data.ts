@@ -3,8 +3,8 @@ export type entityCategory = "config" | "diagnostic";
 export type supportedPlatform = "switch";
 
 export interface GASchema {
-  send?: string;
-  read?: string;
+  write?: string;
+  state?: string;
   passive?: string[];
 }
 
