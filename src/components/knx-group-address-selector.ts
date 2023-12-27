@@ -1,6 +1,7 @@
 import { mdiChevronDown, mdiChevronUp } from "@mdi/js";
 import { LitElement, html, css, nothing } from "lit";
-import { customElement, property, state } from "lit/decorators";
+import { customElement, property, state, query } from "lit/decorators";
+import { classMap } from "lit/directives/class-map";
 
 import "@ha/components/ha-selector/ha-selector";
 import "@ha/components/ha-icon-button";
@@ -39,6 +40,8 @@ export class GroupAddressSelector extends LitElement {
   @property({ type: Object }) public options!: GroupAddressSelectorOptions;
 
   @state() private _showPassive = false;
+
+  @query(".passive") private _passiveContainer!: HTMLDivElement;
 
   private addressOptions() {
     if (!this.knx.project) {
@@ -86,28 +89,33 @@ export class GroupAddressSelector extends LitElement {
               @value-changed=${this._updateConfig}
             ></ha-selector>`
           : nothing}
-        ${alwaysShowPassive || this._showPassive
-          ? html`<div class="spacer"></div>
-              <ha-selector
-                .hass=${this.hass}
-                .label=${"Passive addresses"}
-                .selector=${{
-                  select: { multiple: true, custom_value: true, options: addressOptions },
-                }}
-                .key=${"passive"}
-                .value=${this.config.passive}
-                @value-changed=${this._updateConfig}
-              ></ha-selector>`
-          : nothing}
+        <div
+          class="passive ${classMap({
+            expanded: alwaysShowPassive || this._showPassive,
+          })}"
+          @transitionend=${this._handleTransitionEnd}
+        >
+          <div class="spacer"></div>
+          <ha-selector
+            .hass=${this.hass}
+            .label=${"Passive addresses"}
+            .required=${false}
+            .selector=${{
+              select: { multiple: true, custom_value: true, options: addressOptions },
+            }}
+            .key=${"passive"}
+            .value=${this.config.passive}
+            @value-changed=${this._updateConfig}
+          ></ha-selector>
+        </div>
       </div>
       <div class="options">
-        ${alwaysShowPassive
-          ? nothing
-          : html` <ha-icon-button
-              .path=${this._showPassive ? mdiChevronUp : mdiChevronDown}
-              .label=${"Toggle passive address visibility"}
-              @click=${this._togglePassiveVisibility}
-            ></ha-icon-button>`}
+        <ha-icon-button
+          .disabled=${!!alwaysShowPassive}
+          .path=${this._showPassive ? mdiChevronUp : mdiChevronDown}
+          .label=${"Toggle passive address visibility"}
+          @click=${this._togglePassiveVisibility}
+        ></ha-icon-button>
       </div> `;
   }
 
@@ -125,7 +133,24 @@ export class GroupAddressSelector extends LitElement {
 
   private _togglePassiveVisibility(ev: CustomEvent) {
     ev.stopPropagation();
-    this._showPassive = !this._showPassive;
+    ev.preventDefault();
+    const newExpanded = !this._showPassive;
+    this._passiveContainer.style.overflow = "hidden";
+
+    const scrollHeight = this._passiveContainer.scrollHeight;
+    this._passiveContainer.style.height = `${scrollHeight}px`;
+
+    if (!newExpanded) {
+      setTimeout(() => {
+        this._passiveContainer.style.height = "0px";
+      }, 0);
+    }
+    this._showPassive = newExpanded;
+  }
+
+  private _handleTransitionEnd() {
+    this._passiveContainer.style.removeProperty("height");
+    this._passiveContainer.style.overflow = this._showPassive ? "initial" : "hidden";
   }
 
   static styles = css`
@@ -145,6 +170,16 @@ export class GroupAddressSelector extends LitElement {
       flex-direction: column-reverse;
       justify-content: space-between;
       align-items: center;
+    }
+
+    .passive {
+      overflow: hidden;
+      transition: height 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      height: 0px;
+    }
+
+    .passive.expanded {
+      height: auto;
     }
 
     .spacer {
