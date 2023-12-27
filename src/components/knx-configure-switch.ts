@@ -10,6 +10,7 @@ import "@ha/components/ha-settings-row";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import { HomeAssistant } from "@ha/types";
 
+import "./knx-group-address-selector";
 import "./knx-sync-state-selector-row";
 import { renderConfigureEntityCard } from "./knx-configure-entity-card";
 import { KNXLogger } from "../tools/knx-logger";
@@ -18,13 +19,6 @@ import { KNX } from "../types/knx";
 import { platformConstants } from "../utils/common";
 
 const logger = new KNXLogger("knx-configure-switch");
-
-declare global {
-  // for fire event
-  interface HASSDomEvents {
-    "knx-entity-configuration-changed": CreateEntityData;
-  }
-}
 
 @customElement("knx-configure-switch")
 export class KNXConfigureSwitch extends LitElement {
@@ -38,14 +32,6 @@ export class KNXConfigureSwitch extends LitElement {
   @property({ type: Object }) public schemaOptions: SchemaOptions = {};
 
   protected render(): TemplateResult | void {
-    const dpt1gas = Object.values(this.knx.project!.knxproject.group_addresses).filter(
-      (groupAddress) => groupAddress.dpt?.main === 1,
-    );
-    const addressOptions = dpt1gas.map((groupAddress) => ({
-      value: groupAddress.address,
-      label: `${groupAddress.address} - ${groupAddress.name}`,
-    }));
-
     return html`
       <div class="header">
         <h1><ha-svg-icon .path=${platformConstants.switch.iconPath}></ha-svg-icon>Switch</h1>
@@ -56,31 +42,20 @@ export class KNXConfigureSwitch extends LitElement {
         <ha-settings-row narrow>
           <div slot="heading">Switching</div>
           <div slot="description">DPT 1 group addresses controlling the switch function.</div>
-          <ha-selector
+          <knx-group-address-selector
             .hass=${this.hass}
-            .label=${"Address"}
-            .selector=${{
-              select: { multiple: true, custom_value: true, options: addressOptions },
+            .knx=${this.knx}
+            .key=${"ga_switch"}
+            .config=${this.config.ga_switch ?? {}}
+            .options=${{
+              send: { required: true },
+              read: { required: false },
+              passive: true,
+              validDPTs: [{ main: 1, sub: null }],
             }}
-            .key=${"switch_address"}
-            .value=${this.config.switch_address}
             @value-changed=${this._updateConfig}
-          ></ha-selector>
-          <div class="spacer"></div>
-          <ha-selector
-            .hass=${this.hass}
-            .label=${"State address"}
-            .selector=${{
-              select: {
-                multiple: true,
-                custom_value: true,
-                options: addressOptions,
-              },
-            }}
-            .key=${"switch_state_address"}
-            .value=${this.config.switch_state_address}
-            @value-changed=${this._updateConfig}
-          ></ha-selector>
+          ></knx-group-address-selector>
+        </ha-settings-row>
           <ha-selector
             .hass=${this.hass}
             .label=${"Invert"}
@@ -210,5 +185,12 @@ export class KNXConfigureSwitch extends LitElement {
 declare global {
   interface HTMLElementTagNameMap {
     "knx-configure-switch": KNXConfigureSwitch;
+  }
+}
+
+declare global {
+  // for fire event
+  interface HASSDomEvents {
+    "knx-entity-configuration-changed": CreateEntityData;
   }
 }
