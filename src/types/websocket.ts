@@ -43,6 +43,8 @@ export interface KNXProject {
   info: KNXProjectInfo;
   group_addresses: { [key: string]: GroupAddress };
   group_ranges: { [key: string]: GroupRange };
+  devices: { [key: string]: Device };
+  communication_objects: { [key: string]: CommunicationObject };
 }
 
 export interface GroupRange {
@@ -69,4 +71,51 @@ export interface GroupAddress {
 export interface DPT {
   main: number;
   sub: number | null;
+}
+
+export interface Device {
+  name: string;
+  hardware_name: string;
+  description: string;
+  manufacturer_name: string;
+  individual_address: string;
+  application: string | null;
+  project_uid: number | null;
+  communication_object_ids: string[];
+  channels: Record<string, Channel>; // id: Channel
+}
+
+export interface Channel {
+  identifier: string;
+  name: string;
+}
+
+export interface CommunicationObject {
+  name: string;
+  number: number;
+  text: string;
+  function_text: string;
+  description: string;
+  device_address: string;
+  device_application: string | null;
+  module: ModuleInstanceInfos | null;
+  channel: string | null;
+  dpts: DPT[];
+  object_size: string;
+  group_address_links: string[];
+  flags: COFlags;
+}
+
+interface ModuleInstanceInfos {
+  definition: string;
+  root_number: number; // `Number` assigned by ComObject - without Module base object number added
+}
+
+interface COFlags {
+  read: boolean;
+  write: boolean;
+  communication: boolean;
+  transmit: boolean;
+  update: boolean;
+  readOnInit: boolean;
 }
