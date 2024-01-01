@@ -1,5 +1,5 @@
 import { mdiPlus } from "@mdi/js";
-import { LitElement, TemplateResult, html, css } from "lit";
+import { LitElement, TemplateResult, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
 import "@ha/layouts/hass-loading-screen";
@@ -13,6 +13,7 @@ import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
 
 import "../components/knx-configure-switch";
+import "../components/knx-project-device-tree";
 
 import { HomeAssistant, Route } from "@ha/types";
 import { createEntity, getPlatformSchemaOptions } from "services/websocket.service";
@@ -134,22 +135,30 @@ export class KNXCreateEntity extends LitElement {
       .header=${"Create new entity"}
     >
       <div class="content">
-        <knx-configure-switch
-          .hass=${this.hass}
-          .knx=${this.knx}
-          .schemaOptions=${this._schemaOptions}
-          @knx-entity-configuration-changed=${this._configChanged}
-        ></knx-configure-switch>
+        <div class="config">
+          <knx-configure-switch
+            .hass=${this.hass}
+            .knx=${this.knx}
+            .schemaOptions=${this._schemaOptions}
+            @knx-entity-configuration-changed=${this._configChanged}
+          ></knx-configure-switch>
+          <ha-fab
+            .label=${"Create"}
+            extended
+            @click=${this._entityCreate}
+            ?disabled=${this._config === undefined}
+          >
+            <ha-svg-icon slot="icon" .path=${mdiPlus}></ha-svg-icon>
+          </ha-fab>
+        </div>
+        ${this.knx.project
+          ? html` <div class="panel">
+              <knx-project-device-tree
+                .data=${this.knx.project.knxproject}
+              ></knx-project-device-tree>
+            </div>`
+          : nothing}
       </div>
-      <ha-fab
-        slot="fab"
-        .label=${"Create"}
-        extended
-        @click=${this._entityCreate}
-        ?disabled=${this._config === undefined}
-      >
-        <ha-svg-icon slot="icon" .path=${mdiPlus}></ha-svg-icon>
-      </ha-fab>
     </hass-subpage>`;
   }
 
@@ -195,9 +204,42 @@ export class KNXCreateEntity extends LitElement {
       }
 
       .content {
-        margin: 20px auto 80px; /* leave space for fab */
-        max-width: 720px;
+        display: flex;
+        flex-direction: row;
+        height: 100%;
+        width: 100%;
       }
+
+      .config {
+        flex: 1;
+        height: 100%;
+        overflow-y: scroll;
+
+        & > knx-configure-switch {
+          display: block;
+          margin: 20px auto 40px; /* leave 80px space for fab */
+          max-width: 720px;
+        }
+      }
+
+      .panel {
+        display: flex;
+      }
+
+      ha-fab {
+        /* not slot="fab" to move out of panel */
+        float: right;
+        margin-right: calc(16px + env(safe-area-inset-right));
+        margin-bottom: 40px;
+        z-index: 1;
+      }
+
+      /* knx-project-device-tree {
+        position: absolute;
+        right: 0;
+        top: 0;
+        max-width: calc(100% - 60px);
+      } */
     `;
   }
 }
