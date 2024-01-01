@@ -1,0 +1,259 @@
+import { mdiNetworkOutline, mdiSwapHorizontalCircle } from "@mdi/js";
+import { css, CSSResultGroup, html, LitElement, nothing, TemplateResult } from "lit";
+import { customElement, property, state } from "lit/decorators";
+import { repeat } from "lit/directives/repeat";
+
+import "@ha/components/ha-svg-icon";
+
+import { KNXProject, CommunicationObject } from "../types/websocket";
+import { KNXLogger } from "../tools/knx-logger";
+
+const logger = new KNXLogger("knx-project-device-tree");
+
+interface DeviceTreeItem {
+  ia: string;
+  name: string;
+  manufacturer: string;
+  noChannelComObjects: CommunicationObject[];
+  channels: Record<string, { name: string; comObjects: CommunicationObject[] }>;
+}
+
+@customElement("knx-project-device-tree")
+export class KNXProjectDeviceTree extends LitElement {
+  @property({ attribute: false }) data!: KNXProject;
+
+  @property({ attribute: false }) multiselect = false;
+
+  @state() private _selectedDevice?: DeviceTreeItem;
+
+  deviceTree: DeviceTreeItem[] = [];
+
+  connectedCallback() {
+    super.connectedCallback();
+    this.deviceTree = Object.values(this.data.devices).map((device) => {
+      const noChannelComObjects: CommunicationObject[] = [];
+      const channels = Object.fromEntries(
+        Object.entries(device.channels).map(([key, ch]) => [
+          key,
+          { name: ch.name, comObjects: [] as CommunicationObject[] },
+        ]),
+      );
+
+      for (const comObjectId of device.communication_object_ids) {
+        const comObject = this.data.communication_objects[comObjectId];
+        if (!comObject.channel) {
+          noChannelComObjects.push(comObject);
+        } else {
+          channels[comObject.channel].comObjects = (
+            channels[comObject.channel].comObjects || []
+          ).concat([comObject]);
+        }
+      }
+      return {
+        ia: device.individual_address,
+        name: device.name,
+        manufacturer: device.manufacturer_name,
+        noChannelComObjects,
+        channels,
+      };
+    });
+  }
+
+  protected render(): TemplateResult {
+    return html`<div class="device-tree-view">
+      ${this._selectedDevice
+        ? this._renderSelectedDevice(this._selectedDevice)
+        : this._renderDevices()}
+    </div>`;
+  }
+
+  private _renderDevices(): TemplateResult {
+    return html`<ul class="devices">
+      ${repeat(
+        this.deviceTree,
+        (device) => device.ia,
+        (device) =>
+          html`<li @click=${this._selectDevice} .device=${device}>
+            ${this._renderDevice(device)}
+          </li>`,
+      )}
+    </ul>`;
+  }
+
+  private _renderDevice(device: DeviceTreeItem): TemplateResult {
+    return html`<span class="ia">
+        <ha-svg-icon .path=${mdiNetworkOutline}></ha-svg-icon>
+        <span>${device.ia}</span>
+      </span>
+      <p>${device.name}</p>`;
+  }
+
+  private _renderSelectedDevice(device: DeviceTreeItem): TemplateResult {
+    return html`<ul class="selected-device">
+      <li>${this._renderDevice(device)}</li>
+      ${this._renderChannels(device)}
+    </ul>`;
+  }
+
+  private _renderChannels(device: DeviceTreeItem): TemplateResult {
+    return html`${this._renderComObjects(device.noChannelComObjects)}
+    ${repeat(
+      Object.entries(device.channels),
+      ([chId, _]) => `${device.ia}_ch_${chId}`,
+      ([_, channel]) =>
+        !channel.comObjects.length
+          ? nothing // discard unused channels
+          : html`<li class="channel">${channel.name}</li>
+              ${this._renderComObjects(channel.comObjects)}`,
+    )} `;
+  }
+
+  private _renderComObjects(comObjects: CommunicationObject[]): TemplateResult {
+    return html`${repeat(
+      comObjects,
+      (comObject) => `${comObject.device_address}_co_${comObject.number}`,
+      (comObject) =>
+        html`<li class="com-object">
+            <span class="co"
+              ><ha-svg-icon .path=${mdiSwapHorizontalCircle}></ha-svg-icon
+              ><span>${comObject.number}</span></span
+            >
+            <p>
+              ${comObject.text}${comObject.function_text ? " - " + comObject.function_text : ""}
+            </p>
+          </li>
+          <ul class="group-addresses">
+            ${this._renderGroupAddresses(comObject.group_address_links)}
+          </ul>`,
+    )} `;
+  }
+
+  private _renderGroupAddresses(groupAddressLinks: string[]): TemplateResult {
+    const groupAddresses = groupAddressLinks.map((ga) => this.data.group_addresses[ga]);
+    return html`${repeat(
+      groupAddresses,
+      (groupAddress) => groupAddress.identifier,
+      (groupAddress) =>
+        html`<li>
+          <span class="ga">
+            <span>${groupAddress.address}</span>
+          </span>
+          <p>${groupAddress.name}</p>
+        </li>`,
+    )} `;
+  }
+
+  private _selectDevice(ev: CustomEvent) {
+    const device = ev.target.device;
+    logger.debug("select device", device);
+    this._selectedDevice = device;
+  }
+
+  static get styles(): CSSResultGroup {
+    return css`
+      :host {
+        width: 480px;
+        margin: 0;
+        height: 100%;
+        overflow-y: scroll;
+        overflow-x: hidden;
+        background-color: var(--card-background-color);
+      }
+
+      ul {
+        list-style-type: none;
+        padding: 0;
+      }
+      li {
+        display: flex;
+        align-items: center;
+        margin-bottom: 2px;
+      }
+
+      li > ul {
+        padding-left: 8px;
+      }
+
+      li > p {
+        margin: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+
+      li > span {
+        flex: 0 0 auto;
+        /* vertical-align: middle; */
+        display: inline-flex;
+        align-items: center;
+        pointer-events: none;
+
+        color: var(--text-primary-color);
+        font-size: 0.75rem;
+        font-weight: 700;
+        border-radius: 4px;
+        padding: 1px 4px;
+        margin-right: 2px;
+
+        & > ha-svg-icon {
+          float: left;
+          width: 16px;
+          height: 16px;
+          margin-right: 4px;
+        }
+
+        & > span {
+          flex: 1;
+          text-align: center;
+        }
+      }
+
+      li > span.ia {
+        flex-basis: 64px;
+        background-color: var(--label-badge-grey);
+        & > ha-svg-icon {
+          transform: rotate(90deg);
+        }
+      }
+
+      li > span.co {
+        flex-basis: 44px;
+        text-align: right;
+        background-color: var(--amber-color);
+        justify-content: space-between;
+      }
+
+      li > span.ga {
+        flex-basis: 50px;
+        background-color: var(--label-badge-grey);
+      }
+
+      li.channel {
+        border-top: 1px solid var(--divider-color);
+        border-bottom: 1px solid var(--divider-color);
+        padding: 4px 16px;
+        font-weight: 500;
+      }
+
+      li.com-object {
+      }
+
+      ul.group-addresses {
+        margin-left: 12px;
+        padding-left: 4px;
+        border-left: 1px solid var(--divider-color);
+
+        & > li:not(:first-child) {
+          /* passive addresses for this com-object */
+          opacity: 0.75;
+        }
+      }
+    `;
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "knx-project-device-tree": KNXProjectDeviceTree;
+  }
+}
