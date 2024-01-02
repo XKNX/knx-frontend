@@ -96,7 +96,7 @@ export class KNXCreateEntity extends LitElement {
         .back-path=${this.backPath}
         .header=${"Select entity type"}
       >
-        <div class="content">
+        <div class="type-selection">
           <ha-card outlined .header=${"Create KNX entity"}>
             <!-- <p>Some help text</p> -->
             <ha-navigation-list
@@ -201,6 +201,11 @@ export class KNXCreateEntity extends LitElement {
       hass-loading-screen {
         --app-header-background-color: var(--sidebar-background-color);
         --app-header-text-color: var(--sidebar-text-color);
+      }
+
+      .type-selection {
+        margin: 20px auto 80px;
+        max-width: 720px;
       }
 
       .content {
