@@ -2,11 +2,13 @@ import { mdiNetworkOutline, mdiSwapHorizontalCircle } from "@mdi/js";
 import { css, CSSResultGroup, html, LitElement, nothing, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { repeat } from "lit/directives/repeat";
+import { consume } from "@lit-labs/context";
 
 import "@ha/components/ha-svg-icon";
 
 import { KNXProject, CommunicationObject } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
+import { dragDropContext, type DragDropContext } from "../utils/drag-drop-context";
 
 const logger = new KNXLogger("knx-project-device-tree");
 
@@ -20,6 +22,8 @@ interface DeviceTreeItem {
 
 @customElement("knx-project-device-tree")
 export class KNXProjectDeviceTree extends LitElement {
+  @consume({ context: dragDropContext }) _dragDropContext?: DragDropContext;
+
   @property({ attribute: false }) data!: KNXProject;
 
   @property({ attribute: false }) multiselect = false;
@@ -134,7 +138,12 @@ export class KNXProjectDeviceTree extends LitElement {
       groupAddresses,
       (groupAddress) => groupAddress.identifier,
       (groupAddress) =>
-        html`<li>
+        html`<li
+          draggable="true"
+          @dragstart=${this._dragDropContext?.gaDragStartHandler}
+          @dragend=${this._dragDropContext?.gaDragEndHandler}
+          .ga=${groupAddress}
+        >
           <span class="ga">
             <span>${groupAddress.address}</span>
           </span>
@@ -157,7 +166,11 @@ export class KNXProjectDeviceTree extends LitElement {
         height: 100%;
         overflow-y: scroll;
         overflow-x: hidden;
-        background-color: var(--card-background-color);
+        background-color: var(--sidebar-background-color);
+        color: var(--sidebar-menu-button-text-color, --primary-text-color);
+        margin-right: env(safe-area-inset-right);
+        border-left: 1px solid var(--divider-color);
+        padding-left: 8px;
       }
 
       ul {
@@ -193,7 +206,7 @@ export class KNXProjectDeviceTree extends LitElement {
         font-weight: 700;
         border-radius: 4px;
         padding: 1px 4px;
-        margin-right: 2px;
+        margin-right: 4px;
 
         & > ha-svg-icon {
           float: left;
@@ -240,8 +253,14 @@ export class KNXProjectDeviceTree extends LitElement {
 
       ul.group-addresses {
         margin-left: 12px;
+        margin-bottom: 8px;
         padding-left: 4px;
+        padding-top: 4px;
         border-left: 1px solid var(--divider-color);
+
+        & li {
+          cursor: grab;
+        }
 
         & > li:not(:first-child) {
           /* passive addresses for this com-object */

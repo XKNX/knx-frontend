@@ -1,6 +1,7 @@
 import { mdiPlus } from "@mdi/js";
 import { LitElement, TemplateResult, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
+import { ContextProvider } from "@lit-labs/context";
 
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-subpage";
@@ -20,6 +21,7 @@ import { createEntity, getPlatformSchemaOptions } from "services/websocket.servi
 import { CreateEntityData, SchemaOptions } from "types/entity_data";
 import { KNX } from "../types/knx";
 import { platformConstants } from "../utils/common";
+import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
 import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("knx-create-entity");
@@ -41,6 +43,13 @@ export class KNXCreateEntity extends LitElement {
   @state() private _schemaOptions?: SchemaOptions;
 
   entityPlatform?: string;
+
+  private _dragDropContextProvider = new ContextProvider(this, {
+    context: dragDropContext,
+    initialValue: new DragDropContext(() => {
+      this._dragDropContextProvider.updateObservers();
+    }),
+  });
 
   protected firstUpdated() {
     if (!this.knx.project) {
