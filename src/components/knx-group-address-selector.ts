@@ -2,6 +2,7 @@ import { mdiChevronDown, mdiChevronUp } from "@mdi/js";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state, query } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
+import { consume } from "@lit-labs/context";
 
 import "@ha/components/ha-selector/ha-selector";
 import "@ha/components/ha-icon-button";
@@ -11,6 +12,7 @@ import { HomeAssistant } from "@ha/types";
 import { KNX } from "../types/knx";
 import { DPT, KNXProject, GroupAddress } from "../types/websocket";
 import { GASchema } from "../types/entity_data";
+import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
 
 interface GroupAddressSelectorOptions {
   write?: { required: boolean };
@@ -22,15 +24,25 @@ interface GroupAddressSelectorOptions {
 const isValidGroupAddress = (gaDPT: DPT, validDPT: DPT): boolean =>
   gaDPT.main === validDPT.main && validDPT.sub ? gaDPT.sub === validDPT.sub : true;
 
-const validGroupAddresses = (knxproject: KNXProject, validDPTs: DPT[]): GroupAddress[] =>
+const getValidGroupAddresses = (knxproject: KNXProject, validDPTs: DPT[]): GroupAddress[] =>
   Object.values(knxproject.group_addresses).filter((groupAddress) =>
     groupAddress.dpt
       ? validDPTs.some((testDPT) => isValidGroupAddress(groupAddress.dpt!, testDPT))
       : false,
   );
 
+const getAddressOptions = (
+  validGroupAddresses: GroupAddress[],
+): { value: string; label: string }[] =>
+  validGroupAddresses.map((groupAddress) => ({
+    value: groupAddress.address,
+    label: `${groupAddress.address} - ${groupAddress.name}`,
+  }));
+
 @customElement("knx-group-address-selector")
 export class GroupAddressSelector extends LitElement {
+  @consume({ context: dragDropContext, subscribe: true }) _dragDropContext?: DragDropContext;
+
   @property({ type: Object }) public hass!: HomeAssistant;
 
   @property({ type: Object }) public knx!: KNX;
@@ -41,36 +53,55 @@ export class GroupAddressSelector extends LitElement {
 
   @state() private _showPassive = false;
 
+  validGroupAddresses: GroupAddress[] = [];
+
+  addressOptions: { value: string; label: string }[] = [];
+
+  private _validGADropTarget?: boolean;
+
   @query(".passive") private _passiveContainer!: HTMLDivElement;
 
-  private addressOptions() {
-    if (!this.knx.project) {
-      return [];
-    }
-    return validGroupAddresses(this.knx.project.knxproject, this.options.validDPTs).map(
-      (groupAddress) => ({
-        value: groupAddress.address,
-        label: `${groupAddress.address} - ${groupAddress.name}`,
-      }),
-    );
+  connectedCallback() {
+    super.connectedCallback();
+    this.validGroupAddresses = this.knx.project
+      ? getValidGroupAddresses(this.knx.project.knxproject, this.options.validDPTs)
+      : [];
+    this.addressOptions = getAddressOptions(this.validGroupAddresses);
+  }
+
+  protected willUpdate() {
+    this._validGADropTarget = this._dragDropContext?.groupAddress
+      ? this.validGroupAddresses.includes(this._dragDropContext.groupAddress)
+      : undefined;
   }
 
   render() {
-    const addressOptions = this.addressOptions();
     const alwaysShowPassive = this.config.passive && this.config.passive.length > 0;
+
+    const validGADropTargetClass =
+      this._validGADropTarget === undefined ? false : this._validGADropTarget;
+    const invalidGADropTargetClass =
+      this._validGADropTarget === undefined ? false : !this._validGADropTarget;
 
     return html`<div class="selectors">
         ${this.options.write
           ? html`<ha-selector
+                class=${classMap({
+                  "valid-drop-zone": validGADropTargetClass,
+                  "invalid-drop-zone": invalidGADropTargetClass,
+                })}
                 .hass=${this.hass}
                 .label=${"Send address"}
                 .required=${this.options.write.required}
                 .selector=${{
-                  select: { multiple: false, custom_value: true, options: addressOptions },
+                  select: { multiple: false, custom_value: true, options: this.addressOptions },
                 }}
                 .key=${"write"}
                 .value=${this.config.write}
                 @value-changed=${this._updateConfig}
+                @dragenter=${this._dragEnterHandler}
+                @dragover=${this._dragOverHandler}
+                @drop=${this._dropHandler}
               ></ha-selector
               >${this.options.state || this.options.passive
                 ? html`<div class="spacer"></div>`
@@ -78,15 +109,22 @@ export class GroupAddressSelector extends LitElement {
           : nothing}
         ${this.options.state
           ? html`<ha-selector
+              class=${classMap({
+                "valid-drop-zone": validGADropTargetClass,
+                "invalid-drop-zone": invalidGADropTargetClass,
+              })}
               .hass=${this.hass}
               .label=${"State address"}
               .required=${this.options.state.required}
               .selector=${{
-                select: { multiple: false, custom_value: true, options: addressOptions },
+                select: { multiple: false, custom_value: true, options: this.addressOptions },
               }}
               .key=${"state"}
               .value=${this.config.state}
               @value-changed=${this._updateConfig}
+              @dragenter=${this._dragEnterHandler}
+              @dragover=${this._dragOverHandler}
+              @drop=${this._dropHandler}
             ></ha-selector>`
           : nothing}
         <div
@@ -97,15 +135,22 @@ export class GroupAddressSelector extends LitElement {
         >
           <div class="spacer"></div>
           <ha-selector
+            class=${classMap({
+              "valid-drop-zone": validGADropTargetClass,
+              "invalid-drop-zone": invalidGADropTargetClass,
+            })}
             .hass=${this.hass}
             .label=${"Passive addresses"}
             .required=${false}
             .selector=${{
-              select: { multiple: true, custom_value: true, options: addressOptions },
+              select: { multiple: true, custom_value: true, options: this.addressOptions },
             }}
             .key=${"passive"}
             .value=${this.config.passive}
             @value-changed=${this._updateConfig}
+            @dragenter=${this._dragEnterHandler}
+            @dragover=${this._dragOverHandler}
+            @drop=${this._dropHandler}
           ></ha-selector>
         </div>
       </div>
@@ -153,6 +198,45 @@ export class GroupAddressSelector extends LitElement {
     this._passiveContainer.style.overflow = this._showPassive ? "initial" : "hidden";
   }
 
+  private _dragEnterHandler(ev: DragEvent) {
+    // console.warn("dragEnterHandler", this._dragDropContext);
+    if ([...ev.dataTransfer.types].includes("text/group-address")) {
+      ev.preventDefault();
+      console.warn("dragEnterHandler", ev.target);
+    }
+  }
+
+  private _dragOverHandler(ev: DragEvent) {
+    // console.log("dragOverHandler", ev);
+    if ([...ev.dataTransfer.types].includes("text/group-address")) {
+      // ev.dataTransfer.dropEffect = "copy";
+      ev.preventDefault();
+    }
+  }
+
+  private _dropHandler(ev: DragEvent) {
+    const ga = ev.dataTransfer.getData("text/group-address");
+    console.warn("dropHandler", ga);
+    if (!ga) {
+      return;
+    }
+    ev.stopPropagation();
+    ev.preventDefault();
+
+    const target = ev.target as any;
+    console.log("drop target", target);
+    if (true) {
+      // validate
+      if (target.selector.select.multiple) {
+        const newValues = [...(this.config[target.key] ?? []), ga];
+        this.config = { ...this.config, [target.key]: newValues };
+      } else {
+        this.config = { ...this.config, [target.key]: ga };
+      }
+      fireEvent(this, "value-changed", { value: this.config });
+    }
+  }
+
   static styles = css`
     :host {
       display: flex;
@@ -185,6 +269,18 @@ export class GroupAddressSelector extends LitElement {
     .spacer {
       /* ha-selector ignores margin */
       height: 16px;
+    }
+
+    ha-selector {
+      display: block;
+    }
+
+    .valid-drop-zone {
+      box-shadow: 0px 0px 5px 2px var(--primary-color);
+    }
+
+    .invalid-drop-zone {
+      opacity: 0.5;
     }
   `;
 }
