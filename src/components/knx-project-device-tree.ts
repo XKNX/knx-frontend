@@ -90,7 +90,7 @@ export class KNXProjectDeviceTree extends LitElement {
         <ha-svg-icon .path=${mdiNetworkOutline}></ha-svg-icon>
         <span>${device.ia}</span>
       </span>
-      <div>
+      <div class="description">
         <p>${device.manufacturer}</p>
         <p>${device.name}</p>
       </div>
@@ -128,7 +128,7 @@ export class KNXProjectDeviceTree extends LitElement {
               ><ha-svg-icon .path=${mdiSwapHorizontalCircle}></ha-svg-icon
               ><span>${comObject.number}</span></span
             >
-            <p>
+            <p class="description">
               ${comObject.text}${comObject.function_text ? " - " + comObject.function_text : ""}
             </p>
           </div>
@@ -155,7 +155,7 @@ export class KNXProjectDeviceTree extends LitElement {
             <span class="icon ga">
               <span>${groupAddress.address}</span>
             </span>
-            <p>${groupAddress.name}</p>
+            <p class="description">${groupAddress.name}</p>
           </div>
         </li>`,
     )} `;
@@ -171,7 +171,8 @@ export class KNXProjectDeviceTree extends LitElement {
     return css`
       :host {
         box-sizing: border-box;
-        width: 375px;
+        width: 480px;
+        max-width: 100vw;
         margin: 0;
         height: 100%;
         overflow-y: scroll;
@@ -212,8 +213,8 @@ export class KNXProjectDeviceTree extends LitElement {
 
       span.icon {
         flex: 0 0 auto;
-        /* vertical-align: middle; */
         display: inline-flex;
+        align-self: stretch;
         align-items: center;
 
         color: var(--text-primary-color);
@@ -231,15 +232,14 @@ export class KNXProjectDeviceTree extends LitElement {
         }
 
         & > span {
+          /* icon text */
           flex: 1;
           text-align: center;
         }
       }
 
       span.ia {
-        /* 2-row icon */
-        flex-direction: column;
-        flex-basis: 64px;
+        flex-basis: 70px;
         background-color: var(--label-badge-grey);
         & > ha-svg-icon {
           transform: rotate(90deg);
@@ -254,6 +254,11 @@ export class KNXProjectDeviceTree extends LitElement {
       span.ga {
         flex-basis: 50px;
         background-color: var(--label-badge-grey);
+      }
+
+      .description {
+        margin-top: 4px;
+        margin-bottom: 4px;
       }
 
       li.channel {
