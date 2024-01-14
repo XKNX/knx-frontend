@@ -111,7 +111,7 @@ interface ModuleInstanceInfos {
   root_number: number; // `Number` assigned by ComObject - without Module base object number added
 }
 
-interface COFlags {
+export interface COFlags {
   read: boolean;
   write: boolean;
   communication: boolean;
