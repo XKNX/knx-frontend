@@ -90,7 +90,10 @@ export class KNXProjectDeviceTree extends LitElement {
         <ha-svg-icon .path=${mdiNetworkOutline}></ha-svg-icon>
         <span>${device.ia}</span>
       </span>
-      <p>${device.name}</p>
+      <div>
+        <p>${device.manufacturer}</p>
+        <p>${device.name}</p>
+      </div>
     </div>`;
   }
 
@@ -187,11 +190,16 @@ export class KNXProjectDeviceTree extends LitElement {
 
       li {
         display: block;
-        margin-bottom: 2px;
+        margin-bottom: 4px;
         & > div {
+          /* icon and text */
           display: flex;
           align-items: center;
           pointer-events: none;
+          & > div {
+            /* optional container for multiple paragraphs */
+            min-width: 0;
+          }
         }
       }
 
@@ -209,10 +217,10 @@ export class KNXProjectDeviceTree extends LitElement {
         align-items: center;
 
         color: var(--text-primary-color);
-        font-size: 0.75rem;
+        font-size: 1rem;
         font-weight: 700;
         border-radius: 4px;
-        padding: 1px 4px;
+        padding: 3px 4px;
         margin-right: 4px;
 
         & > ha-svg-icon {
@@ -229,6 +237,8 @@ export class KNXProjectDeviceTree extends LitElement {
       }
 
       span.ia {
+        /* 2-row icon */
+        flex-direction: column;
         flex-basis: 64px;
         background-color: var(--label-badge-grey);
         & > ha-svg-icon {
