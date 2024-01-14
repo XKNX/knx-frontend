@@ -6,9 +6,10 @@ import { consume } from "@lit-labs/context";
 
 import "@ha/components/ha-svg-icon";
 
-import { KNXProject, CommunicationObject } from "../types/websocket";
+import { KNXProject, CommunicationObject, COFlags } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
 import { dragDropContext, type DragDropContext } from "../utils/drag-drop-context";
+import { dptToString } from "../utils/format";
 
 const logger = new KNXLogger("knx-project-device-tree");
 
@@ -19,6 +20,17 @@ interface DeviceTreeItem {
   noChannelComObjects: CommunicationObject[];
   channels: Record<string, { name: string; comObjects: CommunicationObject[] }>;
 }
+
+const comObjectFirstGADPT = (knxProject: KNXProject, comObject: CommunicationObject): string => {
+  const dpt = dptToString(knxProject.group_addresses[comObject.group_address_links[0]].dpt);
+  return dpt ? `DPT ${dpt}` : "";
+};
+
+const comObjectFlags = (flags: COFlags): string =>
+  // – ar en-dashes
+  `${flags.read ? "R" : "–"} ${flags.write ? "W" : "–"} ${flags.transmit ? "T" : "–"} ${
+    flags.update ? "U" : "–"
+  }`;
 
 @customElement("knx-project-device-tree")
 export class KNXProjectDeviceTree extends LitElement {
@@ -128,9 +140,16 @@ export class KNXProjectDeviceTree extends LitElement {
               ><ha-svg-icon .path=${mdiSwapHorizontalCircle}></ha-svg-icon
               ><span>${comObject.number}</span></span
             >
-            <p class="description">
-              ${comObject.text}${comObject.function_text ? " - " + comObject.function_text : ""}
-            </p>
+            <div class="description">
+              <p>
+                ${comObject.text}${comObject.function_text ? " - " + comObject.function_text : ""}
+              </p>
+              <p class="co-info">
+                ${comObjectFirstGADPT(this.data, comObject)}<span
+                  >${comObjectFlags(comObject.flags)}</span
+                >
+              </p>
+            </div>
           </div>
           <ul class="group-addresses">
             ${this._renderGroupAddresses(comObject.group_address_links)}
@@ -200,6 +219,7 @@ export class KNXProjectDeviceTree extends LitElement {
           & > div {
             /* optional container for multiple paragraphs */
             min-width: 0;
+            width: 100%;
           }
         }
       }
@@ -259,6 +279,15 @@ export class KNXProjectDeviceTree extends LitElement {
       .description {
         margin-top: 4px;
         margin-bottom: 4px;
+      }
+
+      .com-object p.co-info {
+        font-size: 0.85rem;
+        font-weight: 300;
+        & > span {
+          float: right;
+          margin-right: 12px;
+        }
       }
 
       li.channel {
