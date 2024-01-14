@@ -85,11 +85,13 @@ export class KNXProjectDeviceTree extends LitElement {
   }
 
   private _renderDevice(device: DeviceTreeItem): TemplateResult {
-    return html`<span class="ia">
+    return html`<div>
+      <span class="icon ia">
         <ha-svg-icon .path=${mdiNetworkOutline}></ha-svg-icon>
         <span>${device.ia}</span>
       </span>
-      <p>${device.name}</p>`;
+      <p>${device.name}</p>
+    </div>`;
   }
 
   private _renderSelectedDevice(device: DeviceTreeItem): TemplateResult {
@@ -118,17 +120,19 @@ export class KNXProjectDeviceTree extends LitElement {
       (comObject) => `${comObject.device_address}_co_${comObject.number}`,
       (comObject) =>
         html`<li class="com-object">
-            <span class="co"
+          <div>
+            <span class="icon co"
               ><ha-svg-icon .path=${mdiSwapHorizontalCircle}></ha-svg-icon
               ><span>${comObject.number}</span></span
             >
             <p>
               ${comObject.text}${comObject.function_text ? " - " + comObject.function_text : ""}
             </p>
-          </li>
+          </div>
           <ul class="group-addresses">
             ${this._renderGroupAddresses(comObject.group_address_links)}
-          </ul>`,
+          </ul>
+        </li>`,
     )} `;
   }
 
@@ -144,10 +148,12 @@ export class KNXProjectDeviceTree extends LitElement {
           @dragend=${this._dragDropContext?.gaDragEndHandler}
           .ga=${groupAddress}
         >
-          <span class="ga">
-            <span>${groupAddress.address}</span>
-          </span>
-          <p>${groupAddress.name}</p>
+          <div>
+            <span class="icon ga">
+              <span>${groupAddress.address}</span>
+            </span>
+            <p>${groupAddress.name}</p>
+          </div>
         </li>`,
     )} `;
   }
@@ -161,7 +167,8 @@ export class KNXProjectDeviceTree extends LitElement {
   static get styles(): CSSResultGroup {
     return css`
       :host {
-        width: 480px;
+        box-sizing: border-box;
+        width: 375px;
         margin: 0;
         height: 100%;
         overflow-y: scroll;
@@ -177,29 +184,29 @@ export class KNXProjectDeviceTree extends LitElement {
         list-style-type: none;
         padding: 0;
       }
+
       li {
-        display: flex;
-        align-items: center;
+        display: block;
         margin-bottom: 2px;
+        & > div {
+          display: flex;
+          align-items: center;
+          pointer-events: none;
+        }
       }
 
-      li > ul {
-        padding-left: 8px;
-      }
-
-      li > p {
+      li p {
         margin: 0;
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
       }
 
-      li > span {
+      span.icon {
         flex: 0 0 auto;
         /* vertical-align: middle; */
         display: inline-flex;
         align-items: center;
-        pointer-events: none;
 
         color: var(--text-primary-color);
         font-size: 0.75rem;
@@ -221,7 +228,7 @@ export class KNXProjectDeviceTree extends LitElement {
         }
       }
 
-      li > span.ia {
+      span.ia {
         flex-basis: 64px;
         background-color: var(--label-badge-grey);
         & > ha-svg-icon {
@@ -229,14 +236,12 @@ export class KNXProjectDeviceTree extends LitElement {
         }
       }
 
-      li > span.co {
+      span.co {
         flex-basis: 44px;
-        text-align: right;
         background-color: var(--amber-color);
-        justify-content: space-between;
       }
 
-      li > span.ga {
+      span.ga {
         flex-basis: 50px;
         background-color: var(--label-badge-grey);
       }
@@ -248,7 +253,8 @@ export class KNXProjectDeviceTree extends LitElement {
         font-weight: 500;
       }
 
-      li.com-object {
+      li[draggable="true"] {
+        cursor: grab;
       }
 
       ul.group-addresses {
@@ -257,10 +263,6 @@ export class KNXProjectDeviceTree extends LitElement {
         padding-left: 4px;
         padding-top: 4px;
         border-left: 1px solid var(--divider-color);
-
-        & li {
-          cursor: grab;
-        }
 
         & > li:not(:first-child) {
           /* passive addresses for this com-object */
