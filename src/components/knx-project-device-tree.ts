@@ -183,7 +183,6 @@ export class KNXProjectDeviceTree extends LitElement {
 
   private _selectDevice(ev: CustomEvent) {
     const device = ev.target.device;
-    logger.debug("select device", device);
     this._selectedDevice = device;
     this.scrollTop = 0;
   }
@@ -242,8 +241,8 @@ export class KNXProjectDeviceTree extends LitElement {
         color: var(--text-primary-color);
         font-size: 1rem;
         font-weight: 700;
-        border-radius: 4px;
-        padding: 3px 4px;
+        border-radius: 12px;
+        padding: 3px 6px;
         margin-right: 4px;
 
         & > ha-svg-icon {
@@ -274,8 +273,8 @@ export class KNXProjectDeviceTree extends LitElement {
       }
 
       span.ga {
-        flex-basis: 50px;
-        background-color: var(--label-badge-grey);
+        flex-basis: 54px;
+        background-color: var(--knx-green);
       }
 
       .description {
