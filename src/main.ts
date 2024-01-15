@@ -66,6 +66,8 @@ class KnxFrontend extends knxElement {
         --app-header-background-color: var(--sidebar-background-color);
         --app-header-text-color: var(--sidebar-text-color);
         --app-header-border-bottom: 1px solid var(--divider-color);
+        --knx-green: #5e8a3a;
+        --knx-blue: #2a4691;
       }
     `;
   }
