@@ -1,4 +1,4 @@
-import { mdiNetworkOutline, mdiSwapHorizontalCircle, mdiChevronDown } from "@mdi/js";
+import { mdiNetworkOutline, mdiSwapHorizontalCircle, mdiArrowLeft } from "@mdi/js";
 import { css, CSSResultGroup, html, LitElement, nothing, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { repeat } from "lit/directives/repeat";
@@ -96,11 +96,11 @@ export class KNXProjectDeviceTree extends LitElement {
     </ul>`;
   }
 
-  private _renderDevice(device: DeviceTreeItem, backIcon: boolean = false): TemplateResult {
+  private _renderDevice(device: DeviceTreeItem): TemplateResult {
     // icon is rotated 90deg so mdiChevronDown -> left
-    return html`<div>
+    return html`<div class="item">
       <span class="icon ia">
-        <ha-svg-icon .path=${backIcon ? mdiChevronDown : mdiNetworkOutline}></ha-svg-icon>
+        <ha-svg-icon .path=${mdiNetworkOutline}></ha-svg-icon>
         <span>${device.ia}</span>
       </span>
       <div class="description">
@@ -112,7 +112,12 @@ export class KNXProjectDeviceTree extends LitElement {
 
   private _renderSelectedDevice(device: DeviceTreeItem): TemplateResult {
     return html`<ul class="selected-device">
-      <li @click=${this._selectDevice}>${this._renderDevice(device, true)}</li>
+      <li class="back-item" @click=${this._selectDevice}>
+        <div class="item">
+          <ha-svg-icon class="back-icon" .path=${mdiArrowLeft}></ha-svg-icon>
+          ${this._renderDevice(device)}
+        </div>
+      </li>
       ${this._renderChannels(device)}
     </ul>`;
   }
@@ -136,7 +141,7 @@ export class KNXProjectDeviceTree extends LitElement {
       (comObject) => `${comObject.device_address}_co_${comObject.number}`,
       (comObject) =>
         html`<li class="com-object">
-          <div>
+          <div class="item">
             <span class="icon co"
               ><ha-svg-icon .path=${mdiSwapHorizontalCircle}></ha-svg-icon
               ><span>${comObject.number}</span></span
@@ -171,7 +176,7 @@ export class KNXProjectDeviceTree extends LitElement {
           @dragend=${this._dragDropContext?.gaDragEndHandler}
           .ga=${groupAddress}
         >
-          <div>
+          <div class="item">
             <span class="icon ga">
               <span>${groupAddress.address}</span>
             </span>
@@ -183,6 +188,7 @@ export class KNXProjectDeviceTree extends LitElement {
 
   private _selectDevice(ev: CustomEvent) {
     const device = ev.target.device;
+    logger.debug("select device", device);
     this._selectedDevice = device;
     this.scrollTop = 0;
   }
@@ -207,12 +213,13 @@ export class KNXProjectDeviceTree extends LitElement {
       ul {
         list-style-type: none;
         padding: 0;
+        margin-block-start: 8px;
       }
 
       li {
         display: block;
         margin-bottom: 4px;
-        & > div {
+        & div.item {
           /* icon and text */
           display: flex;
           align-items: center;
@@ -291,6 +298,19 @@ export class KNXProjectDeviceTree extends LitElement {
         }
       }
 
+      .back-item {
+        margin-left: -8px; /* revert host padding to have gapless border */
+        padding-left: 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--divider-color);
+        margin-bottom: 8px;
+      }
+
+      .back-icon {
+        margin-right: 8px;
+        color: var(--label-badge-grey);
+      }
+
       li.channel {
         border-top: 1px solid var(--divider-color);
         border-bottom: 1px solid var(--divider-color);
@@ -300,10 +320,6 @@ export class KNXProjectDeviceTree extends LitElement {
 
       li[draggable="true"] {
         cursor: grab;
-      }
-
-      ul.selected-device > li:first-child {
-        margin-bottom: 12px;
       }
 
       ul.group-addresses {
