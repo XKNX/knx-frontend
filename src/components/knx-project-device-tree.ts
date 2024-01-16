@@ -89,7 +89,7 @@ export class KNXProjectDeviceTree extends LitElement {
         this.deviceTree,
         (device) => device.ia,
         (device) =>
-          html`<li @click=${this._selectDevice} .device=${device}>
+          html`<li class="clickable" @click=${this._selectDevice} .device=${device}>
             ${this._renderDevice(device)}
           </li>`,
       )}
@@ -112,7 +112,7 @@ export class KNXProjectDeviceTree extends LitElement {
 
   private _renderSelectedDevice(device: DeviceTreeItem): TemplateResult {
     return html`<ul class="selected-device">
-      <li class="back-item" @click=${this._selectDevice}>
+      <li class="back-item clickable" @click=${this._selectDevice}>
         <div class="item">
           <ha-svg-icon class="back-icon" .path=${mdiArrowLeft}></ha-svg-icon>
           ${this._renderDevice(device)}
@@ -301,6 +301,8 @@ export class KNXProjectDeviceTree extends LitElement {
       .back-item {
         margin-left: -8px; /* revert host padding to have gapless border */
         padding-left: 8px;
+        margin-top: -8px; /* revert ul margin-block-start to have gapless hover effect */
+        padding-top: 8px;
         padding-bottom: 8px;
         border-bottom: 1px solid var(--divider-color);
         margin-bottom: 8px;
@@ -316,6 +318,10 @@ export class KNXProjectDeviceTree extends LitElement {
         border-bottom: 1px solid var(--divider-color);
         padding: 4px 16px;
         font-weight: 500;
+      }
+
+      li.clickable:hover {
+        background-color: rgba(var(--rgb-primary-text-color), 0.04);
       }
 
       li[draggable="true"] {
