@@ -22,7 +22,7 @@ interface GroupAddressSelectorOptions {
 }
 
 const isValidGroupAddress = (gaDPT: DPT, validDPT: DPT): boolean =>
-  gaDPT.main === validDPT.main && validDPT.sub ? gaDPT.sub === validDPT.sub : true;
+  gaDPT.main === validDPT.main && (validDPT.sub ? gaDPT.sub === validDPT.sub : true);
 
 const getValidGroupAddresses = (knxproject: KNXProject, validDPTs: DPT[]): GroupAddress[] =>
   Object.values(knxproject.group_addresses).filter((groupAddress) =>
