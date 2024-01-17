@@ -1,6 +1,7 @@
 import { createContext } from "@lit-labs/context";
-import { GroupAddress } from "../types/websocket";
+import { DPT, GroupAddress } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
+import { equalDPT } from "./dpt";
 
 const logger = new KNXLogger("knx-drag-drop-context");
 
@@ -8,6 +9,8 @@ const contextKey = Symbol("drag-drop-context");
 
 export class DragDropContext {
   _groupAddress?: GroupAddress;
+
+  _validDPTs: { [ga_key: string]: DPT[] } = {};
 
   _updateObservers: () => void;
 
@@ -19,6 +22,24 @@ export class DragDropContext {
 
   get groupAddress(): GroupAddress | undefined {
     return this._groupAddress;
+  }
+
+  public addValidDPTs(gaKey: string, validDPTs: DPT[]) {
+    this._validDPTs[gaKey] = validDPTs;
+    this._updateObservers();
+  }
+
+  public removeValidDPTs(gaKey: string) {
+    delete this._validDPTs[gaKey];
+    this._updateObservers();
+  }
+
+  get validDPTs(): DPT[] {
+    const allDPTs = Object.values(this._validDPTs).reduce((acc, cur) => acc.concat(cur), []);
+    return allDPTs.reduce(
+      (acc, cur) => (acc.some((dpt) => equalDPT(dpt, cur)) ? acc : acc.concat([cur])),
+      [] as DPT[],
+    );
   }
 
   // arrow function => so `this` refers to the class instance, not the event source

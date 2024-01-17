@@ -13,6 +13,7 @@ import { KNX } from "../types/knx";
 import { DPT, KNXProject, GroupAddress } from "../types/websocket";
 import { GASchema } from "../types/entity_data";
 import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
+import { isValidDPT } from "../utils/dpt";
 
 interface GroupAddressSelectorOptions {
   write?: { required: boolean };
@@ -21,14 +22,9 @@ interface GroupAddressSelectorOptions {
   validDPTs: DPT[];
 }
 
-const isValidGroupAddress = (gaDPT: DPT, validDPT: DPT): boolean =>
-  gaDPT.main === validDPT.main && (validDPT.sub ? gaDPT.sub === validDPT.sub : true);
-
 const getValidGroupAddresses = (knxproject: KNXProject, validDPTs: DPT[]): GroupAddress[] =>
   Object.values(knxproject.group_addresses).filter((groupAddress) =>
-    groupAddress.dpt
-      ? validDPTs.some((testDPT) => isValidGroupAddress(groupAddress.dpt!, testDPT))
-      : false,
+    groupAddress.dpt ? isValidDPT(groupAddress.dpt, validDPTs) : false,
   );
 
 const getAddressOptions = (
@@ -51,6 +47,8 @@ export class GroupAddressSelector extends LitElement {
 
   @property({ type: Object }) public options!: GroupAddressSelectorOptions;
 
+  @property({ reflect: true }) public key!: string;
+
   @state() private _showPassive = false;
 
   validGroupAddresses: GroupAddress[] = [];
@@ -67,6 +65,12 @@ export class GroupAddressSelector extends LitElement {
       ? getValidGroupAddresses(this.knx.project.knxproject, this.options.validDPTs)
       : [];
     this.addressOptions = getAddressOptions(this.validGroupAddresses);
+    this._dragDropContext?.addValidDPTs(this.key, this.options.validDPTs);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._dragDropContext?.removeValidDPTs(this.key);
   }
 
   protected willUpdate() {
