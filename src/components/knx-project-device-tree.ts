@@ -174,6 +174,8 @@ export class KNXProjectDeviceTree extends LitElement {
           draggable="true"
           @dragstart=${this._dragDropContext?.gaDragStartHandler}
           @dragend=${this._dragDropContext?.gaDragEndHandler}
+          @mouseover=${this._dragDropContext?.gaDragIndicatorStartHandler}
+          @mouseout=${this._dragDropContext?.gaDragIndicatorEndHandler}
           .ga=${groupAddress}
         >
           <div class="item">
@@ -326,6 +328,10 @@ export class KNXProjectDeviceTree extends LitElement {
 
       li[draggable="true"] {
         cursor: grab;
+      }
+      li[draggable="true"]:hover {
+        border-radius: 12px;
+        background-color: rgba(var(--rgb-primary-color), 0.2);
       }
 
       ul.group-addresses {

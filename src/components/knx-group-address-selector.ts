@@ -273,6 +273,9 @@ export class GroupAddressSelector extends LitElement {
 
     ha-selector {
       display: block;
+      transition:
+        box-shadow 250ms,
+        opacity 250ms;
     }
 
     .valid-drop-zone {
