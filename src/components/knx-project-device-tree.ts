@@ -1,14 +1,16 @@
 import { mdiNetworkOutline, mdiSwapHorizontalCircle, mdiArrowLeft } from "@mdi/js";
 import { css, CSSResultGroup, html, LitElement, nothing, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators";
+import { classMap } from "lit/directives/class-map";
 import { repeat } from "lit/directives/repeat";
 import { consume } from "@lit-labs/context";
 
 import "@ha/components/ha-svg-icon";
 
-import { KNXProject, CommunicationObject, COFlags } from "../types/websocket";
+import { KNXProject, CommunicationObject, COFlags, GroupAddress } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
 import { dragDropContext, type DragDropContext } from "../utils/drag-drop-context";
+import { isValidDPT } from "../utils/dpt";
 import { dptToString } from "../utils/format";
 
 const logger = new KNXLogger("knx-project-device-tree");
@@ -20,6 +22,11 @@ interface DeviceTreeItem {
   noChannelComObjects: CommunicationObject[];
   channels: Record<string, { name: string; comObjects: CommunicationObject[] }>;
 }
+
+const gaDptString = (ga: GroupAddress) => {
+  const dpt = dptToString(ga.dpt);
+  return dpt ? `DPT ${dpt}` : "";
+};
 
 const comObjectFirstGADPT = (knxProject: KNXProject, comObject: CommunicationObject): string => {
   const dpt = dptToString(knxProject.group_addresses[comObject.group_address_links[0]].dpt);
@@ -150,11 +157,7 @@ export class KNXProjectDeviceTree extends LitElement {
               <p>
                 ${comObject.text}${comObject.function_text ? " - " + comObject.function_text : ""}
               </p>
-              <p class="co-info">
-                ${comObjectFirstGADPT(this.data, comObject)}<span
-                  >${comObjectFlags(comObject.flags)}</span
-                >
-              </p>
+              <p class="co-info">${comObjectFlags(comObject.flags)}</p>
             </div>
           </div>
           <ul class="group-addresses">
@@ -169,9 +172,17 @@ export class KNXProjectDeviceTree extends LitElement {
     return html`${repeat(
       groupAddresses,
       (groupAddress) => groupAddress.identifier,
-      (groupAddress) =>
-        html`<li
-          draggable="true"
+      (groupAddress) => {
+        const validDragGA = this._dragDropContext?.validDPTs
+          ? groupAddress.dpt
+            ? isValidDPT(groupAddress.dpt, this._dragDropContext.validDPTs)
+            : false
+          : true;
+        return html`<li
+          class=${classMap({
+            "invalid-ga": !validDragGA,
+          })}
+          draggable=${validDragGA ? "true" : "false"}
           @dragstart=${this._dragDropContext?.gaDragStartHandler}
           @dragend=${this._dragDropContext?.gaDragEndHandler}
           @mouseover=${this._dragDropContext?.gaDragIndicatorStartHandler}
@@ -182,9 +193,13 @@ export class KNXProjectDeviceTree extends LitElement {
             <span class="icon ga">
               <span>${groupAddress.address}</span>
             </span>
-            <p class="description">${groupAddress.name}</p>
+            <div class="description">
+              <p>${groupAddress.name}</p>
+              <p class="ga-info">${gaDptString(groupAddress)}</p>
+            </div>
           </div>
-        </li>`,
+        </li>`;
+      },
     )} `;
   }
 
@@ -244,7 +259,7 @@ export class KNXProjectDeviceTree extends LitElement {
       span.icon {
         flex: 0 0 auto;
         display: inline-flex;
-        align-self: stretch;
+        /* align-self: stretch; */
         align-items: center;
 
         color: var(--text-primary-color);
@@ -291,13 +306,10 @@ export class KNXProjectDeviceTree extends LitElement {
         margin-bottom: 4px;
       }
 
-      .com-object p.co-info {
+      p.co-info,
+      p.ga-info {
         font-size: 0.85rem;
         font-weight: 300;
-        & > span {
-          float: right;
-          margin-right: 12px;
-        }
       }
 
       .back-item {
@@ -322,6 +334,9 @@ export class KNXProjectDeviceTree extends LitElement {
         font-weight: 500;
       }
 
+      li.clickable {
+        cursor: pointer;
+      }
       li.clickable:hover {
         background-color: rgba(var(--rgb-primary-text-color), 0.04);
       }
@@ -343,7 +358,11 @@ export class KNXProjectDeviceTree extends LitElement {
 
         & > li:not(:first-child) {
           /* passive addresses for this com-object */
-          opacity: 0.75;
+          opacity: 0.9;
+        }
+
+        & > li.invalid-ga {
+          opacity: 0.6;
         }
       }
     `;
