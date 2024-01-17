@@ -40,6 +40,23 @@ export class DragDropContext {
     this._groupAddress = undefined;
     this._updateObservers();
   };
+
+  public gaDragIndicatorStartHandler = (ev: MouseEvent) => {
+    const target = ev.target as HTMLElement;
+    const ga = target.ga as GroupAddress;
+    if (!ga) {
+      return;
+    }
+    this._groupAddress = ga;
+    logger.debug("drag indicator start", ga.address, this);
+    this._updateObservers();
+  };
+
+  public gaDragIndicatorEndHandler = (_ev: MouseEvent) => {
+    logger.debug("drag indicator end", this);
+    this._groupAddress = undefined;
+    this._updateObservers();
+  };
 }
 
 export const dragDropContext = createContext<DragDropContext>(contextKey);
