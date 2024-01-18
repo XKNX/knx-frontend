@@ -1,4 +1,4 @@
-import { mdiNetworkOutline, mdiSwapHorizontalCircle, mdiArrowLeft } from "@mdi/js";
+import { mdiNetworkOutline, mdiSwapHorizontalCircle, mdiArrowLeft, mdiDragVertical } from "@mdi/js";
 import { css, CSSResultGroup, html, LitElement, nothing, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { repeat } from "lit/directives/repeat";
@@ -205,6 +205,11 @@ export class KNXProjectDeviceTree extends LitElement {
           .ga=${groupAddress}
         >
           <div class="item">
+            <ha-svg-icon
+              class="drag-icon"
+              .path=${mdiDragVertical}
+              .viewBox=${"4 0 16 24"}
+            ></ha-svg-icon>
             <span class="icon ga">
               <span>${groupAddress.address}</span>
             </span>
@@ -364,11 +369,8 @@ export class KNXProjectDeviceTree extends LitElement {
       }
 
       ul.group-addresses {
-        margin-left: 12px;
+        margin-top: 0;
         margin-bottom: 8px;
-        padding-left: 4px;
-        padding-top: 4px;
-        border-left: 1px solid var(--divider-color);
 
         & > li:not(:first-child) {
           /* passive addresses for this com-object */
