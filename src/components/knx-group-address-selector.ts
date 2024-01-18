@@ -65,12 +65,6 @@ export class GroupAddressSelector extends LitElement {
       ? getValidGroupAddresses(this.knx.project.knxproject, this.options.validDPTs)
       : [];
     this.addressOptions = getAddressOptions(this.validGroupAddresses);
-    this._dragDropContext?.addValidDPTs(this.key, this.options.validDPTs);
-  }
-
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    this._dragDropContext?.removeValidDPTs(this.key);
   }
 
   protected willUpdate() {
