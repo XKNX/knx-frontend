@@ -1,7 +1,6 @@
 import { mdiNetworkOutline, mdiSwapHorizontalCircle, mdiArrowLeft } from "@mdi/js";
 import { css, CSSResultGroup, html, LitElement, nothing, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators";
-import { classMap } from "lit/directives/class-map";
 import { repeat } from "lit/directives/repeat";
 import { consume } from "@lit-labs/context";
 
@@ -10,7 +9,7 @@ import "@ha/components/ha-svg-icon";
 import { KNXProject, CommunicationObject, COFlags, DPT, GroupAddress } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
 import { dragDropContext, type DragDropContext } from "../utils/drag-drop-context";
-import { isValidDPT, filterValidComObjects } from "../utils/dpt";
+import { filterValidComObjects } from "../utils/dpt";
 import { dptToString } from "../utils/format";
 
 const logger = new KNXLogger("knx-project-device-tree");
@@ -196,17 +195,9 @@ export class KNXProjectDeviceTree extends LitElement {
     return html`${repeat(
       groupAddresses,
       (groupAddress) => groupAddress.identifier,
-      (groupAddress) => {
-        const validDragGA = this._dragDropContext?.validDPTs
-          ? groupAddress.dpt
-            ? isValidDPT(groupAddress.dpt, this._dragDropContext.validDPTs)
-            : false
-          : true;
-        return html`<li
-          class=${classMap({
-            "invalid-ga": !validDragGA,
-          })}
-          draggable=${validDragGA ? "true" : "false"}
+      (groupAddress) =>
+        html`<li
+          draggable="true"
           @dragstart=${this._dragDropContext?.gaDragStartHandler}
           @dragend=${this._dragDropContext?.gaDragEndHandler}
           @mouseover=${this._dragDropContext?.gaDragIndicatorStartHandler}
@@ -222,8 +213,7 @@ export class KNXProjectDeviceTree extends LitElement {
               <p class="ga-info">${gaDptString(groupAddress)}</p>
             </div>
           </div>
-        </li>`;
-      },
+        </li>`,
     )} `;
   }
 
@@ -382,11 +372,7 @@ export class KNXProjectDeviceTree extends LitElement {
 
         & > li:not(:first-child) {
           /* passive addresses for this com-object */
-          opacity: 0.9;
-        }
-
-        & > li.invalid-ga {
-          opacity: 0.6;
+          opacity: 0.8;
         }
       }
     `;

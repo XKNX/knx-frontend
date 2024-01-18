@@ -29,7 +29,7 @@ export const filterValidGroupAddresses = (
 export const filterValidComObjects = (
   project: KNXProject,
   validDPTs: DPT[],
-): { [id: string]: ComunicationObject } => {
+): { [id: string]: CommunicationObject } => {
   const validGroupAddresses = filterValidGroupAddresses(project, validDPTs);
   return Object.entries(project.communication_objects).reduce(
     (acc, [id, comObject]) => {
@@ -39,5 +39,14 @@ export const filterValidComObjects = (
       return acc;
     },
     {} as { [id: string]: CommunicationObject },
+  );
+};
+
+export const mergeValidDPTs = (validDPTItems: { [key: string]: DPT[] }): DPT[] => {
+  const allDPTs = Object.values(validDPTItems).reduce((acc, dpts) => acc.concat(dpts), []);
+  // filter duplicates
+  return allDPTs.reduce(
+    (acc, dpt) => (acc.some((resultDpt) => equalDPT(resultDpt, dpt)) ? acc : acc.concat([dpt])),
+    [] as DPT[],
   );
 };
