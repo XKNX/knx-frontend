@@ -7,10 +7,10 @@ import { consume } from "@lit-labs/context";
 
 import "@ha/components/ha-svg-icon";
 
-import { KNXProject, CommunicationObject, COFlags, GroupAddress } from "../types/websocket";
+import { KNXProject, CommunicationObject, COFlags, DPT, GroupAddress } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
 import { dragDropContext, type DragDropContext } from "../utils/drag-drop-context";
-import { isValidDPT } from "../utils/dpt";
+import { isValidDPT, filterValidComObjects } from "../utils/dpt";
 import { dptToString } from "../utils/format";
 
 const logger = new KNXLogger("knx-project-device-tree");
@@ -28,13 +28,8 @@ const gaDptString = (ga: GroupAddress) => {
   return dpt ? `DPT ${dpt}` : "";
 };
 
-const comObjectFirstGADPT = (knxProject: KNXProject, comObject: CommunicationObject): string => {
-  const dpt = dptToString(knxProject.group_addresses[comObject.group_address_links[0]].dpt);
-  return dpt ? `DPT ${dpt}` : "";
-};
-
 const comObjectFlags = (flags: COFlags): string =>
-  // – ar en-dashes
+  // – are en-dashes
   `${flags.read ? "R" : "–"} ${flags.write ? "W" : "–"} ${flags.transmit ? "T" : "–"} ${
     flags.update ? "U" : "–"
   }`;
@@ -45,7 +40,7 @@ export class KNXProjectDeviceTree extends LitElement {
 
   @property({ attribute: false }) data!: KNXProject;
 
-  @property({ attribute: false }) multiselect = false;
+  @property({ attribute: false }) validDPTs?: DPT[];
 
   @state() private _selectedDevice?: DeviceTreeItem;
 
@@ -53,7 +48,12 @@ export class KNXProjectDeviceTree extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    this.deviceTree = Object.values(this.data.devices).map((device) => {
+
+    const validCOs = this.validDPTs?.length
+      ? filterValidComObjects(this.data, this.validDPTs)
+      : this.data.communication_objects;
+
+    const unfilteredDeviceTree = Object.values(this.data.devices).map((device) => {
       const noChannelComObjects: CommunicationObject[] = [];
       const channels = Object.fromEntries(
         Object.entries(device.channels).map(([key, ch]) => [
@@ -63,7 +63,10 @@ export class KNXProjectDeviceTree extends LitElement {
       );
 
       for (const comObjectId of device.communication_object_ids) {
-        const comObject = this.data.communication_objects[comObjectId];
+        if (!(comObjectId in validCOs)) {
+          continue;
+        }
+        const comObject = validCOs[comObjectId];
         if (!comObject.channel) {
           noChannelComObjects.push(comObject);
         } else {
@@ -72,13 +75,34 @@ export class KNXProjectDeviceTree extends LitElement {
           ).concat([comObject]);
         }
       }
+      // filter unused channels
+      const filteredChannels = Object.entries(channels).reduce(
+        (acc, [chId, ch]) => {
+          if (ch.comObjects.length) {
+            acc[chId] = ch;
+          }
+          return acc;
+        },
+        {} as Record<string, { name: string; comObjects: CommunicationObject[] }>,
+      );
+
       return {
         ia: device.individual_address,
         name: device.name,
         manufacturer: device.manufacturer_name,
         noChannelComObjects,
-        channels,
+        channels: filteredChannels,
       };
+    });
+
+    this.deviceTree = unfilteredDeviceTree.filter((deviceTreeItem) => {
+      if (deviceTreeItem.noChannelComObjects.length) {
+        return true;
+      }
+      if (Object.keys(deviceTreeItem.channels).length) {
+        return true;
+      }
+      return false;
     });
   }
 

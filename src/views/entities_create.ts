@@ -137,6 +137,7 @@ export class KNXCreateEntity extends LitElement {
   }
 
   private _renderSwitch(): TemplateResult {
+    // TODO: get validDPT from schema to pass to device-tree
     return html`<hass-subpage
       .hass=${this.hass}
       .narrow=${this.narrow!}
@@ -164,6 +165,7 @@ export class KNXCreateEntity extends LitElement {
           ? html` <div class="panel">
               <knx-project-device-tree
                 .data=${this.knx.project.knxproject}
+                .validDPTs=${[{ main: 1, sub: null }]}
               ></knx-project-device-tree>
             </div>`
           : nothing}
