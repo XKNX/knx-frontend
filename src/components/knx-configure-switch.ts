@@ -178,6 +178,11 @@ export class KNXConfigureSwitch extends LitElement {
         padding: 0;
         margin-bottom: 16px;
       }
+
+      ha-selector {
+        display: block;
+        margin-bottom: 16px;
+      }
     `;
   }
 }
