@@ -18,7 +18,6 @@ provides a user interface for interacting with the KNX integration.
   outgoing telegrams on the bus.
   ![Group Monitor](./screenshots/bus_monitor.png?raw=true)
 * ETS Project: Displays the Group Addresses provided via ETS Project in a tree view
-  ![Project](./screenshots/project.png?raw=true)
 
 ## Development
 
@@ -75,11 +74,18 @@ Assuming:
 * The `home-assistant-core` repository is located at `<hass-dir>` path (Remark: per default the Home Assistant configuration directory will be created within `<hass-dir>/config`)
 
 ```shell
-$ ln -s <knx-frontend-dir>/knx_frontend <hass-dir>/config/
-$ cd <hass-dir>
-# Next step might be optional and depends on how you setup your python environment
-$ source venv/bin/activate
+$ ln -s <knx-frontend-dir>/knx_frontend <hass-dir>/config/deps/lib/python3.xx/site-packages/
 $ hass -c config
+...
+```
+or on a venv-install
+```shell
+$ cd <hass-dir>
+$ script/setup
+# Next step might be optional
+$ source venv/bin/activate
+$ export PYTHONPATH=<knx-frontend-dir>
+$ hass
 ...
 ```
 
@@ -87,3 +93,5 @@ Now `hass` (Home Assistant Core) should run on your machine and the knx panel is
 accessible at http://localhost:8123/knx.
 
 [hassos_dev_env]: https://developers.home-assistant.io/docs/development_environment/
+
+On Home Assistant OS you might use https://github.com/home-assistant/addons-development/tree/master/custom_deps
