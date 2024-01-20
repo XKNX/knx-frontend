@@ -30,7 +30,7 @@
   "group_monitor_connected_waiting_telegrams": "Grouppenmonitor ist verbunden und wartet auf Telegramme",
   "group_monitor_value": "Wert",
   "group_monitor_waiting_to_connect": "Warte auf Websocket-Verbindung",
-  "project_view_title": "ETS Project",
+  "project_view_title": "Projekt",
   "project_view_upload": "Keine Projektdaten gefunden. Wechsle zum Info Tab und lade eine Projektdatei hoch.",
   "project_view_version_l1": "Die Version von `XKNXProject` welche für die Verarbeitung des ETS Projektes verwendet wurde, war:",
   "project_view_version_l2": "minimal unterstützte Version",

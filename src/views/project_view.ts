@@ -20,8 +20,7 @@ import { compare } from "compare-versions";
 import { HomeAssistant, Route } from "@ha/types";
 import { KNX } from "../types/knx";
 import type { GroupRangeSelectionChangedEvent } from "../components/knx-project-tree-view";
-import { DPT, GroupAddress } from "../types/websocket";
-import { dptToString } from "../utils/format";
+import { GroupAddress } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("knx-project-view");
@@ -66,7 +65,7 @@ export class KNXProjectView extends LitElement {
 
   private _columns = memoize((narrow, _language): DataTableColumnContainer<GroupAddress> => {
     const addressWidth = "100px";
-    const dptWidth = "80px";
+    const dptWidth = "82px";
 
     return {
       address: {
@@ -94,9 +93,13 @@ export class KNXProjectView extends LitElement {
         sortable: true,
         filterable: true,
         title: this.knx.localize("project_view_table_dpt"),
-        type: "numeric",
         width: dptWidth,
-        template: (dpt: DPT | null) => dptToString(dpt),
+        template: (ga: GroupAddress) =>
+          ga.dpt
+            ? html`<span style="display:inline-block;width:24px;text-align:right;"
+                  >${ga.dpt.main}</span
+                >${ga.dpt.sub ? "." + ga.dpt.sub.toString().padStart(3, "0") : ""} `
+            : "",
       },
     };
   });
