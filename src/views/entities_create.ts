@@ -5,6 +5,7 @@ import { ContextProvider } from "@lit-labs/context";
 
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-subpage";
+import "@ha/components/ha-alert";
 import "@ha/components/ha-card";
 import "@ha/components/ha-fab";
 import "@ha/components/ha-svg-icon";
@@ -18,7 +19,7 @@ import "../components/knx-project-device-tree";
 
 import { HomeAssistant, Route } from "@ha/types";
 import { createEntity, getPlatformSchemaOptions } from "services/websocket.service";
-import { CreateEntityData, SchemaOptions } from "types/entity_data";
+import { CreateEntityData, SchemaOptions, ErrorDescription } from "types/entity_data";
 import { KNX } from "../types/knx";
 import { platformConstants } from "../utils/common";
 import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
@@ -41,6 +42,10 @@ export class KNXCreateEntity extends LitElement {
   @state() private _config?: CreateEntityData;
 
   @state() private _schemaOptions?: SchemaOptions;
+
+  @state() private _validationErrors?: ErrorDescription[];
+
+  @state() private _validationBaseError?: string;
 
   entityPlatform?: string;
 
@@ -145,13 +150,20 @@ export class KNXCreateEntity extends LitElement {
       .header=${"Create new entity"}
     >
       <div class="content">
-        <div class="config">
+        <div>
           <knx-configure-switch
+            class="config"
             .hass=${this.hass}
             .knx=${this.knx}
             .schemaOptions=${this._schemaOptions}
+            .validationErrors=${this._validationErrors}
             @knx-entity-configuration-changed=${this._configChanged}
           ></knx-configure-switch>
+          ${this._validationBaseError
+            ? html`<ha-alert alert-type="error" .title=${"Validation error"}>
+                ${this._validationBaseError}
+              </ha-alert>`
+            : nothing}
           <ha-fab
             .label=${"Create"}
             extended
@@ -186,14 +198,22 @@ export class KNXCreateEntity extends LitElement {
       return;
     }
     createEntity(this.hass, this._config)
-      .then((entityId) => {
-        logger.debug("created entity", entityId);
+      .then((createEntityResult) => {
+        if (createEntityResult.success === false) {
+          logger.warn("Error creating entity", createEntityResult.error_base);
+          this._validationErrors = createEntityResult.errors;
+          this._validationBaseError = createEntityResult.error_base;
+          return;
+        }
+        this._validationErrors = undefined;
+        this._validationBaseError = undefined;
+        logger.debug("created entity", createEntityResult.entity_id);
         navigate("/knx/entities", { replace: true });
-        if (!entityId) {
+        if (!createEntityResult.entity_id) {
           logger.error("entity_id not found after creation.");
           return;
         }
-        this._entityMoreInfoSettings(entityId);
+        this._entityMoreInfoSettings(createEntityResult.entity_id);
       })
       .catch((err) => {
         logger.error("Error creating entity", err);
@@ -224,22 +244,28 @@ export class KNXCreateEntity extends LitElement {
         flex-direction: row;
         height: 100%;
         width: 100%;
-      }
 
-      .config {
-        flex: 1;
-        height: 100%;
-        overflow-y: scroll;
+        & > :first-child {
+          flex: 1;
+          height: 100%;
+          overflow-y: scroll;
+        }
 
-        & > knx-configure-switch {
-          display: block;
-          margin: 20px auto 40px; /* leave 80px space for fab */
-          max-width: 720px;
+        & > .panel {
+          display: flex;
         }
       }
 
-      .panel {
-        display: flex;
+      .config {
+        display: block;
+        margin: 20px auto 40px; /* leave 80px space for fab */
+        max-width: 720px;
+      }
+
+      ha-alert {
+        display: block;
+        margin: 20px auto;
+        max-width: 720px;
       }
 
       ha-fab {

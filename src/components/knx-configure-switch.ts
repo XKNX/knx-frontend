@@ -14,7 +14,12 @@ import "./knx-group-address-selector";
 import "./knx-sync-state-selector-row";
 import { renderConfigureEntityCard } from "./knx-configure-entity-card";
 import { KNXLogger } from "../tools/knx-logger";
-import { SwitchEntityData, CreateEntityData, SchemaOptions } from "../types/entity_data";
+import {
+  SwitchEntityData,
+  CreateEntityData,
+  SchemaOptions,
+  ErrorDescription,
+} from "../types/entity_data";
 import { KNX } from "../types/knx";
 import { platformConstants } from "../utils/common";
 
@@ -30,6 +35,9 @@ export class KNXConfigureSwitch extends LitElement {
 
   // no schema options for switch - yet
   @property({ type: Object }) public schemaOptions: SchemaOptions = {};
+
+  // TODO: use this to highlight validation errors
+  @property({ type: Array }) public validationErrors?: ErrorDescription[];
 
   protected render(): TemplateResult | void {
     return html`

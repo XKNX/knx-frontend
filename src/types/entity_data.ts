@@ -49,3 +49,24 @@ export interface SchemaOptions {
 export interface EntitySchemaOptions {
   // nothing yet
 }
+
+// #################
+// Validation result
+// #################
+
+export interface ErrorDescription {
+  path: string[] | null;
+  error_message: string;
+  error_class: string;
+}
+
+export type CreateEntityResult =
+  | {
+      success: true;
+      entity_id: string;
+    }
+  | {
+      success: false;
+      error_base: string;
+      errors: ErrorDescription[];
+    };

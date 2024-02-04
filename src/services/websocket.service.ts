@@ -6,13 +6,14 @@ import {
   TelegramDict,
   GroupMonitorInfoData,
   KNXProjectRespone,
-  SchemaOptions,
 } from "../types/websocket";
 import {
   CreateEntityData,
+  CreateEntityResult,
   EditEntityData,
   UpdateEntityData,
   DeviceCreateData,
+  SchemaOptions,
 } from "../types/entity_data";
 
 export const getKnxInfoData = (hass: HomeAssistant): Promise<KNXInfoData> =>
@@ -69,12 +70,13 @@ export const getPlatformSchemaOptions = (
 export const createEntity = (
   hass: HomeAssistant,
   entityData: CreateEntityData,
-): Promise<string | null> =>
+): Promise<CreateEntityResult> =>
   hass.callWS({
     type: "knx/create_entity",
     ...entityData,
   });
 
+// TODO: updateEntity shall return CreateEntityResult for validation
 export const updateEntity = (hass: HomeAssistant, entityData: UpdateEntityData) =>
   hass.callWS({
     type: "knx/update_entity",
