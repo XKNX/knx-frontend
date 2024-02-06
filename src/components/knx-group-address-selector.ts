@@ -4,7 +4,7 @@ import { customElement, property, state, query } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 import { consume } from "@lit-labs/context";
 
-import "@ha/components/ha-selector/ha-selector";
+import "@ha/components/ha-selector/ha-selector-select";
 import "@ha/components/ha-icon-button";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import { HomeAssistant } from "@ha/types";
@@ -59,6 +59,8 @@ export class GroupAddressSelector extends LitElement {
 
   @query(".passive") private _passiveContainer!: HTMLDivElement;
 
+  // @query("ha-combo-box") private _comboBox!: any;
+
   connectedCallback() {
     super.connectedCallback();
     this.validGroupAddresses = this.knx.project
@@ -81,9 +83,10 @@ export class GroupAddressSelector extends LitElement {
     const invalidGADropTargetClass =
       this._validGADropTarget === undefined ? false : !this._validGADropTarget;
 
-    return html`<div class="selectors">
-        ${this.options.write
-          ? html`<ha-selector
+    return html`<div class="main">
+        <div class="selectors">
+          ${this.options.write
+            ? html`<ha-selector-select
                 class=${classMap({
                   "valid-drop-zone": validGADropTargetClass,
                   "invalid-drop-zone": invalidGADropTargetClass,
@@ -100,65 +103,62 @@ export class GroupAddressSelector extends LitElement {
                 @dragenter=${this._dragEnterHandler}
                 @dragover=${this._dragOverHandler}
                 @drop=${this._dropHandler}
-              ></ha-selector
-              >${this.options.state || this.options.passive
-                ? html`<div class="spacer"></div>`
-                : nothing}`
-          : nothing}
-        ${this.options.state
-          ? html`<ha-selector
-              class=${classMap({
-                "valid-drop-zone": validGADropTargetClass,
-                "invalid-drop-zone": invalidGADropTargetClass,
-              })}
-              .hass=${this.hass}
-              .label=${"State address"}
-              .required=${this.options.state.required}
-              .selector=${{
-                select: { multiple: false, custom_value: true, options: this.addressOptions },
-              }}
-              .key=${"state"}
-              .value=${this.config.state}
-              @value-changed=${this._updateConfig}
-              @dragenter=${this._dragEnterHandler}
-              @dragover=${this._dragOverHandler}
-              @drop=${this._dropHandler}
-            ></ha-selector>`
-          : nothing}
-        <div
-          class="passive ${classMap({
-            expanded: alwaysShowPassive || this._showPassive,
-          })}"
-          @transitionend=${this._handleTransitionEnd}
-        >
-          <div class="spacer"></div>
-          <ha-selector
-            class=${classMap({
-              "valid-drop-zone": validGADropTargetClass,
-              "invalid-drop-zone": invalidGADropTargetClass,
-            })}
-            .hass=${this.hass}
-            .label=${"Passive addresses"}
-            .required=${false}
-            .selector=${{
-              select: { multiple: true, custom_value: true, options: this.addressOptions },
-            }}
-            .key=${"passive"}
-            .value=${this.config.passive}
-            @value-changed=${this._updateConfig}
-            @dragenter=${this._dragEnterHandler}
-            @dragover=${this._dragOverHandler}
-            @drop=${this._dropHandler}
-          ></ha-selector>
+              ></ha-selector-select>`
+            : nothing}
+          ${this.options.state
+            ? html`<ha-selector-select
+                class=${classMap({
+                  "valid-drop-zone": validGADropTargetClass,
+                  "invalid-drop-zone": invalidGADropTargetClass,
+                })}
+                .hass=${this.hass}
+                .label=${"State address"}
+                .required=${this.options.state.required}
+                .selector=${{
+                  select: { multiple: false, custom_value: true, options: this.addressOptions },
+                }}
+                .key=${"state"}
+                .value=${this.config.state}
+                @value-changed=${this._updateConfig}
+                @dragenter=${this._dragEnterHandler}
+                @dragover=${this._dragOverHandler}
+                @drop=${this._dropHandler}
+              ></ha-selector-select>`
+            : nothing}
+        </div>
+        <div class="options">
+          <ha-icon-button
+            .disabled=${!!alwaysShowPassive}
+            .path=${this._showPassive ? mdiChevronUp : mdiChevronDown}
+            .label=${"Toggle passive address visibility"}
+            @click=${this._togglePassiveVisibility}
+          ></ha-icon-button>
         </div>
       </div>
-      <div class="options">
-        <ha-icon-button
-          .disabled=${!!alwaysShowPassive}
-          .path=${this._showPassive ? mdiChevronUp : mdiChevronDown}
-          .label=${"Toggle passive address visibility"}
-          @click=${this._togglePassiveVisibility}
-        ></ha-icon-button>
+      <div
+        class="passive ${classMap({
+          expanded: alwaysShowPassive || this._showPassive,
+        })}"
+        @transitionend=${this._handleTransitionEnd}
+      >
+        <ha-selector-select
+          class=${classMap({
+            "valid-drop-zone": validGADropTargetClass,
+            "invalid-drop-zone": invalidGADropTargetClass,
+          })}
+          .hass=${this.hass}
+          .label=${"Passive addresses"}
+          .required=${false}
+          .selector=${{
+            select: { multiple: true, custom_value: true, options: this.addressOptions },
+          }}
+          .key=${"passive"}
+          .value=${this.config.passive}
+          @value-changed=${this._updateConfig}
+          @dragenter=${this._dragEnterHandler}
+          @dragover=${this._dragOverHandler}
+          @drop=${this._dropHandler}
+        ></ha-selector-select>
       </div> `;
   }
 
@@ -236,7 +236,7 @@ export class GroupAddressSelector extends LitElement {
   }
 
   static styles = css`
-    :host {
+    .main {
       display: flex;
       flex-direction: row;
     }
@@ -252,25 +252,23 @@ export class GroupAddressSelector extends LitElement {
       flex-direction: column-reverse;
       justify-content: space-between;
       align-items: center;
+      margin-bottom: 16px;
     }
 
     .passive {
       overflow: hidden;
       transition: height 150ms cubic-bezier(0.4, 0, 0.2, 1);
       height: 0px;
+      margin-right: 64px; /* compensate for .options */
     }
 
     .passive.expanded {
       height: auto;
     }
 
-    .spacer {
-      /* ha-selector ignores margin */
-      height: 16px;
-    }
-
-    ha-selector {
+    ha-selector-select {
       display: block;
+      margin-bottom: 16px;
       transition:
         box-shadow 250ms,
         opacity 250ms;
