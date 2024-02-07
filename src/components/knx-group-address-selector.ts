@@ -57,6 +57,8 @@ export class GroupAddressSelector extends LitElement {
 
   private _validGADropTarget?: boolean;
 
+  private _dragOverTimeout: { [key: string]: NodeJS.Timeout } = {};
+
   @query(".passive") private _passiveContainer!: HTMLDivElement;
 
   // @query("ha-combo-box") private _comboBox!: any;
@@ -100,7 +102,6 @@ export class GroupAddressSelector extends LitElement {
                 .key=${"write"}
                 .value=${this.config.write}
                 @value-changed=${this._updateConfig}
-                @dragenter=${this._dragEnterHandler}
                 @dragover=${this._dragOverHandler}
                 @drop=${this._dropHandler}
               ></ha-selector-select>`
@@ -120,7 +121,6 @@ export class GroupAddressSelector extends LitElement {
                 .key=${"state"}
                 .value=${this.config.state}
                 @value-changed=${this._updateConfig}
-                @dragenter=${this._dragEnterHandler}
                 @dragover=${this._dragOverHandler}
                 @drop=${this._dropHandler}
               ></ha-selector-select>`
@@ -155,7 +155,6 @@ export class GroupAddressSelector extends LitElement {
           .key=${"passive"}
           .value=${this.config.passive}
           @value-changed=${this._updateConfig}
-          @dragenter=${this._dragEnterHandler}
           @dragover=${this._dragOverHandler}
           @drop=${this._dropHandler}
         ></ha-selector-select>
@@ -196,20 +195,28 @@ export class GroupAddressSelector extends LitElement {
     this._passiveContainer.style.overflow = this._showPassive ? "initial" : "hidden";
   }
 
-  private _dragEnterHandler(ev: DragEvent) {
-    // console.warn("dragEnterHandler", this._dragDropContext);
-    if ([...ev.dataTransfer.types].includes("text/group-address")) {
-      ev.preventDefault();
-      console.warn("dragEnterHandler", ev.target);
-    }
-  }
-
   private _dragOverHandler(ev: DragEvent) {
-    // console.log("dragOverHandler", ev);
-    if ([...ev.dataTransfer.types].includes("text/group-address")) {
-      // ev.dataTransfer.dropEffect = "copy";
-      ev.preventDefault();
+    // dragEnter is immediately followed by dragLeave for unknown reason
+    // (I think some pointer events in the selectors shadow-dom)
+    // so we debounce dragOver to fake it
+    if (![...ev.dataTransfer.types].includes("text/group-address")) {
+      return;
     }
+    ev.preventDefault();
+    ev.dataTransfer.dropEffect = "move";
+
+    const target = ev.target as any;
+    if (this._dragOverTimeout[target.key]) {
+      clearTimeout(this._dragOverTimeout[target.key]);
+    } else {
+      // fake dragEnterHandler
+      target.classList.add("active-drop-zone");
+    }
+    this._dragOverTimeout[target.key] = setTimeout(() => {
+      delete this._dragOverTimeout[target.key];
+      // fake dragLeaveHandler
+      target.classList.remove("active-drop-zone");
+    }, 100);
   }
 
   private _dropHandler(ev: DragEvent) {
@@ -275,11 +282,19 @@ export class GroupAddressSelector extends LitElement {
     }
 
     .valid-drop-zone {
+      box-shadow: 0px 0px 5px 2px rgba(var(--rgb-primary-color), 0.5);
+    }
+
+    .valid-drop-zone.active-drop-zone {
       box-shadow: 0px 0px 5px 2px var(--primary-color);
     }
 
     .invalid-drop-zone {
       opacity: 0.5;
+    }
+
+    .invalid-drop-zone.active-drop-zone {
+      box-shadow: 0px 0px 5px 2px var(--error-color);
     }
   `;
 }
