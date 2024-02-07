@@ -221,7 +221,6 @@ export class GroupAddressSelector extends LitElement {
 
   private _dropHandler(ev: DragEvent) {
     const ga = ev.dataTransfer.getData("text/group-address");
-    console.warn("dropHandler", ga);
     if (!ga) {
       return;
     }
@@ -229,7 +228,6 @@ export class GroupAddressSelector extends LitElement {
     ev.preventDefault();
 
     const target = ev.target as any;
-    console.log("drop target", target);
     if (true) {
       // validate
       if (target.selector.select.multiple) {
@@ -239,6 +237,8 @@ export class GroupAddressSelector extends LitElement {
         this.config = { ...this.config, [target.key]: ga };
       }
       fireEvent(this, "value-changed", { value: this.config });
+      // reset invalid state of textfield if set before drag
+      setTimeout(() => target.comboBox._inputElement.blur());
     }
   }
 
