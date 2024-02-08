@@ -246,13 +246,17 @@ export class KNXCreateEntity extends LitElement {
         width: 100%;
 
         & > :first-child {
-          flex: 1;
+          flex-grow: 1;
+          flex-shrink: 1;
           height: 100%;
           overflow-y: scroll;
         }
 
         & > .panel {
-          display: flex;
+          flex-grow: 0;
+          flex-shrink: 3;
+          max-width: 480px;
+          min-width: 280px;
         }
       }
 
