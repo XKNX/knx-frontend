@@ -232,9 +232,8 @@ export class KNXProjectDeviceTree extends LitElement {
   static get styles(): CSSResultGroup {
     return css`
       :host {
+        display: block;
         box-sizing: border-box;
-        width: 480px;
-        max-width: 100vw;
         margin: 0;
         height: 100%;
         overflow-y: scroll;
