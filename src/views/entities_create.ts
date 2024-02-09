@@ -255,7 +255,7 @@ export class KNXCreateEntity extends LitElement {
         & > .panel {
           flex-grow: 0;
           flex-shrink: 3;
-          max-width: 480px;
+          width: 480px;
           min-width: 280px;
         }
       }
