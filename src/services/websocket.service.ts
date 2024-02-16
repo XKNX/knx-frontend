@@ -76,8 +76,10 @@ export const createEntity = (
     ...entityData,
   });
 
-// TODO: updateEntity shall return CreateEntityResult for validation
-export const updateEntity = (hass: HomeAssistant, entityData: UpdateEntityData) =>
+export const updateEntity = (
+  hass: HomeAssistant,
+  entityData: UpdateEntityData,
+): Promise<CreateEntityResult> => // CreateEntityResult.entity_id will be null when updating
   hass.callWS({
     type: "knx/update_entity",
     ...entityData,

@@ -187,14 +187,14 @@ export class KNXCreateEntity extends LitElement {
     createEntity(this.hass, this._config)
       .then((createEntityResult) => {
         if (createEntityResult.success === false) {
-          logger.warn("Error creating entity", createEntityResult.error_base);
+          logger.warn("Validation error creating entity", createEntityResult.error_base);
           this._validationErrors = createEntityResult.errors;
           this._validationBaseError = createEntityResult.error_base;
           return;
         }
         this._validationErrors = undefined;
         this._validationBaseError = undefined;
-        logger.debug("created entity", createEntityResult.entity_id);
+        logger.debug("Successfully created entity", createEntityResult.entity_id);
         navigate("/knx/entities", { replace: true });
         if (!createEntityResult.entity_id) {
           logger.error("entity_id not found after creation.");
