@@ -10,18 +10,20 @@ import "@ha/components/ha-card";
 import "@ha/components/ha-fab";
 import "@ha/components/ha-svg-icon";
 import { navigate } from "@ha/common/navigate";
+import type { HomeAssistant, Route } from "@ha/types";
 
 import "../components/knx-configure-entity";
 import "../components/knx-project-device-tree";
 
-import type { HomeAssistant, Route } from "@ha/types";
 import { updateEntity, getEntityConfig } from "services/websocket.service";
 import type { CreateEntityData, SchemaOptions, ErrorDescription } from "types/entity_data";
-import type { KNX } from "../types/knx";
+
 import { KNXLogger } from "../tools/knx-logger";
-import { type PlatformInfo, platformConstants } from "../utils/common";
+import { platformConstants } from "../utils/common";
 import { validDPTsForSchema } from "../utils/dpt";
 import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
+import type { KNX } from "../types/knx";
+import type { PlatformInfo } from "../utils/common";
 
 const logger = new KNXLogger("knx-edit-entity");
 
