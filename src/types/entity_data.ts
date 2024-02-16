@@ -63,7 +63,7 @@ export interface ErrorDescription {
 export type CreateEntityResult =
   | {
       success: true;
-      entity_id: string;
+      entity_id: string | null;
     }
   | {
       success: false;

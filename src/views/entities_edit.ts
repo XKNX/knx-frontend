@@ -164,8 +164,16 @@ export class KNXEditEntity extends LitElement {
       return;
     }
     updateEntity(this.hass, { unique_id: this.uniqueId, ...this._config })
-      .then(() => {
-        logger.debug("successfully updated entity!");
+      .then((createEntityResult) => {
+        if (createEntityResult.success === false) {
+          logger.warn("Validation error updating entity", createEntityResult.error_base);
+          this._validationErrors = createEntityResult.errors;
+          this._validationBaseError = createEntityResult.error_base;
+          return;
+        }
+        this._validationErrors = undefined;
+        this._validationBaseError = undefined;
+        logger.debug("Successfully updated entity", this.entityId);
         navigate("/knx/entities", { replace: true });
       })
       .catch((err) => {
