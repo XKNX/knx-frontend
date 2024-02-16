@@ -1,4 +1,5 @@
-import { DPT, KNXProject, CommunicationObject, GroupAddress } from "../types/websocket";
+import type { DPT, KNXProject, CommunicationObject, GroupAddress } from "../types/websocket";
+import type { SettingsGroup } from "./schema";
 
 export const equalDPT = (dpt1: DPT, dpt2: DPT): boolean =>
   dpt1.main === dpt2.main && dpt1.sub === dpt2.sub;
@@ -42,11 +43,20 @@ export const filterValidComObjects = (
   );
 };
 
-export const mergeValidDPTs = (validDPTItems: { [key: string]: DPT[] }): DPT[] => {
-  const allDPTs = Object.values(validDPTItems).reduce((acc, dpts) => acc.concat(dpts), []);
-  // filter duplicates
-  return allDPTs.reduce(
+export const filterDupicateDPTs = (dpts: DPT[]): DPT[] =>
+  dpts.reduce(
     (acc, dpt) => (acc.some((resultDpt) => equalDPT(resultDpt, dpt)) ? acc : acc.concat([dpt])),
     [] as DPT[],
   );
+
+export const validDPTsForSchema = (schema: SettingsGroup[]): DPT[] => {
+  const result: DPT[] = [];
+  schema.forEach((group) => {
+    group.selectors.forEach((selector) => {
+      if (selector.type === "group_address") {
+        result.push(...selector.options.validDPTs);
+      }
+    });
+  });
+  return filterDupicateDPTs(result);
 };
