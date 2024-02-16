@@ -1,22 +1,27 @@
 import { mdiFloppy } from "@mdi/js";
-import { LitElement, TemplateResult, html, css } from "lit";
+import { LitElement, TemplateResult, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
+import { ContextProvider } from "@lit-labs/context";
 
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-subpage";
 import "@ha/components/ha-alert";
+import "@ha/components/ha-card";
 import "@ha/components/ha-fab";
 import "@ha/components/ha-svg-icon";
-import "@ha/components/ha-navigation-list";
 import { navigate } from "@ha/common/navigate";
 
-import "../components/knx-configure-switch";
+import "../components/knx-configure-entity";
+import "../components/knx-project-device-tree";
 
-import { HomeAssistant, Route } from "@ha/types";
+import type { HomeAssistant, Route } from "@ha/types";
 import { updateEntity, getEntityConfig } from "services/websocket.service";
-import { CreateEntityData, SchemaOptions } from "types/entity_data";
-import { KNX } from "../types/knx";
+import type { CreateEntityData, SchemaOptions, ErrorDescription } from "types/entity_data";
+import type { KNX } from "../types/knx";
 import { KNXLogger } from "../tools/knx-logger";
+import { type PlatformInfo, platformConstants } from "../utils/common";
+import { validDPTsForSchema } from "../utils/dpt";
+import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
 
 const logger = new KNXLogger("knx-edit-entity");
 
@@ -36,9 +41,20 @@ export class KNXEditEntity extends LitElement {
 
   @state() private _schemaOptions!: SchemaOptions;
 
+  @state() private _validationErrors?: ErrorDescription[];
+
+  @state() private _validationBaseError?: string;
+
   entityId?: string;
 
   uniqueId?: string;
+
+  private _dragDropContextProvider = new ContextProvider(this, {
+    context: dragDropContext,
+    initialValue: new DragDropContext(() => {
+      this._dragDropContextProvider.updateObservers();
+    }),
+  });
 
   protected firstUpdated() {
     if (!this.knx.project) {
@@ -65,18 +81,12 @@ export class KNXEditEntity extends LitElement {
     if (!this.hass || !this.knx.project || !this._config) {
       return html` <hass-loading-screen></hass-loading-screen> `;
     }
-    let content: TemplateResult;
-    switch (this._config.platform) {
-      case "switch": {
-        content = this._renderSwitch();
-        break;
-      }
-      default: {
-        content = this._renderNotFound();
-      }
+    const platformInfo = platformConstants[this._config.platform];
+    if (!platformInfo) {
+      logger.error("Unknown platform", this._config.platform);
+      return this._renderNotFound();
     }
-
-    return content;
+    return this._renderEntityConfig(platformInfo);
   }
 
   private _renderNotFound(): TemplateResult {
@@ -94,7 +104,7 @@ export class KNXEditEntity extends LitElement {
     `;
   }
 
-  private _renderSwitch(): TemplateResult {
+  private _renderEntityConfig(platformInfo: PlatformInfo): TemplateResult {
     return html`<hass-subpage
       .hass=${this.hass}
       .narrow=${this.narrow!}
@@ -102,24 +112,40 @@ export class KNXEditEntity extends LitElement {
       .header=${"Edit " + this.entityId}
     >
       <div class="content">
-        <knx-configure-switch
-          .hass=${this.hass}
-          .knx=${this.knx}
-          .config=${this._config!.data}
-          .schemaOptions=${this._schemaOptions}
-          @knx-entity-configuration-changed=${this._configChanged}
-        ></knx-configure-switch>
+        <div>
+          <knx-configure-entity
+            class="config"
+            .hass=${this.hass}
+            .knx=${this.knx}
+            .platform=${platformInfo}
+            .config=${this._config!.data}
+            .schemaOptions=${this._schemaOptions}
+            .validationErrors=${this._validationErrors}
+            @knx-entity-configuration-changed=${this._configChanged}
+          ></knx-configure-entity>
+          ${this._validationBaseError
+            ? html`<ha-alert alert-type="error" .title=${"Validation error"}>
+                ${this._validationBaseError}
+              </ha-alert>`
+            : nothing}
+          <ha-fab
+            .label=${"Save"}
+            extended
+            @click=${this._entityUpdate}
+            ?disabled=${this._config === undefined}
+          >
+            <ha-svg-icon slot="icon" .path=${mdiFloppy}></ha-svg-icon
+          ></ha-fab>
+        </div>
+        ${this.knx.project
+          ? html` <div class="panel">
+              <knx-project-device-tree
+                .data=${this.knx.project.knxproject}
+                .validDPTs=${validDPTsForSchema(platformInfo.schema)}
+              ></knx-project-device-tree>
+            </div>`
+          : nothing}
       </div>
-
-      <ha-fab
-        slot="fab"
-        .label=${"Save"}
-        extended
-        @click=${this._entityUpdate}
-        ?disabled=${this._config === undefined}
-      >
-        <ha-svg-icon slot="icon" .path=${mdiFloppy}></ha-svg-icon>
-      </ha-fab>
     </hass-subpage>`;
   }
 
@@ -153,8 +179,44 @@ export class KNXEditEntity extends LitElement {
       }
 
       .content {
-        margin: 20px auto 80px; /* leave space for fab */
+        display: flex;
+        flex-direction: row;
+        height: 100%;
+        width: 100%;
+
+        & > :first-child {
+          flex-grow: 1;
+          flex-shrink: 1;
+          height: 100%;
+          overflow-y: scroll;
+        }
+
+        & > .panel {
+          flex-grow: 0;
+          flex-shrink: 3;
+          width: 480px;
+          min-width: 280px;
+        }
+      }
+
+      .config {
+        display: block;
+        margin: 20px auto 40px; /* leave 80px space for fab */
         max-width: 720px;
+      }
+
+      ha-alert {
+        display: block;
+        margin: 20px auto;
+        max-width: 720px;
+      }
+
+      ha-fab {
+        /* not slot="fab" to move out of panel */
+        float: right;
+        margin-right: calc(16px + env(safe-area-inset-right));
+        margin-bottom: 40px;
+        z-index: 1;
       }
     `;
   }
