@@ -14,14 +14,15 @@ import { navigate } from "@ha/common/navigate";
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
 
-import "../components/knx-configure-switch";
+import "../components/knx-configure-entity";
 import "../components/knx-project-device-tree";
 
 import { HomeAssistant, Route } from "@ha/types";
 import { createEntity, getPlatformSchemaOptions } from "services/websocket.service";
 import { CreateEntityData, SchemaOptions, ErrorDescription } from "types/entity_data";
 import { KNX } from "../types/knx";
-import { platformConstants } from "../utils/common";
+import { PlatformInfo, platformConstants } from "../utils/common";
+import { validDPTsForSchema } from "../utils/dpt";
 import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
 import { KNXLogger } from "../tools/knx-logger";
 
@@ -84,22 +85,15 @@ export class KNXCreateEntity extends LitElement {
     if (!this.hass || !this.knx.project || (!!this.entityPlatform && !this._schemaOptions)) {
       return html` <hass-loading-screen></hass-loading-screen> `;
     }
-    let content: TemplateResult;
-    switch (this.entityPlatform) {
-      case "switch": {
-        content = this._renderSwitch();
-        break;
-      }
-      // case "light": {
-      //   content = this._renderLight();
-      //   break;
-      // }
-      default: {
-        content = this._renderTypeSelection();
-      }
+    if (!this.entityPlatform) {
+      return this._renderTypeSelection();
     }
-
-    return content;
+    const platformInfo = platformConstants[this.entityPlatform];
+    if (!platformInfo) {
+      logger.error("Unknown platform", this.entityPlatform);
+      return this._renderTypeSelection();
+    }
+    return this._renderEntityConfig(platformInfo);
   }
 
   private _renderTypeSelection(): TemplateResult {
@@ -116,22 +110,13 @@ export class KNXCreateEntity extends LitElement {
             <ha-navigation-list
               .hass=${this.hass}
               .narrow=${this.narrow}
-              .pages=${[
-                {
-                  name: platformConstants.switch.name,
-                  description: "Description",
-                  iconPath: platformConstants.switch.iconPath,
-                  iconColor: platformConstants.switch.color,
-                  path: "/knx/entities/create/switch",
-                },
-                // {
-                //   name: platformConstants.light.name,
-                //   description: "Description",
-                //   iconPath: platformConstants.light.iconPath,
-                //   iconColor: platformConstants.light.color,
-                //   path: "/knx/entities/create/light",
-                // },
-              ]}
+              .pages=${Object.entries(platformConstants).map(([platform, platformInfo]) => ({
+                name: platformInfo.name,
+                description: platformInfo.description,
+                iconPath: platformInfo.iconPath,
+                iconColor: platformInfo.color,
+                path: `/knx/entities/create/${platform}`,
+              }))}
               hasSecondary
               .label=${"Select entity type"}
             ></ha-navigation-list>
@@ -141,8 +126,7 @@ export class KNXCreateEntity extends LitElement {
     `;
   }
 
-  private _renderSwitch(): TemplateResult {
-    // TODO: get validDPT from schema to pass to device-tree
+  private _renderEntityConfig(platformInfo: PlatformInfo): TemplateResult {
     return html`<hass-subpage
       .hass=${this.hass}
       .narrow=${this.narrow!}
@@ -151,14 +135,15 @@ export class KNXCreateEntity extends LitElement {
     >
       <div class="content">
         <div>
-          <knx-configure-switch
+          <knx-configure-entity
             class="config"
             .hass=${this.hass}
             .knx=${this.knx}
+            .platform=${platformInfo}
             .schemaOptions=${this._schemaOptions}
             .validationErrors=${this._validationErrors}
             @knx-entity-configuration-changed=${this._configChanged}
-          ></knx-configure-switch>
+          ></knx-configure-entity>
           ${this._validationBaseError
             ? html`<ha-alert alert-type="error" .title=${"Validation error"}>
                 ${this._validationBaseError}
@@ -177,7 +162,7 @@ export class KNXCreateEntity extends LitElement {
           ? html` <div class="panel">
               <knx-project-device-tree
                 .data=${this.knx.project.knxproject}
-                .validDPTs=${[{ main: 1, sub: null }]}
+                .validDPTs=${validDPTsForSchema(platformInfo.schema)}
               ></knx-project-device-tree>
             </div>`
           : nothing}
