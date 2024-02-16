@@ -13,18 +13,20 @@ import "@ha/components/ha-navigation-list";
 import { navigate } from "@ha/common/navigate";
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
+import type { HomeAssistant, Route } from "@ha/types";
 
 import "../components/knx-configure-entity";
 import "../components/knx-project-device-tree";
 
-import type { HomeAssistant, Route } from "@ha/types";
 import { createEntity, getPlatformSchemaOptions } from "services/websocket.service";
 import type { CreateEntityData, SchemaOptions, ErrorDescription } from "types/entity_data";
-import type { KNX } from "../types/knx";
-import { type PlatformInfo, platformConstants } from "../utils/common";
+
+import { platformConstants } from "../utils/common";
 import { validDPTsForSchema } from "../utils/dpt";
 import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
 import { KNXLogger } from "../tools/knx-logger";
+import type { KNX } from "../types/knx";
+import type { PlatformInfo } from "../utils/common";
 
 const logger = new KNXLogger("knx-create-entity");
 
@@ -264,13 +266,6 @@ export class KNXCreateEntity extends LitElement {
         margin-bottom: 40px;
         z-index: 1;
       }
-
-      /* knx-project-device-tree {
-        position: absolute;
-        right: 0;
-        top: 0;
-        max-width: calc(100% - 60px);
-      } */
     `;
   }
 }

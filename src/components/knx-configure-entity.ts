@@ -8,15 +8,15 @@ import "@ha/components/ha-selector/ha-selector-boolean";
 import "@ha/components/ha-settings-row";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
-import { HomeAssistant } from "@ha/types";
+import type { HomeAssistant } from "@ha/types";
 
 import "./knx-group-address-selector";
 import "./knx-sync-state-selector-row";
 import { renderConfigureEntityCard } from "./knx-configure-entity-card";
 import { KNXLogger } from "../tools/knx-logger";
-import { CreateEntityData, ErrorDescription } from "../types/entity_data";
-import { KNX } from "../types/knx";
-import { PlatformInfo } from "../utils/common";
+import type { CreateEntityData, ErrorDescription } from "../types/entity_data";
+import type { KNX } from "../types/knx";
+import type { PlatformInfo } from "../utils/common";
 import type { SettingsGroup, SelectorSchema } from "../utils/schema";
 
 const logger = new KNXLogger("knx-configure-entity");
@@ -211,7 +211,9 @@ export class KNXConfigureEntity extends LitElement {
         margin-bottom: 16px;
       }
 
-      ha-selector-boolean {
+      ha-selector-boolean,
+      ha-selector-text,
+      ha-selector-select {
         display: block;
         margin-bottom: 16px;
       }

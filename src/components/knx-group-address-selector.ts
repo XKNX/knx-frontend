@@ -7,13 +7,13 @@ import { consume } from "@lit-labs/context";
 import "@ha/components/ha-selector/ha-selector-select";
 import "@ha/components/ha-icon-button";
 import { fireEvent } from "@ha/common/dom/fire_event";
-import { HomeAssistant } from "@ha/types";
+import type { HomeAssistant } from "@ha/types";
 
-import { KNX } from "../types/knx";
-import { DPT, KNXProject, GroupAddress } from "../types/websocket";
-import { GASchema } from "../types/entity_data";
 import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
 import { isValidDPT } from "../utils/dpt";
+import type { KNX } from "../types/knx";
+import type { DPT, KNXProject, GroupAddress } from "../types/websocket";
+import type { GASchema } from "../types/entity_data";
 
 interface GroupAddressSelectorOptions {
   write?: { required: boolean };

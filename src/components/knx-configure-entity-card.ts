@@ -2,10 +2,10 @@ import { html } from "lit";
 
 import "@ha/components/ha-card";
 import "@ha/components/ha-expansion-panel";
-import "@ha/components/ha-selector/ha-selector";
+import "@ha/components/ha-selector/ha-selector-select";
+import "@ha/components/ha-selector/ha-selector-text";
 import "@ha/components/ha-settings-row";
-
-import { HomeAssistant } from "@ha/types";
+import type { HomeAssistant } from "@ha/types";
 
 import "./knx-sync-state-selector-row";
 import "./knx-device-picker";
@@ -38,7 +38,7 @@ export const renderConfigureEntityCard = (
       <ha-settings-row narrow>
         <div slot="heading">Name</div>
         <div slot="description">Name of the entity.</div>
-        <ha-selector
+        <ha-selector-text
           .hass=${hass}
           .label=${"Name"}
           .required=${!device}
@@ -48,13 +48,13 @@ export const renderConfigureEntityCard = (
           .key=${"name"}
           .value=${config.name}
           @value-changed=${updateConfig}
-        ></ha-selector>
+        ></ha-selector-text>
       </ha-settings-row>
       <ha-expansion-panel .header=${"Advanced"} outlined>
         <ha-settings-row narrow>
           <div slot="heading">Entity settings</div>
           <div slot="description">Description</div>
-          <ha-selector
+          <ha-selector-select
             .hass=${hass}
             .label=${"Entity category"}
             .helper=${"Leave empty for standard behaviour."}
@@ -73,7 +73,7 @@ export const renderConfigureEntityCard = (
             .key=${"entity_category"}
             .value=${config.entity_category}
             @value-changed=${updateConfig}
-          ></ha-selector>
+          ></ha-selector-select>
         </ha-settings-row>
       </ha-expansion-panel>
     </ha-card>

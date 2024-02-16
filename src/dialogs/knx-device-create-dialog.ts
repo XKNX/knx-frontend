@@ -4,12 +4,12 @@ import { customElement, property, state } from "lit/decorators";
 
 import "@ha/components/ha-area-picker";
 import "@ha/components/ha-dialog";
-import "@ha/components/ha-selector/ha-selector";
+import "@ha/components/ha-selector/ha-selector-text";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
-import type { DeviceRegistryEntry } from "@ha/data/device_registry";
 import { haStyleDialog } from "@ha/resources/styles";
-import { HomeAssistant } from "@ha/types";
+import type { DeviceRegistryEntry } from "@ha/data/device_registry";
+import type { HomeAssistant } from "@ha/types";
 
 import { createDevice } from "../services/websocket.service";
 
@@ -57,7 +57,7 @@ class DeviceCreateDialog extends LitElement {
       escapeKeyAction
       defaultAction="ignore"
     >
-      <ha-selector
+      <ha-selector-text
         .hass=${this.hass}
         .label=${"Name"}
         .required=${true}
@@ -67,7 +67,7 @@ class DeviceCreateDialog extends LitElement {
         .key=${"deviceName"}
         .value=${this.deviceName}
         @value-changed=${this._valueChanged}
-      ></ha-selector>
+      ></ha-selector-text>
       <ha-area-picker
         .hass=${this.hass}
         .label=${"Area"}

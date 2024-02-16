@@ -2,8 +2,9 @@ import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
-import { HomeAssistant } from "@ha/types";
-import "@ha/components/ha-selector/ha-selector";
+import "@ha/components/ha-selector/ha-selector-number";
+import "@ha/components/ha-selector/ha-selector-select";
+import type { HomeAssistant } from "@ha/types";
 
 @customElement("knx-sync-state-selector-row")
 export class KnxSyncStateSelectorRow extends LitElement {
@@ -37,7 +38,7 @@ export class KnxSyncStateSelectorRow extends LitElement {
 
   protected render(): TemplateResult {
     return html` <div class="inline">
-      <ha-selector
+      <ha-selector-select
         .hass=${this.hass}
         .label=${"Strategy"}
         .selector=${{
@@ -48,7 +49,7 @@ export class KnxSyncStateSelectorRow extends LitElement {
             options: [
               { value: true, label: "Default" },
               ...(this.noneValid ? [{ value: false, label: "Never" }] : []),
-              { value: "init", label: "Once after connection" },
+              { value: "init", label: "Once when connection established" },
               { value: "expire", label: "Expire after last value update" },
               { value: "every", label: "Scheduled every" },
             ],
@@ -58,8 +59,8 @@ export class KnxSyncStateSelectorRow extends LitElement {
         .value=${this._strategy}
         @value-changed=${this._handleChange}
       >
-      </ha-selector>
-      <ha-selector
+      </ha-selector-select>
+      <ha-selector-number
         .hass=${this.hass}
         .disabled=${!this._hasMinutes(this._strategy)}
         .selector=${{
@@ -74,7 +75,7 @@ export class KnxSyncStateSelectorRow extends LitElement {
         .value=${this._minutes}
         @value-changed=${this._handleChange}
       >
-      </ha-selector>
+      </ha-selector-number>
     </div>`;
   }
 
@@ -103,7 +104,7 @@ export class KnxSyncStateSelectorRow extends LitElement {
         justify-content: space-between;
       }
 
-      .inline > ha-selector {
+      .inline > * {
         flex: 1;
       }
     `;
