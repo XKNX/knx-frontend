@@ -17,11 +17,11 @@ import { fireEvent } from "@ha/common/dom/fire_event";
 import "../components/knx-configure-entity";
 import "../components/knx-project-device-tree";
 
-import { HomeAssistant, Route } from "@ha/types";
+import type { HomeAssistant, Route } from "@ha/types";
 import { createEntity, getPlatformSchemaOptions } from "services/websocket.service";
-import { CreateEntityData, SchemaOptions, ErrorDescription } from "types/entity_data";
-import { KNX } from "../types/knx";
-import { PlatformInfo, platformConstants } from "../utils/common";
+import type { CreateEntityData, SchemaOptions, ErrorDescription } from "types/entity_data";
+import type { KNX } from "../types/knx";
+import { type PlatformInfo, platformConstants } from "../utils/common";
 import { validDPTsForSchema } from "../utils/dpt";
 import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
 import { KNXLogger } from "../tools/knx-logger";
