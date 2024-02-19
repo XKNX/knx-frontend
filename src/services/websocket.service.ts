@@ -67,6 +67,15 @@ export const getPlatformSchemaOptions = (
     platform: platform,
   });
 
+export const validateEntity = (
+  hass: HomeAssistant,
+  entityData: CreateEntityData | UpdateEntityData,
+): Promise<CreateEntityResult> => // CreateEntityResult.entity_id will be null when only validating
+  hass.callWS({
+    type: "knx/validate_entity",
+    ...entityData,
+  });
+
 export const createEntity = (
   hass: HomeAssistant,
   entityData: CreateEntityData,

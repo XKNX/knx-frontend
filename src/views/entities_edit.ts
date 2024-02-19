@@ -10,12 +10,13 @@ import "@ha/components/ha-card";
 import "@ha/components/ha-fab";
 import "@ha/components/ha-svg-icon";
 import { navigate } from "@ha/common/navigate";
+import { throttle } from "@ha/common/util/throttle";
 import type { HomeAssistant, Route } from "@ha/types";
 
 import "../components/knx-configure-entity";
 import "../components/knx-project-device-tree";
 
-import { updateEntity, getEntityConfig } from "services/websocket.service";
+import { updateEntity, getEntityConfig, validateEntity } from "services/websocket.service";
 import type { CreateEntityData, SchemaOptions, ErrorDescription } from "types/entity_data";
 
 import { KNXLogger } from "../tools/knx-logger";
@@ -154,8 +155,27 @@ export class KNXEditEntity extends LitElement {
   private _configChanged(ev) {
     ev.stopPropagation();
     logger.warn("configChanged", ev.detail);
-    this._config = { unique_id: this.uniqueId, ...ev.detail };
+    this._config = ev.detail;
+    if (this._validationErrors) {
+      this._entityValidate();
+    }
   }
+
+  private _entityValidate = throttle(() => {
+    logger.debug("validate", this._config);
+    if (this._config === undefined) return;
+    validateEntity(this.hass, this._config).then((createEntityResult) => {
+      if (createEntityResult.success === false) {
+        logger.warn("Validation failed", createEntityResult.error_base);
+        this._validationErrors = createEntityResult.errors;
+        this._validationBaseError = createEntityResult.error_base;
+        return;
+      }
+      this._validationErrors = undefined;
+      this._validationBaseError = undefined;
+      logger.debug("Validation passed", createEntityResult.entity_id);
+    });
+  }, 250);
 
   private _entityUpdate(ev) {
     ev.stopPropagation();
