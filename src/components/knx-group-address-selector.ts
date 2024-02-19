@@ -1,6 +1,6 @@
 import { mdiChevronDown, mdiChevronUp } from "@mdi/js";
-import { LitElement, html, css, nothing } from "lit";
-import { customElement, property, state, query } from "lit/decorators";
+import { LitElement, PropertyValues, html, css, nothing } from "lit";
+import { customElement, property, state, query, queryAll } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 import { consume } from "@lit-labs/context";
 
@@ -11,9 +11,10 @@ import type { HomeAssistant } from "@ha/types";
 
 import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
 import { isValidDPT } from "../utils/dpt";
+import { extractValidationErrors } from "../utils/validation";
 import type { KNX } from "../types/knx";
 import type { DPT, KNXProject, GroupAddress } from "../types/websocket";
-import type { GASchema } from "../types/entity_data";
+import type { ErrorDescription, GASchema } from "../types/entity_data";
 
 interface GroupAddressSelectorOptions {
   write?: { required: boolean };
@@ -49,6 +50,8 @@ export class GroupAddressSelector extends LitElement {
 
   @property({ reflect: true }) public key!: string;
 
+  @property({ type: Array }) public validationErrors?: ErrorDescription[];
+
   @state() private _showPassive = false;
 
   validGroupAddresses: GroupAddress[] = [];
@@ -61,7 +64,7 @@ export class GroupAddressSelector extends LitElement {
 
   @query(".passive") private _passiveContainer!: HTMLDivElement;
 
-  // @query("ha-combo-box") private _comboBox!: any;
+  @queryAll("ha-selector-select") private _gaSelectors!: NodeListOf<HTMLElement>;
 
   connectedCallback() {
     super.connectedCallback();
@@ -77,13 +80,21 @@ export class GroupAddressSelector extends LitElement {
       : undefined;
   }
 
+  protected updated(changedProps: PropertyValues) {
+    if (!changedProps.has("validationErrors")) return;
+    this._gaSelectors.forEach(async (selector) => {
+      await selector.updateComplete;
+      const firstError = extractValidationErrors(this.validationErrors, selector.key)?.[0];
+      selector.comboBox.errorMessage = firstError?.error_message;
+      selector.comboBox.invalid = !!firstError;
+    });
+  }
+
   render() {
     const alwaysShowPassive = this.config.passive && this.config.passive.length > 0;
 
-    const validGADropTargetClass =
-      this._validGADropTarget === undefined ? false : this._validGADropTarget;
-    const invalidGADropTargetClass =
-      this._validGADropTarget === undefined ? false : !this._validGADropTarget;
+    const validGADropTargetClass = this._validGADropTarget === true;
+    const invalidGADropTargetClass = this._validGADropTarget === false;
 
     return html`<div class="main">
         <div class="selectors">
@@ -166,10 +177,7 @@ export class GroupAddressSelector extends LitElement {
     const target = ev.target as any;
     const value = ev.detail.value;
     this.config = { ...this.config, [target.key]: value };
-    if (true) {
-      // validate
-      fireEvent(this, "value-changed", { value: this.config });
-    }
+    fireEvent(this, "value-changed", { value: this.config });
     this.requestUpdate();
   }
 
@@ -226,20 +234,16 @@ export class GroupAddressSelector extends LitElement {
     }
     ev.stopPropagation();
     ev.preventDefault();
-
     const target = ev.target as any;
-    if (true) {
-      // validate
-      if (target.selector.select.multiple) {
-        const newValues = [...(this.config[target.key] ?? []), ga];
-        this.config = { ...this.config, [target.key]: newValues };
-      } else {
-        this.config = { ...this.config, [target.key]: ga };
-      }
-      fireEvent(this, "value-changed", { value: this.config });
-      // reset invalid state of textfield if set before drag
-      setTimeout(() => target.comboBox._inputElement.blur());
+    if (target.selector.select.multiple) {
+      const newValues = [...(this.config[target.key] ?? []), ga];
+      this.config = { ...this.config, [target.key]: newValues };
+    } else {
+      this.config = { ...this.config, [target.key]: ga };
     }
+    fireEvent(this, "value-changed", { value: this.config });
+    // reset invalid state of textfield if set before drag
+    setTimeout(() => target.comboBox._inputElement.blur());
   }
 
   static styles = css`

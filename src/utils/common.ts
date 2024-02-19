@@ -1,5 +1,5 @@
 import { mdiToggleSwitchVariant } from "@mdi/js";
-import { FIXED_DOMAIN_ICONS } from "@ha/common/const";
+// import { FIXED_DOMAIN_ICONS } from "@ha/common/const";
 import { switchSchema, type SettingsGroup } from "./schema";
 
 export type PlatformInfo = {

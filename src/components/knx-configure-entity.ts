@@ -12,8 +12,9 @@ import type { HomeAssistant } from "@ha/types";
 
 import "./knx-group-address-selector";
 import "./knx-sync-state-selector-row";
-import { renderConfigureEntityCard } from "./knx-configure-entity-card";
+import { renderConfigureEntityCard } from "./knx-configure-entity-options";
 import { KNXLogger } from "../tools/knx-logger";
+import { extractValidationErrors } from "../utils/validation";
 import type { CreateEntityData, ErrorDescription } from "../types/entity_data";
 import type { KNX } from "../types/knx";
 import type { PlatformInfo } from "../utils/common";
@@ -34,7 +35,6 @@ export class KNXConfigureEntity extends LitElement {
 
   @property({ type: Array }) public schema!: SettingsGroup[];
 
-  // TODO: use this to highlight validation errors
   @property({ type: Array }) public validationErrors?: ErrorDescription[];
 
   protected render(): TemplateResult | void {
@@ -54,6 +54,7 @@ export class KNXConfigureEntity extends LitElement {
   generateGroups(schema: SettingsGroup[]) {
     const regular_items: SettingsGroup[] = [];
     const advanced_items: SettingsGroup[] = [];
+
     schema.forEach((item: SettingsGroup) => {
       if (item.advanced) {
         advanced_items.push(item);
@@ -75,11 +76,14 @@ export class KNXConfigureEntity extends LitElement {
     return html` <ha-settings-row narrow>
       <div slot="heading">${group.heading}</div>
       <div slot="description">${group.description}</div>
-      ${this._generateItems(group.selectors)}
+      ${this._generateItems(
+        group.selectors,
+        extractValidationErrors(this.validationErrors, "data"), // "data" is root key in our python schema
+      )}
     </ha-settings-row>`;
   }
 
-  _generateItems(selectors: SelectorSchema[]) {
+  _generateItems(selectors: SelectorSchema[], errors?: ErrorDescription[]) {
     return html`${selectors.map((selector: SelectorSchema) => {
       switch (selector.type) {
         case "group_address":
@@ -90,6 +94,7 @@ export class KNXConfigureEntity extends LitElement {
               .key=${selector.name}
               .config=${this.config[selector.name] ?? {}}
               .options=${selector.options}
+              .validationErrors=${extractValidationErrors(errors, selector.name)}
               @value-changed=${this._updateConfig}
             ></knx-group-address-selector>
           `;
@@ -123,8 +128,8 @@ export class KNXConfigureEntity extends LitElement {
   private _updateConfig(ev) {
     ev.stopPropagation();
     this.config[ev.target.key] = ev.detail.value;
-    logger.warn(`update base key "${ev.target.key}" with "${ev.detail.value}"`);
-    this._propageteNewConfig();
+    logger.debug(`update base key "${ev.target.key}" with "${ev.detail.value}"`);
+    this._propagateNewConfig();
   }
 
   private _updateEntityConfig(ev) {
@@ -133,19 +138,15 @@ export class KNXConfigureEntity extends LitElement {
       this.config.entity = {};
     }
     this.config.entity[ev.target.key] = ev.detail.value;
-    logger.warn(`update entity key "${ev.target.key}" with "${ev.detail.value}"`);
-    this._propageteNewConfig();
+    logger.debug(`update entity key "${ev.target.key}" with "${ev.detail.value}"`);
+    this._propagateNewConfig();
   }
 
-  private _propageteNewConfig() {
-    logger.warn("new_config", this.config);
-    if (true) {
-      // validate
-      fireEvent(this, "knx-entity-configuration-changed", {
-        platform: "switch",
-        data: this.config,
-      });
-    }
+  private _propagateNewConfig() {
+    fireEvent(this, "knx-entity-configuration-changed", {
+      platform: "switch",
+      data: this.config,
+    });
     this.requestUpdate();
   }
 
