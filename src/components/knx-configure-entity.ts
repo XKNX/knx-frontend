@@ -153,26 +153,15 @@ export class KNXConfigureEntity extends LitElement {
 
   static get styles() {
     return css`
-      .spacer {
-        height: 16px;
-      }
-
-      .divider {
-        height: 1px;
-        background-color: var(--divider-color);
-        margin-top: 10px;
-        margin-right: 0px;
-      }
-
-      .card-header {
-        display: inline-flex;
-        align-items: center;
+      p {
+        color: var(--secondary-text-color);
       }
 
       .header {
         color: var(--ha-card-header-color, --primary-text-color);
         font-family: var(--ha-card-header-font-family, inherit);
         padding: 0 16px 16px;
+
         & h1 {
           display: inline-flex;
           align-items: center;
@@ -181,31 +170,34 @@ export class KNXConfigureEntity extends LitElement {
           line-height: 48px;
           font-weight: normal;
           margin-bottom: 14px;
+
+          & ha-svg-icon {
+            color: var(--text-primary-color);
+            padding: 8px;
+            background-color: var(--blue-color);
+            border-radius: 50%;
+            margin-right: 8px;
+          }
         }
+
         & p {
           margin-top: -8px;
           line-height: 24px;
         }
       }
 
+      ::slotted(ha-alert) {
+        margin-top: 0 !important;
+      }
+
       ha-card {
         margin-bottom: 24px;
         padding: 16px;
-      }
 
-      ha-svg-icon {
-        color: var(--text-primary-color);
-        padding: 8px;
-        background-color: var(--blue-color);
-        border-radius: 50%;
-      }
-
-      h1 > * {
-        margin-right: 8px;
-      }
-
-      p {
-        color: var(--secondary-text-color);
+        & .card-header {
+          display: inline-flex;
+          align-items: center;
+        }
       }
 
       ha-settings-row {
