@@ -1,6 +1,6 @@
 import { mdiPlus } from "@mdi/js";
 import { LitElement, TemplateResult, html, css, nothing } from "lit";
-import { customElement, property, state } from "lit/decorators";
+import { customElement, property, state, query } from "lit/decorators";
 import { ContextProvider } from "@lit-labs/context";
 
 import "@ha/layouts/hass-loading-screen";
@@ -50,6 +50,8 @@ export class KNXCreateEntity extends LitElement {
   @state() private _validationErrors?: ErrorDescription[];
 
   @state() private _validationBaseError?: string;
+
+  @query("ha-alert") private _alertElement!: HTMLDivElement;
 
   entityPlatform?: string;
 
@@ -137,21 +139,25 @@ export class KNXCreateEntity extends LitElement {
       .header=${"Create new entity"}
     >
       <div class="content">
-        <div>
+        <div class="entity-config">
           <knx-configure-entity
-            class="config"
             .hass=${this.hass}
             .knx=${this.knx}
             .platform=${platformInfo}
             .schemaOptions=${this._schemaOptions}
             .validationErrors=${this._validationErrors}
             @knx-entity-configuration-changed=${this._configChanged}
-          ></knx-configure-entity>
-          ${this._validationBaseError
-            ? html`<ha-alert alert-type="error" .title=${"Validation error"}>
-                ${this._validationBaseError}
-              </ha-alert>`
-            : nothing}
+          >
+            ${this._validationBaseError
+              ? html`<ha-alert
+                  slot="knx-validation-error"
+                  alert-type="error"
+                  .title=${"Validation error"}
+                >
+                  ${this._validationBaseError}
+                </ha-alert>`
+              : nothing}
+          </knx-configure-entity>
           <ha-fab
             .label=${"Create"}
             extended
@@ -210,6 +216,7 @@ export class KNXCreateEntity extends LitElement {
           logger.warn("Validation error creating entity", createEntityResult.error_base);
           this._validationErrors = createEntityResult.errors;
           this._validationBaseError = createEntityResult.error_base;
+          setTimeout(() => this._alertElement.scrollIntoView({ behavior: "smooth" }));
           return;
         }
         this._validationErrors = undefined;
@@ -252,7 +259,7 @@ export class KNXCreateEntity extends LitElement {
         height: 100%;
         width: 100%;
 
-        & > :first-child {
+        & > .entity-config {
           flex-grow: 1;
           flex-shrink: 1;
           height: 100%;
@@ -267,7 +274,7 @@ export class KNXCreateEntity extends LitElement {
         }
       }
 
-      .config {
+      knx-configure-entity {
         display: block;
         margin: 20px auto 40px; /* leave 80px space for fab */
         max-width: 720px;

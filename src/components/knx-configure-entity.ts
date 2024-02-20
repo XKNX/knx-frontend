@@ -43,6 +43,7 @@ export class KNXConfigureEntity extends LitElement {
         <h1><ha-svg-icon .path=${this.platform.iconPath}></ha-svg-icon>${this.platform.name}</h1>
         <p>${this.platform.description}</p>
       </div>
+      <slot name="knx-validation-error"></slot>
       <ha-card outlined>
         <h1 class="card-header">KNX configuration</h1>
         ${this.generateGroups(this.platform.schema)}
