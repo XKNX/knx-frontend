@@ -4,7 +4,7 @@ import { customElement, property } from "lit/decorators";
 import "@ha/components/ha-card";
 import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-expansion-panel";
-import "@ha/components/ha-selector/ha-selector-boolean";
+import "@ha/components/ha-selector/ha-selector";
 import "@ha/components/ha-settings-row";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
@@ -99,16 +99,17 @@ export class KNXConfigureEntity extends LitElement {
               @value-changed=${this._updateConfig}
             ></knx-group-address-selector>
           `;
-        case "boolean":
+        case "selector":
           return html`
-            <ha-selector-boolean
+            <ha-selector
               .hass=${this.hass}
+              .selector=${selector.selector}
               .label=${selector.label}
               .helper=${selector.helper}
               .key=${selector.name}
               .value=${this.config[selector.name]}
               @value-changed=${this._updateConfig}
-            ></ha-selector-boolean>
+            ></ha-selector>
           `;
         case "sync_state":
           return html`
@@ -205,7 +206,7 @@ export class KNXConfigureEntity extends LitElement {
         margin-bottom: 16px;
       }
 
-      ha-selector-boolean,
+      ha-selector,
       ha-selector-text,
       ha-selector-select {
         display: block;
