@@ -15,7 +15,7 @@ import "./knx-sync-state-selector-row";
 import { renderConfigureEntityCard } from "./knx-configure-entity-options";
 import { KNXLogger } from "../tools/knx-logger";
 import { extractValidationErrors } from "../utils/validation";
-import type { CreateEntityData, ErrorDescription } from "../types/entity_data";
+import type { EntityData, ErrorDescription } from "../types/entity_data";
 import type { KNX } from "../types/knx";
 import type { PlatformInfo } from "../utils/common";
 import type { SettingsGroup, SelectorSchema } from "../utils/schema";
@@ -145,10 +145,7 @@ export class KNXConfigureEntity extends LitElement {
   }
 
   private _propagateNewConfig() {
-    fireEvent(this, "knx-entity-configuration-changed", {
-      platform: "switch",
-      data: this.config,
-    });
+    fireEvent(this, "knx-entity-configuration-changed", this.config);
     this.requestUpdate();
   }
 
@@ -225,6 +222,6 @@ declare global {
 declare global {
   // for fire event
   interface HASSDomEvents {
-    "knx-entity-configuration-changed": CreateEntityData;
+    "knx-entity-configuration-changed": EntityData;
   }
 }

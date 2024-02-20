@@ -17,7 +17,7 @@ import "../components/knx-configure-entity";
 import "../components/knx-project-device-tree";
 
 import { updateEntity, getEntityConfig, validateEntity } from "services/websocket.service";
-import type { CreateEntityData, SchemaOptions, ErrorDescription } from "types/entity_data";
+import type { EntityData, SchemaOptions, ErrorDescription } from "types/entity_data";
 
 import { KNXLogger } from "../tools/knx-logger";
 import { platformConstants } from "../utils/common";
@@ -40,7 +40,7 @@ export class KNXEditEntity extends LitElement {
 
   @property({ type: String, attribute: "back-path" }) public backPath?: string;
 
-  @state() private _config?: CreateEntityData;
+  @state() private _config?: EntityData;
 
   @state() private _schemaOptions!: SchemaOptions;
 
@@ -49,6 +49,8 @@ export class KNXEditEntity extends LitElement {
   @state() private _validationBaseError?: string;
 
   @query("ha-alert") private _alertElement!: HTMLDivElement;
+
+  entityPlatform?: string;
 
   entityId?: string;
 
@@ -70,10 +72,16 @@ export class KNXEditEntity extends LitElement {
     this.entityId = this.route.path.split("/")[1];
     getEntityConfig(this.hass, this.entityId)
       .then((entityConfigData) => {
-        const { schema_options: schemaOptions, unique_id: uniqueId, ...config } = entityConfigData;
+        const {
+          platform: entityPlatform,
+          unique_id: uniqueId,
+          data: config,
+          schema_options: schemaOptions,
+        } = entityConfigData;
+        this.entityPlatform = entityPlatform;
+        this.uniqueId = uniqueId;
         this._config = config;
         this._schemaOptions = schemaOptions ?? {};
-        this.uniqueId = uniqueId;
       })
       .catch((err) => {
         logger.warn("Fetching entity config failed.", err);
@@ -83,12 +91,12 @@ export class KNXEditEntity extends LitElement {
   }
 
   protected render(): TemplateResult | void {
-    if (!this.hass || !this.knx.project || !this._config) {
+    if (!this.hass || !this.knx.project || !this._config || !this.entityPlatform) {
       return html` <hass-loading-screen></hass-loading-screen> `;
     }
-    const platformInfo = platformConstants[this._config.platform];
+    const platformInfo = platformConstants[this.entityPlatform];
     if (!platformInfo) {
-      logger.error("Unknown platform", this._config.platform);
+      logger.error("Unknown platform", this.entityPlatform);
       return this._renderNotFound();
     }
     return this._renderEntityConfig(platformInfo);
@@ -122,7 +130,7 @@ export class KNXEditEntity extends LitElement {
             .hass=${this.hass}
             .knx=${this.knx}
             .platform=${platformInfo}
-            .config=${this._config!.data}
+            .config=${this._config!}
             .schemaOptions=${this._schemaOptions}
             .validationErrors=${this._validationErrors}
             @knx-entity-configuration-changed=${this._configChanged}
@@ -174,27 +182,37 @@ export class KNXEditEntity extends LitElement {
 
   private _entityValidate = throttle(() => {
     logger.debug("validate", this._config);
-    if (this._config === undefined) return;
-    validateEntity(this.hass, this._config).then((createEntityResult) => {
-      if (createEntityResult.success === false) {
-        logger.warn("Validation failed", createEntityResult.error_base);
-        this._validationErrors = createEntityResult.errors;
-        this._validationBaseError = createEntityResult.error_base;
-        return;
-      }
-      this._validationErrors = undefined;
-      this._validationBaseError = undefined;
-      logger.debug("Validation passed", createEntityResult.entity_id);
-    });
+    if (this._config === undefined || this.entityPlatform === undefined) return;
+    validateEntity(this.hass, { platform: this.entityPlatform, data: this._config }).then(
+      (createEntityResult) => {
+        if (createEntityResult.success === false) {
+          logger.warn("Validation failed", createEntityResult.error_base);
+          this._validationErrors = createEntityResult.errors;
+          this._validationBaseError = createEntityResult.error_base;
+          return;
+        }
+        this._validationErrors = undefined;
+        this._validationBaseError = undefined;
+        logger.debug("Validation passed", createEntityResult.entity_id);
+      },
+    );
   }, 250);
 
   private _entityUpdate(ev) {
     ev.stopPropagation();
-    if (this._config === undefined || this.uniqueId === undefined) {
+    if (
+      this._config === undefined ||
+      this.uniqueId === undefined ||
+      this.entityPlatform === undefined
+    ) {
       logger.error("No config found.");
       return;
     }
-    updateEntity(this.hass, { unique_id: this.uniqueId, ...this._config })
+    updateEntity(this.hass, {
+      platform: this.entityPlatform,
+      unique_id: this.uniqueId,
+      data: this._config,
+    })
       .then((createEntityResult) => {
         if (createEntityResult.success === false) {
           logger.warn("Validation error updating entity", createEntityResult.error_base);
