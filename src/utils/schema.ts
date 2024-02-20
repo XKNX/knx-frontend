@@ -1,3 +1,4 @@
+import type { Selector } from "@ha/data/selector";
 import { DPT } from "../types/websocket";
 
 export type SettingsGroup = {
@@ -10,8 +11,14 @@ export type SettingsGroup = {
 
 export type SelectorSchema =
   | GASchema
-  | { name: string; type: "boolean"; label: string; helper?: string }
-  | { name: "sync_state"; type: "sync_state" };
+  | { name: "sync_state"; type: "sync_state" }
+  | {
+      name: string;
+      type: "selector";
+      selector: Selector;
+      label: string;
+      helper?: string;
+    };
 
 type GASchema = {
   name: string;
@@ -23,33 +30,6 @@ type GASchema = {
     validDPTs: DPT[];
   };
 };
-
-// export const switchSchema: SelectorSchema[] = [
-//   {
-//     name: "ga_switch",
-//     type: "group_address",
-//     options: {
-//       write: { required: true },
-//       state: { required: false },
-//       passive: true,
-//       validDPTs: [{ main: 1, sub: null }],
-//     },
-//   },
-//   {
-//     name: "invert",
-//     type: "boolean",
-//     // default: false, // does this work?
-//   },
-//   {
-//     name: "respond_to_read",
-//     type: "boolean",
-//     // default: false, // does this work?
-//   },
-//   {
-//     name: "sync_state",
-//     type: "sync_state",
-//   },
-// ];
 
 export const switchSchema: SettingsGroup[] = [
   {
@@ -69,14 +49,16 @@ export const switchSchema: SettingsGroup[] = [
       },
       {
         name: "invert",
-        type: "boolean",
+        type: "selector",
+        selector: { boolean: null },
         label: "Invert",
         helper: "Invert payloads before processing or sending.",
         // default: false, // does this work?
       },
       {
         name: "respond_to_read",
-        type: "boolean",
+        type: "selector",
+        selector: { boolean: null },
         label: "Respond to read",
         helper: "Respond to GroupValueRead telegrams received to the configured address.",
       },
