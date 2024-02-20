@@ -20,7 +20,7 @@ import "../components/knx-configure-entity";
 import "../components/knx-project-device-tree";
 
 import { createEntity, getPlatformSchemaOptions, validateEntity } from "services/websocket.service";
-import type { CreateEntityData, SchemaOptions, ErrorDescription } from "types/entity_data";
+import type { EntityData, SchemaOptions, ErrorDescription } from "types/entity_data";
 
 import { platformConstants } from "../utils/common";
 import { validDPTsForSchema } from "../utils/dpt";
@@ -43,7 +43,7 @@ export class KNXCreateEntity extends LitElement {
 
   @property({ type: String, attribute: "back-path" }) public backPath?: string;
 
-  @state() private _config?: CreateEntityData;
+  @state() private _config?: EntityData;
 
   @state() private _schemaOptions?: SchemaOptions;
 
@@ -190,27 +190,29 @@ export class KNXCreateEntity extends LitElement {
 
   private _entityValidate = throttle(() => {
     logger.debug("validate", this._config);
-    if (this._config === undefined) return;
-    validateEntity(this.hass, this._config).then((createEntityResult) => {
-      if (createEntityResult.success === false) {
-        logger.warn("Validation failed", createEntityResult.error_base);
-        this._validationErrors = createEntityResult.errors;
-        this._validationBaseError = createEntityResult.error_base;
-        return;
-      }
-      this._validationErrors = undefined;
-      this._validationBaseError = undefined;
-      logger.debug("Validation passed", createEntityResult.entity_id);
-    });
+    if (this._config === undefined || this.entityPlatform === undefined) return;
+    validateEntity(this.hass, { platform: this.entityPlatform, data: this._config }).then(
+      (createEntityResult) => {
+        if (createEntityResult.success === false) {
+          logger.warn("Validation failed", createEntityResult.error_base);
+          this._validationErrors = createEntityResult.errors;
+          this._validationBaseError = createEntityResult.error_base;
+          return;
+        }
+        this._validationErrors = undefined;
+        this._validationBaseError = undefined;
+        logger.debug("Validation passed", createEntityResult.entity_id);
+      },
+    );
   }, 250);
 
   private _entityCreate(ev) {
     ev.stopPropagation();
-    if (this._config === undefined) {
+    if (this._config === undefined || this.entityPlatform === undefined) {
       logger.error("No config found.");
       return;
     }
-    createEntity(this.hass, this._config)
+    createEntity(this.hass, { platform: this.entityPlatform, data: this._config })
       .then((createEntityResult) => {
         if (createEntityResult.success === false) {
           logger.warn("Validation error creating entity", createEntityResult.error_base);
