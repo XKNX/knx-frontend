@@ -85,14 +85,18 @@ export class KNXEditEntity extends LitElement {
       })
       .catch((err) => {
         logger.warn("Fetching entity config failed.", err);
-        this._config = {};
+        this._config = {}; // used as marker for loaded -> not undefined
+        this.entityPlatform = undefined;
       })
       .finally(() => this.requestUpdate());
   }
 
   protected render(): TemplateResult | void {
-    if (!this.hass || !this.knx.project || !this._config || !this.entityPlatform) {
+    if (!this.hass || !this.knx.project || !this._config) {
       return html` <hass-loading-screen></hass-loading-screen> `;
+    }
+    if (!this.entityPlatform) {
+      return this._renderNotFound();
     }
     const platformInfo = platformConstants[this.entityPlatform];
     if (!platformInfo) {
