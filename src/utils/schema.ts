@@ -24,12 +24,14 @@ export type SelectorSchema =
 type GASchema = {
   name: string;
   type: "group_address";
-  options: {
-    write?: { required: boolean };
-    state?: { required: boolean };
-    passive?: boolean;
-    validDPTs: DPT[];
-  };
+  options: GASchemaOptions;
+};
+
+export type GASchemaOptions = {
+  write?: { required: boolean };
+  state?: { required: boolean };
+  passive?: boolean;
+  validDPTs: DPT[];
 };
 
 export const switchSchema: SettingsGroup[] = [

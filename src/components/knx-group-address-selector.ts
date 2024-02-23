@@ -12,16 +12,10 @@ import type { HomeAssistant } from "@ha/types";
 import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
 import { isValidDPT } from "../utils/dpt";
 import { extractValidationErrors } from "../utils/validation";
+import type { GASchemaOptions } from "../utils/schema";
 import type { KNX } from "../types/knx";
 import type { DPT, KNXProject, GroupAddress } from "../types/websocket";
 import type { ErrorDescription, GASchema } from "../types/entity_data";
-
-interface GroupAddressSelectorOptions {
-  write?: { required: boolean };
-  state?: { required: boolean };
-  passive?: boolean;
-  validDPTs: DPT[];
-}
 
 const getValidGroupAddresses = (knxproject: KNXProject, validDPTs: DPT[]): GroupAddress[] =>
   Object.values(knxproject.group_addresses).filter((groupAddress) =>
@@ -46,7 +40,7 @@ export class GroupAddressSelector extends LitElement {
 
   @property({ type: Object }) public config: GASchema = {};
 
-  @property({ type: Object }) public options!: GroupAddressSelectorOptions;
+  @property({ type: Object }) public options!: GASchemaOptions;
 
   @property({ reflect: true }) public key!: string;
 
