@@ -100,6 +100,10 @@ export class KNXConfigureEntity extends LitElement {
             ></knx-group-address-selector>
           `;
         case "selector":
+          // apply default value if available and no value is set
+          if (selector.default !== undefined && this.config[selector.name] == null) {
+            this.config[selector.name] = selector.default;
+          }
           return html`
             <ha-selector
               .hass=${this.hass}

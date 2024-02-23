@@ -15,6 +15,7 @@ export type SelectorSchema =
   | {
       name: string;
       type: "selector";
+      default?: any;
       selector: Selector;
       label: string;
       helper?: string;
