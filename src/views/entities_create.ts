@@ -1,5 +1,5 @@
-import { mdiPlus } from "@mdi/js";
-import { LitElement, TemplateResult, html, css, nothing } from "lit";
+import { mdiPlus, mdiFloppy } from "@mdi/js";
+import { LitElement, TemplateResult, PropertyValues, html, css, nothing } from "lit";
 import { customElement, property, state, query } from "lit/decorators";
 import { ContextProvider } from "@lit-labs/context";
 
@@ -19,8 +19,19 @@ import type { HomeAssistant, Route } from "@ha/types";
 import "../components/knx-configure-entity";
 import "../components/knx-project-device-tree";
 
-import { createEntity, getPlatformSchemaOptions, validateEntity } from "services/websocket.service";
-import type { EntityData, SchemaOptions, ErrorDescription } from "types/entity_data";
+import {
+  createEntity,
+  updateEntity,
+  getEntityConfig,
+  getPlatformSchemaOptions,
+  validateEntity,
+} from "services/websocket.service";
+import type {
+  EntityData,
+  SchemaOptions,
+  ErrorDescription,
+  CreateEntityResult,
+} from "types/entity_data";
 
 import { platformConstants } from "../utils/common";
 import { validDPTsForSchema } from "../utils/dpt";
@@ -53,7 +64,13 @@ export class KNXCreateEntity extends LitElement {
 
   @query("ha-alert") private _alertElement!: HTMLDivElement;
 
-  entityPlatform?: string;
+  private _intent?: "create" | "edit";
+
+  private entityPlatform?: string;
+
+  private entityId?: string; // only used for "edit" intent
+
+  private uniqueId?: string; // only used for "edit" intent
 
   private _dragDropContextProvider = new ContextProvider(this, {
     context: dragDropContext,
@@ -70,24 +87,68 @@ export class KNXCreateEntity extends LitElement {
     }
   }
 
-  protected willUpdate() {
-    // const urlParams = new URLSearchParams(mainWindow.location.search);
-    // const referrerGA = urlParams.get("ga");
-    // console.log(referrerGA);
-    const entityPlatform = this.route.path.split("/")[1];
-    if (!entityPlatform) {
-      this._schemaOptions = undefined;
-    } else if (entityPlatform !== this.entityPlatform) {
-      getPlatformSchemaOptions(this.hass, entityPlatform).then((schemaOptions) => {
-        logger.debug("schemaOptions", schemaOptions);
-        this._schemaOptions = schemaOptions ?? {};
-      });
+  protected willUpdate(changedProperties: PropertyValues<this>) {
+    if (changedProperties.has("route")) {
+      const intent = this.route.prefix.split("/").at(-1);
+      if (intent === "create" || intent === "edit") {
+        this._intent = intent;
+      } else {
+        logger.error("Unknown intent", intent);
+        this._intent = undefined;
+        return;
+      }
+
+      if (intent === "create") {
+        // knx/entities/create -> path: ""; knx/entities/create/ -> path: "/"
+        // knx/entities/create/light -> path: "/light"
+        const entityPlatform = this.route.path.split("/")[1];
+        if (!entityPlatform) {
+          this._schemaOptions = undefined;
+        } else if (entityPlatform !== this.entityPlatform) {
+          getPlatformSchemaOptions(this.hass, entityPlatform).then((schemaOptions) => {
+            logger.debug("schemaOptions", schemaOptions);
+            this._schemaOptions = schemaOptions ?? {};
+          });
+        }
+        this.entityPlatform = entityPlatform;
+      } else if (intent === "edit") {
+        // knx/entities/edit/light.living_room -> path: "/light.living_room"
+        this.entityId = this.route.path.split("/")[1];
+        getEntityConfig(this.hass, this.entityId)
+          .then((entityConfigData) => {
+            const {
+              platform: entityPlatform,
+              unique_id: uniqueId,
+              data: config,
+              schema_options: schemaOptions,
+            } = entityConfigData;
+            this.entityPlatform = entityPlatform;
+            this.uniqueId = uniqueId;
+            this._config = config;
+            this._schemaOptions = schemaOptions ?? {};
+          })
+          .catch((err) => {
+            logger.warn("Fetching entity config failed.", err);
+            this._schemaOptions = {}; // used as marker for loaded -> not undefined
+            this.entityPlatform = undefined; // used as error marker
+          });
+      }
+      // const urlParams = new URLSearchParams(mainWindow.location.search);
+      // const referrerGA = urlParams.get("ga");
+      // console.log(referrerGA);
     }
-    this.entityPlatform = entityPlatform;
   }
 
-  protected render(): TemplateResult | void {
-    if (!this.hass || !this.knx.project || (!!this.entityPlatform && !this._schemaOptions)) {
+  protected render(): TemplateResult {
+    if (!this.hass || !this.knx.project || !this._intent) {
+      return html` <hass-loading-screen></hass-loading-screen> `;
+    }
+    if (this._intent === "edit") return this._renderEdit();
+    return this._renderCreate();
+  }
+
+  private _renderCreate(): TemplateResult {
+    if (!!this.entityPlatform && !this._schemaOptions) {
       return html` <hass-loading-screen></hass-loading-screen> `;
     }
     if (!this.entityPlatform) {
@@ -98,7 +159,37 @@ export class KNXCreateEntity extends LitElement {
       logger.error("Unknown platform", this.entityPlatform);
       return this._renderTypeSelection();
     }
-    return this._renderEntityConfig(platformInfo);
+    return this._renderEntityConfig(platformInfo, true);
+  }
+
+  private _renderEdit(): TemplateResult {
+    if (!this._schemaOptions) {
+      return html` <hass-loading-screen></hass-loading-screen> `;
+    }
+    if (!this.entityPlatform) {
+      return this._renderNotFound();
+    }
+    const platformInfo = platformConstants[this.entityPlatform];
+    if (!platformInfo) {
+      logger.error("Unknown platform", this.entityPlatform);
+      return this._renderNotFound();
+    }
+    return this._renderEntityConfig(platformInfo, false);
+  }
+
+  private _renderNotFound(): TemplateResult {
+    return html`
+      <hass-subpage
+        .hass=${this.hass}
+        .narrow=${this.narrow!}
+        .back-path=${this.backPath}
+        .header=${"Edit entity"}
+      >
+        <div class="content">
+          <ha-alert alert-type="error">Entity not found: <code>${this.entityId}</code></ha-alert>
+        </div>
+      </hass-subpage>
+    `;
   }
 
   private _renderTypeSelection(): TemplateResult {
@@ -131,12 +222,12 @@ export class KNXCreateEntity extends LitElement {
     `;
   }
 
-  private _renderEntityConfig(platformInfo: PlatformInfo): TemplateResult {
+  private _renderEntityConfig(platformInfo: PlatformInfo, create: boolean): TemplateResult {
     return html`<hass-subpage
       .hass=${this.hass}
       .narrow=${this.narrow!}
       .back-path=${this.backPath}
-      .header=${"Create new entity"}
+      .header=${create ? "Create new entity" : `Edit ${this.entityId}`}
     >
       <div class="content">
         <div class="entity-config">
@@ -144,6 +235,7 @@ export class KNXCreateEntity extends LitElement {
             .hass=${this.hass}
             .knx=${this.knx}
             .platform=${platformInfo}
+            .config=${this._config ?? {}}
             .schemaOptions=${this._schemaOptions}
             .validationErrors=${this._validationErrors}
             @knx-entity-configuration-changed=${this._configChanged}
@@ -159,12 +251,12 @@ export class KNXCreateEntity extends LitElement {
               : nothing}
           </knx-configure-entity>
           <ha-fab
-            .label=${"Create"}
+            .label=${create ? "Create" : "Save"}
             extended
-            @click=${this._entityCreate}
+            @click=${create ? this._entityCreate : this._entityUpdate}
             ?disabled=${this._config === undefined}
           >
-            <ha-svg-icon slot="icon" .path=${mdiPlus}></ha-svg-icon>
+            <ha-svg-icon slot="icon" .path=${create ? mdiPlus : mdiFloppy}></ha-svg-icon>
           </ha-fab>
         </div>
         ${this.knx.project
@@ -193,15 +285,7 @@ export class KNXCreateEntity extends LitElement {
     if (this._config === undefined || this.entityPlatform === undefined) return;
     validateEntity(this.hass, { platform: this.entityPlatform, data: this._config }).then(
       (createEntityResult) => {
-        if (createEntityResult.success === false) {
-          logger.warn("Validation failed", createEntityResult.error_base);
-          this._validationErrors = createEntityResult.errors;
-          this._validationBaseError = createEntityResult.error_base;
-          return;
-        }
-        this._validationErrors = undefined;
-        this._validationBaseError = undefined;
-        logger.debug("Validation passed", createEntityResult.entity_id);
+        this._handleValidationError(createEntityResult, false);
       },
     );
   }, 250);
@@ -214,15 +298,7 @@ export class KNXCreateEntity extends LitElement {
     }
     createEntity(this.hass, { platform: this.entityPlatform, data: this._config })
       .then((createEntityResult) => {
-        if (createEntityResult.success === false) {
-          logger.warn("Validation error creating entity", createEntityResult.error_base);
-          this._validationErrors = createEntityResult.errors;
-          this._validationBaseError = createEntityResult.error_base;
-          setTimeout(() => this._alertElement.scrollIntoView({ behavior: "smooth" }));
-          return;
-        }
-        this._validationErrors = undefined;
-        this._validationBaseError = undefined;
+        if (this._handleValidationError(createEntityResult, true)) return;
         logger.debug("Successfully created entity", createEntityResult.entity_id);
         navigate("/knx/entities", { replace: true });
         if (!createEntityResult.entity_id) {
@@ -234,6 +310,48 @@ export class KNXCreateEntity extends LitElement {
       .catch((err) => {
         logger.error("Error creating entity", err);
       });
+  }
+
+  private _entityUpdate(ev) {
+    ev.stopPropagation();
+    if (
+      this._config === undefined ||
+      this.uniqueId === undefined ||
+      this.entityPlatform === undefined
+    ) {
+      logger.error("No config found.");
+      return;
+    }
+    updateEntity(this.hass, {
+      platform: this.entityPlatform,
+      unique_id: this.uniqueId,
+      data: this._config,
+    })
+      .then((createEntityResult) => {
+        if (this._handleValidationError(createEntityResult, true)) return;
+        logger.debug("Successfully updated entity", this.entityId);
+        navigate("/knx/entities", { replace: true });
+      })
+      .catch((err) => {
+        logger.error("Error updating entity", err);
+      });
+  }
+
+  private _handleValidationError(result: CreateEntityResult, final: boolean): boolean {
+    // return true if validation error; scroll to alert if final
+    if (result.success === false) {
+      logger.warn("Validation error", result.error_base);
+      this._validationErrors = result.errors;
+      this._validationBaseError = result.error_base;
+      if (final) {
+        setTimeout(() => this._alertElement.scrollIntoView({ behavior: "smooth" }));
+      }
+      return true;
+    }
+    this._validationErrors = undefined;
+    this._validationBaseError = undefined;
+    logger.debug("Validation passed", result.entity_id);
+    return false;
   }
 
   private _entityMoreInfoSettings(entityId: string) {
