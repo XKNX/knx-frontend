@@ -28,10 +28,10 @@ class KnxEntitiesRouter extends KnxRouter {
         },
       },
       edit: {
-        tag: "knx-edit-entity",
+        tag: "knx-create-entity",
         load: () => {
-          logger.debug("Importing knx-edit-entity");
-          return import("./entities_edit");
+          logger.debug("Importing knx-create-entity");
+          return import("./entities_create");
         },
       },
     },
