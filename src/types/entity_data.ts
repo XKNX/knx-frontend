@@ -6,6 +6,7 @@ export interface GASchema {
   write?: string;
   state?: string;
   passive?: string[];
+  dpt?: string;
 }
 
 export interface BaseEntityData {

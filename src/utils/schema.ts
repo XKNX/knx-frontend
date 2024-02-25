@@ -32,6 +32,13 @@ export type GASchemaOptions = {
   state?: { required: boolean };
   passive?: boolean;
   validDPTs: DPT[];
+  dptSelect?: DPTOption[];
+};
+
+export type DPTOption = {
+  value: string;
+  label: string;
+  dpt: DPT;
 };
 
 export const switchSchema: SettingsGroup[] = [
