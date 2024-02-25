@@ -4,6 +4,7 @@ import { customElement, property, state, query, queryAll } from "lit/decorators"
 import { classMap } from "lit/directives/class-map";
 import { consume } from "@lit-labs/context";
 
+import "@ha/components/ha-list-item";
 import "@ha/components/ha-selector/ha-selector-select";
 import "@ha/components/ha-icon-button";
 import { fireEvent } from "@ha/common/dom/fire_event";
@@ -14,13 +15,8 @@ import { isValidDPT } from "../utils/dpt";
 import { extractValidationErrors } from "../utils/validation";
 import type { GASchemaOptions } from "../utils/schema";
 import type { KNX } from "../types/knx";
-import type { DPT, KNXProject, GroupAddress } from "../types/websocket";
+import type { DPT, GroupAddress } from "../types/websocket";
 import type { ErrorDescription, GASchema } from "../types/entity_data";
-
-const getValidGroupAddresses = (knxproject: KNXProject, validDPTs: DPT[]): GroupAddress[] =>
-  Object.values(knxproject.group_addresses).filter((groupAddress) =>
-    groupAddress.dpt ? isValidDPT(groupAddress.dpt, validDPTs) : false,
-  );
 
 const getAddressOptions = (
   validGroupAddresses: GroupAddress[],
@@ -50,7 +46,11 @@ export class GroupAddressSelector extends LitElement {
 
   validGroupAddresses: GroupAddress[] = [];
 
+  filteredGroupAddresses: GroupAddress[] = [];
+
   addressOptions: { value: string; label: string }[] = [];
+
+  dptSelectorDisabled = false;
 
   private _validGADropTarget?: boolean;
 
@@ -60,17 +60,53 @@ export class GroupAddressSelector extends LitElement {
 
   @queryAll("ha-selector-select") private _gaSelectors!: NodeListOf<HTMLElement>;
 
-  connectedCallback() {
-    super.connectedCallback();
-    this.validGroupAddresses = this.knx.project
-      ? getValidGroupAddresses(this.knx.project.knxproject, this.options.validDPTs)
+  getValidGroupAddresses(validDPTs: DPT[]): GroupAddress[] {
+    return this.knx.project
+      ? Object.values(this.knx.project.knxproject.group_addresses).filter((groupAddress) =>
+          groupAddress.dpt ? isValidDPT(groupAddress.dpt, validDPTs) : false,
+        )
       : [];
-    this.addressOptions = getAddressOptions(this.validGroupAddresses);
   }
 
-  protected willUpdate() {
+  getValidDptFromConfigValue(): DPT | undefined {
+    return this.config.dpt
+      ? this.options.dptSelect?.find((dpt) => dpt.value === this.config.dpt)?.dpt
+      : undefined;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this.validGroupAddresses = this.getValidGroupAddresses(this.options.validDPTs);
+    this.filteredGroupAddresses = this.validGroupAddresses;
+    this.addressOptions = getAddressOptions(this.filteredGroupAddresses);
+  }
+
+  protected willUpdate(changedProps: PropertyValues<this>) {
+    if (changedProps.has("config")) {
+      const selectedDPT = this.getValidDptFromConfigValue();
+      if (changedProps.get("config")?.dpt !== this.config.dpt) {
+        this.filteredGroupAddresses = selectedDPT
+          ? this.getValidGroupAddresses([selectedDPT])
+          : this.validGroupAddresses;
+        this.addressOptions = getAddressOptions(this.filteredGroupAddresses);
+      }
+      if (selectedDPT && this.knx.project?.project_loaded) {
+        const allDpts = [
+          this.config.write,
+          this.config.state,
+          ...(this.config.passive ?? []),
+        ].filter((ga) => ga != null);
+        this.dptSelectorDisabled = allDpts.every((ga) => {
+          const _dpt = this.knx.project?.knxproject.group_addresses[ga!].dpt;
+          return _dpt ? isValidDPT(_dpt, [selectedDPT]) : false;
+        });
+      } else {
+        this.dptSelectorDisabled = false;
+      }
+    }
+
     this._validGADropTarget = this._dragDropContext?.groupAddress
-      ? this.validGroupAddresses.includes(this._dragDropContext.groupAddress)
+      ? this.filteredGroupAddresses.includes(this._dragDropContext.groupAddress)
       : undefined;
   }
 
@@ -90,7 +126,7 @@ export class GroupAddressSelector extends LitElement {
     const validGADropTargetClass = this._validGADropTarget === true;
     const invalidGADropTargetClass = this._validGADropTarget === false;
 
-    return html`<div class="main">
+    return html` <div class="main">
         <div class="selectors">
           ${this.options.write
             ? html`<ha-selector-select
@@ -163,16 +199,69 @@ export class GroupAddressSelector extends LitElement {
           @dragover=${this._dragOverHandler}
           @drop=${this._dropHandler}
         ></ha-selector-select>
-      </div> `;
+      </div>
+      ${this.options.dptSelect
+        ? html`<ha-selector-select
+            .hass=${this.hass}
+            .key=${"dpt"}
+            .label=${"Datapoint type"}
+            .required=${true}
+            .selector=${{
+              select: {
+                multiple: false,
+                custom_value: false,
+                options: this.options.dptSelect,
+              },
+            }}
+            .value=${this.config.dpt}
+            .disabled=${this.dptSelectorDisabled}
+            @value-changed=${this._updateConfig}
+          >
+          </ha-selector-select>`
+        : nothing}`;
   }
 
   private _updateConfig(ev: CustomEvent) {
     ev.stopPropagation();
     const target = ev.target as any;
     const value = ev.detail.value;
-    this.config = { ...this.config, [target.key]: value };
+    const newConfig = { ...this.config, [target.key]: value };
+    this._updateDptSelector(target.key, newConfig);
+    this.config = newConfig;
     fireEvent(this, "value-changed", { value: this.config });
     this.requestUpdate();
+  }
+
+  private _updateDptSelector(targetKey: string, newConfig: GASchema) {
+    if (!(this.options.dptSelect && this.knx.project?.project_loaded)) return;
+    // updates newConfig in place
+    let newGa: string | undefined;
+    if (targetKey === "write" || targetKey === "state") {
+      newGa = newConfig[targetKey];
+    } else if (targetKey === "passive") {
+      // for passive ignore removals, only use additions
+      const addedGa = newConfig.passive?.filter((ga) => !this.config.passive?.includes(ga))?.[0];
+      newGa = addedGa;
+    } else {
+      return;
+    }
+    // disable when project is loaded and everything matches -> not here
+    if (!newConfig.write && !newConfig.state && !newConfig.passive?.length) {
+      // when all GAs have been cleared, reset dpt field
+      newConfig.dpt = undefined;
+    }
+    if (this.config.dpt === undefined) {
+      const newDpt = this.validGroupAddresses.find((ga) => ga.address === newGa)?.dpt;
+      if (!newDpt) return;
+      const exactDptMatch = this.options.dptSelect.find(
+        (dptOption) => dptOption.dpt.main === newDpt.main && dptOption.dpt.sub === newDpt.sub,
+      );
+      const newDptValue = exactDptMatch
+        ? exactDptMatch.value
+        : // fallback to first valid DPT if allowed in options; otherwise undefined
+          this.options.dptSelect.find((dptOption) => isValidDPT(newDpt, [dptOption.dpt]))?.value;
+      newConfig.dpt = newDptValue;
+    }
   }
 
   private _togglePassiveVisibility(ev: CustomEvent) {
@@ -229,13 +318,15 @@ export class GroupAddressSelector extends LitElement {
     ev.stopPropagation();
     ev.preventDefault();
     const target = ev.target as any;
+    const newConfig = { ...this.config };
     if (target.selector.select.multiple) {
       const newValues = [...(this.config[target.key] ?? []), ga];
-      this.config = { ...this.config, [target.key]: newValues };
+      newConfig[target.key] = newValues;
     } else {
-      this.config = { ...this.config, [target.key]: ga };
+      newConfig[target.key] = ga;
     }
-    fireEvent(this, "value-changed", { value: this.config });
+    this._updateDptSelector(target.key, newConfig);
+    fireEvent(this, "value-changed", { value: newConfig });
     // reset invalid state of textfield if set before drag
     setTimeout(() => target.comboBox._inputElement.blur());
   }
