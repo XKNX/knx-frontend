@@ -38,6 +38,7 @@ export type GASchemaOptions = {
 export type DPTOption = {
   value: string;
   label: string;
+  description?: string;
   dpt: DPT;
 };
 
