@@ -98,10 +98,12 @@ export class GroupAddressSelector extends LitElement {
           this.config.state,
           ...(this.config.passive ?? []),
         ].filter((ga) => ga != null);
-        this.dptSelectorDisabled = allDpts.every((ga) => {
-          const _dpt = this.knx.project?.knxproject.group_addresses[ga!].dpt;
-          return _dpt ? isValidDPT(_dpt, [selectedDPT]) : false;
-        });
+        this.dptSelectorDisabled =
+          allDpts.length > 0 &&
+          allDpts.every((ga) => {
+            const _dpt = this.knx.project?.knxproject.group_addresses[ga!].dpt;
+            return _dpt ? isValidDPT(_dpt, [selectedDPT]) : false;
+          });
       } else {
         this.dptSelectorDisabled = false;
       }
