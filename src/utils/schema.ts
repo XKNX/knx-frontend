@@ -31,7 +31,7 @@ export type GASchemaOptions = {
   write?: { required: boolean };
   state?: { required: boolean };
   passive?: boolean;
-  validDPTs: DPT[];
+  validDPTs?: DPT[]; // one of validDPts or dptSelect shall be set
   dptSelect?: DPTOption[];
 };
 
