@@ -54,7 +54,11 @@ export const validDPTsForSchema = (schema: SettingsGroup[]): DPT[] => {
   schema.forEach((group) => {
     group.selectors.forEach((selector) => {
       if (selector.type === "group_address") {
-        result.push(...selector.options.validDPTs);
+        if (selector.options.validDPTs) {
+          result.push(...selector.options.validDPTs);
+        } else if (selector.options.dptSelect) {
+          result.push(...selector.options.dptSelect.map((dptOption) => dptOption.dpt));
+        }
       }
     });
   });

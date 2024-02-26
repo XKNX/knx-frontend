@@ -76,7 +76,9 @@ export class GroupAddressSelector extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    this.validGroupAddresses = this.getValidGroupAddresses(this.options.validDPTs);
+    this.validGroupAddresses = this.getValidGroupAddresses(
+      this.options.validDPTs ?? this.options.dptSelect?.map((dptOption) => dptOption.dpt) ?? [],
+    );
     this.filteredGroupAddresses = this.validGroupAddresses;
     this.addressOptions = getAddressOptions(this.filteredGroupAddresses);
   }
