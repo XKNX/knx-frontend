@@ -10,6 +10,7 @@ import "@ha/components/ha-icon-button";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import type { HomeAssistant } from "@ha/types";
 
+import "./knx-dpt-selector";
 import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
 import { isValidDPT } from "../utils/dpt";
 import { extractValidationErrors } from "../utils/validation";
@@ -119,6 +120,7 @@ export class GroupAddressSelector extends LitElement {
     this._gaSelectors.forEach(async (selector) => {
       await selector.updateComplete;
       const firstError = extractValidationErrors(this.validationErrors, selector.key)?.[0];
+      // only ha-selector-select with custom_value or multiple have comboBox
       selector.comboBox.errorMessage = firstError?.error_message;
       selector.comboBox.invalid = !!firstError;
     });
@@ -130,7 +132,8 @@ export class GroupAddressSelector extends LitElement {
     const validGADropTargetClass = this._validGADropTarget === true;
     const invalidGADropTargetClass = this._validGADropTarget === false;
 
-    return html` <div class="main">
+    return html`
+      <div class="main">
         <div class="selectors">
           ${this.options.write
             ? html`<ha-selector-select
@@ -204,25 +207,23 @@ export class GroupAddressSelector extends LitElement {
           @drop=${this._dropHandler}
         ></ha-selector-select>
       </div>
-      ${this.options.dptSelect
-        ? html`<ha-selector-select
-            .hass=${this.hass}
-            .key=${"dpt"}
-            .label=${"Datapoint type"}
-            .required=${true}
-            .selector=${{
-              select: {
-                multiple: false,
-                custom_value: false,
-                options: this.options.dptSelect,
-              },
-            }}
-            .value=${this.config.dpt}
-            .disabled=${this.dptSelectorDisabled}
-            @value-changed=${this._updateConfig}
-          >
-          </ha-selector-select>`
-        : nothing}`;
+      ${this.options.dptSelect ? this._renderDptSelector() : nothing}
+    `;
+  }
+
+  private _renderDptSelector() {
+    const invalid = extractValidationErrors(this.validationErrors, "dpt")?.[0];
+    return html`<knx-dpt-selector
+      .key=${"dpt"}
+      .label=${"Datapoint type"}
+      .options=${this.options.dptSelect}
+      .value=${this.config.dpt}
+      .disabled=${this.dptSelectorDisabled}
+      .invalid=${!!invalid}
+      .invalidMessage=${invalid?.error_message}
+      @value-changed=${this._updateConfig}
+    >
+    </knx-dpt-selector>`;
   }
 
   private _updateConfig(ev: CustomEvent) {
