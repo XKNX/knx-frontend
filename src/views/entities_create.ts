@@ -340,7 +340,7 @@ export class KNXCreateEntity extends LitElement {
   private _handleValidationError(result: CreateEntityResult, final: boolean): boolean {
     // return true if validation error; scroll to alert if final
     if (result.success === false) {
-      logger.warn("Validation error", result.error_base);
+      logger.warn("Validation error", result);
       this._validationErrors = result.errors;
       this._validationBaseError = result.error_base;
       if (final) {
