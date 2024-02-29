@@ -35,6 +35,8 @@ export class GroupAddressSelector extends LitElement {
 
   @property({ type: Object }) public knx!: KNX;
 
+  @property() public label?: string;
+
   @property({ type: Object }) public config: GASchema = {};
 
   @property({ type: Object }) public options!: GASchemaOptions;
@@ -142,7 +144,7 @@ export class GroupAddressSelector extends LitElement {
                   "invalid-drop-zone": invalidGADropTargetClass,
                 })}
                 .hass=${this.hass}
-                .label=${"Send address"}
+                .label=${"Send address" + (this.label ? ` - ${this.label}` : "")}
                 .required=${this.options.write.required}
                 .selector=${{
                   select: { multiple: false, custom_value: true, options: this.addressOptions },
@@ -161,7 +163,7 @@ export class GroupAddressSelector extends LitElement {
                   "invalid-drop-zone": invalidGADropTargetClass,
                 })}
                 .hass=${this.hass}
-                .label=${"State address"}
+                .label=${"State address" + (this.label ? ` - ${this.label}` : "")}
                 .required=${this.options.state.required}
                 .selector=${{
                   select: { multiple: false, custom_value: true, options: this.addressOptions },
@@ -195,7 +197,7 @@ export class GroupAddressSelector extends LitElement {
             "invalid-drop-zone": invalidGADropTargetClass,
           })}
           .hass=${this.hass}
-          .label=${"Passive addresses"}
+          .label=${"Passive addresses" + (this.label ? ` - ${this.label}` : "")}
           .required=${false}
           .selector=${{
             select: { multiple: true, custom_value: true, options: this.addressOptions },
