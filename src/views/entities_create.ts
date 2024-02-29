@@ -241,12 +241,17 @@ export class KNXCreateEntity extends LitElement {
             @knx-entity-configuration-changed=${this._configChanged}
           >
             ${this._validationBaseError
-              ? html`<ha-alert
-                  slot="knx-validation-error"
-                  alert-type="error"
-                  .title=${"Validation error"}
-                >
-                  ${this._validationBaseError}
+              ? html`<ha-alert slot="knx-validation-error" alert-type="error">
+                  <details>
+                    <summary><b>Validation error</b></summary>
+                    <p>Base error: ${this._validationBaseError}</p>
+                    ${this._validationErrors?.map(
+                      (err) =>
+                        html`<p>
+                          ${err.error_class}: ${err.error_message} in ${err.path?.join(" / ")}
+                        </p>`,
+                    ) ?? nothing}
+                  </details>
                 </ha-alert>`
               : nothing}
           </knx-configure-entity>
@@ -404,6 +409,10 @@ export class KNXCreateEntity extends LitElement {
         display: block;
         margin: 20px auto;
         max-width: 720px;
+
+        & summary {
+          padding: 10px;
+        }
       }
 
       ha-fab {
