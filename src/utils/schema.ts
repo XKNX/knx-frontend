@@ -11,6 +11,7 @@ export type SettingsGroup = {
 
 export type SelectorSchema =
   | GASchema
+  | GroupSelect
   | { name: "sync_state"; type: "sync_state" }
   | {
       name: string;
@@ -40,6 +41,17 @@ export type DPTOption = {
   label: string;
   description?: string;
   dpt: DPT;
+};
+
+export type GroupSelect = {
+  type: "group_select";
+  name: string;
+  options: {
+    value: string;
+    label: string;
+    description?: string;
+    schema: (SettingsGroup | SelectorSchema)[];
+  }[];
 };
 
 export const switchSchema: SettingsGroup[] = [

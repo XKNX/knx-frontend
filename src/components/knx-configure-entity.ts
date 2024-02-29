@@ -2,6 +2,7 @@ import { css, html, LitElement, TemplateResult, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 
 import "@ha/components/ha-card";
+import "@ha/components/ha-control-select";
 import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-expansion-panel";
 import "@ha/components/ha-selector/ha-selector";
@@ -18,7 +19,7 @@ import { extractValidationErrors } from "../utils/validation";
 import type { EntityData, ErrorDescription } from "../types/entity_data";
 import type { KNX } from "../types/knx";
 import type { PlatformInfo } from "../utils/common";
-import type { SettingsGroup, SelectorSchema } from "../utils/schema";
+import type { SettingsGroup, SelectorSchema, GroupSelect } from "../utils/schema";
 
 const logger = new KNXLogger("knx-configure-entity");
 
@@ -38,6 +39,7 @@ export class KNXConfigureEntity extends LitElement {
   @property({ type: Array }) public validationErrors?: ErrorDescription[];
 
   protected render(): TemplateResult | void {
+    const errors = extractValidationErrors(this.validationErrors, "data"); // "data" is root key in our python schema
     return html`
       <div class="header">
         <h1><ha-svg-icon .path=${this.platform.iconPath}></ha-svg-icon>${this.platform.name}</h1>
@@ -46,13 +48,13 @@ export class KNXConfigureEntity extends LitElement {
       <slot name="knx-validation-error"></slot>
       <ha-card outlined>
         <h1 class="card-header">KNX configuration</h1>
-        ${this.generateGroups(this.platform.schema)}
+        ${this.generateRootGroups(this.platform.schema, errors)}
       </ha-card>
       ${renderConfigureEntityCard(this.hass, this.config.entity ?? {}, this._updateEntityConfig)}
     `;
   }
 
-  generateGroups(schema: SettingsGroup[]) {
+  generateRootGroups(schema: SettingsGroup[], errors?: ErrorDescription[]) {
     const regular_items: SettingsGroup[] = [];
     const advanced_items: SettingsGroup[] = [];
 
@@ -64,71 +66,107 @@ export class KNXConfigureEntity extends LitElement {
       }
     });
     return html`
-      ${regular_items.map((group: SettingsGroup) => this._generateSettingsGroup(group))}
+      ${regular_items.map((group: SettingsGroup) => this._generateSettingsGroup(group, errors))}
       ${advanced_items.length
         ? html` <ha-expansion-panel .header=${"Advanced"} outlined>
-            ${advanced_items.map((group: SettingsGroup) => this._generateSettingsGroup(group))}
+            ${advanced_items.map((group: SettingsGroup) =>
+              this._generateSettingsGroup(group, errors),
+            )}
           </ha-expansion-panel>`
         : nothing}
     `;
   }
 
-  _generateSettingsGroup(group: SettingsGroup) {
+  _generateSettingsGroup(group: SettingsGroup, errors?: ErrorDescription[]) {
     return html` <ha-settings-row narrow>
       <div slot="heading">${group.heading}</div>
       <div slot="description">${group.description}</div>
-      ${this._generateItems(
-        group.selectors,
-        extractValidationErrors(this.validationErrors, "data"), // "data" is root key in our python schema
-      )}
+      ${this._generateItems(group.selectors, errors)}
     </ha-settings-row>`;
   }
 
   _generateItems(selectors: SelectorSchema[], errors?: ErrorDescription[]) {
-    return html`${selectors.map((selector: SelectorSchema) => {
-      switch (selector.type) {
-        case "group_address":
-          return html`
-            <knx-group-address-selector
-              .hass=${this.hass}
-              .knx=${this.knx}
-              .key=${selector.name}
-              .config=${this.config[selector.name] ?? {}}
-              .options=${selector.options}
-              .validationErrors=${extractValidationErrors(errors, selector.name)}
-              @value-changed=${this._updateConfig}
-            ></knx-group-address-selector>
-          `;
-        case "selector":
-          // apply default value if available and no value is set
-          if (selector.default !== undefined && this.config[selector.name] == null) {
-            this.config[selector.name] = selector.default;
-          }
-          return html`
-            <ha-selector
-              .hass=${this.hass}
-              .selector=${selector.selector}
-              .label=${selector.label}
-              .helper=${selector.helper}
-              .key=${selector.name}
-              .value=${this.config[selector.name]}
-              @value-changed=${this._updateConfig}
-            ></ha-selector>
-          `;
-        case "sync_state":
-          return html`
-            <knx-sync-state-selector-row
-              .hass=${this.hass}
-              .key=${selector.name}
-              .value=${this.config[selector.name] ?? true}
-              @value-changed=${this._updateConfig}
-            ></knx-sync-state-selector-row>
-          `;
-        default:
-          logger.error("Unknown selector type", selector);
-          return nothing;
-      }
-    })} `;
+    return html`${selectors.map((selector: SelectorSchema) =>
+      this._generateItem(selector, errors),
+    )}`;
+  }
+
+  _generateItem(selector: SelectorSchema, errors?: ErrorDescription[]) {
+    switch (selector.type) {
+      case "group_address":
+        return html`
+          <knx-group-address-selector
+            .hass=${this.hass}
+            .knx=${this.knx}
+            .key=${selector.name}
+            .label=${selector.label}
+            .config=${this.config[selector.name] ?? {}}
+            .options=${selector.options}
+            .validationErrors=${extractValidationErrors(errors, selector.name)}
+            @value-changed=${this._updateConfig}
+          ></knx-group-address-selector>
+        `;
+      case "selector":
+        // apply default value if available and no value is set
+        if (selector.default !== undefined && this.config[selector.name] == null) {
+          this.config[selector.name] = selector.default;
+        }
+        return html`
+          <ha-selector
+            .hass=${this.hass}
+            .selector=${selector.selector}
+            .label=${selector.label}
+            .helper=${selector.helper}
+            .key=${selector.name}
+            .value=${this.config[selector.name]}
+            @value-changed=${this._updateConfig}
+          ></ha-selector>
+        `;
+      case "sync_state":
+        return html`
+          <knx-sync-state-selector-row
+            .hass=${this.hass}
+            .key=${selector.name}
+            .value=${this.config[selector.name] ?? true}
+            @value-changed=${this._updateConfig}
+          ></knx-sync-state-selector-row>
+        `;
+      case "group_select":
+        return this._generateGroupSelect(selector, errors);
+      default:
+        logger.error("Unknown selector type", selector);
+        return nothing;
+    }
+  }
+
+  _generateGroupSelect(selector: GroupSelect, errors?: ErrorDescription[]) {
+    const value: string =
+      this.config[selector.name] ??
+      // set default if nothing is set yet
+      (this.config[selector.name] = selector.options[0].value);
+    const option = selector.options.find((item) => item.value === value);
+    if (option === undefined) {
+      logger.error("No option found for value", value);
+    }
+    return html` <ha-control-select
+        .options=${selector.options}
+        .value=${value}
+        .key=${selector.name}
+        @value-changed=${this._updateConfig}
+      ></ha-control-select>
+      ${option
+        ? html` <p class="group-description">${option.description}</p>
+            <div class="group-selection">
+              ${option.schema.map((item: SettingsGroup | SelectorSchema) => {
+                switch (item.type) {
+                  case "settings_group":
+                    return this._generateSettingsGroup(item, errors);
+                  default:
+                    return this._generateItem(item, errors);
+                }
+              })}
+            </div>`
+        : nothing}`;
   }
 
   private _updateConfig(ev) {
@@ -204,12 +242,32 @@ export class KNXConfigureEntity extends LitElement {
 
       ha-settings-row {
         padding: 0;
+      }
+      ha-control-select {
+        padding: 0;
         margin-bottom: 16px;
       }
 
+      .group-description {
+        align-items: center;
+        margin-top: -8px;
+        padding-left: 8px;
+        padding-bottom: 8px;
+      }
+
+      .group-selection {
+        padding-left: 16px;
+        padding-right: 16px;
+        & ha-settings-row:first-child {
+          border-top: 0;
+        }
+      }
+
+      knx-group-address-selector,
       ha-selector,
       ha-selector-text,
-      ha-selector-select {
+      ha-selector-select,
+      knx-sync-state-selector-row {
         display: block;
         margin-bottom: 16px;
       }
