@@ -25,6 +25,7 @@ export type SelectorSchema =
 type GASchema = {
   name: string;
   type: "group_address";
+  label?: string;
   options: GASchemaOptions;
 };
 
