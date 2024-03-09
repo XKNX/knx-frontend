@@ -37,9 +37,10 @@ export class KNXConfigureEntity extends LitElement {
 
   @property({ type: Array }) public validationErrors?: ErrorDescription[];
 
-  connectedCallback() {
+  connectedCallback(): void {
     super.connectedCallback();
     if (!this.config) {
+      // fill base keys to get better validation error messages
       this.config = { entity: {}, knx: {} };
     }
   }
@@ -56,15 +57,12 @@ export class KNXConfigureEntity extends LitElement {
         <h1 class="card-header">KNX configuration</h1>
         ${this.generateRootGroups(this.platform.schema, extractValidationErrors(errors, "knx"))}
       </ha-card>
-      ${
-        // TODO: use errors in entity config
-        renderConfigureEntityCard(
-          this.hass,
-          this.config.entity,
-          this._updateConfig("entity"),
-          extractValidationErrors(errors, "entity"),
-        )
-      }
+      ${renderConfigureEntityCard(
+        this.hass,
+        this.config!.entity ?? {},
+        this._updateConfig("entity"),
+        extractValidationErrors(errors, "entity"),
+      )}
     `;
   }
 
@@ -114,7 +112,7 @@ export class KNXConfigureEntity extends LitElement {
             .knx=${this.knx}
             .key=${selector.name}
             .label=${selector.label}
-            .config=${this.config.knx[selector.name] ?? {}}
+            .config=${this.config!.knx[selector.name] ?? {}}
             .options=${selector.options}
             .validationErrors=${extractValidationErrors(errors, selector.name)}
             @value-changed=${this._updateConfig("knx")}
@@ -122,8 +120,8 @@ export class KNXConfigureEntity extends LitElement {
         `;
       case "selector":
         // apply default value if available and no value is set
-        if (selector.default !== undefined && this.config.knx[selector.name] == null) {
-          this.config.knx[selector.name] = selector.default;
+        if (selector.default !== undefined && this.config!.knx[selector.name] == null) {
+          this.config!.knx[selector.name] = selector.default;
         }
         return html`
           <ha-selector
@@ -132,7 +130,7 @@ export class KNXConfigureEntity extends LitElement {
             .label=${selector.label}
             .helper=${selector.helper}
             .key=${selector.name}
-            .value=${this.config.knx[selector.name]}
+            .value=${this.config!.knx[selector.name]}
             @value-changed=${this._updateConfig("knx")}
           ></ha-selector>
         `;
@@ -141,7 +139,7 @@ export class KNXConfigureEntity extends LitElement {
           <knx-sync-state-selector-row
             .hass=${this.hass}
             .key=${selector.name}
-            .value=${this.config.knx[selector.name] ?? true}
+            .value=${this.config!.knx[selector.name] ?? true}
             @value-changed=${this._updateConfig("knx")}
           ></knx-sync-state-selector-row>
         `;
@@ -155,9 +153,9 @@ export class KNXConfigureEntity extends LitElement {
 
   _generateGroupSelect(selector: GroupSelect, errors?: ErrorDescription[]) {
     const value: string =
-      this.config.knx[selector.name] ??
+      this.config!.knx[selector.name] ??
       // set default if nothing is set yet
-      (this.config.knx[selector.name] = selector.options[0].value);
+      (this.config!.knx[selector.name] = selector.options[0].value);
     const option = selector.options.find((item) => item.value === value);
     if (option === undefined) {
       logger.error("No option found for value", value);
@@ -191,33 +189,9 @@ export class KNXConfigureEntity extends LitElement {
       }
       this.config[baseKey][ev.target.key] = ev.detail.value;
       logger.debug(`update ${baseKey} key "${ev.target.key}" with "${ev.detail.value}"`);
-      this._propagateNewConfig();
+      fireEvent(this, "knx-entity-configuration-changed", this.config);
+      this.requestUpdate();
     };
-  }
-
-  // private _updateConfig("knx")(ev) {
-  //   ev.stopPropagation();
-  //   if (!this.config.knx) {
-  //     this.config.knx = {};
-  //   }
-  //   this.config.knx[ev.target.key] = ev.detail.value;
-  //   logger.debug(`update base key "${ev.target.key}" with "${ev.detail.value}"`);
-  //   this._propagateNewConfig();
-  // }
-
-  // private _updateEntityConfig(ev) {
-  //   ev.stopPropagation();
-  //   if (!this.config.entity) {
-  //     this.config.entity = {};
-  //   }
-  //   this.config.entity[ev.target.key] = ev.detail.value;
-  //   logger.debug(`update entity key "${ev.target.key}" with "${ev.detail.value}"`);
-  //   this._propagateNewConfig();
-  // }
-
-  private _propagateNewConfig() {
-    fireEvent(this, "knx-entity-configuration-changed", this.config);
-    this.requestUpdate();
   }
 
   static get styles() {

@@ -23,9 +23,11 @@ export interface SwitchEntityData {
   sync_state: string | boolean;
 }
 
+export type KnxEntityData = SwitchEntityData;
+
 export type EntityData = {
   entity: BaseEntityData;
-  knx: SwitchEntityData;
+  knx: KnxEntityData;
 };
 
 export interface CreateEntityData {
