@@ -31,12 +31,18 @@ export class KNXConfigureEntity extends LitElement {
 
   @property({ type: Object }) public platform!: PlatformInfo;
 
-  // TODO: typing
-  @property({ type: Object }) public config = {};
+  @property({ type: Object }) public config?: EntityData;
 
   @property({ type: Array }) public schema!: SettingsGroup[];
 
   @property({ type: Array }) public validationErrors?: ErrorDescription[];
+
+  connectedCallback() {
+    super.connectedCallback();
+    if (!this.config) {
+      this.config = { entity: {}, knx: {} };
+    }
+  }
 
   protected render(): TemplateResult | void {
     const errors = extractValidationErrors(this.validationErrors, "data"); // "data" is root key in our python schema
@@ -48,9 +54,17 @@ export class KNXConfigureEntity extends LitElement {
       <slot name="knx-validation-error"></slot>
       <ha-card outlined>
         <h1 class="card-header">KNX configuration</h1>
-        ${this.generateRootGroups(this.platform.schema, errors)}
+        ${this.generateRootGroups(this.platform.schema, extractValidationErrors(errors, "knx"))}
       </ha-card>
-      ${renderConfigureEntityCard(this.hass, this.config.entity ?? {}, this._updateEntityConfig)}
+      ${
+        // TODO: use errors in entity config
+        renderConfigureEntityCard(
+          this.hass,
+          this.config.entity,
+          this._updateConfig("entity"),
+          extractValidationErrors(errors, "entity"),
+        )
+      }
     `;
   }
 
@@ -100,16 +114,16 @@ export class KNXConfigureEntity extends LitElement {
             .knx=${this.knx}
             .key=${selector.name}
             .label=${selector.label}
-            .config=${this.config[selector.name] ?? {}}
+            .config=${this.config.knx[selector.name] ?? {}}
             .options=${selector.options}
             .validationErrors=${extractValidationErrors(errors, selector.name)}
-            @value-changed=${this._updateConfig}
+            @value-changed=${this._updateConfig("knx")}
           ></knx-group-address-selector>
         `;
       case "selector":
         // apply default value if available and no value is set
-        if (selector.default !== undefined && this.config[selector.name] == null) {
-          this.config[selector.name] = selector.default;
+        if (selector.default !== undefined && this.config.knx[selector.name] == null) {
+          this.config.knx[selector.name] = selector.default;
         }
         return html`
           <ha-selector
@@ -118,8 +132,8 @@ export class KNXConfigureEntity extends LitElement {
             .label=${selector.label}
             .helper=${selector.helper}
             .key=${selector.name}
-            .value=${this.config[selector.name]}
-            @value-changed=${this._updateConfig}
+            .value=${this.config.knx[selector.name]}
+            @value-changed=${this._updateConfig("knx")}
           ></ha-selector>
         `;
       case "sync_state":
@@ -127,8 +141,8 @@ export class KNXConfigureEntity extends LitElement {
           <knx-sync-state-selector-row
             .hass=${this.hass}
             .key=${selector.name}
-            .value=${this.config[selector.name] ?? true}
-            @value-changed=${this._updateConfig}
+            .value=${this.config.knx[selector.name] ?? true}
+            @value-changed=${this._updateConfig("knx")}
           ></knx-sync-state-selector-row>
         `;
       case "group_select":
@@ -141,9 +155,9 @@ export class KNXConfigureEntity extends LitElement {
 
   _generateGroupSelect(selector: GroupSelect, errors?: ErrorDescription[]) {
     const value: string =
-      this.config[selector.name] ??
+      this.config.knx[selector.name] ??
       // set default if nothing is set yet
-      (this.config[selector.name] = selector.options[0].value);
+      (this.config.knx[selector.name] = selector.options[0].value);
     const option = selector.options.find((item) => item.value === value);
     if (option === undefined) {
       logger.error("No option found for value", value);
@@ -152,7 +166,7 @@ export class KNXConfigureEntity extends LitElement {
         .options=${selector.options}
         .value=${value}
         .key=${selector.name}
-        @value-changed=${this._updateConfig}
+        @value-changed=${this._updateConfig("knx")}
       ></ha-control-select>
       ${option
         ? html` <p class="group-description">${option.description}</p>
@@ -169,22 +183,37 @@ export class KNXConfigureEntity extends LitElement {
         : nothing}`;
   }
 
-  private _updateConfig(ev) {
-    ev.stopPropagation();
-    this.config[ev.target.key] = ev.detail.value;
-    logger.debug(`update base key "${ev.target.key}" with "${ev.detail.value}"`);
-    this._propagateNewConfig();
+  private _updateConfig(baseKey: string) {
+    return (ev) => {
+      ev.stopPropagation();
+      if (!this.config[baseKey]) {
+        this.config[baseKey] = {};
+      }
+      this.config[baseKey][ev.target.key] = ev.detail.value;
+      logger.debug(`update ${baseKey} key "${ev.target.key}" with "${ev.detail.value}"`);
+      this._propagateNewConfig();
+    };
   }
 
-  private _updateEntityConfig(ev) {
-    ev.stopPropagation();
-    if (!this.config.entity) {
-      this.config.entity = {};
-    }
-    this.config.entity[ev.target.key] = ev.detail.value;
-    logger.debug(`update entity key "${ev.target.key}" with "${ev.detail.value}"`);
-    this._propagateNewConfig();
-  }
+  // private _updateConfig("knx")(ev) {
+  //   ev.stopPropagation();
+  //   if (!this.config.knx) {
+  //     this.config.knx = {};
+  //   }
+  //   this.config.knx[ev.target.key] = ev.detail.value;
+  //   logger.debug(`update base key "${ev.target.key}" with "${ev.detail.value}"`);
+  //   this._propagateNewConfig();
+  // }
+
+  // private _updateEntityConfig(ev) {
+  //   ev.stopPropagation();
+  //   if (!this.config.entity) {
+  //     this.config.entity = {};
+  //   }
+  //   this.config.entity[ev.target.key] = ev.detail.value;
+  //   logger.debug(`update entity key "${ev.target.key}" with "${ev.detail.value}"`);
+  //   this._propagateNewConfig();
+  // }
 
   private _propagateNewConfig() {
     fireEvent(this, "knx-entity-configuration-changed", this.config);
@@ -267,9 +296,20 @@ export class KNXConfigureEntity extends LitElement {
       ha-selector,
       ha-selector-text,
       ha-selector-select,
-      knx-sync-state-selector-row {
+      knx-sync-state-selector-row,
+      knx-device-picker {
         display: block;
         margin-bottom: 16px;
+      }
+
+      ha-alert {
+        display: block;
+        margin: 20px auto;
+        max-width: 720px;
+
+        & summary {
+          padding: 10px;
+        }
       }
     `;
   }
