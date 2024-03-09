@@ -23,7 +23,10 @@ export interface SwitchEntityData {
   sync_state: string | boolean;
 }
 
-export type EntityData = SwitchEntityData;
+export type EntityData = {
+  entity: BaseEntityData;
+  knx: SwitchEntityData;
+};
 
 export interface CreateEntityData {
   platform: supportedPlatform;

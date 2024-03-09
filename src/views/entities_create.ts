@@ -235,7 +235,7 @@ export class KNXCreateEntity extends LitElement {
             .hass=${this.hass}
             .knx=${this.knx}
             .platform=${platformInfo}
-            .config=${this._config ?? {}}
+            .config=${this._config}
             .schemaOptions=${this._schemaOptions}
             .validationErrors=${this._validationErrors}
             @knx-entity-configuration-changed=${this._configChanged}
