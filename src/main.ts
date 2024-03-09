@@ -1,4 +1,4 @@
-import { LitElement, html, nothing } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 
 import { applyThemesOnElement } from "@ha/common/dom/apply_themes_on_element";
@@ -36,10 +36,6 @@ class KnxFrontend extends knxElement {
     }
     this.addEventListener("knx-location-changed", (e) => this._setRoute(e as LocationChangedEvent));
 
-    if (this.route.path === "" || this.route.path === "/") {
-      navigate("/knx/info", { replace: true });
-    }
-
     computeDirectionStyles(computeRTL(this.hass), this.parentElement as LitElement);
 
     listenMediaQuery("(prefers-color-scheme: dark)", (_matches) => {
@@ -60,6 +56,19 @@ class KnxFrontend extends knxElement {
         .route=${this.route}
         .narrow=${this.narrow}
       ></knx-router>
+    `;
+  }
+
+  static get styles() {
+    // apply "Settings" style toolbar color for `hass-subpage`
+    return css`
+      :host {
+        --app-header-background-color: var(--sidebar-background-color);
+        --app-header-text-color: var(--sidebar-text-color);
+        --app-header-border-bottom: 1px solid var(--divider-color);
+        --knx-green: #5e8a3a;
+        --knx-blue: #2a4691;
+      }
     `;
   }
 
