@@ -6,10 +6,17 @@ const rawPackageKnx = fs.readFileSync("./package.json");
 const packageCore = JSON.parse(rawPackageCore);
 const packageKnx = JSON.parse(rawPackageKnx);
 
+const subdir_dependencies = Object.fromEntries(
+  Object.entries(packageCore.dependencies).map(([key, value]) => [
+    key,
+    value.replace(/\.yarn\//g, "homeassistant-frontend/.yarn/"),
+  ])
+);
+
 const subdir_resolutions = Object.fromEntries(
   Object.entries(packageCore.resolutions).map(([key, value]) => [
     key,
-    value.replace(/#\.\//g, "#./homeassistant-frontend/"),
+    value.replace(/\.yarn\//g, "homeassistant-frontend/.yarn/"),
   ])
 );
 
@@ -18,7 +25,7 @@ fs.writeFileSync(
   JSON.stringify(
     {
       ...packageKnx,
-      dependencies: { ...packageCore.dependencies, ...packageKnx.dependenciesOverride },
+      dependencies: { ...subdir_dependencies, ...packageKnx.dependenciesOverride },
       devDependencies: {
         ...packageCore.devDependencies,
         ...packageKnx.devDependenciesOverride,
