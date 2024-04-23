@@ -20,7 +20,7 @@ export class knxElement extends ProvideHassLitMixin(LitElement) {
       this.knx = {
         language: this.hass.language,
         config_entry: configEntries[0], // single instance allowed for knx config
-        localize: (string, replace) => localize(this.hass.language || "en", string, replace),
+        localize: (string, replace) => localize(this.hass, string, replace),
         log: new KNXLogger(),
         project: null,
         loadProject: () => this._loadProjectPromise(),
