@@ -1,4 +1,5 @@
 import IntlMessageFormat from "intl-messageformat";
+import { HomeAssistant } from "@ha/types";
 import * as en from "./languages/en.json";
 import * as ca from "./languages/ca.json";
 import * as cs from "./languages/cs.json";
@@ -37,8 +38,8 @@ const warnings: { language: string[]; sting: Record<string, string[]> } = {
 
 const _localizationCache = {};
 
-export function localize(language: string, key: string, replace?: Record<string, any>): string {
-  let lang = (language || localStorage.getItem("selectedLanguage") || DEFAULT_LANGUAGE)
+export function localize(hass: HomeAssistant, key: string, replace?: Record<string, any>): string {
+  let lang = (hass.language || localStorage.getItem("selectedLanguage") || DEFAULT_LANGUAGE)
     .replace(/['"]+/g, "")
     .replace("-", "_");
 
@@ -52,8 +53,12 @@ export function localize(language: string, key: string, replace?: Record<string,
   const translatedValue = languages[lang]?.[key] || languages[DEFAULT_LANGUAGE][key];
 
   if (!translatedValue) {
+    const hassTranslation = hass.localize(key, replace);
+    if (hassTranslation) {
+      return hassTranslation;
+    }
     logger.error(`Translation problem with '${key}' for '${lang}'`);
-    return "";
+    return key;
   }
 
   const messageKey = key + translatedValue;
@@ -62,10 +67,10 @@ export function localize(language: string, key: string, replace?: Record<string,
 
   if (!translatedMessage) {
     try {
-      translatedMessage = new IntlMessageFormat(translatedValue, language);
+      translatedMessage = new IntlMessageFormat(translatedValue, lang);
     } catch (err: any) {
       logger.warn(`Translation problem with '${key}' for '${lang}'`);
-      return "";
+      return key;
     }
     _localizationCache[messageKey] = translatedMessage;
   }
@@ -74,6 +79,6 @@ export function localize(language: string, key: string, replace?: Record<string,
     return translatedMessage.format<string>(replace) as string;
   } catch (err: any) {
     logger.warn(`Translation problem with '${key}' for '${lang}'`);
-    return "";
+    return key;
   }
 }
