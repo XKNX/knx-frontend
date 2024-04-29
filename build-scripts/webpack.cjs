@@ -12,6 +12,7 @@ const WebpackBar = require("webpackbar");
 const {
   TransformAsyncModulesPlugin,
 } = require("transform-async-modules-webpack-plugin");
+const { dependencies } = require("../package.json");
 const paths = require("./paths.cjs");
 const bundle = require("./bundle.cjs");
 
@@ -145,7 +146,10 @@ const createWebpackConfig = ({
       ),
       !isProdBuild && new LogStartCompilePlugin(),
       !latestBuild &&
-        new TransformAsyncModulesPlugin({ browserslistEnv: "legacy" }),
+        new TransformAsyncModulesPlugin({
+          browserslistEnv: "legacy",
+          runtime: { version: dependencies["@babel/runtime"] },
+        }),
     ].filter(Boolean),
     resolve: {
       extensions: [".ts", ".js", ".json"],
