@@ -36,10 +36,10 @@ export interface CreateEntityData {
 }
 
 export interface UpdateEntityData extends CreateEntityData {
-  unique_id: string;
+  entity_id: string;
 }
 
-export interface EditEntityData extends UpdateEntityData {
+export interface EditEntityData extends CreateEntityData {
   schema_options: SchemaOptions | null;
 }
 

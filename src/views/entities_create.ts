@@ -70,8 +70,6 @@ export class KNXCreateEntity extends LitElement {
 
   private entityId?: string; // only used for "edit" intent
 
-  private uniqueId?: string; // only used for "edit" intent
-
   private _dragDropContextProvider = new ContextProvider(this, {
     context: dragDropContext,
     initialValue: new DragDropContext(() => {
@@ -118,12 +116,10 @@ export class KNXCreateEntity extends LitElement {
           .then((entityConfigData) => {
             const {
               platform: entityPlatform,
-              unique_id: uniqueId,
               data: config,
               schema_options: schemaOptions,
             } = entityConfigData;
             this.entityPlatform = entityPlatform;
-            this.uniqueId = uniqueId;
             this._config = config;
             this._schemaOptions = schemaOptions ?? {};
           })
@@ -321,7 +317,7 @@ export class KNXCreateEntity extends LitElement {
     ev.stopPropagation();
     if (
       this._config === undefined ||
-      this.uniqueId === undefined ||
+      this.entityId === undefined ||
       this.entityPlatform === undefined
     ) {
       logger.error("No config found.");
@@ -329,7 +325,7 @@ export class KNXCreateEntity extends LitElement {
     }
     updateEntity(this.hass, {
       platform: this.entityPlatform,
-      unique_id: this.uniqueId,
+      entity_id: this.entityId,
       data: this._config,
     })
       .then((createEntityResult) => {
