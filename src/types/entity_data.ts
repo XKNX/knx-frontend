@@ -39,21 +39,9 @@ export interface UpdateEntityData extends CreateEntityData {
   entity_id: string;
 }
 
-export interface EditEntityData extends CreateEntityData {
-  schema_options: SchemaOptions | null;
-}
-
 export interface DeviceCreateData {
   name: string;
   area_id?: string;
-}
-
-export interface SchemaOptions {
-  entity?: EntitySchemaOptions;
-}
-
-export interface EntitySchemaOptions {
-  // nothing yet
 }
 
 // #################
