@@ -23,15 +23,9 @@ import {
   createEntity,
   updateEntity,
   getEntityConfig,
-  getPlatformSchemaOptions,
   validateEntity,
 } from "services/websocket.service";
-import type {
-  EntityData,
-  SchemaOptions,
-  ErrorDescription,
-  CreateEntityResult,
-} from "types/entity_data";
+import type { EntityData, ErrorDescription, CreateEntityResult } from "types/entity_data";
 
 import { platformConstants } from "../utils/common";
 import { validDPTsForSchema } from "../utils/dpt";
@@ -56,7 +50,7 @@ export class KNXCreateEntity extends LitElement {
 
   @state() private _config?: EntityData;
 
-  @state() private _schemaOptions?: SchemaOptions;
+  @state() private _loading = false;
 
   @state() private _validationErrors?: ErrorDescription[];
 
@@ -100,33 +94,24 @@ export class KNXCreateEntity extends LitElement {
         // knx/entities/create -> path: ""; knx/entities/create/ -> path: "/"
         // knx/entities/create/light -> path: "/light"
         const entityPlatform = this.route.path.split("/")[1];
-        if (!entityPlatform) {
-          this._schemaOptions = undefined;
-        } else if (entityPlatform !== this.entityPlatform) {
-          getPlatformSchemaOptions(this.hass, entityPlatform).then((schemaOptions) => {
-            logger.debug("schemaOptions", schemaOptions);
-            this._schemaOptions = schemaOptions ?? {};
-          });
-        }
         this.entityPlatform = entityPlatform;
+        this._loading = false;
       } else if (intent === "edit") {
         // knx/entities/edit/light.living_room -> path: "/light.living_room"
         this.entityId = this.route.path.split("/")[1];
+        this._loading = true;
         getEntityConfig(this.hass, this.entityId)
           .then((entityConfigData) => {
-            const {
-              platform: entityPlatform,
-              data: config,
-              schema_options: schemaOptions,
-            } = entityConfigData;
+            const { platform: entityPlatform, data: config } = entityConfigData;
             this.entityPlatform = entityPlatform;
             this._config = config;
-            this._schemaOptions = schemaOptions ?? {};
           })
           .catch((err) => {
             logger.warn("Fetching entity config failed.", err);
-            this._schemaOptions = {}; // used as marker for loaded -> not undefined
             this.entityPlatform = undefined; // used as error marker
+          })
+          .finally(() => {
+            this._loading = false;
           });
       }
       // const urlParams = new URLSearchParams(mainWindow.location.search);
@@ -136,7 +121,7 @@ export class KNXCreateEntity extends LitElement {
   }
 
   protected render(): TemplateResult {
-    if (!this.hass || !this.knx.project || !this._intent) {
+    if (!this.hass || !this.knx.project || !this._intent || this._loading) {
       return html` <hass-loading-screen></hass-loading-screen> `;
     }
     if (this._intent === "edit") return this._renderEdit();
@@ -144,9 +129,6 @@ export class KNXCreateEntity extends LitElement {
   }
 
   private _renderCreate(): TemplateResult {
-    if (!!this.entityPlatform && !this._schemaOptions) {
-      return html` <hass-loading-screen></hass-loading-screen> `;
-    }
     if (!this.entityPlatform) {
       return this._renderTypeSelection();
     }
@@ -159,9 +141,6 @@ export class KNXCreateEntity extends LitElement {
   }
 
   private _renderEdit(): TemplateResult {
-    if (!this._schemaOptions) {
-      return html` <hass-loading-screen></hass-loading-screen> `;
-    }
     if (!this.entityPlatform) {
       return this._renderNotFound();
     }
@@ -232,7 +211,6 @@ export class KNXCreateEntity extends LitElement {
             .knx=${this.knx}
             .platform=${platformInfo}
             .config=${this._config}
-            .schemaOptions=${this._schemaOptions}
             .validationErrors=${this._validationErrors}
             @knx-entity-configuration-changed=${this._configChanged}
           >

@@ -10,10 +10,8 @@ import {
 import {
   CreateEntityData,
   CreateEntityResult,
-  EditEntityData,
   UpdateEntityData,
   DeviceCreateData,
-  SchemaOptions,
 } from "../types/entity_data";
 
 export const getKnxInfoData = (hass: HomeAssistant): Promise<KNXInfoData> =>
@@ -58,15 +56,6 @@ export const getKnxProject = (hass: HomeAssistant): Promise<KNXProjectRespone> =
 /**
  * Entity store calls.
  */
-export const getPlatformSchemaOptions = (
-  hass: HomeAssistant,
-  platform: string,
-): Promise<SchemaOptions | null> =>
-  hass.callWS({
-    type: "knx/get_platform_schema_options",
-    platform: platform,
-  });
-
 export const validateEntity = (
   hass: HomeAssistant,
   entityData: CreateEntityData | UpdateEntityData,
@@ -100,7 +89,7 @@ export const deleteEntity = (hass: HomeAssistant, entityId: string) =>
     entity_id: entityId,
   });
 
-export const getEntityConfig = (hass: HomeAssistant, entityId: string): Promise<EditEntityData> =>
+export const getEntityConfig = (hass: HomeAssistant, entityId: string): Promise<CreateEntityData> =>
   hass.callWS({
     type: "knx/get_entity_config",
     entity_id: entityId,
