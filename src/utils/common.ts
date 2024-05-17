@@ -1,5 +1,5 @@
 import { mdiToggleSwitchVariant } from "@mdi/js";
-// import { FIXED_DOMAIN_ICONS } from "@ha/common/const";
+import { FIXED_DOMAIN_ICONS } from "@ha/common/const";
 import * as schema from "./schema";
 
 export type PlatformInfo = {
@@ -18,12 +18,12 @@ export const platformConstants: { [key: string]: PlatformInfo } = {
     description: "The KNX switch platform is used as an interface to switching actuators.",
     schema: schema.switchSchema,
   },
-  // light: {
-  //   name: "Light",
-  //   iconPath: FIXED_DOMAIN_ICONS.light,
-  //   color: "var(--amber-color)",
-  //   description:
-  //     "The KNX light platform is used as an interface to dimming actuators, LED controllers, DALI gateways and similar.",
-  //   schema: schema.lightSchema,
-  // },
+  light: {
+    name: "Light",
+    iconPath: FIXED_DOMAIN_ICONS.light,
+    color: "var(--amber-color)",
+    description:
+      "The KNX light platform is used as an interface to dimming actuators, LED controllers, DALI gateways and similar.",
+    schema: schema.lightSchema,
+  },
 };
