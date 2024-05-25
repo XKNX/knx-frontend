@@ -60,30 +60,34 @@ class TelegramInfoDialog extends LitElement {
         </div>
         <div class="section">
           <h4>${this.knx.localize("group_monitor_source")}</h4>
-          <div>${this.telegram.source}</div>
-          <div>${this.telegram.source_name}</div>
+          <div class="row-inline">
+            <div>${this.telegram.source}</div>
+            <div>${this.telegram.source_name}</div>
+          </div>
         </div>
         <div class="section">
           <h4>${this.knx.localize("group_monitor_destination")}</h4>
-          <div>${this.telegram.destination}</div>
-          <div>${this.telegram.destination_name}</div>
+          <div class="row-inline">
+            <div>${this.telegram.destination}</div>
+            <div>${this.telegram.destination_name}</div>
+          </div>
         </div>
         <div class="section">
           <h4>${this.knx.localize("group_monitor_message")}</h4>
           <div class="row">
             <div>${this.telegram.telegramtype}</div>
-            <div>${TelegramDictFormatter.dptNameNumber(this.telegram)}</div>
+            <div><code>${TelegramDictFormatter.dptNameNumber(this.telegram)}</code></div>
           </div>
-          ${this.telegram.value != null
-            ? html` <div class="row">
-                <div>${this.knx.localize("group_monitor_value")}</div>
-                <div>${TelegramDictFormatter.valueWithUnit(this.telegram)}</div>
-              </div>`
-            : nothing}
           ${this.telegram.payload != null
             ? html` <div class="row">
                 <div>${this.knx.localize("group_monitor_payload")}</div>
-                <div>${TelegramDictFormatter.payload(this.telegram)}</div>
+                <div><code>${TelegramDictFormatter.payload(this.telegram)}</code></div>
+              </div>`
+            : nothing}
+          ${this.telegram.value != null
+            ? html` <div class="row">
+                <div>${this.knx.localize("group_monitor_value")}</div>
+                <pre><code>${TelegramDictFormatter.valueWithUnit(this.telegram)}</code></pre>
               </div>`
             : nothing}
         </div>
@@ -114,10 +118,23 @@ class TelegramInfoDialog extends LitElement {
       haStyleDialog,
       css`
         ha-dialog {
-          /* Set the top top of the dialog to a fixed position, so it doesnt jump when the content changes size */
-          --vertical-align-dialog: flex-start;
-          --dialog-surface-margin-top: 40px;
+          --vertical-align-dialog: center;
           --dialog-z-index: 20;
+        }
+        @media all and (max-width: 450px), all and (max-height: 500px) {
+          /* When in fullscreen dialog should be attached to top */
+          ha-dialog {
+            --dialog-surface-margin-top: 0px;
+          }
+        }
+        @media all and (min-width: 600px) and (min-height: 501px) {
+          /* Set the dialog to a fixed size, so it doesnt jump when the content changes size */
+          ha-dialog {
+            --mdc-dialog-min-width: 580px;
+            --mdc-dialog-max-width: 580px;
+            --mdc-dialog-min-height: 70%;
+            --mdc-dialog-max-height: 70%;
+          }
         }
 
         .content {
@@ -144,28 +161,22 @@ class TelegramInfoDialog extends LitElement {
           flex-wrap: wrap;
         }
 
-        @media all and (max-width: 450px), all and (max-height: 500px) {
-          /* When in fullscreen dialog should be attached to top */
-          ha-dialog {
-            --dialog-surface-margin-top: 0px;
-          }
+        .row-inline {
+          display: flex;
+          flex-direction: row;
+          gap: 10px;
         }
 
-        @media all and (min-width: 600px) and (min-height: 501px) {
-          ha-dialog {
-            --mdc-dialog-min-width: 580px;
-            --mdc-dialog-max-width: 580px;
-            --mdc-dialog-max-height: calc(100% - 72px);
-          }
+        pre {
+          margin-top: 0;
+          margin-bottom: 0;
+        }
 
-          .main-title {
-            cursor: default;
-          }
-
-          :host([large]) ha-dialog {
-            --mdc-dialog-min-width: 90vw;
-            --mdc-dialog-max-width: 90vw;
-          }
+        mwc-button {
+          user-select: none;
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
         }
       `,
     ];

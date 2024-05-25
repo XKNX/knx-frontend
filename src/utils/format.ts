@@ -1,3 +1,4 @@
+import { dump } from "js-yaml";
 import { DPT, TelegramDict } from "../types/websocket";
 
 export const TelegramDictFormatter = {
@@ -10,7 +11,14 @@ export const TelegramDictFormatter = {
 
   valueWithUnit: (telegram: TelegramDict): string => {
     if (telegram.value == null) return "";
-    return telegram.value.toString() + (telegram.unit ? " " + telegram.unit : "");
+    if (
+      typeof telegram.value === "number" ||
+      typeof telegram.value === "boolean" ||
+      typeof telegram.value === "string"
+    ) {
+      return telegram.value.toString() + (telegram.unit ? " " + telegram.unit : "");
+    }
+    return dump(telegram.value);
   },
 
   timeWithMilliseconds: (telegram: TelegramDict): string => {
@@ -46,8 +54,8 @@ export const TelegramDictFormatter = {
 
   dptNameNumber: (telegram: TelegramDict): string => {
     const dptNumber = TelegramDictFormatter.dptNumber(telegram);
-    if (telegram.dpt_name == null) return dptNumber;
-    return dptNumber ? telegram.dpt_name + " - " + dptNumber : telegram.dpt_name;
+    if (telegram.dpt_name == null) return `DPT ${dptNumber}`;
+    return dptNumber ? `DPT ${dptNumber} ${telegram.dpt_name}` : telegram.dpt_name;
   },
 };
 
