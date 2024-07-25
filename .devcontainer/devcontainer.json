@@ -16,6 +16,7 @@
     "ms-python.vscode-pylance"
   ],
   "containerEnv": {
+    "DEV_CONTAINER": "1",
     "WORKSPACE_DIRECTORY": "${containerWorkspaceFolder}"
   },
   "settings": {
