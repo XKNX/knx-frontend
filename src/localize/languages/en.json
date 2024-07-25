@@ -18,6 +18,7 @@
   "info_issue_tracker_knx_frontend": "the KNX frontend panel",
   "info_issue_tracker_xknxproject": "project data parsing",
   "info_issue_tracker_xknx": "KNX connection or DPT decoding",
+  "entities_view_title": "Entities",
   "group_monitor_title": "Group Monitor",
   "group_monitor_time": "Time",
   "group_monitor_direction": "Direction",
@@ -39,6 +40,7 @@
   "project_view_table_name": "Name",
   "project_view_table_description": "Description",
   "project_view_table_dpt": "DPT",
+  "project_view_add_switch": "Add switch",
   "Incoming": "Incoming",
   "Outgoing": "Outgoing"
 }
