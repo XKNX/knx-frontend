@@ -140,6 +140,7 @@ export class KNXConfigureEntity extends LitElement {
             .hass=${this.hass}
             .key=${selector.name}
             .value=${this.config!.knx[selector.name] ?? true}
+            .noneValid=${false}
             @value-changed=${this._updateConfig("knx")}
           ></knx-sync-state-selector-row>
         `;
