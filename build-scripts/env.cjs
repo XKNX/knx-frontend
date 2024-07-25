@@ -23,11 +23,13 @@ module.exports = {
     return process.env.NETLIFY === "true";
   },
   version() {
-    const version = fs
-      .readFileSync(path.resolve(paths.polymer_dir, "VERSION"), "utf8")
+    const version = fs.readFileSync(path.resolve(paths.polymer_dir, "VERSION"), "utf8");
     if (!version) {
       throw Error("Version not found");
     }
     return version.trim();
+  },
+  isDevContainer() {
+    return process.env.DEV_CONTAINER === "1";
   },
 };
