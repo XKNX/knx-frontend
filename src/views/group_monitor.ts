@@ -34,7 +34,7 @@ export class KNXGroupMonitor extends LitElement {
 
   @property({ type: Array, reflect: false }) public tabs!: PageNavigation[];
 
-  @property() private columns: DataTableColumnContainer = {};
+  @state() private columns: DataTableColumnContainer = {};
 
   @state() private projectLoaded = false;
 
@@ -44,7 +44,7 @@ export class KNXGroupMonitor extends LitElement {
 
   @state() private rows: DataTableRowData[] = [];
 
-  @property() private _dialogIndex: number | null = null;
+  @state() private _dialogIndex: number | null = null;
 
   public disconnectedCallback() {
     super.disconnectedCallback();
@@ -84,57 +84,57 @@ export class KNXGroupMonitor extends LitElement {
         timestamp: {
           filterable: true,
           sortable: true,
-          title: html`${this.knx.localize("group_monitor_time")}`,
+          title: this.knx.localize("group_monitor_time"),
           width: "110px",
         },
         direction: {
           hidden: this.narrow,
           filterable: true,
-          title: html`${this.knx.localize("group_monitor_direction")}`,
+          title: this.knx.localize("group_monitor_direction"),
           width: "120px",
         },
         sourceAddress: {
           filterable: true,
           sortable: true,
-          title: html`${this.knx.localize("group_monitor_source")}`,
+          title: this.knx.localize("group_monitor_source"),
           width: this.narrow ? "90px" : this.projectLoaded ? "95px" : "20%",
         },
         sourceText: {
           hidden: this.narrow || !this.projectLoaded,
           filterable: true,
           sortable: true,
-          title: html`${this.knx.localize("group_monitor_source")}`,
+          title: this.knx.localize("group_monitor_source"),
           width: "20%",
         },
         destinationAddress: {
           sortable: true,
           filterable: true,
-          title: html`${this.knx.localize("group_monitor_destination")}`,
+          title: this.knx.localize("group_monitor_destination"),
           width: this.narrow ? "90px" : this.projectLoaded ? "96px" : "20%",
         },
         destinationText: {
           hidden: this.narrow || !this.projectLoaded,
           sortable: true,
           filterable: true,
-          title: html`${this.knx.localize("group_monitor_destination")}`,
+          title: this.knx.localize("group_monitor_destination"),
           width: "20%",
         },
         type: {
           hidden: this.narrow,
-          title: html`${this.knx.localize("group_monitor_type")}`,
+          title: this.knx.localize("group_monitor_type"),
           filterable: true,
           width: "155px", // 155px suits for "GroupValueResponse"
         },
         payload: {
           hidden: this.narrow && this.projectLoaded,
-          title: html`${this.knx.localize("group_monitor_payload")}`,
+          title: this.knx.localize("group_monitor_payload"),
           filterable: true,
           type: "numeric",
           width: "105px",
         },
         value: {
           hidden: !this.projectLoaded,
-          title: html`${this.knx.localize("group_monitor_value")}`,
+          title: this.knx.localize("group_monitor_value"),
           filterable: true,
           width: this.narrow ? "105px" : "150px",
         },

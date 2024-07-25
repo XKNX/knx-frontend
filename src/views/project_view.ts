@@ -42,7 +42,8 @@ export class KNXProjectView extends LitElement {
 
   @property({ type: Array, reflect: false }) public tabs!: PageNavigation[];
 
-  @property({ type: Boolean, reflect: true }) private rangeSelectorHidden = true;
+  @property({ type: Boolean, reflect: true, attribute: "range-selector-hidden" })
+  public rangeSelectorHidden = true;
 
   @state() private _visibleGroupAddresses: string[] = [];
 
@@ -226,7 +227,7 @@ export class KNXProjectView extends LitElement {
         border-left: 1px solid var(--divider-color);
       }
 
-      :host([narrow][rangeSelectorHidden]) knx-project-tree-view {
+      :host([narrow][range-selector-hidden]) knx-project-tree-view {
         width: 0;
       }
 

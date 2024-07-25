@@ -26,13 +26,13 @@ class TelegramInfoDialog extends LitElement {
 
   @property({ attribute: false }) public knx!: KNX;
 
-  @property() public index?: number;
+  @property({ attribute: false }) public index?: number;
 
-  @property() public telegram?: TelegramDict;
+  @property({ attribute: false }) public telegram?: TelegramDict;
 
-  @property() public disableNext = false;
+  @property({ attribute: false }) public disableNext = false;
 
-  @property() public disablePrevious = false;
+  @property({ attribute: false }) public disablePrevious = false;
 
   public closeDialog() {
     this.telegram = undefined;

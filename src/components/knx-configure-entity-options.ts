@@ -21,7 +21,7 @@ export const renderConfigureEntityCard = (
   errors?: ErrorDescription[],
 ) => {
   const device = config.device_info ? deviceFromIdentifier(hass, config.device_info) : undefined;
-  const deviceName = device ? device.name_by_user ?? device.name : "";
+  const deviceName = device ? (device.name_by_user ?? device.name) : "";
   // currently only baseError is possible, others shouldn't be possible due to selectors / optional
   const entityBaseError = errors?.find((err) => (err.path ? err.path.length === 0 : true));
 

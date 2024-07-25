@@ -1,7 +1,6 @@
 // Compat needs to be first import
 import "@ha/resources/compatibility";
 import "@ha/resources/roboto";
-import "@ha/resources/safari-14-attachshadow-patch";
 import "./main";
 
 const styleEl = document.createElement("style");
