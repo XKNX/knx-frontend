@@ -201,7 +201,9 @@ export class KNXProjectDeviceTree extends LitElement {
           @dragstart=${this._dragDropContext?.gaDragStartHandler}
           @dragend=${this._dragDropContext?.gaDragEndHandler}
           @mouseover=${this._dragDropContext?.gaDragIndicatorStartHandler}
+          @focus=${this._dragDropContext?.gaDragIndicatorStartHandler}
           @mouseout=${this._dragDropContext?.gaDragIndicatorEndHandler}
+          @blur=${this._dragDropContext?.gaDragIndicatorEndHandler}
           .ga=${groupAddress}
         >
           <div class="item">

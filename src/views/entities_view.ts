@@ -116,7 +116,8 @@ export class KNXEntitiesView extends LitElement {
         sortable: true,
         title: "Device",
         width: textColumnWith,
-        template: (entry) => (entry.device_id ? this.hass.devices[entry.device_id].name ?? "" : ""),
+        template: (entry) =>
+          entry.device_id ? (this.hass.devices[entry.device_id].name ?? "") : "",
       },
       device_id: {
         hidden: true, // for filtering only

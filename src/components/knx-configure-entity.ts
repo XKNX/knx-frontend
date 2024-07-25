@@ -25,7 +25,7 @@ const logger = new KNXLogger("knx-configure-entity");
 
 @customElement("knx-configure-entity")
 export class KNXConfigureEntity extends LitElement {
-  @property({ type: Object }) public hass!: HomeAssistant;
+  @property({ attribute: false }) public hass!: HomeAssistant;
 
   @property({ attribute: false }) public knx!: KNX;
 
@@ -35,7 +35,7 @@ export class KNXConfigureEntity extends LitElement {
 
   @property({ type: Array }) public schema!: SettingsGroup[];
 
-  @property({ type: Array }) public validationErrors?: ErrorDescription[];
+  @property({ attribute: false }) public validationErrors?: ErrorDescription[];
 
   connectedCallback(): void {
     super.connectedCallback();

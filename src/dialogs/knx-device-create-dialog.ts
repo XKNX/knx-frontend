@@ -22,9 +22,9 @@ declare global {
 
 @customElement("knx-device-create-dialog")
 class DeviceCreateDialog extends LitElement {
-  @property({ type: Object }) public hass!: HomeAssistant;
+  @property({ attribute: false }) public hass!: HomeAssistant;
 
-  @property() public deviceName?: string;
+  @property({ attribute: false }) public deviceName?: string;
 
   @state() private area?: string;
 

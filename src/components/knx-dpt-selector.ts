@@ -18,7 +18,7 @@ class KnxDptSelector extends LitElement {
 
   @property({ type: Boolean, reflect: true }) public invalid = false;
 
-  @property() public invalidMessage?: string;
+  @property({ attribute: false }) public invalidMessage?: string;
 
   render() {
     return html`

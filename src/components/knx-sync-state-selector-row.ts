@@ -8,13 +8,13 @@ import type { HomeAssistant } from "@ha/types";
 
 @customElement("knx-sync-state-selector-row")
 export class KnxSyncStateSelectorRow extends LitElement {
-  @property({ type: Object }) public hass!: HomeAssistant;
+  @property({ attribute: false }) public hass!: HomeAssistant;
 
   @property() public value: string | boolean = true;
 
   @property() public key = "sync_state";
 
-  @property({ type: Boolean }) noneValid = true;
+  @property({ attribute: false }) noneValid = true;
 
   private _strategy: boolean | "init" | "expire" | "every" = true;
 

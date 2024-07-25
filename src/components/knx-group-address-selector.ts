@@ -31,19 +31,19 @@ const getAddressOptions = (
 export class GroupAddressSelector extends LitElement {
   @consume({ context: dragDropContext, subscribe: true }) _dragDropContext?: DragDropContext;
 
-  @property({ type: Object }) public hass!: HomeAssistant;
+  @property({ attribute: false }) public hass!: HomeAssistant;
 
-  @property({ type: Object }) public knx!: KNX;
+  @property({ attribute: false }) public knx!: KNX;
 
   @property() public label?: string;
 
-  @property({ type: Object }) public config: GASchema = {};
+  @property({ attribute: false }) public config: GASchema = {};
 
-  @property({ type: Object }) public options!: GASchemaOptions;
+  @property({ attribute: false }) public options!: GASchemaOptions;
 
   @property({ reflect: true }) public key!: string;
 
-  @property({ type: Array }) public validationErrors?: ErrorDescription[];
+  @property({ attribute: false }) public validationErrors?: ErrorDescription[];
 
   @state() private _showPassive = false;
 

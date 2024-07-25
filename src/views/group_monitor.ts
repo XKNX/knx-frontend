@@ -34,7 +34,7 @@ export class KNXGroupMonitor extends LitElement {
 
   @property({ type: Array, reflect: false }) public tabs!: PageNavigation[];
 
-  @property() private columns: DataTableColumnContainer = {};
+  @state() private columns: DataTableColumnContainer = {};
 
   @state() private projectLoaded = false;
 
@@ -44,7 +44,7 @@ export class KNXGroupMonitor extends LitElement {
 
   @state() private rows: DataTableRowData[] = [];
 
-  @property() private _dialogIndex: number | null = null;
+  @state() private _dialogIndex: number | null = null;
 
   public disconnectedCallback() {
     super.disconnectedCallback();
