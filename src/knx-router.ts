@@ -80,6 +80,13 @@ export class KnxRouter extends HassRouterPage {
           return import("./views/entities_router");
         },
       },
+      error: {
+        tag: "knx-error",
+        load: () => {
+          logger.debug("Importing knx-error");
+          return import("./views/error");
+        },
+      },
     },
   };
 

@@ -64,19 +64,25 @@ export class KNXEntitiesView extends LitElement {
   }
 
   private async _fetchEntities() {
-    const entries = await getEntityEntries(this.hass);
-    logger.debug(`Fetched ${entries.length} entity entries.`);
-    this.knx_entities = entries.map((entry) => {
-      const entityState = this.hass.states[entry.entity_id];
-      const device = entry.device_id ? this.hass.devices[entry.device_id] : undefined;
-      const areaId = entry.area_id ?? device?.area_id;
-      const area = areaId ? this.hass.areas[areaId] : undefined;
-      return {
-        ...entry,
-        entityState,
-        area,
-      };
-    });
+    getEntityEntries(this.hass)
+      .then((entries) => {
+        logger.debug(`Fetched ${entries.length} entity entries.`);
+        this.knx_entities = entries.map((entry) => {
+          const entityState = this.hass.states[entry.entity_id];
+          const device = entry.device_id ? this.hass.devices[entry.device_id] : undefined;
+          const areaId = entry.area_id ?? device?.area_id;
+          const area = areaId ? this.hass.areas[areaId] : undefined;
+          return {
+            ...entry,
+            entityState,
+            area,
+          };
+        });
+      })
+      .catch((err) => {
+        logger.error("getEntityEntries", err);
+        navigate("/knx/error", { replace: true, data: err });
+      });
   }
 
   private _columns = memoize((_narrow, _language): DataTableColumnContainer<EntityRow> => {

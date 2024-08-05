@@ -2,6 +2,7 @@ import { mdiFileUpload } from "@mdi/js";
 import { css, nothing, html, LitElement, TemplateResult, CSSResultGroup } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
+import { navigate } from "@ha/common/navigate";
 import "@ha/components/ha-card";
 import "@ha/layouts/hass-tabs-subpage";
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
@@ -213,6 +214,7 @@ export class KNXInfo extends LitElement {
       },
       (err) => {
         logger.error("getKnxInfoData", err);
+        navigate("/knx/error", { replace: true, data: err });
       },
     );
   }
