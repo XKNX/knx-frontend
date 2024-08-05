@@ -2,6 +2,7 @@ import "@material/mwc-button/mwc-button";
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
+import { navigate } from "@ha/common/navigate";
 import "@ha/components/ha-area-picker";
 import "@ha/components/ha-dialog";
 import "@ha/components/ha-selector/ha-selector-text";
@@ -12,6 +13,9 @@ import type { DeviceRegistryEntry } from "@ha/data/device_registry";
 import type { HomeAssistant } from "@ha/types";
 
 import { createDevice } from "../services/websocket.service";
+import { KNXLogger } from "../tools/knx-logger";
+
+const logger = new KNXLogger("create_device_dialog");
 
 declare global {
   // for fire event
@@ -43,6 +47,10 @@ class DeviceCreateDialog extends LitElement {
     createDevice(this.hass, { name: this.deviceName!, area_id: this.area })
       .then((resultDevice) => {
         this._deviceEntry = resultDevice;
+      })
+      .catch((err) => {
+        logger.error("getGroupMonitorInfo", err);
+        navigate("/knx/error", { replace: true, data: err });
       })
       .finally(() => {
         this.closeDialog(undefined);

@@ -262,11 +262,14 @@ export class KNXCreateEntity extends LitElement {
   private _entityValidate = throttle(() => {
     logger.debug("validate", this._config);
     if (this._config === undefined || this.entityPlatform === undefined) return;
-    validateEntity(this.hass, { platform: this.entityPlatform, data: this._config }).then(
-      (createEntityResult) => {
+    validateEntity(this.hass, { platform: this.entityPlatform, data: this._config })
+      .then((createEntityResult) => {
         this._handleValidationError(createEntityResult, false);
-      },
-    );
+      })
+      .catch((err) => {
+        logger.error("validateEntity", err);
+        navigate("/knx/error", { replace: true, data: err });
+      });
   }, 250);
 
   private _entityCreate(ev) {
@@ -288,6 +291,7 @@ export class KNXCreateEntity extends LitElement {
       })
       .catch((err) => {
         logger.error("Error creating entity", err);
+        navigate("/knx/error", { replace: true, data: err });
       });
   }
 
@@ -313,6 +317,7 @@ export class KNXCreateEntity extends LitElement {
       })
       .catch((err) => {
         logger.error("Error updating entity", err);
+        navigate("/knx/error", { replace: true, data: err });
       });
   }
 

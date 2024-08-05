@@ -1,6 +1,7 @@
 import { LitElement } from "lit";
 import { property } from "lit/decorators";
 
+import { navigate } from "@ha/common/navigate";
 import { getConfigEntries } from "@ha/data/config_entries";
 import { ProvideHassLitMixin } from "@ha/mixins/provide-hass-lit-mixin";
 import { HomeAssistant } from "@ha/types";
@@ -37,6 +38,7 @@ export class knxElement extends ProvideHassLitMixin(LitElement) {
       })
       .catch((err) => {
         this.knx.log.error("getKnxProject", err);
+        navigate("/knx/error", { replace: true, data: err });
       });
   }
 }

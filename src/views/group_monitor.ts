@@ -4,6 +4,7 @@ import { customElement, property, state } from "lit/decorators";
 import "@ha/layouts/hass-tabs-subpage-data-table";
 import { HASSDomEvent } from "@ha/common/dom/fire_event";
 import { computeRTLDirection } from "@ha/common/util/compute_rtl";
+import { navigate } from "@ha/common/navigate";
 import type {
   DataTableColumnContainer,
   DataTableRowData,
@@ -11,7 +12,6 @@ import type {
 } from "@ha/components/data-table/ha-data-table";
 import { haStyle } from "@ha/resources/styles";
 import { HomeAssistant, Route } from "@ha/types";
-
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import { subscribeKnxTelegrams, getGroupMonitorInfo } from "../services/websocket.service";
 import { KNX } from "../types/knx";
@@ -56,16 +56,16 @@ export class KNXGroupMonitor extends LitElement {
 
   protected async firstUpdated() {
     if (!this.subscribed) {
-      getGroupMonitorInfo(this.hass).then(
-        (groupMonitorInfo) => {
+      getGroupMonitorInfo(this.hass)
+        .then((groupMonitorInfo) => {
           this.projectLoaded = groupMonitorInfo.project_loaded;
           this.telegrams = groupMonitorInfo.recent_telegrams;
           this.rows = this.telegrams.map((telegram, index) => this._telegramToRow(telegram, index));
-        },
-        (err) => {
+        })
+        .catch((err) => {
           logger.error("getGroupMonitorInfo", err);
-        },
-      );
+          navigate("/knx/error", { replace: true, data: err });
+        });
       this.subscribed = await subscribeKnxTelegrams(this.hass, (message) => {
         this.telegram_callback(message);
         this.requestUpdate();
