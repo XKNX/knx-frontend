@@ -18,6 +18,7 @@ interface DeviceTreeItem {
   ia: string;
   name: string;
   manufacturer: string;
+  description: string;
   noChannelComObjects: CommunicationObject[];
   channels: Record<string, { name: string; comObjects: CommunicationObject[] }>;
 }
@@ -89,6 +90,7 @@ export class KNXProjectDeviceTree extends LitElement {
         ia: device.individual_address,
         name: device.name,
         manufacturer: device.manufacturer_name,
+        description: device.description.split(/[\r\n]/, 1)[0], // first line of description like in ETS
         noChannelComObjects,
         channels: filteredChannels,
       };
@@ -136,6 +138,7 @@ export class KNXProjectDeviceTree extends LitElement {
       <div class="description">
         <p>${device.manufacturer}</p>
         <p>${device.name}</p>
+        ${device.description ? html`<p>${device.description}</p>` : nothing}
       </div>
     </div>`;
   }
