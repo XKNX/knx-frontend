@@ -1,20 +1,16 @@
 import { mdiDelete, mdiInformationSlabCircleOutline, mdiPlus, mdiPencilOutline } from "@mdi/js";
 import { LitElement, TemplateResult, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators";
-import { ifDefined } from "lit/directives/if-defined";
 
 import { HassEntity } from "home-assistant-js-websocket";
 import memoize from "memoize-one";
 
 import "@ha/layouts/hass-loading-screen";
-import "@ha/layouts/hass-tabs-subpage";
-import "@ha/components/ha-card";
+import "@ha/layouts/hass-tabs-subpage-data-table";
 import "@ha/components/ha-fab";
 import "@ha/components/ha-icon-button";
-import "@ha/components/ha-icon-overflow-menu";
 import "@ha/components/ha-state-icon";
 import "@ha/components/ha-svg-icon";
-import "@ha/components/data-table/ha-data-table";
 import { navigate } from "@ha/common/navigate";
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
@@ -24,8 +20,6 @@ import { ExtEntityRegistryEntry } from "@ha/data/entity_registry";
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import { HomeAssistant, Route } from "@ha/types";
-
-import "../components/knx-project-tree-view";
 
 import { getEntityEntries, deleteEntity } from "../services/websocket.service";
 import { KNX } from "../types/knx";
@@ -85,43 +79,44 @@ export class KNXEntitiesView extends LitElement {
       });
   }
 
-  private _columns = memoize((_narrow, _language): DataTableColumnContainer<EntityRow> => {
+  private _columns = memoize((_language): DataTableColumnContainer<EntityRow> => {
     const iconWidth = "56px";
     const actionWidth = "176px"; // 48px*3 + 16px*2 padding
-    const textColumnWith = `calc((100% - ${iconWidth} - ${actionWidth}) / 4)`;
 
     return {
       icon: {
         title: "",
-        width: iconWidth,
+        minWidth: iconWidth,
+        maxWidth: iconWidth,
         type: "icon",
         template: (entry) => html`
           <ha-state-icon
-            title=${ifDefined(entry.entityState?.state)}
             slot="item-icon"
-            .state=${entry.entityState}
+            .hass=${this.hass}
+            .stateObj=${entry.entityState}
           ></ha-state-icon>
         `,
       },
       friendly_name: {
+        showNarrow: true,
         filterable: true,
         sortable: true,
         title: "Friendly Name",
-        width: textColumnWith,
+        flex: 2,
         template: (entry) => entry.entityState?.attributes.friendly_name ?? "",
       },
       entity_id: {
         filterable: true,
         sortable: true,
         title: "Entity ID",
-        width: textColumnWith,
+        flex: 1,
         // template: (entry) => entry.entity_id,
       },
       device: {
         filterable: true,
         sortable: true,
         title: "Device",
-        width: textColumnWith,
+        flex: 1,
         template: (entry) =>
           entry.device_id ? (this.hass.devices[entry.device_id].name ?? "") : "",
       },
@@ -135,12 +130,14 @@ export class KNXEntitiesView extends LitElement {
         title: "Area",
         sortable: true,
         filterable: true,
-        width: textColumnWith,
+        flex: 1,
         template: (entry) => entry.area?.name ?? "",
       },
       actions: {
+        showNarrow: true,
         title: "",
-        width: actionWidth,
+        minWidth: actionWidth,
+        maxWidth: actionWidth,
         type: "icon-button",
         template: (entry) => html`
           <ha-icon-button
@@ -208,25 +205,19 @@ export class KNXEntitiesView extends LitElement {
     }
 
     return html`
-      <hass-tabs-subpage
+      <hass-tabs-subpage-data-table
         .hass=${this.hass}
-        .narrow=${this.narrow!}
+        .narrow=${this.narrow}
         .route=${this.route!}
         .tabs=${this.tabs}
         .localizeFunc=${this.knx.localize}
+        .columns=${this._columns(this.hass.language)}
+        .data=${this.knx_entities}
+        .hasFab=${true}
+        .searchLabel=${this.hass.localize("ui.components.data-table.search")}
+        .clickable=${false}
+        .filter=${this.filterDevice}
       >
-        <div class="sections">
-          <ha-data-table
-            class="entity-table"
-            .hass=${this.hass}
-            .columns=${this._columns(this.narrow, this.hass.language)}
-            .data=${this.knx_entities}
-            .hasFab=${true}
-            .searchLabel=${this.hass.localize("ui.components.data-table.search")}
-            .clickable=${false}
-            .filter=${this.filterDevice}
-          ></ha-data-table>
-        </div>
         <ha-fab
           slot="fab"
           .label=${this.hass.localize("ui.common.add")}
@@ -235,7 +226,7 @@ export class KNXEntitiesView extends LitElement {
         >
           <ha-svg-icon slot="icon" .path=${mdiPlus}></ha-svg-icon>
         </ha-fab>
-      </hass-tabs-subpage>
+      </hass-tabs-subpage-data-table>
     `;
   }
 
@@ -248,15 +239,6 @@ export class KNXEntitiesView extends LitElement {
       hass-loading-screen {
         --app-header-background-color: var(--sidebar-background-color);
         --app-header-text-color: var(--sidebar-text-color);
-      }
-      .sections {
-        display: flex;
-        flex-direction: row;
-        height: 100%;
-      }
-
-      .entity-table {
-        flex: 1;
       }
     `;
   }

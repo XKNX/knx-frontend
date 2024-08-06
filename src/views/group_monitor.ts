@@ -1,6 +1,9 @@
 import { html, CSSResultGroup, LitElement, TemplateResult, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
+import memoize from "memoize-one";
+
+import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-tabs-subpage-data-table";
 import { HASSDomEvent } from "@ha/common/dom/fire_event";
 import { computeRTLDirection } from "@ha/common/util/compute_rtl";
@@ -33,8 +36,6 @@ export class KNXGroupMonitor extends LitElement {
   @property({ type: Object }) public route?: Route;
 
   @property({ type: Array, reflect: false }) public tabs!: PageNavigation[];
-
-  @state() private columns: DataTableColumnContainer = {};
 
   @state() private projectLoaded = false;
 
@@ -70,77 +71,93 @@ export class KNXGroupMonitor extends LitElement {
         this.telegram_callback(message);
         this.requestUpdate();
       });
-
-      //! We need to lateinit this property due to the fact that this.hass needs to be available
-      this.columns = {
-        index: {
-          hidden: this.narrow,
-          title: "#",
-          sortable: true,
-          direction: "desc",
-          type: "numeric",
-          width: "60px", // 4 digits
-        },
-        timestamp: {
-          filterable: true,
-          sortable: true,
-          title: this.knx.localize("group_monitor_time"),
-          width: "110px",
-        },
-        direction: {
-          hidden: this.narrow,
-          filterable: true,
-          title: this.knx.localize("group_monitor_direction"),
-          width: "120px",
-        },
-        sourceAddress: {
-          filterable: true,
-          sortable: true,
-          title: this.knx.localize("group_monitor_source"),
-          width: this.narrow ? "90px" : this.projectLoaded ? "95px" : "20%",
-        },
-        sourceText: {
-          hidden: this.narrow || !this.projectLoaded,
-          filterable: true,
-          sortable: true,
-          title: this.knx.localize("group_monitor_source"),
-          width: "20%",
-        },
-        destinationAddress: {
-          sortable: true,
-          filterable: true,
-          title: this.knx.localize("group_monitor_destination"),
-          width: this.narrow ? "90px" : this.projectLoaded ? "96px" : "20%",
-        },
-        destinationText: {
-          hidden: this.narrow || !this.projectLoaded,
-          sortable: true,
-          filterable: true,
-          title: this.knx.localize("group_monitor_destination"),
-          width: "20%",
-        },
-        type: {
-          hidden: this.narrow,
-          title: this.knx.localize("group_monitor_type"),
-          filterable: true,
-          width: "155px", // 155px suits for "GroupValueResponse"
-        },
-        payload: {
-          hidden: this.narrow && this.projectLoaded,
-          title: this.knx.localize("group_monitor_payload"),
-          filterable: true,
-          type: "numeric",
-          width: "105px",
-        },
-        value: {
-          hidden: !this.projectLoaded,
-          title: this.knx.localize("group_monitor_value"),
-          filterable: true,
-          width: this.narrow ? "105px" : "150px",
-        },
-      };
     }
   }
+
+  private _columns = memoize(
+    (narrow, projectLoaded, _language): DataTableColumnContainer<DataTableRowData> => ({
+      index: {
+        showNarrow: false,
+        title: "#",
+        sortable: true,
+        direction: "desc",
+        type: "numeric",
+        minWidth: "60px", // 4 digits
+        maxWidth: "60px",
+      },
+      timestamp: {
+        showNarrow: false,
+        filterable: true,
+        sortable: true,
+        title: this.knx.localize("group_monitor_time"),
+        minWidth: "110px",
+        maxWidth: "110px",
+      },
+      sourceAddress: {
+        showNarrow: true,
+        filterable: true,
+        sortable: true,
+        title: this.knx.localize("group_monitor_source"),
+        flex: 2,
+        template: (row) =>
+          projectLoaded
+            ? html`<div>${row.sourceAddress}</div>
+                <div>${row.sourceText}</div>`
+            : row.sourceAddress,
+      },
+      sourceText: {
+        hidden: true,
+        filterable: true,
+        sortable: true,
+        title: this.knx.localize("group_monitor_source"),
+      },
+      destinationAddress: {
+        showNarrow: true,
+        sortable: true,
+        filterable: true,
+        title: this.knx.localize("group_monitor_destination"),
+        flex: 2,
+        template: (row) =>
+          projectLoaded
+            ? html`<div>${row.destinationAddress}</div>
+                <div>${row.destinationText}</div>`
+            : row.destinationAddress,
+      },
+      destinationText: {
+        showNarrow: true,
+        hidden: true,
+        sortable: true,
+        filterable: true,
+        title: this.knx.localize("group_monitor_destination"),
+      },
+      type: {
+        showNarrow: false,
+        title: this.knx.localize("group_monitor_type"),
+        filterable: true,
+        minWidth: "155px", // 155px suits for "GroupValueResponse"
+        maxWidth: "155px",
+        template: (row) =>
+          html`<div>${row.type}</div>
+            <div>${row.direction}</div>`,
+      },
+      payload: {
+        showNarrow: false,
+        hidden: narrow && projectLoaded,
+        title: this.knx.localize("group_monitor_payload"),
+        filterable: true,
+        type: "numeric",
+        minWidth: "105px",
+        maxWidth: "105px",
+      },
+      value: {
+        showNarrow: true,
+        hidden: !projectLoaded,
+        title: this.knx.localize("group_monitor_value"),
+        filterable: true,
+        flex: 1,
+      },
+    }),
+  );
 
   protected telegram_callback(telegram: TelegramDict): void {
     this.telegrams.push(telegram);
@@ -169,6 +186,12 @@ export class KNXGroupMonitor extends LitElement {
   }
 
   protected render(): TemplateResult | void {
+    if (this.subscribed === undefined) {
+      return html` <hass-loading-screen
+        .message=${this.knx.localize("group_monitor_waiting_to_connect")}
+      >
+      </hass-loading-screen>`;
+    }
     return html`
       <hass-tabs-subpage-data-table
         .hass=${this.hass}
@@ -176,10 +199,8 @@ export class KNXGroupMonitor extends LitElement {
         .route=${this.route!}
         .tabs=${this.tabs}
         .localizeFunc=${this.knx.localize}
-        .columns=${this.columns}
-        .noDataText=${this.subscribed
-          ? this.knx.localize("group_monitor_connected_waiting_telegrams")
-          : this.knx.localize("group_monitor_waiting_to_connect")}
+        .columns=${this._columns(this.narrow, this.projectLoaded, this.hass.language)}
+        .noDataText=${this.knx.localize("group_monitor_connected_waiting_telegrams")}
         .data=${this.rows}
         .hasFab=${false}
         .searchLabel=${this.hass.localize("ui.components.data-table.search")}
