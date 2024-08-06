@@ -8,7 +8,7 @@ import paths from "../paths.cjs";
 gulp.task("gen-index-knx-dev", async () => {
   writeKNXEntrypoint(
     `${paths.knx_publicPath}/frontend_latest/entrypoint-dev.js`,
-    `${paths.knx_publicPath}/frontend_es5/entrypoint-dev.js`
+    `${paths.knx_publicPath}/frontend_es5/entrypoint-dev.js`,
   );
 });
 
@@ -41,7 +41,7 @@ if (/.*Version\\/(?:11|12)(?:\\.\\d+)*.*Safari\\//.test(navigator.userAgent)) {
   }
 }
   `,
-    { encoding: "utf-8" }
+    { encoding: "utf-8" },
   );
   fs.writeFileSync(
     path.resolve(paths.knx_output_root, "constants.py"),
@@ -49,11 +49,11 @@ if (/.*Version\\/(?:11|12)(?:\\.\\d+)*.*Safari\\//.test(navigator.userAgent)) {
 
 FILE_HASH = "${fileHash}"
 `,
-    { encoding: "utf-8" }
+    { encoding: "utf-8" },
   );
   fs.copyFileSync(
     path.resolve(paths.src_dir, `__init__.py`),
-    path.resolve(paths.knx_output_root, `__init__.py`)
+    path.resolve(paths.knx_output_root, `__init__.py`),
   );
   fs.writeFileSync(path.resolve(paths.knx_output_root, "py.typed"), "");
 }
