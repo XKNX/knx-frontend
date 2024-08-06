@@ -22,24 +22,24 @@ module.exports.emptyPackages = ({ latestBuild, isHassioBuild }) =>
     latestBuild &&
       // wrapped in require.resolve so it blows up if file no longer exists
       require.resolve(
-        path.resolve(paths.polymer_dir, "homeassistant-frontend/src/resources/compatibility.ts")
+        path.resolve(paths.polymer_dir, "homeassistant-frontend/src/resources/compatibility.ts"),
       ),
     // Icons in supervisor conflict with icons in HA so we don't load.
     isHassioBuild &&
       require.resolve(
-        path.resolve(paths.polymer_dir, "homeassistant-frontend/src/components/ha-icon.ts")
+        path.resolve(paths.polymer_dir, "homeassistant-frontend/src/components/ha-icon.ts"),
       ),
     isHassioBuild &&
       require.resolve(
-        path.resolve(paths.polymer_dir, "homeassistant-frontend/src/components/ha-icon-picker.ts")
+        path.resolve(paths.polymer_dir, "homeassistant-frontend/src/components/ha-icon-picker.ts"),
       ),
     // Icons in supervisor conflict with icons in HA so we don't load.
     isHassioBuild &&
       require.resolve(
         path.resolve(
           paths.polymer_dir,
-          "homeassistant-frontend/src/resources/translations-metadata.ts"
-        )
+          "homeassistant-frontend/src/resources/translations-metadata.ts",
+        ),
       ),
   ].filter(Boolean);
 
@@ -55,7 +55,7 @@ module.exports.definedVars = ({ isProdBuild, latestBuild, defineOverlay }) => ({
   ...defineOverlay,
 });
 
-module.exports.terserOptions = ({latestBuild, isTestBuild}) => ({
+module.exports.terserOptions = ({ latestBuild, isTestBuild }) => ({
   safari10: !latestBuild,
   ecma: latestBuild ? 2015 : 5,
   module: latestBuild,
@@ -93,19 +93,16 @@ module.exports.babelOptions = ({ latestBuild }) => ({
       },
     ],
     [
-      path.resolve(
-        paths.polymer_dir,
-        "build-scripts/babel-plugins/custom-polyfill-plugin.js"
-      ),
+      path.resolve(paths.polymer_dir, "build-scripts/babel-plugins/custom-polyfill-plugin.js"),
       { method: "usage-global" },
     ],
     // Import helpers and regenerator from runtime package
-    [
-      "@babel/plugin-transform-runtime",
-      { version: dependencies["@babel/runtime"] },
-    ],
-    // Support  some proposals still in TC39 process
-    ["@babel/plugin-proposal-decorators", { decoratorsBeforeExport: true }],
+    ["@babel/plugin-transform-runtime", { version: dependencies["@babel/runtime"] }],
+    // Transpile decorators (still in TC39 process)
+    // Modern browsers support class fields and private methods, but transform is required with the older decorator version dictated by Lit
+    ["@babel/plugin-proposal-decorators", { version: "2018-09", decoratorsBeforeExport: true }],
+    "@babel/plugin-transform-class-properties",
+    "@babel/plugin-transform-private-methods",
   ].filter(Boolean),
   exclude: [
     // \\ for Windows, / for Mac OS and Linux
@@ -118,10 +115,9 @@ module.exports.babelOptions = ({ latestBuild }) => ({
       // Exclusions are needed in some cases where ES modules have no static imports or exports, such as polyfills
       sourceType: "unambiguous",
       include: /\/node_modules\//,
-      exclude: [
-        "element-internals-polyfill",
-        "@?lit(?:-labs|-element|-html)?",
-      ].map((p) => new RegExp(`/node_modules/${p}/`)),
+      exclude: ["element-internals-polyfill", "@?lit(?:-labs|-element|-html)?"].map(
+        (p) => new RegExp(`/node_modules/${p}/`),
+      ),
     },
   ],
 });
