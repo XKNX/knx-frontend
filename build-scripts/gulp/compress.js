@@ -4,7 +4,6 @@ import { constants } from "node:zlib";
 import gulp from "gulp";
 import brotli from "gulp-brotli";
 import zopfli from "gulp-zopfli-green";
-import path from "path";
 import paths from "../paths.cjs";
 
 const filesGlob = "*.{js,json,css,svg,xml}";
@@ -39,10 +38,7 @@ const compressDistZopfli = (rootDir, modernDir) =>
     .pipe(zopfli(zopfliOptions))
     .pipe(gulp.dest(rootDir));
 
-gulp.task(
-  "compress-knx",
-  gulp.parallel(
-    () => compressDistBrotli(paths.knx_output_root, paths.knx_output_latest),
-    () => compressDistZopfli(paths.knx_output_root, paths.knx_output_latest),
-  ),
-);
+const compressKnxBrotli = () => compressDistBrotli(paths.knx_output_root, paths.knx_output_latest);
+const compressKnxZopfli = () => compressDistZopfli(paths.knx_output_root, paths.knx_output_latest);
+
+gulp.task("compress-knx", gulp.parallel(compressKnxBrotli, compressKnxZopfli));
