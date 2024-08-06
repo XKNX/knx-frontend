@@ -7,10 +7,8 @@ import memoize from "memoize-one";
 
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-tabs-subpage-data-table";
-import "@ha/components/ha-card";
 import "@ha/components/ha-fab";
 import "@ha/components/ha-icon-button";
-import "@ha/components/ha-icon-overflow-menu";
 import "@ha/components/ha-state-icon";
 import "@ha/components/ha-svg-icon";
 import { navigate } from "@ha/common/navigate";
@@ -22,8 +20,6 @@ import { ExtEntityRegistryEntry } from "@ha/data/entity_registry";
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import { HomeAssistant, Route } from "@ha/types";
-
-import "../components/knx-project-tree-view";
 
 import { getEntityEntries, deleteEntity } from "../services/websocket.service";
 import { KNX } from "../types/knx";
