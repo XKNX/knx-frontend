@@ -85,15 +85,16 @@ export class KNXEntitiesView extends LitElement {
       });
   }
 
-  private _columns = memoize((_narrow, _language): DataTableColumnContainer<EntityRow> => {
+  private _columns = memoize((narrow, _language): DataTableColumnContainer<EntityRow> => {
     const iconWidth = "56px";
     const actionWidth = "176px"; // 48px*3 + 16px*2 padding
-    const textColumnWith = `calc((100% - ${iconWidth} - ${actionWidth}) / 4)`;
 
     return {
       icon: {
+        hidden: narrow,
         title: "",
-        width: iconWidth,
+        minWidth: iconWidth,
+        maxWidth: iconWidth,
         type: "icon",
         template: (entry) => html`
           <ha-state-icon
@@ -107,21 +108,23 @@ export class KNXEntitiesView extends LitElement {
         filterable: true,
         sortable: true,
         title: "Friendly Name",
-        width: textColumnWith,
+        flex: 2,
         template: (entry) => entry.entityState?.attributes.friendly_name ?? "",
       },
       entity_id: {
+        hidden: narrow,
         filterable: true,
         sortable: true,
         title: "Entity ID",
-        width: textColumnWith,
+        flex: 1,
         // template: (entry) => entry.entity_id,
       },
       device: {
+        hidden: narrow,
         filterable: true,
         sortable: true,
         title: "Device",
-        width: textColumnWith,
+        flex: 1,
         template: (entry) =>
           entry.device_id ? (this.hass.devices[entry.device_id].name ?? "") : "",
       },
@@ -132,15 +135,17 @@ export class KNXEntitiesView extends LitElement {
         template: (entry) => entry.device_id ?? "",
       },
       area: {
+        hidden: narrow,
         title: "Area",
         sortable: true,
         filterable: true,
-        width: textColumnWith,
+        flex: 1,
         template: (entry) => entry.area?.name ?? "",
       },
       actions: {
         title: "",
-        width: actionWidth,
+        minWidth: actionWidth,
+        maxWidth: actionWidth,
         type: "icon-button",
         template: (entry) => html`
           <ha-icon-button

@@ -79,64 +79,72 @@ export class KNXGroupMonitor extends LitElement {
           sortable: true,
           direction: "desc",
           type: "numeric",
-          width: "60px", // 4 digits
+          minWidth: "60px", // 4 digits
+          maxWidth: "60px",
         },
         timestamp: {
           filterable: true,
           sortable: true,
           title: this.knx.localize("group_monitor_time"),
-          width: "110px",
+          minWidth: "110px",
+          maxWidth: "110px",
         },
         direction: {
           hidden: this.narrow,
           filterable: true,
           title: this.knx.localize("group_monitor_direction"),
-          width: "120px",
+          minWidth: "120px",
+          maxWidth: "120px",
         },
         sourceAddress: {
           filterable: true,
           sortable: true,
           title: this.knx.localize("group_monitor_source"),
-          width: this.narrow ? "90px" : this.projectLoaded ? "95px" : "20%",
+          minWidth: this.narrow ? "90px" : this.projectLoaded ? "95px" : "20%",
+          maxWidth: this.narrow ? "90px" : this.projectLoaded ? "95px" : "20%",
         },
         sourceText: {
           hidden: this.narrow || !this.projectLoaded,
           filterable: true,
           sortable: true,
           title: this.knx.localize("group_monitor_source"),
-          width: "20%",
+          flex: 1,
         },
         destinationAddress: {
           sortable: true,
           filterable: true,
           title: this.knx.localize("group_monitor_destination"),
-          width: this.narrow ? "90px" : this.projectLoaded ? "96px" : "20%",
+          minWidth: this.narrow ? "90px" : this.projectLoaded ? "96px" : "20%",
+          maxWidth: this.narrow ? "90px" : this.projectLoaded ? "96px" : "20%",
         },
         destinationText: {
           hidden: this.narrow || !this.projectLoaded,
           sortable: true,
           filterable: true,
           title: this.knx.localize("group_monitor_destination"),
-          width: "20%",
+          flex: 1,
         },
         type: {
           hidden: this.narrow,
           title: this.knx.localize("group_monitor_type"),
           filterable: true,
-          width: "155px", // 155px suits for "GroupValueResponse"
+          minWidth: "155px", // 155px suits for "GroupValueResponse"
+          maxWidth: "155px",
         },
         payload: {
           hidden: this.narrow && this.projectLoaded,
           title: this.knx.localize("group_monitor_payload"),
           filterable: true,
           type: "numeric",
-          width: "105px",
+          minWidth: "105px",
+          maxWidth: "105px",
         },
         value: {
           hidden: !this.projectLoaded,
           title: this.knx.localize("group_monitor_value"),
           filterable: true,
-          width: this.narrow ? "105px" : "150px",
+          minWidth: this.narrow ? "105px" : "150px",
+          maxWidth: this.narrow ? "105px" : "150px",
         },
       };
     }
