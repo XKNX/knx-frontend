@@ -358,6 +358,12 @@ export class KNXCreateEntity extends LitElement {
         max-width: 720px;
       }
 
+      @media screen and (max-width: 600px) {
+        .panel {
+          display: none;
+        }
+      }
+
       .content {
         display: flex;
         flex-direction: row;
