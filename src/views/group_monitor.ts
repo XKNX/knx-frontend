@@ -1,7 +1,7 @@
 import { html, CSSResultGroup, LitElement, TemplateResult, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
-import { mdiPause, mdiAutorenew } from "@mdi/js";
+import { mdiPause, mdiFastForward } from "@mdi/js";
 import memoize from "memoize-one";
 
 import "@ha/layouts/hass-loading-screen";
@@ -220,7 +220,7 @@ export class KNXGroupMonitor extends LitElement {
         <ha-icon-button
           slot="toolbar-icon"
           .label=${this._pause ? "Resume" : "Pause"}
-          .path=${this._pause ? mdiAutorenew : mdiPause}
+          .path=${this._pause ? mdiFastForward : mdiPause}
           @click=${this._togglePause}
         ></ha-icon-button>
       </hass-tabs-subpage-data-table>
