@@ -103,6 +103,7 @@ export class KNXGroupMonitor extends LitElement {
         sortable: true,
         title: this.knx.localize("group_monitor_source"),
         flex: 2,
+        minWidth: "0", // prevent horizontal scroll on very narrow screens
         template: (row) =>
           projectLoaded
             ? html`<div>${row.sourceAddress}</div>
@@ -121,6 +122,7 @@ export class KNXGroupMonitor extends LitElement {
         filterable: true,
         title: this.knx.localize("group_monitor_destination"),
         flex: 2,
+        minWidth: "0", // prevent horizontal scroll on very narrow screens
         template: (row) =>
           projectLoaded
             ? html`<div>${row.destinationAddress}</div>
@@ -159,6 +161,7 @@ export class KNXGroupMonitor extends LitElement {
         title: this.knx.localize("group_monitor_value"),
         filterable: true,
         flex: 1,
+        minWidth: "0", // prevent horizontal scroll on very narrow screens
       },
     }),
   );
