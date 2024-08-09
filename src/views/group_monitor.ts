@@ -1,6 +1,7 @@
 import { html, CSSResultGroup, LitElement, TemplateResult, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
+import { mdiPause, mdiAutorenew } from "@mdi/js";
 import memoize from "memoize-one";
 
 import "@ha/layouts/hass-loading-screen";
@@ -13,6 +14,7 @@ import type {
   DataTableRowData,
   RowClickedEvent,
 } from "@ha/components/data-table/ha-data-table";
+import "@ha/components/ha-icon-button";
 import { haStyle } from "@ha/resources/styles";
 import { HomeAssistant, Route } from "@ha/types";
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
@@ -46,6 +48,8 @@ export class KNXGroupMonitor extends LitElement {
   @state() private rows: DataTableRowData[] = [];
 
   @state() private _dialogIndex: number | null = null;
+
+  @state() private _pause: boolean = false;
 
   public disconnectedCallback() {
     super.disconnectedCallback();
@@ -161,6 +165,7 @@ export class KNXGroupMonitor extends LitElement {
 
   protected telegram_callback(telegram: TelegramDict): void {
     this.telegrams.push(telegram);
+    if (this._pause) return;
     const rows = [...this.rows];
     rows.push(this._telegramToRow(telegram, rows.length));
     this.rows = rows;
@@ -208,9 +213,29 @@ export class KNXGroupMonitor extends LitElement {
         id="index"
         .clickable=${true}
         @row-click=${this._rowClicked}
-      ></hass-tabs-subpage-data-table>
+      >
+        <ha-icon-button
+          slot="toolbar-icon"
+          .label=${this._pause ? "Resume" : "Pause"}
+          .path=${this._pause ? mdiAutorenew : mdiPause}
+          @click=${this._togglePause}
+        ></ha-icon-button>
+      </hass-tabs-subpage-data-table>
       ${this._dialogIndex !== null ? this._renderTelegramInfoDialog(this._dialogIndex) : nothing}
     `;
+  }
+
+  private _togglePause(): void {
+    this._pause = !this._pause;
+    if (!this._pause) {
+      const currentRowCount = this.rows.length;
+      const pauseTelegrams = this.telegrams.slice(currentRowCount);
+      this.rows = this.rows.concat(
+        pauseTelegrams.map((telegram, index) =>
+          this._telegramToRow(telegram, currentRowCount + index),
+        ),
+      );
+    }
   }
 
   private _renderTelegramInfoDialog(index: number): TemplateResult {
