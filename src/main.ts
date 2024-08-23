@@ -2,6 +2,8 @@ import { LitElement, css, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 
 import { applyThemesOnElement } from "@ha/common/dom/apply_themes_on_element";
+import { fireEvent } from "@ha/common/dom/fire_event";
+import { mainWindow } from "@ha/common/dom/get_main_window";
 import "@ha/components/ha-top-app-bar-fixed";
 import "@ha/components/ha-menu-button";
 import "@ha/components/ha-tabs";
@@ -38,9 +40,23 @@ class KnxFrontend extends knxElement {
 
     computeDirectionStyles(computeRTL(this.hass), this.parentElement as LitElement);
 
+    document.body.addEventListener("keydown", (ev: KeyboardEvent) => {
+      if (ev.ctrlKey || ev.shiftKey || ev.metaKey || ev.altKey) {
+        // Ignore if modifier keys are pressed
+        return;
+      }
+      if (["c", "e"].includes(ev.key)) {
+        // @ts-ignore
+        fireEvent(mainWindow, "hass-quick-bar-trigger", ev, {
+          bubbles: false,
+        });
+      }
+    });
+
     listenMediaQuery("(prefers-color-scheme: dark)", (_matches) => {
       this._applyTheme();
     });
+
     makeDialogManager(this, this.shadowRoot!);
   }
 
