@@ -106,25 +106,13 @@ export class KNXInfo extends LitElement {
         </div>
 
         <div class="knx-bug-report">
-          <div>${this.knx.localize("info_issue_tracker")}</div>
-          <ul>
-            <li>
-              <a href="https://github.com/XKNX/knx-frontend/issues" target="_blank"
-                >${this.knx.localize("info_issue_tracker_knx_frontend")}</a
-              >
-            </li>
-            <li>
-              <a href="https://github.com/XKNX/xknxproject/issues" target="_blank"
-                >${this.knx.localize("info_issue_tracker_xknxproject")}</a
-              >
-            </li>
-            <li>
-              <a href="https://github.com/XKNX/xknx/issues" target="_blank"
-                >${this.knx.localize("info_issue_tracker_xknx")}</a
-              >
-            </li>
-          </ul>
+          ${this.knx.localize("info_issue_tracker")}
+          <a href="https://github.com/XKNX/knx-integration" target="_blank">xknx/knx-integration</a>
         </div>
+
+        <div class="knx-bug-report">
+          ${this.knx.localize("info_my_knx")}
+          <a href="https://my.knx.org" target="_blank">my.knx.org</a>
       </div>
     </ha-card>`;
   }
@@ -360,11 +348,6 @@ export class KNXInfo extends LitElement {
 
       .knx-bug-report {
         margin-top: 20px;
-      }
-
-      .knx-bug-report > ul > li > a {
-        text-decoration: none;
-        color: var(--mdc-theme-primary);
       }
 
       .header {
