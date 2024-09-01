@@ -1,18 +1,16 @@
-import { mdiFilterVariant, mdiPlus } from "@mdi/js";
+import { mdiFilterVariant } from "@mdi/js";
 import { LitElement, TemplateResult, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
 import memoize from "memoize-one";
 
 import { HASSDomEvent } from "@ha/common/dom/fire_event";
-import { navigate } from "@ha/common/navigate";
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-tabs-subpage";
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import "@ha/components/ha-card";
 import "@ha/components/ha-icon-button";
 import "@ha/components/ha-icon-overflow-menu";
-import type { IconOverflowMenuItem } from "@ha/components/ha-icon-overflow-menu";
 import "@ha/components/data-table/ha-data-table";
 import type { DataTableColumnContainer } from "@ha/components/data-table/ha-data-table";
 
@@ -70,26 +68,27 @@ export class KNXProjectView extends LitElement {
   private _columns = memoize((_narrow, _language): DataTableColumnContainer<GroupAddress> => {
     const addressWidth = "100px";
     const dptWidth = "82px";
-    const overflowMenuWidth = "72px";
 
     return {
       address: {
         filterable: true,
         sortable: true,
         title: this.knx.localize("project_view_table_address"),
-        width: addressWidth,
+        flex: 1,
+        minWidth: addressWidth,
       },
       name: {
         filterable: true,
         sortable: true,
         title: this.knx.localize("project_view_table_name"),
-        width: `calc(100% - ${dptWidth} - ${addressWidth} - ${overflowMenuWidth})`,
+        flex: 3,
       },
       dpt: {
         sortable: true,
         filterable: true,
         title: this.knx.localize("project_view_table_dpt"),
-        width: dptWidth,
+        flex: 1,
+        minWidth: dptWidth,
         template: (ga: GroupAddress) =>
           ga.dpt
             ? html`<span style="display:inline-block;width:24px;text-align:right;"
@@ -97,38 +96,8 @@ export class KNXProjectView extends LitElement {
                 >${ga.dpt.sub ? "." + ga.dpt.sub.toString().padStart(3, "0") : ""} `
             : "",
       },
-      actions: {
-        title: "",
-        width: overflowMenuWidth,
-        type: "overflow-menu",
-        template: (ga: GroupAddress) => this._groupAddressMenu(ga),
-      },
     };
   });
-
-  private _groupAddressMenu(groupAddress: GroupAddress): TemplateResult | typeof nothing {
-    const items: IconOverflowMenuItem[] = [];
-    if (groupAddress.dpt?.main === 1) {
-      items.push({
-        path: mdiPlus,
-        label: this.knx.localize("project_view_add_switch"),
-        action: () => {
-          navigate("/knx/entities/create?ga=" + groupAddress.address);
-        },
-      });
-      // items.push({
-      //   path: mdiPlus,
-      //   label: "Add binary sensor",
-      //   action: () => logger.warn(groupAddress.address),
-      // });
-    }
-
-    return items.length
-      ? html`
-          <ha-icon-overflow-menu .hass=${this.hass} narrow .items=${items}> </ha-icon-overflow-menu>
-        `
-      : nothing;
-  }
 
   private _getRows(visibleGroupAddresses: string[]): GroupAddress[] {
     if (!visibleGroupAddresses.length)
