@@ -4,6 +4,7 @@ import { customElement, property, state } from "lit/decorators";
 import { repeat } from "lit/directives/repeat";
 import { consume } from "@lit-labs/context";
 
+import "@ha/components/ha-alert";
 import "@ha/components/ha-svg-icon";
 
 import { KNXProject, CommunicationObject, COFlags, DPT, GroupAddress } from "../types/websocket";
@@ -116,6 +117,9 @@ export class KNXProjectDeviceTree extends LitElement {
   }
 
   private _renderDevices(): TemplateResult {
+    if (!this.deviceTree.length) {
+      return html`<ha-alert alert-type="info">No suitable device found in project data.</ha-alert>`;
+    }
     return html`<ul class="devices">
       ${repeat(
         this.deviceTree,
@@ -248,6 +252,12 @@ export class KNXProjectDeviceTree extends LitElement {
         margin-right: env(safe-area-inset-right);
         border-left: 1px solid var(--divider-color);
         padding-left: 8px;
+      }
+
+      ha-alert {
+        display: block;
+        margin-right: 8px;
+        margin-top: 8px;
       }
 
       ul {
