@@ -19,6 +19,13 @@ import "./knx-router";
 import { KNX } from "./types/knx";
 import { LocationChangedEvent } from "./types/navigation";
 
+declare global {
+  // for fire event
+  interface HASSDomEvents {
+    "knx-reload": undefined;
+  }
+}
+
 @customElement("knx-frontend")
 class KnxFrontend extends knxElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -37,6 +44,11 @@ class KnxFrontend extends knxElement {
       this._initKnx();
     }
     this.addEventListener("knx-location-changed", (e) => this._setRoute(e as LocationChangedEvent));
+
+    this.addEventListener("knx-reload", (_) => {
+      this.knx.log.debug("Reloading KNX object");
+      this._initKnx();
+    });
 
     computeDirectionStyles(computeRTL(this.hass), this.parentElement as LitElement);
 

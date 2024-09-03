@@ -2,6 +2,7 @@ import { mdiFileUpload } from "@mdi/js";
 import { css, nothing, html, LitElement, TemplateResult, CSSResultGroup } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
+import { fireEvent } from "@ha/common/dom/fire_event";
 import { navigate } from "@ha/common/navigate";
 import "@ha/components/ha-card";
 import "@ha/layouts/hass-tabs-subpage";
@@ -250,6 +251,7 @@ export class KNXInfo extends LitElement {
         this._projectPassword = undefined;
       }
       this._uploading = false;
+      fireEvent(this, "knx-reload");
       this.loadKnxInfo();
     }
   }
@@ -271,6 +273,7 @@ export class KNXInfo extends LitElement {
         text: extractApiErrorMessage(err),
       });
     } finally {
+      fireEvent(this, "knx-reload");
       this.loadKnxInfo();
     }
   }
