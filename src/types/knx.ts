@@ -6,6 +6,7 @@ export interface KNX {
   config_entry: ConfigEntry;
   localize(string: string, replace?: Record<string, any>): string;
   log: any;
+  hasProject: boolean;
   project: KNXProjectRespone | null;
   loadProject(): Promise<void>;
 }
