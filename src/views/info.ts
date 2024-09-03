@@ -348,6 +348,10 @@ export class KNXInfo extends LitElement {
 
       .knx-bug-report {
         margin-top: 20px;
+
+        a {
+          text-decoration: none;
+        }
       }
 
       .header {
