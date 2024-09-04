@@ -92,13 +92,13 @@ export class KnxRouter extends HassRouterPage {
   };
 
   protected updatePageEl(el) {
+    logger.debug(`Current Page: ${this._currentPage} Route: ${this.route.path}`);
+
     el.hass = this.hass;
     el.knx = this.knx;
     el.route = this.routeTail;
     el.narrow = this.narrow;
-    el.tabs = knxMainTabs(this.knx.hasProject);
-
-    logger.debug(`Current Page: ${this._currentPage} Route: ${this.route.path}`);
+    el.tabs = knxMainTabs(!!this.knx.info.project);
   }
 }
 

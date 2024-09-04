@@ -1,12 +1,9 @@
-import { LitElement, css, html, nothing } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, property } from "lit/decorators";
 
 import { applyThemesOnElement } from "@ha/common/dom/apply_themes_on_element";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import { mainWindow } from "@ha/common/dom/get_main_window";
-import "@ha/components/ha-top-app-bar-fixed";
-import "@ha/components/ha-menu-button";
-import "@ha/components/ha-tabs";
 import { listenMediaQuery } from "@ha/common/dom/media_query";
 import { computeRTL, computeDirectionStyles } from "@ha/common/util/compute_rtl";
 import { navigate } from "@ha/common/navigate";
@@ -74,7 +71,7 @@ class KnxFrontend extends knxElement {
 
   protected render() {
     if (!this.hass || !this.knx) {
-      return nothing;
+      return html`<p>Loading...</p>`;
     }
 
     return html`
