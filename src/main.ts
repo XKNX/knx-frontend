@@ -33,18 +33,18 @@ class KnxFrontend extends knxElement {
 
   @property({ attribute: false }) public route!: Route;
 
-  protected firstUpdated(_changedProps) {
+  protected async firstUpdated(_changedProps) {
     if (!this.hass) {
       return;
     }
     if (!this.knx) {
-      this._initKnx();
+      await this._initKnx();
     }
     this.addEventListener("knx-location-changed", (e) => this._setRoute(e as LocationChangedEvent));
 
-    this.addEventListener("knx-reload", (_) => {
+    this.addEventListener("knx-reload", async (_) => {
       this.knx.log.debug("Reloading KNX object");
-      this._initKnx();
+      await this._initKnx();
     });
 
     computeDirectionStyles(computeRTL(this.hass), this.parentElement as LitElement);
