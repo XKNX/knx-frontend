@@ -2,27 +2,22 @@ import { mdiFileUpload } from "@mdi/js";
 import { css, nothing, html, LitElement, TemplateResult, CSSResultGroup } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
-import { navigate } from "@ha/common/navigate";
+import { fireEvent } from "@ha/common/dom/fire_event";
 import "@ha/components/ha-card";
 import "@ha/layouts/hass-tabs-subpage";
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import "@ha/components/ha-button";
 import "@ha/components/ha-file-upload";
 import "@ha/components/ha-selector/ha-selector-text";
-import "@ha/components/ha-circular-progress";
 import { uploadFile } from "@ha/data/file_upload";
 import { extractApiErrorMessage } from "@ha/data/hassio/common";
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 import { HomeAssistant, Route } from "@ha/types";
 
-import {
-  getKnxInfoData,
-  processProjectFile,
-  removeProjectFile,
-} from "../services/websocket.service";
+import { processProjectFile, removeProjectFile } from "../services/websocket.service";
 
 import { KNX } from "../types/knx";
-import { KNXInfoData, KNXProjectInfo } from "../types/websocket";
+import { KNXProjectInfo } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
 import { VERSION } from "../version";
 
@@ -40,17 +35,11 @@ export class KNXInfo extends LitElement {
 
   @property({ type: Array, reflect: false }) public tabs!: PageNavigation[];
 
-  @state() private knxInfoData: KNXInfoData | null = null;
-
   @state() private _projectPassword?: string;
 
   @state() private _uploading = false;
 
   @state() private _projectFile?: File;
-
-  protected firstUpdated() {
-    this.loadKnxInfo();
-  }
 
   protected render(): TemplateResult | void {
     return html`
@@ -62,17 +51,9 @@ export class KNXInfo extends LitElement {
         .localizeFunc=${this.knx.localize}
       >
         <div class="columns">
-          ${this.knxInfoData
-            ? html`
-                ${this._renderInfoCard()}
-                ${this.knxInfoData?.project
-                  ? this._renderProjectDataCard(this.knxInfoData.project)
-                  : nothing}
-                ${this._renderProjectUploadCard()}
-              `
-            : html`
-                <ha-circular-progress alt="Loading..." size="large" active></ha-circular-progress>
-              `}
+          ${this._renderInfoCard()}
+          ${this.knx.info.project ? this._renderProjectDataCard(this.knx.info.project) : nothing}
+          ${this._renderProjectUploadCard()}
         </div>
       </hass-tabs-subpage>
     `;
@@ -85,7 +66,7 @@ export class KNXInfo extends LitElement {
 
         <div class="knx-content-row">
           <div>XKNX Version</div>
-          <div>${this.knxInfoData?.version}</div>
+          <div>${this.knx.info.version}</div>
         </div>
 
         <div class="knx-content-row">
@@ -96,13 +77,13 @@ export class KNXInfo extends LitElement {
         <div class="knx-content-row">
           <div>${this.knx.localize("info_connected_to_bus")}</div>
           <div>
-            ${this.hass.localize(this.knxInfoData?.connected ? "ui.common.yes" : "ui.common.no")}
+            ${this.hass.localize(this.knx.info.connected ? "ui.common.yes" : "ui.common.no")}
           </div>
         </div>
 
         <div class="knx-content-row">
           <div>${this.knx.localize("info_individual_address")}</div>
-          <div>${this.knxInfoData?.current_address}</div>
+          <div>${this.knx.info.current_address}</div>
         </div>
 
         <div class="knx-bug-report">
@@ -144,7 +125,7 @@ export class KNXInfo extends LitElement {
               <ha-button
                 class="knx-warning push-right"
                 @click=${this._removeProject}
-                .disabled=${this._uploading || !this.knxInfoData?.project}
+                .disabled=${this._uploading || !this.knx.info.project}
                 >
                 ${this.knx.localize("info_project_delete")}
               </ha-button>
@@ -194,19 +175,6 @@ export class KNXInfo extends LitElement {
     </ha-card>`;
   }
 
-  private loadKnxInfo() {
-    getKnxInfoData(this.hass).then(
-      (knxInfoData) => {
-        this.knxInfoData = knxInfoData;
-        this.requestUpdate();
-      },
-      (err) => {
-        logger.error("getKnxInfoData", err);
-        navigate("/knx/error", { replace: true, data: err });
-      },
-    );
-  }
-
   private _filePicked(ev) {
     this._projectFile = ev.detail.files[0];
   }
@@ -238,7 +206,7 @@ export class KNXInfo extends LitElement {
         this._projectPassword = undefined;
       }
       this._uploading = false;
-      this.loadKnxInfo();
+      fireEvent(this, "knx-reload");
     }
   }
 
@@ -259,7 +227,7 @@ export class KNXInfo extends LitElement {
         text: extractApiErrorMessage(err),
       });
     } finally {
-      this.loadKnxInfo();
+      fireEvent(this, "knx-reload");
     }
   }
 
@@ -371,10 +339,6 @@ export class KNXInfo extends LitElement {
       ha-selector-text {
         width: 100%;
         margin-top: 8px;
-      }
-
-      ha-circular-progress {
-        margin-top: 32px;
       }
     `;
   }

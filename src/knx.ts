@@ -8,7 +8,7 @@ import { HomeAssistant } from "@ha/types";
 
 import { localize } from "./localize/localize";
 import { KNXLogger } from "./tools/knx-logger";
-import { getKnxProject } from "./services/websocket.service";
+import { getKnxInfoData, getKnxProject } from "./services/websocket.service";
 import { KNX } from "./types/knx";
 
 export class knxElement extends ProvideHassLitMixin(LitElement) {
@@ -16,17 +16,22 @@ export class knxElement extends ProvideHassLitMixin(LitElement) {
 
   @property({ attribute: false }) public knx!: KNX;
 
-  protected _initKnx() {
-    getConfigEntries(this.hass, { domain: "knx" }).then((configEntries) => {
+  protected async _initKnx() {
+    try {
+      const knxConfigEntry = await getConfigEntries(this.hass, { domain: "knx" })[0]; // single instance allowed for knx config
+      const knxInfo = await getKnxInfoData(this.hass);
       this.knx = {
         language: this.hass.language,
-        config_entry: configEntries[0], // single instance allowed for knx config
+        config_entry: knxConfigEntry,
         localize: (string, replace) => localize(this.hass, string, replace),
         log: new KNXLogger(),
+        info: knxInfo,
         project: null,
         loadProject: () => this._loadProjectPromise(),
       };
-    });
+    } catch (err) {
+      new KNXLogger().error("Failed to initialize KNX", err);
+    }
   }
 
   private _loadProjectPromise(): Promise<void> {

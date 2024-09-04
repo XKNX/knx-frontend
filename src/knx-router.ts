@@ -1,5 +1,5 @@
 import { mdiNetwork, mdiFolderMultipleOutline, mdiFileTreeOutline } from "@mdi/js";
-import { customElement, property, state } from "lit/decorators";
+import { customElement, property } from "lit/decorators";
 
 import { HassRouterPage, RouterOptions } from "@ha/layouts/hass-router-page";
 import { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
@@ -12,7 +12,7 @@ const logger = new KNXLogger("router");
 
 export const BASE_URL: string = "/knx";
 
-export const knxMainTabs: PageNavigation[] = [
+const knxMainTabs = (hasProject: boolean): PageNavigation[] => [
   {
     translationKey: "info_title",
     path: `${BASE_URL}/info`,
@@ -23,11 +23,15 @@ export const knxMainTabs: PageNavigation[] = [
     path: `${BASE_URL}/group_monitor`,
     iconPath: mdiNetwork,
   },
-  {
-    translationKey: "project_view_title",
-    path: `${BASE_URL}/project`,
-    iconPath: mdiFileTreeOutline,
-  },
+  ...(hasProject
+    ? [
+        {
+          translationKey: "project_view_title",
+          path: `${BASE_URL}/project`,
+          iconPath: mdiFileTreeOutline,
+        },
+      ]
+    : []),
   {
     translationKey: "entities_view_title",
     path: `${BASE_URL}/entities`,
@@ -44,9 +48,6 @@ export class KnxRouter extends HassRouterPage {
   @property({ attribute: false }) public route!: Route;
 
   @property({ type: Boolean }) public narrow!: boolean;
-
-  // at later point could dynamically add and delete tabs
-  @state() private _tabs: PageNavigation[] = knxMainTabs;
 
   protected routerOptions: RouterOptions = {
     defaultPage: "info",
@@ -91,13 +92,13 @@ export class KnxRouter extends HassRouterPage {
   };
 
   protected updatePageEl(el) {
+    logger.debug(`Current Page: ${this._currentPage} Route: ${this.route.path}`);
+
     el.hass = this.hass;
     el.knx = this.knx;
     el.route = this.routeTail;
     el.narrow = this.narrow;
-    el.tabs = this._tabs;
-
-    logger.debug(`Current Page: ${this._currentPage} Route: ${this.route.path}`);
+    el.tabs = knxMainTabs(!!this.knx.info.project);
   }
 }
 
