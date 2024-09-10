@@ -68,12 +68,10 @@ export class KNXProjectDeviceTree extends LitElement {
           continue;
         }
         const comObject = validCOs[comObjectId];
-        if (!comObject.channel) {
-          noChannelComObjects.push(comObject);
+        if (comObject.channel && comObject.channel in channels) {
+          channels[comObject.channel].comObjects.push(comObject);
         } else {
-          channels[comObject.channel].comObjects = (
-            channels[comObject.channel].comObjects || []
-          ).concat([comObject]);
+          noChannelComObjects.push(comObject);
         }
       }
       // filter unused channels
