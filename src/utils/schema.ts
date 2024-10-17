@@ -23,7 +23,7 @@ export type SelectorSchema =
       helper?: string;
     };
 
-type GASchema = {
+export type GASchema = {
   name: string;
   type: "group_address";
   label?: string;
