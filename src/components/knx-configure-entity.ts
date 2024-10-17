@@ -17,10 +17,10 @@ import "./knx-sync-state-selector-row";
 import { renderConfigureEntityCard } from "./knx-configure-entity-options";
 import { KNXLogger } from "../tools/knx-logger";
 import { extractValidationErrors } from "../utils/validation";
-import type { EntityData, ErrorDescription } from "../types/entity_data";
+import type { EntityData, ErrorDescription, KnxEntityData } from "../types/entity_data";
 import type { KNX } from "../types/knx";
 import type { PlatformInfo } from "../utils/common";
-import type { SettingsGroup, SelectorSchema, GroupSelect } from "../utils/schema";
+import type { SettingsGroup, SelectorSchema, GroupSelect, GASchema } from "../utils/schema";
 
 const logger = new KNXLogger("knx-configure-entity");
 
@@ -96,6 +96,7 @@ export class KNXConfigureEntity extends LitElement {
         outlined
         .header=${group.heading}
         .secondary=${group.description}
+        .expanded=${this._group_has_group_address_defined(group)}
         >${this._generateItems(group.selectors, errors)}
       </ha-expansion-panel>`;
     }
@@ -104,6 +105,38 @@ export class KNXConfigureEntity extends LitElement {
       <div slot="description">${group.description}</div>
       ${this._generateItems(group.selectors, errors)}
     </ha-settings-row>`;
+  }
+
+  _group_has_group_address_defined(group: SettingsGroup) {
+    if (this.config === undefined) {
+      return false;
+    }
+    return group.selectors.some((selector) => {
+      if (selector.type === "group_address")
+        return this._has_group_address_defined(selector, this.config!.knx);
+      if (selector.type === "group_select")
+        return selector.options.some((options) =>
+          options.schema.some((schema) => {
+            if (schema.type === "settings_group")
+              return this._group_has_group_address_defined(schema);
+            if (schema.type === "group_address")
+              return this._has_group_address_defined(schema, this.config!.knx);
+            return false;
+          }),
+        );
+      return false;
+    });
+  }
+
+  _has_group_address_defined(ga_selector: GASchema, knxData: KnxEntityData) {
+    if (!(ga_selector.name in knxData)) return false;
+
+    const knxEntry = knxData[ga_selector.name];
+    if (knxEntry.write !== undefined) return true;
+    if (knxEntry.state !== undefined) return true;
+    if (knxEntry.passive !== undefined && knxEntry.passive.length) return true;
+
+    return false;
   }
 
   _generateItems(selectors: SelectorSchema[], errors?: ErrorDescription[]) {
