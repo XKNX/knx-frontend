@@ -91,6 +91,14 @@ export class KNXConfigureEntity extends LitElement {
   }
 
   _generateSettingsGroup(group: SettingsGroup, errors?: ErrorDescription[]) {
+    if (group.collapsible === true) {
+      return html` <ha-expansion-panel
+        outlined
+        .header=${group.heading}
+        .secondary=${group.description}
+        >${this._generateItems(group.selectors, errors)}
+      </ha-expansion-panel>`;
+    }
     return html` <ha-settings-row narrow>
       <div slot="heading">${group.heading}</div>
       <div slot="description">${group.description}</div>
@@ -245,7 +253,18 @@ export class KNXConfigureEntity extends LitElement {
         }
       }
 
+      ha-expansion-panel {
+        margin-bottom: 16px;
+      }
+      ha-expansion-panel > :first-child {
+        margin-top: 16px;
+      }
+      ha-expansion-panel > ha-settings-row:first-child {
+        border: 0;
+      }
+
       ha-settings-row {
+        margin-bottom: 16px;
         padding: 0;
       }
       ha-control-select {

@@ -7,6 +7,7 @@ export type SettingsGroup = {
   description: string;
   selectors: SelectorSchema[];
   advanced?: boolean;
+  collapsible?: boolean;
 };
 
 export type SelectorSchema =
@@ -141,6 +142,7 @@ export const lightSchema: SettingsGroup[] = [
     type: "settings_group",
     heading: "Color temperature",
     description: "Control the lights color temperature.",
+    collapsible: true,
     selectors: [
       {
         name: "ga_color_temp",
@@ -206,6 +208,7 @@ export const lightSchema: SettingsGroup[] = [
     type: "settings_group",
     heading: "Color",
     description: "Control the light color.",
+    collapsible: true,
     selectors: [
       {
         type: "group_select",
