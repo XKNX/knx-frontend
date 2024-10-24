@@ -134,7 +134,7 @@ export class KNXConfigureEntity extends LitElement {
     const knxEntry = knxData[ga_selector.name];
     if (knxEntry.write !== undefined) return true;
     if (knxEntry.state !== undefined) return true;
-    if (knxEntry.passive !== undefined && knxEntry.passive.length) return true;
+    if (knxEntry.passive?.length) return true;
 
     return false;
   }
