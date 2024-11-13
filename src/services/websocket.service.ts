@@ -40,6 +40,11 @@ export const getGroupMonitorInfo = (hass: HomeAssistant): Promise<GroupMonitorIn
     type: "knx/group_monitor_info",
   });
 
+export const getGroupTelegrams = (hass: HomeAssistant): Promise<{ [ga: string]: TelegramDict }> =>
+  hass.callWS({
+    type: "knx/group_telegrams",
+  });
+
 export const subscribeKnxTelegrams = (
   hass: HomeAssistant,
   callback: (telegram: TelegramDict) => void,
