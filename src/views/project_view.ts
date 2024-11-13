@@ -152,7 +152,8 @@ export class KNXProjectView extends LitElement {
         template: (ga: GroupAddress) => {
           const lastTelegram: TelegramDict | undefined = this._lastTelegrams[ga.address];
           if (!lastTelegram) return "";
-          return html`<div title=${TelegramDictFormatter.dateWithMilliseconds(lastTelegram)}>
+          const tooltip = `${TelegramDictFormatter.dateWithMilliseconds(lastTelegram)}\n\n${lastTelegram.source} ${lastTelegram.source_name}`;
+          return html`<div title=${tooltip}>
             ${relativeTime(new Date(lastTelegram.timestamp), this.hass.locale)}
           </div>`;
         },
