@@ -86,8 +86,8 @@ export class KNXGroupMonitor extends LitElement {
         sortable: true,
         direction: "desc",
         type: "numeric",
-        minWidth: "60px", // 4 digits
-        maxWidth: "60px",
+        minWidth: "68px", // 5 digits
+        maxWidth: "68px",
       },
       timestamp: {
         showNarrow: false,
