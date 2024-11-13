@@ -13,6 +13,8 @@ import "@ha/components/ha-icon-button";
 import "@ha/components/ha-icon-overflow-menu";
 import "@ha/components/data-table/ha-data-table";
 import type { DataTableColumnContainer } from "@ha/components/data-table/ha-data-table";
+import { relativeTime } from "@ha/common/datetime/relative_time";
+import { navigate } from "@ha/common/navigate";
 
 import "../components/knx-project-tree-view";
 
@@ -21,8 +23,10 @@ import { compare } from "compare-versions";
 import { HomeAssistant, Route } from "@ha/types";
 import { KNX } from "../types/knx";
 import type { GroupRangeSelectionChangedEvent } from "../components/knx-project-tree-view";
-import { GroupAddress } from "../types/websocket";
+import { subscribeKnxTelegrams, getGroupTelegrams } from "../services/websocket.service";
+import { GroupAddress, TelegramDict } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
+import { TelegramDictFormatter } from "../utils/format";
 
 const logger = new KNXLogger("knx-project-view");
 // Minimum XKNXProject Version needed which was used for parsing the ETS Project
@@ -47,7 +51,19 @@ export class KNXProjectView extends LitElement {
 
   @state() private _groupRangeAvailable: boolean = false;
 
-  protected firstUpdated() {
+  @state() private _subscribed?: () => void;
+
+  @state() private _lastTelegrams: { [ga: string]: TelegramDict } = {};
+
+  public disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._subscribed) {
+      this._subscribed();
+      this._subscribed = undefined;
+    }
+  }
+
+  protected async firstUpdated() {
     if (!this.knx.project) {
       this.knx.loadProject().then(() => {
         this._isGroupRangeAvailable();
@@ -57,12 +73,31 @@ export class KNXProjectView extends LitElement {
       // project was already loaded
       this._isGroupRangeAvailable();
     }
+
+    getGroupTelegrams(this.hass)
+      .then((groupTelegrams) => {
+        this._lastTelegrams = groupTelegrams;
+      })
+      .catch((err) => {
+        logger.error("getGroupTelegrams", err);
+        navigate("/knx/error", { replace: true, data: err });
+      });
+    this._subscribed = await subscribeKnxTelegrams(this.hass, (telegram) => {
+      this.telegram_callback(telegram);
+    });
   }
 
   private _isGroupRangeAvailable() {
     const projectVersion = this.knx.project?.knxproject.info.xknxproject_version ?? "0.0.0";
     logger.debug("project version: " + projectVersion);
     this._groupRangeAvailable = compare(projectVersion, MIN_XKNXPROJECT_VERSION, ">=");
+  }
+
+  protected telegram_callback(telegram: TelegramDict): void {
+    this._lastTelegrams = {
+      ...this._lastTelegrams,
+      [telegram.destination]: telegram,
+    };
   }
 
   private _columns = memoize((_narrow, _language): DataTableColumnContainer<GroupAddress> => {
@@ -95,6 +130,33 @@ export class KNXProjectView extends LitElement {
                   >${ga.dpt.main}</span
                 >${ga.dpt.sub ? "." + ga.dpt.sub.toString().padStart(3, "0") : ""} `
             : "",
+      },
+      lastValue: {
+        filterable: true,
+        title: this.knx.localize("project_view_table_last_value"),
+        flex: 2,
+        template: (ga: GroupAddress) => {
+          const lastTelegram: TelegramDict | undefined = this._lastTelegrams[ga.address];
+          if (!lastTelegram) return "";
+          const payload = TelegramDictFormatter.payload(lastTelegram);
+          if (lastTelegram.value == null) return html`<code>${payload}</code>`;
+          return html`<div title=${payload}>
+            ${TelegramDictFormatter.valueWithUnit(this._lastTelegrams[ga.address])}
+          </div>`;
+        },
+      },
+      updated: {
+        title: this.knx.localize("project_view_table_updated"),
+        flex: 1,
+        showNarrow: false,
+        template: (ga: GroupAddress) => {
+          const lastTelegram: TelegramDict | undefined = this._lastTelegrams[ga.address];
+          if (!lastTelegram) return "";
+          const tooltip = `${TelegramDictFormatter.dateWithMilliseconds(lastTelegram)}\n\n${lastTelegram.source} ${lastTelegram.source_name}`;
+          return html`<div title=${tooltip}>
+            ${relativeTime(new Date(lastTelegram.timestamp), this.hass.locale)}
+          </div>`;
+        },
       },
     };
   });

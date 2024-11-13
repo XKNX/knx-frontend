@@ -34,9 +34,11 @@
   "project_view_version_l2": "minimal unterstützte Version",
   "project_view_version_l3": "Lade die Projektdatei erneut hoch, um das ETS Projekt Werkzeug zu nutzen",
   "project_view_table_address": "Adresse",
+  "project_view_table_last_value": "Letzter Wert",
   "project_view_table_name": "Name",
   "project_view_table_description": "Beschreibung",
   "project_view_table_dpt": "DPT",
+  "project_view_table_updated": "Aktualisiert",
   "Incoming": "Eingehend",
   "Outgoing": "Ausgehend"
 }
