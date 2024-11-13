@@ -34,7 +34,7 @@ export interface TelegramDict {
   value: string | number | boolean | null;
 }
 
-export interface KNXProjectRespone {
+export interface KNXProjectResponse {
   project_loaded: boolean;
   knxproject: KNXProject;
 }

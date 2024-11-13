@@ -5,7 +5,7 @@ import {
   KNXInfoData,
   TelegramDict,
   GroupMonitorInfoData,
-  KNXProjectRespone,
+  KNXProjectResponse,
 } from "../types/websocket";
 import {
   CreateEntityData,
@@ -48,7 +48,7 @@ export const subscribeKnxTelegrams = (
     type: "knx/subscribe_telegrams",
   });
 
-export const getKnxProject = (hass: HomeAssistant): Promise<KNXProjectRespone> =>
+export const getKnxProject = (hass: HomeAssistant): Promise<KNXProjectResponse> =>
   hass.callWS({
     type: "knx/get_knx_project",
   });

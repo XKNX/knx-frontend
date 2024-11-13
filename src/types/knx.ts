@@ -1,5 +1,5 @@
 import { ConfigEntry } from "@ha/data/config_entries";
-import { KNXInfoData, KNXProjectRespone } from "./websocket";
+import { KNXInfoData, KNXProjectResponse } from "./websocket";
 
 export interface KNX {
   language: string;
@@ -7,6 +7,6 @@ export interface KNX {
   localize(string: string, replace?: Record<string, any>): string;
   log: any;
   info: KNXInfoData;
-  project: KNXProjectRespone | null;
+  project: KNXProjectResponse | null;
   loadProject(): Promise<void>;
 }
