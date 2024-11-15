@@ -1,8 +1,9 @@
 import { mdiDelete, mdiInformationSlabCircleOutline, mdiPlus, mdiPencilOutline } from "@mdi/js";
-import { LitElement, TemplateResult, html, css } from "lit";
+import type { TemplateResult } from "lit";
+import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
-import { HassEntity } from "home-assistant-js-websocket";
+import type { HassEntity } from "home-assistant-js-websocket";
 import memoize from "memoize-one";
 
 import "@ha/layouts/hass-loading-screen";
@@ -15,14 +16,14 @@ import { navigate } from "@ha/common/navigate";
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import type { DataTableColumnContainer } from "@ha/components/data-table/ha-data-table";
-import { AreaRegistryEntry } from "@ha/data/area_registry";
-import { ExtEntityRegistryEntry } from "@ha/data/entity_registry";
+import type { AreaRegistryEntry } from "@ha/data/area_registry";
+import type { ExtEntityRegistryEntry } from "@ha/data/entity_registry";
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
-import { HomeAssistant, Route } from "@ha/types";
+import type { HomeAssistant, Route } from "@ha/types";
 
 import { getEntityEntries, deleteEntity } from "../services/websocket.service";
-import { KNX } from "../types/knx";
+import type { KNX } from "../types/knx";
 import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("knx-entities-view");

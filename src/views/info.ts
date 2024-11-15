@@ -1,5 +1,6 @@
 import { mdiFileUpload } from "@mdi/js";
-import { css, nothing, html, LitElement, TemplateResult, CSSResultGroup } from "lit";
+import type { TemplateResult, CSSResultGroup } from "lit";
+import { css, nothing, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
@@ -12,12 +13,12 @@ import "@ha/components/ha-selector/ha-selector-text";
 import { uploadFile } from "@ha/data/file_upload";
 import { extractApiErrorMessage } from "@ha/data/hassio/common";
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
-import { HomeAssistant, Route } from "@ha/types";
+import type { HomeAssistant, Route } from "@ha/types";
 
 import { processProjectFile, removeProjectFile } from "../services/websocket.service";
 
-import { KNX } from "../types/knx";
-import { KNXProjectInfo } from "../types/websocket";
+import type { KNX } from "../types/knx";
+import type { KNXProjectInfo } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
 import { VERSION } from "../version";
 

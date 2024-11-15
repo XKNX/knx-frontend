@@ -1,10 +1,11 @@
-import { css, CSSResultGroup, html, LitElement, nothing, TemplateResult } from "lit";
+import type { CSSResultGroup, TemplateResult } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
 
-import { GroupRange, KNXProject } from "../types/websocket";
+import type { GroupRange, KNXProject } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("knx-project-tree-view");

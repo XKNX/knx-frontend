@@ -1,5 +1,5 @@
-import { ConfigEntry } from "@ha/data/config_entries";
-import { KNXInfoData, KNXProjectResponse } from "./websocket";
+import type { ConfigEntry } from "@ha/data/config_entries";
+import type { KNXInfoData, KNXProjectResponse } from "./websocket";
 
 export interface KNX {
   language: string;

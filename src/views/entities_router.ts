@@ -1,6 +1,6 @@
 import { customElement } from "lit/decorators";
 
-import { RouterOptions } from "@ha/layouts/hass-router-page";
+import type { RouterOptions } from "@ha/layouts/hass-router-page";
 
 import { KnxRouter } from "../knx-router";
 import { KNXLogger } from "../tools/knx-logger";

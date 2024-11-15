@@ -3,8 +3,9 @@
  * Unlike the ha-device-picker or selector, its value is the device identifier
  * (second tuple item), not the device id.
  * */
-import { ComboBoxLitRenderer } from "@vaadin/combo-box/lit";
-import { LitElement, PropertyValues, html, nothing, TemplateResult } from "lit";
+import type { ComboBoxLitRenderer } from "@vaadin/combo-box/lit";
+import type { PropertyValues, TemplateResult } from "lit";
+import { LitElement, html, nothing } from "lit";
 import { customElement, query, property, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 
@@ -16,11 +17,12 @@ import "@ha/components/ha-list-item";
 import "../dialogs/knx-device-create-dialog";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
-import { ScorableTextItem, fuzzyFilterSort } from "@ha/common/string/filter/sequence-matching";
+import type { ScorableTextItem } from "@ha/common/string/filter/sequence-matching";
+import { fuzzyFilterSort } from "@ha/common/string/filter/sequence-matching";
 import { stringCompare } from "@ha/common/string/compare";
 
-import { HomeAssistant, ValueChangedEvent } from "@ha/types";
-import { AreaRegistryEntry } from "@ha/data/area_registry";
+import type { HomeAssistant, ValueChangedEvent } from "@ha/types";
+import type { AreaRegistryEntry } from "@ha/data/area_registry";
 import type { DeviceRegistryEntry } from "@ha/data/device_registry";
 import type { HaComboBox } from "@ha/components/ha-combo-box";
 

@@ -1,5 +1,6 @@
 import { mdiPlus, mdiFloppy } from "@mdi/js";
-import { LitElement, TemplateResult, PropertyValues, html, css, nothing } from "lit";
+import type { TemplateResult, PropertyValues } from "lit";
+import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state, query } from "lit/decorators";
 import { ContextProvider } from "@lit-labs/context";
 

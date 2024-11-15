@@ -1,5 +1,6 @@
 import { mdiNetworkOutline, mdiSwapHorizontalCircle, mdiArrowLeft, mdiDragVertical } from "@mdi/js";
-import { css, CSSResultGroup, html, LitElement, nothing, TemplateResult } from "lit";
+import type { CSSResultGroup, TemplateResult } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { repeat } from "lit/directives/repeat";
 import { consume } from "@lit-labs/context";
@@ -7,7 +8,13 @@ import { consume } from "@lit-labs/context";
 import "@ha/components/ha-alert";
 import "@ha/components/ha-svg-icon";
 
-import { KNXProject, CommunicationObject, COFlags, DPT, GroupAddress } from "../types/websocket";
+import type {
+  KNXProject,
+  CommunicationObject,
+  COFlags,
+  DPT,
+  GroupAddress,
+} from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
 import { dragDropContext, type DragDropContext } from "../utils/drag-drop-context";
 import { filterValidComObjects } from "../utils/dpt";

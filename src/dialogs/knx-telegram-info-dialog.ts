@@ -4,11 +4,11 @@ import { customElement, property } from "lit/decorators";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
 import { haStyleDialog } from "@ha/resources/styles";
-import { HomeAssistant } from "@ha/types";
+import type { HomeAssistant } from "@ha/types";
 import { createCloseHeading } from "@ha/components/ha-dialog";
 
-import { KNX } from "../types/knx";
-import { TelegramDict } from "../types/websocket";
+import type { KNX } from "../types/knx";
+import type { TelegramDict } from "../types/websocket";
 import { TelegramDictFormatter } from "../utils/format";
 
 declare global {

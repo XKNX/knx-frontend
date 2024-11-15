@@ -1,4 +1,4 @@
-import { HomeAssistant } from "@ha/types";
+import type { HomeAssistant } from "@ha/types";
 import type { DeviceRegistryEntry } from "@ha/data/device_registry";
 
 const isKnxIdentifier = (identifier: [string, string]): boolean => identifier[0] === "knx";
