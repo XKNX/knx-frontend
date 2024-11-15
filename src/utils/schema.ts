@@ -1,5 +1,5 @@
 import type { Selector } from "@ha/data/selector";
-import { DPT } from "../types/websocket";
+import type { DPT } from "../types/websocket";
 
 export type SettingsGroup = {
   type: "settings_group";

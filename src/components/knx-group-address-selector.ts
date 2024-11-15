@@ -1,5 +1,6 @@
 import { mdiChevronDown, mdiChevronUp } from "@mdi/js";
-import { LitElement, PropertyValues, html, css, nothing } from "lit";
+import type { PropertyValues } from "lit";
+import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state, query, queryAll } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 import { consume } from "@lit-labs/context";
@@ -11,7 +12,8 @@ import { fireEvent } from "@ha/common/dom/fire_event";
 import type { HomeAssistant } from "@ha/types";
 
 import "./knx-dpt-selector";
-import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
+import type { DragDropContext } from "../utils/drag-drop-context";
+import { dragDropContext } from "../utils/drag-drop-context";
 import { isValidDPT } from "../utils/dpt";
 import { extractValidationErrors } from "../utils/validation";
 import type { GASchemaOptions } from "../utils/schema";

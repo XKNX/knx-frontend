@@ -1,11 +1,12 @@
 import { mdiNetwork, mdiFolderMultipleOutline, mdiFileTreeOutline } from "@mdi/js";
 import { customElement, property } from "lit/decorators";
 
-import { HassRouterPage, RouterOptions } from "@ha/layouts/hass-router-page";
-import { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
-import { HomeAssistant, Route } from "@ha/types";
+import type { RouterOptions } from "@ha/layouts/hass-router-page";
+import { HassRouterPage } from "@ha/layouts/hass-router-page";
+import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
+import type { HomeAssistant, Route } from "@ha/types";
 
-import { KNX } from "./types/knx";
+import type { KNX } from "./types/knx";
 import { KNXLogger } from "./tools/knx-logger";
 
 const logger = new KNXLogger("router");

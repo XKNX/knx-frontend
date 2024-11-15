@@ -1,4 +1,5 @@
-import { LitElement, css, html } from "lit";
+import type { LitElement } from "lit";
+import { css, html } from "lit";
 import { customElement, property } from "lit/decorators";
 
 import { applyThemesOnElement } from "@ha/common/dom/apply_themes_on_element";
@@ -9,12 +10,12 @@ import { computeRTL, computeDirectionStyles } from "@ha/common/util/compute_rtl"
 import { navigate } from "@ha/common/navigate";
 import { makeDialogManager } from "@ha/dialogs/make-dialog-manager";
 import "@ha/resources/ha-style";
-import { HomeAssistant, Route } from "@ha/types";
+import type { HomeAssistant, Route } from "@ha/types";
 
 import { knxElement } from "./knx";
 import "./knx-router";
-import { KNX } from "./types/knx";
-import { LocationChangedEvent } from "./types/navigation";
+import type { KNX } from "./types/knx";
+import type { LocationChangedEvent } from "./types/navigation";
 
 declare global {
   // for fire event

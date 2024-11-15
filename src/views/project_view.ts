@@ -1,10 +1,11 @@
 import { mdiFilterVariant } from "@mdi/js";
-import { LitElement, TemplateResult, html, css, nothing } from "lit";
+import type { TemplateResult } from "lit";
+import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
 import memoize from "memoize-one";
 
-import { HASSDomEvent } from "@ha/common/dom/fire_event";
+import type { HASSDomEvent } from "@ha/common/dom/fire_event";
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-tabs-subpage";
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
@@ -20,11 +21,11 @@ import "../components/knx-project-tree-view";
 
 import { compare } from "compare-versions";
 
-import { HomeAssistant, Route } from "@ha/types";
-import { KNX } from "../types/knx";
+import type { HomeAssistant, Route } from "@ha/types";
+import type { KNX } from "../types/knx";
 import type { GroupRangeSelectionChangedEvent } from "../components/knx-project-tree-view";
 import { subscribeKnxTelegrams, getGroupTelegrams } from "../services/websocket.service";
-import { GroupAddress, TelegramDict } from "../types/websocket";
+import type { GroupAddress, TelegramDict } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
 import { TelegramDictFormatter } from "../utils/format";
 

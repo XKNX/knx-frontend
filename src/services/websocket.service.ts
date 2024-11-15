@@ -1,13 +1,13 @@
-import { HomeAssistant } from "@ha/types";
-import { ExtEntityRegistryEntry } from "@ha/data/entity_registry";
-import { DeviceRegistryEntry } from "@ha/data/device_registry";
-import {
+import type { HomeAssistant } from "@ha/types";
+import type { ExtEntityRegistryEntry } from "@ha/data/entity_registry";
+import type { DeviceRegistryEntry } from "@ha/data/device_registry";
+import type {
   KNXInfoData,
   TelegramDict,
   GroupMonitorInfoData,
   KNXProjectResponse,
 } from "../types/websocket";
-import {
+import type {
   CreateEntityData,
   CreateEntityResult,
   UpdateEntityData,

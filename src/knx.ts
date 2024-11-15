@@ -4,12 +4,12 @@ import { property } from "lit/decorators";
 import { navigate } from "@ha/common/navigate";
 import { getConfigEntries } from "@ha/data/config_entries";
 import { ProvideHassLitMixin } from "@ha/mixins/provide-hass-lit-mixin";
-import { HomeAssistant } from "@ha/types";
+import type { HomeAssistant } from "@ha/types";
 
 import { localize } from "./localize/localize";
 import { KNXLogger } from "./tools/knx-logger";
 import { getKnxInfoData, getKnxProject } from "./services/websocket.service";
-import { KNX } from "./types/knx";
+import type { KNX } from "./types/knx";
 
 export class knxElement extends ProvideHassLitMixin(LitElement) {
   @property({ attribute: false }) public hass!: HomeAssistant;

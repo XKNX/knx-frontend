@@ -1,4 +1,5 @@
-import { html, CSSResultGroup, LitElement, TemplateResult, nothing } from "lit";
+import type { CSSResultGroup, TemplateResult } from "lit";
+import { html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
 import { mdiPause, mdiFastForward } from "@mdi/js";
@@ -6,7 +7,7 @@ import memoize from "memoize-one";
 
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-tabs-subpage-data-table";
-import { HASSDomEvent } from "@ha/common/dom/fire_event";
+import type { HASSDomEvent } from "@ha/common/dom/fire_event";
 import { computeRTLDirection } from "@ha/common/util/compute_rtl";
 import { navigate } from "@ha/common/navigate";
 import type {
@@ -16,11 +17,11 @@ import type {
 } from "@ha/components/data-table/ha-data-table";
 import "@ha/components/ha-icon-button";
 import { haStyle } from "@ha/resources/styles";
-import { HomeAssistant, Route } from "@ha/types";
+import type { HomeAssistant, Route } from "@ha/types";
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import { subscribeKnxTelegrams, getGroupMonitorInfo } from "../services/websocket.service";
-import { KNX } from "../types/knx";
-import { TelegramDict } from "../types/websocket";
+import type { KNX } from "../types/knx";
+import type { TelegramDict } from "../types/websocket";
 import { TelegramDictFormatter } from "../utils/format";
 import "../dialogs/knx-telegram-info-dialog";
 import { KNXLogger } from "../tools/knx-logger";

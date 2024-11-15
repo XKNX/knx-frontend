@@ -1,5 +1,5 @@
 import { dump } from "js-yaml";
-import { DPT, TelegramDict } from "../types/websocket";
+import type { DPT, TelegramDict } from "../types/websocket";
 
 export const TelegramDictFormatter = {
   payload: (telegram: TelegramDict): string => {

@@ -1,4 +1,5 @@
-import { css, html, LitElement, TemplateResult, nothing } from "lit";
+import type { TemplateResult } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 
 import "@ha/components/ha-card";

@@ -1,5 +1,5 @@
 import { createContext } from "@lit-labs/context";
-import { GroupAddress } from "../types/websocket";
+import type { GroupAddress } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("knx-drag-drop-context");
