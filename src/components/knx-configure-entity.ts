@@ -96,7 +96,7 @@ export class KNXConfigureEntity extends LitElement {
         outlined
         .header=${group.heading}
         .secondary=${group.description}
-        .expanded=${this._group_has_group_address_defined(group)}
+        .expanded=${this._groupHasGroupAddressInConfig(group)}
         >${this._generateItems(group.selectors, errors)}
       </ha-expansion-panel>`;
     }
@@ -107,20 +107,19 @@ export class KNXConfigureEntity extends LitElement {
     </ha-settings-row>`;
   }
 
-  _group_has_group_address_defined(group: SettingsGroup) {
+  _groupHasGroupAddressInConfig(group: SettingsGroup) {
     if (this.config === undefined) {
       return false;
     }
     return group.selectors.some((selector) => {
       if (selector.type === "group_address")
-        return this._has_group_address_defined(selector, this.config!.knx);
+        return this._hasGroupAddressInConfig(selector, this.config!.knx);
       if (selector.type === "group_select")
         return selector.options.some((options) =>
           options.schema.some((schema) => {
-            if (schema.type === "settings_group")
-              return this._group_has_group_address_defined(schema);
+            if (schema.type === "settings_group") return this._groupHasGroupAddressInConfig(schema);
             if (schema.type === "group_address")
-              return this._has_group_address_defined(schema, this.config!.knx);
+              return this._hasGroupAddressInConfig(schema, this.config!.knx);
             return false;
           }),
         );
@@ -128,7 +127,7 @@ export class KNXConfigureEntity extends LitElement {
     });
   }
 
-  _has_group_address_defined(ga_selector: GASchema, knxData: KnxEntityData) {
+  _hasGroupAddressInConfig(ga_selector: GASchema, knxData: KnxEntityData) {
     if (!(ga_selector.name in knxData)) return false;
 
     const knxEntry = knxData[ga_selector.name];
