@@ -63,30 +63,26 @@ export const renderConfigureEntityCard = (
         ></ha-selector-text>
       </ha-settings-row>
       <ha-expansion-panel .header=${"Advanced"} outlined>
-        <ha-settings-row narrow>
-          <div slot="heading">Entity settings</div>
-          <div slot="description">Description</div>
-          <ha-selector-select
-            .hass=${hass}
-            .label=${"Entity category"}
-            .helper=${"Leave empty for standard behaviour."}
-            .required=${false}
-            .selector=${{
-              select: {
-                multiple: false,
-                custom_value: false,
-                mode: "dropdown",
-                options: [
-                  { value: "config", label: "Config" },
-                  { value: "diagnostic", label: "Diagnostic" },
-                ],
-              },
-            }}
-            .key=${"entity_category"}
-            .value=${config.entity_category}
-            @value-changed=${updateConfig}
-          ></ha-selector-select>
-        </ha-settings-row>
+        <ha-selector-select
+          .hass=${hass}
+          .label=${"Entity category"}
+          .helper=${"Leave empty for standard behaviour."}
+          .required=${false}
+          .selector=${{
+            select: {
+              multiple: false,
+              custom_value: false,
+              mode: "dropdown",
+              options: [
+                { value: "config", label: "Config" },
+                { value: "diagnostic", label: "Diagnostic" },
+              ],
+            },
+          }}
+          .key=${"entity_category"}
+          .value=${config.entity_category}
+          @value-changed=${updateConfig}
+        ></ha-selector-select>
       </ha-expansion-panel>
     </ha-card>
   `;

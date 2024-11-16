@@ -17,10 +17,10 @@ import "./knx-sync-state-selector-row";
 import { renderConfigureEntityCard } from "./knx-configure-entity-options";
 import { KNXLogger } from "../tools/knx-logger";
 import { extractValidationErrors } from "../utils/validation";
-import type { EntityData, ErrorDescription } from "../types/entity_data";
+import type { EntityData, ErrorDescription, KnxEntityData } from "../types/entity_data";
 import type { KNX } from "../types/knx";
 import type { PlatformInfo } from "../utils/common";
-import type { SettingsGroup, SelectorSchema, GroupSelect } from "../utils/schema";
+import type { SettingsGroup, SelectorSchema, GroupSelect, GASchema } from "../utils/schema";
 
 const logger = new KNXLogger("knx-configure-entity");
 
@@ -91,11 +91,51 @@ export class KNXConfigureEntity extends LitElement {
   }
 
   _generateSettingsGroup(group: SettingsGroup, errors?: ErrorDescription[]) {
+    if (group.collapsible === true) {
+      return html` <ha-expansion-panel
+        outlined
+        .header=${group.heading}
+        .secondary=${group.description}
+        .expanded=${this._groupHasGroupAddressInConfig(group)}
+        >${this._generateItems(group.selectors, errors)}
+      </ha-expansion-panel>`;
+    }
     return html` <ha-settings-row narrow>
       <div slot="heading">${group.heading}</div>
       <div slot="description">${group.description}</div>
       ${this._generateItems(group.selectors, errors)}
     </ha-settings-row>`;
+  }
+
+  _groupHasGroupAddressInConfig(group: SettingsGroup) {
+    if (this.config === undefined) {
+      return false;
+    }
+    return group.selectors.some((selector) => {
+      if (selector.type === "group_address")
+        return this._hasGroupAddressInConfig(selector, this.config!.knx);
+      if (selector.type === "group_select")
+        return selector.options.some((options) =>
+          options.schema.some((schema) => {
+            if (schema.type === "settings_group") return this._groupHasGroupAddressInConfig(schema);
+            if (schema.type === "group_address")
+              return this._hasGroupAddressInConfig(schema, this.config!.knx);
+            return false;
+          }),
+        );
+      return false;
+    });
+  }
+
+  _hasGroupAddressInConfig(ga_selector: GASchema, knxData: KnxEntityData) {
+    if (!(ga_selector.name in knxData)) return false;
+
+    const knxEntry = knxData[ga_selector.name];
+    if (knxEntry.write !== undefined) return true;
+    if (knxEntry.state !== undefined) return true;
+    if (knxEntry.passive?.length) return true;
+
+    return false;
   }
 
   _generateItems(selectors: SelectorSchema[], errors?: ErrorDescription[]) {
@@ -245,7 +285,18 @@ export class KNXConfigureEntity extends LitElement {
         }
       }
 
+      ha-expansion-panel {
+        margin-bottom: 16px;
+      }
+      ha-expansion-panel > :first-child {
+        margin-top: 16px;
+      }
+      ha-expansion-panel > ha-settings-row:first-child {
+        border: 0;
+      }
+
       ha-settings-row {
+        margin-bottom: 16px;
         padding: 0;
       }
       ha-control-select {
