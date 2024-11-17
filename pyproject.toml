@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "knx_frontend"
-license = { text = "MIT License" }
+license = { text = "MIT" }
 description = "KNX panel for Home Assistant"
 keywords = ["Home Assistant", "KNX"]
 readme = "README.md"
