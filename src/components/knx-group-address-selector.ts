@@ -88,6 +88,11 @@ export class GroupAddressSelector extends LitElement {
     this.addressOptions = getAddressOptions(this.filteredGroupAddresses);
   }
 
+  protected shouldUpdate(changedProps: PropertyValues<this>) {
+    // ignore hass updates to avoid scrolling reset of open dropdowns (when input filter is set)
+    return !(changedProps.size === 1 && changedProps.has("hass"));
+  }
+
   protected willUpdate(changedProps: PropertyValues<this>) {
     if (changedProps.has("config")) {
       const selectedDPT = this.getValidDptFromConfigValue();
