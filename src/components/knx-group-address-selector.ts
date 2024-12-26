@@ -66,7 +66,7 @@ export class GroupAddressSelector extends LitElement {
   @queryAll("ha-selector-select") private _gaSelectors!: NodeListOf<HTMLElement>;
 
   getValidGroupAddresses(validDPTs: DPT[]): GroupAddress[] {
-    return this.knx.project
+    return this.knx.project?.project_loaded
       ? Object.values(this.knx.project.knxproject.group_addresses).filter((groupAddress) =>
           groupAddress.dpt ? isValidDPT(groupAddress.dpt, validDPTs) : false,
         )
