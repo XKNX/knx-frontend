@@ -240,7 +240,7 @@ export class KNXCreateEntity extends LitElement {
             <ha-svg-icon slot="icon" .path=${create ? mdiPlus : mdiFloppy}></ha-svg-icon>
           </ha-fab>
         </div>
-        ${this.knx.project
+        ${this.knx.project?.project_loaded
           ? html` <div class="panel">
               <knx-project-device-tree
                 .data=${this.knx.project.knxproject}
