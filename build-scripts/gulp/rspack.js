@@ -1,11 +1,12 @@
-// Tasks to run webpack.
+// Tasks to run rspack.
 
 import log from "fancy-log";
 import fs from "fs";
 import gulp from "gulp";
-import webpack from "webpack";
+import rspack from "@rspack/core";
+import { RspackDevServer } from "@rspack/dev-server";
 import paths from "../paths.cjs";
-import { createKNXConfig } from "../webpack.cjs";
+import { createKNXConfig } from "../rspack.cjs";
 
 const bothBuilds = (createConfigFunc, params) => [
   createConfigFunc({ ...params, latestBuild: true }),
@@ -49,27 +50,27 @@ const doneHandler = (done) => (err, stats) => {
 
 const prodBuild = (conf) =>
   new Promise((resolve) => {
-    webpack(
+    rspack(
       conf,
-      // Resolve promise when done. Because we pass a callback, webpack closes itself
-      doneHandler(resolve)
+      // Resolve promise when done. Because we pass a callback, rspack closes itself
+      doneHandler(resolve),
     );
   });
 
-gulp.task("webpack-watch-knx", () => {
+gulp.task("rspack-watch-knx", () => {
   // This command will run forever because we don't close compiler
-  webpack(
+  rspack(
     createKNXConfig({
       isProdBuild: false,
       latestBuild: true,
-    })
+    }),
   ).watch({ ignored: /build/, poll: isWsl }, doneHandler());
 });
 
-gulp.task("webpack-prod-knx", () =>
+gulp.task("rspack-prod-knx", () =>
   prodBuild(
     bothBuilds(createKNXConfig, {
       isProdBuild: true,
-    })
-  )
+    }),
+  ),
 );
