@@ -158,6 +158,7 @@ const createRspackConfig = ({
           "@lit-labs/virtualizer/polyfills/resize-observer-polyfill/ResizeObserver.js",
         "@lit-labs/observers/resize-controller": "@lit-labs/observers/resize-controller.js",
       },
+      tsConfig: path.resolve(paths.polymer_dir, "tsconfig.json"),
     },
     output: {
       module: latestBuild,

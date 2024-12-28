@@ -26,9 +26,6 @@
   "dependenciesOverride": {
     "compare-versions": "6.1.0"
   },
-  "devDependenciesOverride": {
-    "tsconfig-paths-webpack-plugin": "^4.0.1"
-  },
   "resolutionsOverride": {},
   "dependencies": {
     "@babel/runtime": "7.26.0",
@@ -232,7 +229,6 @@
     "tar": "7.4.3",
     "terser-webpack-plugin": "5.3.11",
     "ts-lit-plugin": "2.0.2",
-    "tsconfig-paths-webpack-plugin": "^4.0.1",
     "typescript": "5.7.2",
     "vitest": "2.1.8",
     "webpack-stats-plugin": "1.1.3",
