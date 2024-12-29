@@ -6,7 +6,6 @@ const { RsdoctorRspackPlugin } = require("@rsdoctor/rspack-plugin");
 const { StatsWriterPlugin } = require("webpack-stats-plugin");
 const filterStats = require("@bundle-stats/plugin-webpack-filter").default;
 const TerserPlugin = require("terser-webpack-plugin");
-const TsconfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
 const { WebpackManifestPlugin } = require("rspack-manifest-plugin");
 const log = require("fancy-log");
 const WebpackBar = require("webpackbar/rspack");
