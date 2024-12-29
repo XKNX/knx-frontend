@@ -20,5 +20,5 @@ module.exports = {
   knx_output_es5: path.resolve(__dirname, "../knx_frontend/frontend_es5"),
   knx_publicPath: "/knx_static",
 
-  translations_src: path.resolve(__dirname, "../src/translations"),
+  translations_src: path.resolve(__dirname, "../homeassistant-frontend/src/translations"),
 };

@@ -86,14 +86,20 @@ module.exports.babelOptions = ({ latestBuild }) => ({
   ],
   plugins: [
     [
-      path.resolve(paths.polymer_dir, "build-scripts/babel-plugins/inline-constants-plugin.cjs"),
+      path.resolve(
+        paths.polymer_dir,
+        "homeassistant-frontend/build-scripts/babel-plugins/inline-constants-plugin.cjs",
+      ),
       {
         modules: ["@mdi/js"],
         ignoreModuleNotFound: true,
       },
     ],
     [
-      path.resolve(paths.polymer_dir, "build-scripts/babel-plugins/custom-polyfill-plugin.js"),
+      path.resolve(
+        paths.polymer_dir,
+        "homeassistant-frontend/build-scripts/babel-plugins/custom-polyfill-plugin.js",
+      ),
       { method: "usage-global" },
     ],
     // Import helpers and regenerator from runtime package
