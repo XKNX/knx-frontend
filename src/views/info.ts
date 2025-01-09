@@ -12,6 +12,7 @@ import "@ha/components/ha-file-upload";
 import "@ha/components/ha-selector/ha-selector-text";
 import { uploadFile } from "@ha/data/file_upload";
 import { extractApiErrorMessage } from "@ha/data/hassio/common";
+import { showOptionsFlowDialog } from "@ha/dialogs/config-flow/show-dialog-options-flow";
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 import type { HomeAssistant, Route } from "@ha/types";
 
@@ -51,6 +52,10 @@ export class KNXInfo extends LitElement {
         .tabs=${this.tabs}
         .localizeFunc=${this.knx.localize}
       >
+        <ha-button
+          @click=${this._openOptionFlow}
+          >Integration options</ha-button
+        ></ha-button>
         <div class="columns">
           ${this._renderInfoCard()}
           ${this.knx.info.project ? this._renderProjectDataCard(this.knx.info.project) : nothing}
@@ -58,6 +63,10 @@ export class KNXInfo extends LitElement {
         </div>
       </hass-tabs-subpage>
     `;
+  }
+
+  private async _openOptionFlow() {
+    showOptionsFlowDialog(this, this.knx.config_entry);
   }
 
   private _renderInfoCard() {
@@ -95,6 +104,7 @@ export class KNXInfo extends LitElement {
         <div class="knx-bug-report">
           ${this.knx.localize("info_my_knx")}
           <a href="https://my.knx.org" target="_blank">my.knx.org</a>
+        </div>
       </div>
     </ha-card>`;
   }
