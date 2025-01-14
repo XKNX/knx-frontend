@@ -55,7 +55,7 @@ class KnxFrontend extends knxElement {
         // Ignore if modifier keys are pressed
         return;
       }
-      if (["c", "e"].includes(ev.key)) {
+      if (["a", "c", "d", "e", "m"].includes(ev.key)) {
         // @ts-ignore
         fireEvent(mainWindow, "hass-quick-bar-trigger", ev, {
           bubbles: false,
