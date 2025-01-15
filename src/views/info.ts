@@ -95,6 +95,7 @@ export class KNXInfo extends LitElement {
         <div class="knx-bug-report">
           ${this.knx.localize("info_my_knx")}
           <a href="https://my.knx.org" target="_blank">my.knx.org</a>
+        </div>
       </div>
     </ha-card>`;
   }
