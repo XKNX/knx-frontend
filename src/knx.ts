@@ -18,11 +18,11 @@ export class knxElement extends ProvideHassLitMixin(LitElement) {
 
   protected async _initKnx() {
     try {
-      const knxConfigEntry = await getConfigEntries(this.hass, { domain: "knx" })[0]; // single instance allowed for knx config
+      const knxConfigEntries = await getConfigEntries(this.hass, { domain: "knx" });
       const knxInfo = await getKnxInfoData(this.hass);
       this.knx = {
         language: this.hass.language,
-        config_entry: knxConfigEntry,
+        config_entry: knxConfigEntries[0], // single instance allowed for knx config
         localize: (string, replace) => localize(this.hass, string, replace),
         log: new KNXLogger(),
         info: knxInfo,
