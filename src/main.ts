@@ -12,7 +12,7 @@ import { makeDialogManager } from "@ha/dialogs/make-dialog-manager";
 import "@ha/resources/ha-style";
 import type { HomeAssistant, Route } from "@ha/types";
 
-import { knxElement } from "./knx";
+import { KnxElement } from "./knx";
 import "./knx-router";
 import type { KNX } from "./types/knx";
 import type { LocationChangedEvent } from "./types/navigation";
@@ -25,7 +25,7 @@ declare global {
 }
 
 @customElement("knx-frontend")
-class KnxFrontend extends knxElement {
+class KnxFrontend extends KnxElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
   @property({ attribute: false }) public knx!: KNX;

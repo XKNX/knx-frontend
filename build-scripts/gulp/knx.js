@@ -1,12 +1,12 @@
-/* eslint @typescript-eslint/no-var-requires: "off", import/extensions: "off" */
 import gulp from "gulp";
 import env from "../env.cjs";
 
 import "./clean.js";
-import "./webpack.js";
 import "./compress.js";
 import "./entry-html.js";
 import "./gen-icons-json.js";
+import "./rspack.js";
+import "./translations.js";
 
 gulp.task(
   "develop-knx",
@@ -16,9 +16,11 @@ gulp.task(
     },
     "clean-knx",
     "gen-icons-json",
+    "build-translations",
+    "build-locale-data",
     "gen-index-knx-dev",
-    "webpack-watch-knx"
-  )
+    "rspack-watch-knx",
+  ),
 );
 
 gulp.task(
@@ -30,9 +32,11 @@ gulp.task(
     "clean-knx",
     "ensure-knx-build-dir",
     "gen-icons-json",
-    "webpack-prod-knx",
+    "build-translations",
+    "build-locale-data",
+    "rspack-prod-knx",
     "gen-index-knx-prod",
     ...// Don't compress running tests
-    (env.isTest() ? [] : ["compress-knx"])
-  )
+    (env.isTest() ? [] : ["compress-knx"]),
+  ),
 );

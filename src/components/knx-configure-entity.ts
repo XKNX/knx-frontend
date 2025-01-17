@@ -90,7 +90,7 @@ export class KNXConfigureEntity extends LitElement {
     `;
   }
 
-  _generateSettingsGroup(group: SettingsGroup, errors?: ErrorDescription[]) {
+  private _generateSettingsGroup(group: SettingsGroup, errors?: ErrorDescription[]) {
     if (group.collapsible === true) {
       return html` <ha-expansion-panel
         outlined
@@ -107,7 +107,7 @@ export class KNXConfigureEntity extends LitElement {
     </ha-settings-row>`;
   }
 
-  _groupHasGroupAddressInConfig(group: SettingsGroup) {
+  private _groupHasGroupAddressInConfig(group: SettingsGroup) {
     if (this.config === undefined) {
       return false;
     }
@@ -127,7 +127,7 @@ export class KNXConfigureEntity extends LitElement {
     });
   }
 
-  _hasGroupAddressInConfig(ga_selector: GASchema, knxData: KnxEntityData) {
+  private _hasGroupAddressInConfig(ga_selector: GASchema, knxData: KnxEntityData) {
     if (!(ga_selector.name in knxData)) return false;
 
     const knxEntry = knxData[ga_selector.name];
@@ -138,13 +138,11 @@ export class KNXConfigureEntity extends LitElement {
     return false;
   }
 
-  _generateItems(selectors: SelectorSchema[], errors?: ErrorDescription[]) {
-    return html`${selectors.map((selector: SelectorSchema) =>
-      this._generateItem(selector, errors),
-    )}`;
+  private _generateItems(selectors: SelectorSchema[], errors?: ErrorDescription[]) {
+    return html`${selectors.map((selector: SelectorSchema) => this._generateItem(selector, errors))}`;
   }
 
-  _generateItem(selector: SelectorSchema, errors?: ErrorDescription[]) {
+  private _generateItem(selector: SelectorSchema, errors?: ErrorDescription[]) {
     switch (selector.type) {
       case "group_address":
         return html`
@@ -193,7 +191,7 @@ export class KNXConfigureEntity extends LitElement {
     }
   }
 
-  _generateGroupSelect(selector: GroupSelect, errors?: ErrorDescription[]) {
+  private _generateGroupSelect(selector: GroupSelect, errors?: ErrorDescription[]) {
     const value: string =
       this.config!.knx[selector.name] ??
       // set default if nothing is set yet

@@ -11,7 +11,7 @@ import { KNXLogger } from "./tools/knx-logger";
 import { getKnxInfoData, getKnxProject } from "./services/websocket.service";
 import type { KNX } from "./types/knx";
 
-export class knxElement extends ProvideHassLitMixin(LitElement) {
+export class KnxElement extends ProvideHassLitMixin(LitElement) {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
   @property({ attribute: false }) public knx!: KNX;

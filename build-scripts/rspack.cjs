@@ -1,18 +1,14 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { existsSync } = require("fs");
 const path = require("path");
-const webpack = require("webpack");
+const rspack = require("@rspack/core");
+const { RsdoctorRspackPlugin } = require("@rsdoctor/rspack-plugin");
 const { StatsWriterPlugin } = require("webpack-stats-plugin");
 const filterStats = require("@bundle-stats/plugin-webpack-filter").default;
 const TerserPlugin = require("terser-webpack-plugin");
-const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
-const { WebpackManifestPlugin } = require("webpack-manifest-plugin");
+const { WebpackManifestPlugin } = require("rspack-manifest-plugin");
 const log = require("fancy-log");
-const WebpackBar = require("webpackbar");
-const {
-  TransformAsyncModulesPlugin,
-} = require("transform-async-modules-webpack-plugin");
-const { dependencies } = require("../package.json");
+const WebpackBar = require("webpackbar/rspack");
 const paths = require("./paths.cjs");
 const bundle = require("./bundle.cjs");
 
@@ -30,7 +26,7 @@ class LogStartCompilePlugin {
   }
 }
 
-const createWebpackConfig = ({
+const createRspackConfig = ({
   entry,
   outputPath,
   publicPath,
@@ -48,9 +44,7 @@ const createWebpackConfig = ({
   return {
     mode: isProdBuild ? "production" : "development",
     target: `browserslist:${latestBuild ? "modern" : "legacy"}`,
-    devtool: isProdBuild
-      ? "cheap-module-source-map"
-      : "eval-cheap-module-source-map",
+    devtool: isProdBuild ? "cheap-module-source-map" : "eval-cheap-module-source-map",
     entry,
     node: false,
     module: {
@@ -99,10 +93,8 @@ const createWebpackConfig = ({
         // Only include the JS of entrypoints
         filter: (file) => file.isInitial && !file.name.endsWith(".map"),
       }),
-      new webpack.DefinePlugin(
-        bundle.definedVars({ isProdBuild, latestBuild, defineOverlay })
-      ),
-      new webpack.IgnorePlugin({
+      new rspack.DefinePlugin(bundle.definedVars({ isProdBuild, latestBuild, defineOverlay })),
+      new rspack.IgnorePlugin({
         checkResource(resource, context) {
           // Only use ignore to intercept imports that we don't control
           // inside node_module dependencies.
@@ -122,33 +114,26 @@ const createWebpackConfig = ({
               : require.resolve(resource);
           } catch (err) {
             // eslint-disable-next-line no-console
-            console.error(
-              "Error in Home Assistant ignore plugin",
-              resource,
-              context
-            );
+            console.error("Error in Home Assistant ignore plugin", resource, context);
             throw err;
           }
 
-          return ignorePackages.some((toIgnorePath) =>
-            fullPath.startsWith(toIgnorePath)
-          );
+          return ignorePackages.some((toIgnorePath) => fullPath.startsWith(toIgnorePath));
         },
       }),
-      new webpack.NormalModuleReplacementPlugin(
-        new RegExp(
-          bundle.emptyPackages({ latestBuild, isHassioBuild }).join("|")
-        ),
-        path.resolve(
-          paths.polymer_dir,
-          "homeassistant-frontend/src/util/empty.js"
-        )
+      new rspack.NormalModuleReplacementPlugin(
+        new RegExp(bundle.emptyPackages({ latestBuild, isHassioBuild }).join("|")),
+        path.resolve(paths.polymer_dir, "homeassistant-frontend/src/util/empty.js"),
       ),
       !isProdBuild && new LogStartCompilePlugin(),
-      !latestBuild &&
-        new TransformAsyncModulesPlugin({
-          browserslistEnv: "legacy",
-          runtime: { version: dependencies["@babel/runtime"] },
+      isProdBuild &&
+        isStatsBuild &&
+        new RsdoctorRspackPlugin({
+          reportDir: path.join(paths.build_dir, "rsdoctor"),
+          features: ["plugins", "bundle"],
+          supports: {
+            generateTileGraph: true,
+          },
         }),
     ].filter(Boolean),
     resolve: {
@@ -165,35 +150,25 @@ const createWebpackConfig = ({
         "lit/directives/cache$": "lit/directives/cache.js",
         "lit/directives/repeat$": "lit/directives/repeat.js",
         "lit/directives/live$": "lit/directives/live.js",
+        "lit/directives/keyed$": "lit/directives/keyed.js",
         "lit/polyfill-support$": "lit/polyfill-support.js",
-        "@lit-labs/virtualizer/layouts/grid":
-          "@lit-labs/virtualizer/layouts/grid.js",
+        "@lit-labs/virtualizer/layouts/grid": "@lit-labs/virtualizer/layouts/grid.js",
         "@lit-labs/virtualizer/polyfills/resize-observer-polyfill/ResizeObserver":
           "@lit-labs/virtualizer/polyfills/resize-observer-polyfill/ResizeObserver.js",
-        "@lit-labs/observers/resize-controller":
-          "@lit-labs/observers/resize-controller.js",
+        "@lit-labs/observers/resize-controller": "@lit-labs/observers/resize-controller.js",
       },
-      plugins: [new TsconfigPathsPlugin({ 
-        configFile: 'tsconfig.json',
-        extensions: [".ts", ".tsx", ".js", ".json"],
-      })],
+      tsConfig: path.resolve(paths.polymer_dir, "tsconfig.json"),
     },
     output: {
       module: latestBuild,
-      filename: ({ chunk }) => {
-        if (!isProdBuild || isStatsBuild || dontHash.has(chunk.name)) {
-          return `${chunk.name}-dev.js`;
-        }
-        return `${chunk.name}-${chunk.hash.substr(0, 8)}.js`;
-      },
-      chunkFilename:
-        isProdBuild && !isStatsBuild ? "[chunkhash:8].js" : "[id].chunk.js",
-      assetModuleFilename:
-        isProdBuild && !isStatsBuild ? "[id]-[contenthash][ext]" : "[id][ext]",
+      filename: ({ chunk }) =>
+        !isProdBuild || isStatsBuild || dontHash.has(chunk.name)
+          ? "[name].dev.js"
+          : "[name].[contenthash].js",
+      chunkFilename: isProdBuild && !isStatsBuild ? "[name].[contenthash].js" : "[name].js",
+      assetModuleFilename: isProdBuild && !isStatsBuild ? "[id].[contenthash][ext]" : "[id][ext]",
       crossOriginLoading: "use-credentials",
       hashFunction: "xxhash64",
-      hashDigest: "base64url",
-      hashDigestLength: 11, // full length of 64 bit base64url
       path: outputPath,
       publicPath,
       // To silence warning in worker plugin
@@ -207,9 +182,9 @@ const createWebpackConfig = ({
 };
 
 const createKNXConfig = ({ isProdBuild, latestBuild }) =>
-  createWebpackConfig(bundle.config.knx({ isProdBuild, latestBuild }));
+  createRspackConfig(bundle.config.knx({ isProdBuild, latestBuild }));
 
 module.exports = {
   createKNXConfig,
-  createWebpackConfig,
+  createRspackConfig,
 };

@@ -33,14 +33,6 @@ module.exports.emptyPackages = ({ latestBuild, isHassioBuild }) =>
       require.resolve(
         path.resolve(paths.polymer_dir, "homeassistant-frontend/src/components/ha-icon-picker.ts"),
       ),
-    // Icons in supervisor conflict with icons in HA so we don't load.
-    isHassioBuild &&
-      require.resolve(
-        path.resolve(
-          paths.polymer_dir,
-          "homeassistant-frontend/src/resources/translations-metadata.ts",
-        ),
-      ),
   ].filter(Boolean);
 
 module.exports.definedVars = ({ isProdBuild, latestBuild, defineOverlay }) => ({
@@ -86,14 +78,20 @@ module.exports.babelOptions = ({ latestBuild }) => ({
   ],
   plugins: [
     [
-      path.resolve(paths.polymer_dir, "build-scripts/babel-plugins/inline-constants-plugin.cjs"),
+      path.resolve(
+        paths.polymer_dir,
+        "homeassistant-frontend/build-scripts/babel-plugins/inline-constants-plugin.cjs",
+      ),
       {
         modules: ["@mdi/js"],
         ignoreModuleNotFound: true,
       },
     ],
     [
-      path.resolve(paths.polymer_dir, "build-scripts/babel-plugins/custom-polyfill-plugin.js"),
+      path.resolve(
+        paths.polymer_dir,
+        "homeassistant-frontend/build-scripts/babel-plugins/custom-polyfill-plugin.js",
+      ),
       { method: "usage-global" },
     ],
     // Import helpers and regenerator from runtime package
