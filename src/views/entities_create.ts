@@ -190,7 +190,7 @@ export class KNXCreateEntity extends LitElement {
                 iconColor: platformInfo.color,
                 path: `/knx/entities/create/${platform}`,
               }))}
-              hasSecondary
+              has-secondary
               .label=${"Select entity type"}
             ></ha-navigation-list>
           </ha-card>
