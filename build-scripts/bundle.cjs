@@ -33,14 +33,6 @@ module.exports.emptyPackages = ({ latestBuild, isHassioBuild }) =>
       require.resolve(
         path.resolve(paths.polymer_dir, "homeassistant-frontend/src/components/ha-icon-picker.ts"),
       ),
-    // Icons in supervisor conflict with icons in HA so we don't load.
-    isHassioBuild &&
-      require.resolve(
-        path.resolve(
-          paths.polymer_dir,
-          "homeassistant-frontend/src/resources/translations-metadata.ts",
-        ),
-      ),
   ].filter(Boolean);
 
 module.exports.definedVars = ({ isProdBuild, latestBuild, defineOverlay }) => ({
