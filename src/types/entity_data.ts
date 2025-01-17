@@ -1,6 +1,6 @@
-export type entityCategory = "config" | "diagnostic";
+export type EntityCategory = "config" | "diagnostic";
 
-export type supportedPlatform = "switch";
+export type SupportedPlatform = "switch" | "light";
 
 export interface GASchema {
   write?: string;
@@ -11,7 +11,7 @@ export interface GASchema {
 
 export interface BaseEntityData {
   device_info: string | null;
-  entity_category: entityCategory | null;
+  entity_category: EntityCategory | null;
   name: string;
 }
 
@@ -31,7 +31,7 @@ export type EntityData = {
 };
 
 export interface CreateEntityData {
-  platform: supportedPlatform;
+  platform: SupportedPlatform;
   data: EntityData;
 }
 

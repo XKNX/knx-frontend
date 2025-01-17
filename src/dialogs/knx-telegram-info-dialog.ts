@@ -94,22 +94,22 @@ class TelegramInfoDialog extends LitElement {
       </div>
       <mwc-button
         slot="secondaryAction"
-        @click=${this.previousTelegram}
+        @click=${this._previousTelegram}
         .disabled=${this.disablePrevious}
       >
         ${this.hass.localize("ui.common.previous")}
       </mwc-button>
-      <mwc-button slot="primaryAction" @click=${this.nextTelegram} .disabled=${this.disableNext}>
+      <mwc-button slot="primaryAction" @click=${this._nextTelegram} .disabled=${this.disableNext}>
         ${this.hass.localize("ui.common.next")}
       </mwc-button>
     </ha-dialog>`;
   }
 
-  private nextTelegram() {
+  private _nextTelegram() {
     fireEvent(this, "next-telegram");
   }
 
-  private previousTelegram() {
+  private _previousTelegram() {
     fireEvent(this, "previous-telegram");
   }
 
