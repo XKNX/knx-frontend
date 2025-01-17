@@ -1,4 +1,5 @@
 """KNX Frontend."""
+
 from typing import Final
 
 from .constants import FILE_HASH
@@ -10,7 +11,7 @@ def locate_dir() -> str:
 
 
 # Filename of the entrypoint.js to import the panel
-entrypoint_js: Final = f"entrypoint-{FILE_HASH}.js"
+entrypoint_js: Final = f"entrypoint.{FILE_HASH}.js"
 
 # The webcomponent name that loads the panel (main.ts)
 webcomponent_name: Final = "knx-frontend"

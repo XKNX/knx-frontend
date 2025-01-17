@@ -161,14 +161,12 @@ const createRspackConfig = ({
     },
     output: {
       module: latestBuild,
-      filename: ({ chunk }) => {
-        if (!isProdBuild || isStatsBuild || dontHash.has(chunk.name)) {
-          return `${chunk.name}-dev.js`;
-        }
-        return `${chunk.name}-${chunk.hash.substr(0, 8)}.js`;
-      },
-      chunkFilename: isProdBuild && !isStatsBuild ? "[chunkhash:8].js" : "[id].chunk.js",
-      assetModuleFilename: isProdBuild && !isStatsBuild ? "[id]-[contenthash][ext]" : "[id][ext]",
+      filename: ({ chunk }) =>
+        !isProdBuild || isStatsBuild || dontHash.has(chunk.name)
+          ? "[name].dev.js"
+          : "[name].[contenthash].js",
+      chunkFilename: isProdBuild && !isStatsBuild ? "[name].[contenthash].js" : "[name].js",
+      assetModuleFilename: isProdBuild && !isStatsBuild ? "[id].[contenthash][ext]" : "[id][ext]",
       crossOriginLoading: "use-credentials",
       hashFunction: "xxhash64",
       path: outputPath,
