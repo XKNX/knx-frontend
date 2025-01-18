@@ -8,7 +8,6 @@ import memoize from "memoize-one";
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-tabs-subpage-data-table";
 import type { HASSDomEvent } from "@ha/common/dom/fire_event";
-import { computeRTLDirection } from "@ha/common/util/compute_rtl";
 import { navigate } from "@ha/common/navigate";
 import type {
   DataTableColumnContainer,
@@ -213,7 +212,6 @@ export class KNXGroupMonitor extends LitElement {
         .data=${this.rows}
         .hasFab=${false}
         .searchLabel=${this.hass.localize("ui.components.data-table.search")}
-        .dir=${computeRTLDirection(this.hass)}
         id="index"
         .clickable=${true}
         @row-click=${this._rowClicked}
