@@ -1,6 +1,7 @@
 import type { TemplateResult } from "lit";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
+import { styleMap } from "lit/directives/style-map";
 
 import "@ha/components/ha-card";
 import "@ha/components/ha-control-select";
@@ -50,7 +51,13 @@ export class KNXConfigureEntity extends LitElement {
     const errors = extractValidationErrors(this.validationErrors, "data"); // "data" is root key in our python schema
     return html`
       <div class="header">
-        <h1><ha-svg-icon .path=${this.platform.iconPath}></ha-svg-icon>${this.platform.name}</h1>
+        <h1>
+          <ha-svg-icon
+            .path=${this.platform.iconPath}
+            style=${styleMap({ "background-color": this.platform.color })}
+          ></ha-svg-icon>
+          ${this.platform.name}
+        </h1>
         <p>${this.platform.description}</p>
       </div>
       <slot name="knx-validation-error"></slot>
