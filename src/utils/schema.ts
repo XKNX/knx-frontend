@@ -59,6 +59,86 @@ export type GroupSelect = {
   }[];
 };
 
+export const binarySensorSchema: SettingsGroup[] = [
+  {
+    type: "settings_group",
+    heading: "Binary sensor",
+    description: "DPT 1 group addresses representing binary states.",
+    selectors: [
+      {
+        name: "ga_state",
+        type: "group_address",
+        options: {
+          state: { required: true },
+          passive: true,
+          validDPTs: [{ main: 1, sub: null }],
+        },
+      },
+      {
+        name: "invert",
+        type: "selector",
+        selector: { boolean: null },
+        label: "Invert",
+        helper: "Invert payload before processing.",
+        // default: false, // does this work?
+      },
+    ],
+  },
+  {
+    type: "settings_group",
+    collapsible: true,
+    heading: "State properties",
+    description: "Properties of the binary sensor state.",
+    selectors: [
+      {
+        name: "ignore_internal_state",
+        type: "selector",
+        selector: { boolean: null },
+        label: "Force update",
+        helper: "Write each update to the state machine, even if the data is the same.",
+      },
+      {
+        name: "context_timeout",
+        type: "selector",
+        selector: { number: { min: 0, max: 10, step: 0.05, unit_of_measurement: "s" } },
+        label: "Context timeout",
+        helper:
+          "The time in seconds between multiple identical telegram payloads would count towards an internal counter. This can be used to automate on mulit-clicks of a button. `0` to disable this feature.",
+        default: 0,
+      },
+      // {
+      //   name: "reset_after",
+      //   type: "selector",
+      //   selector: { boolean: null },
+      //   label: "Reset after",
+      //   helper: "Automatically reset state back to “off”.",
+      // },
+      {
+        // TODO: this has to be `None` to diable - being `0` will reset immediately
+        name: "reset_after",
+        type: "selector",
+        selector: { number: { min: 0, max: 10, step: 0.1, unit_of_measurement: "s" } },
+        label: "Reset after",
+        helper: "Reset back to “off” state after specified seconds.",
+        default: 0.8,
+        optional: true,
+      },
+    ],
+  },
+  {
+    type: "settings_group",
+    advanced: true,
+    heading: "State updater",
+    description: "Actively request state updates from KNX bus for state addresses.",
+    selectors: [
+      {
+        name: "sync_state",
+        type: "sync_state",
+      },
+    ],
+  },
+];
+
 export const switchSchema: SettingsGroup[] = [
   {
     type: "settings_group",

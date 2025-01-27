@@ -1,4 +1,4 @@
-import { mdiToggleSwitchVariant } from "@mdi/js";
+import { mdiToggleSwitchVariant, mdiCheckCircle } from "@mdi/js";
 import { FALLBACK_DOMAIN_ICONS } from "@ha/data/icons";
 import * as schema from "./schema";
 import type { SupportedPlatform } from "../types/entity_data";
@@ -12,6 +12,13 @@ export type PlatformInfo = {
 };
 
 export const platformConstants: Record<SupportedPlatform, PlatformInfo> = {
+  binary_sensor: {
+    name: "Binary Sensor",
+    iconPath: mdiCheckCircle,
+    color: "var(--green-color)",
+    description: "Read-only entity for binary datapoints. Window or door states etc.",
+    schema: schema.binarySensorSchema,
+  },
   switch: {
     name: "Switch",
     iconPath: mdiToggleSwitchVariant,
