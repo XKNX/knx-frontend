@@ -293,15 +293,16 @@ export class KNXConfigureEntity extends LitElement {
       ha-expansion-panel {
         margin-bottom: 16px;
       }
-      ha-expansion-panel > :first-child {
-        margin-top: 16px;
+      ha-expansion-panel > :first-child:not(ha-settings-row) {
+        margin-top: 16px; /* ha-settings-row has this margin internally */
       }
-      ha-expansion-panel > ha-settings-row:first-child {
+      ha-expansion-panel > ha-settings-row:first-child,
+      ha-expansion-panel > knx-selector-row:first-child {
         border: 0;
       }
 
       ha-settings-row {
-        margin-bottom: 16px;
+        margin-bottom: 8px;
         padding: 0;
       }
       ha-control-select {

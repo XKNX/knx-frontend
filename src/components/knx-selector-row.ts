@@ -90,10 +90,10 @@ export class KnxSelectorRow extends LitElement {
         border-top: 1px solid var(--divider-color);
       }
       .newline-selector {
+        display: block;
         padding-top: 8px;
       }
       .body {
-        padding-bottom: 8px;
         display: flex;
         flex-wrap: wrap;
         align-items: center;
