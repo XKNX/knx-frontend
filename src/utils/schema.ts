@@ -14,14 +14,17 @@ export type SelectorSchema =
   | GASchema
   | GroupSelect
   | { name: "sync_state"; type: "sync_state" }
-  | {
-      name: string;
-      type: "selector";
-      default?: any;
-      selector: Selector;
-      label: string;
-      helper?: string;
-    };
+  | KnxHaSelector;
+
+export type KnxHaSelector = {
+  name: string;
+  type: "selector";
+  default?: any;
+  optional?: boolean;
+  selector: Selector;
+  label: string;
+  helper?: string;
+};
 
 export type GASchema = {
   name: string;

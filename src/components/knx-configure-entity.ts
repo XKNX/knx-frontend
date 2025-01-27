@@ -14,6 +14,7 @@ import { fireEvent } from "@ha/common/dom/fire_event";
 import type { HomeAssistant } from "@ha/types";
 
 import "./knx-group-address-selector";
+import "./knx-selector-row";
 import "./knx-sync-state-selector-row";
 import { renderConfigureEntityCard } from "./knx-configure-entity-options";
 import { KNXLogger } from "../tools/knx-logger";
@@ -165,20 +166,14 @@ export class KNXConfigureEntity extends LitElement {
           ></knx-group-address-selector>
         `;
       case "selector":
-        // apply default value if available and no value is set
-        if (selector.default !== undefined && this.config!.knx[selector.name] == null) {
-          this.config!.knx[selector.name] = selector.default;
-        }
         return html`
-          <ha-selector
+          <knx-selector-row
             .hass=${this.hass}
-            .selector=${selector.selector}
-            .label=${selector.label}
-            .helper=${selector.helper}
             .key=${selector.name}
+            .selector=${selector}
             .value=${this.config!.knx[selector.name]}
             @value-changed=${this._updateConfig("knx")}
-          ></ha-selector>
+          ></knx-selector-row>
         `;
       case "sync_state":
         return html`
@@ -234,8 +229,13 @@ export class KNXConfigureEntity extends LitElement {
       if (!this.config[baseKey]) {
         this.config[baseKey] = {};
       }
-      this.config[baseKey][ev.target.key] = ev.detail.value;
-      logger.debug(`update ${baseKey} key "${ev.target.key}" with "${ev.detail.value}"`);
+      if (ev.detail.value === undefined) {
+        logger.debug(`remove ${baseKey} key "${ev.target.key}"`);
+        delete this.config[baseKey][ev.target.key];
+      } else {
+        logger.debug(`update ${baseKey} key "${ev.target.key}" with "${ev.detail.value}"`);
+        this.config[baseKey][ev.target.key] = ev.detail.value;
+      }
       fireEvent(this, "knx-entity-configuration-changed", this.config);
       this.requestUpdate();
     };
