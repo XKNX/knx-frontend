@@ -1,6 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import type { TemplateResult, CSSResultGroup } from "lit";
 import { customElement, property, state } from "lit/decorators";
+import { classMap } from "lit/directives/class-map";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
 import "@ha/components/ha-checkbox";
@@ -31,7 +32,12 @@ export class KnxSelectorRow extends LitElement {
   }
 
   protected render(): TemplateResult {
+    const possibleInlineSelector =
+      "boolean" in this.selector.selector || "number" in this.selector.selector;
+    const inlineSelector = !this.selector.optional && possibleInlineSelector;
+
     const haSelector = html`<ha-selector
+      class=${classMap({ "newline-selector": !inlineSelector })}
       .hass=${this.hass}
       .selector=${this.selector.selector}
       .disabled=${this._disabled}
@@ -39,11 +45,7 @@ export class KnxSelectorRow extends LitElement {
       @value-changed=${this._valueChange}
     ></ha-selector>`;
 
-    const possibleInlineSelector =
-      "boolean" in this.selector.selector || "number" in this.selector.selector;
-    const inlineSelector = !this.selector.optional && possibleInlineSelector;
-
-    return html` <div>
+    return html`
       <div class="body">
         <div class="text">
           <p class="heading">${this.selector.label}</p>
@@ -61,7 +63,7 @@ export class KnxSelectorRow extends LitElement {
             : nothing}
       </div>
       ${inlineSelector ? nothing : haSelector}
-    </div>`;
+    `;
   }
 
   private _toggleDisabled(ev: Event) {
@@ -84,8 +86,11 @@ export class KnxSelectorRow extends LitElement {
     return css`
       :host {
         display: block;
-        padding: 8px 16px 16px 0;
+        padding: 8px 16px 8px 0;
         border-top: 1px solid var(--divider-color);
+      }
+      .newline-selector {
+        padding-top: 8px;
       }
       .body {
         padding-bottom: 8px;
@@ -117,24 +122,6 @@ export class KnxSelectorRow extends LitElement {
         line-height: normal;
         color: var(--secondary-text-color);
       }
-      /* .optional-switch {
-        margin-left: auto;
-      } */
-      /* ha-settings-row {
-        margin: 0 -16px;
-        padding: var(--service-control-padding, 0 16px);
-      } */
-      /* ha-settings-row {
-        padding: 0 8px;
-        --settings-row-content-width: 100%;
-        --settings-row-prefix-display: contents;
-        border-top: 1px solid var(--divider-color);
-      } */
-      /* ha-checkbox {
-        margin-left: -16px;
-        margin-inline-start: -16px;
-        margin-inline-end: initial;
-      } */
     `;
   }
 }
