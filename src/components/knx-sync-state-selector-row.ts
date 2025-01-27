@@ -107,6 +107,7 @@ export class KnxSyncStateSelectorRow extends LitElement {
 
       .inline > * {
         flex: 1;
+        width: 100%; /* to not overflow when wrapped */
       }
     `;
   }
