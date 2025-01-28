@@ -4,9 +4,8 @@ import type { DPT } from "../types/websocket";
 export type SettingsGroup = {
   type: "settings_group";
   heading: string;
-  description: string;
+  description?: string;
   selectors: SelectorSchema[];
-  advanced?: boolean;
   collapsible?: boolean;
 };
 
@@ -122,9 +121,8 @@ export const binarySensorSchema: SettingsGroup[] = [
   },
   {
     type: "settings_group",
-    advanced: true,
+    collapsible: true,
     heading: "State updater",
-    description: "Actively request state updates from KNX bus for state addresses.",
     selectors: [
       {
         name: "sync_state",
@@ -169,9 +167,8 @@ export const switchSchema: SettingsGroup[] = [
   },
   {
     type: "settings_group",
-    advanced: true,
+    collapsible: true,
     heading: "State updater",
-    description: "Actively request state updates from KNX bus for state addresses.",
     selectors: [
       {
         name: "sync_state",
@@ -500,9 +497,8 @@ export const lightSchema: SettingsGroup[] = [
   },
   {
     type: "settings_group",
-    advanced: true,
+    collapsible: true,
     heading: "State updater",
-    description: "Actively request state updates from KNX bus for state addresses.",
     selectors: [
       {
         name: "sync_state",
