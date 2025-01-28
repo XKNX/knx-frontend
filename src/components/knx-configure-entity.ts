@@ -76,25 +76,8 @@ export class KNXConfigureEntity extends LitElement {
   }
 
   generateRootGroups(schema: SettingsGroup[], errors?: ErrorDescription[]) {
-    const regular_items: SettingsGroup[] = [];
-    const advanced_items: SettingsGroup[] = [];
-
-    schema.forEach((item: SettingsGroup) => {
-      if (item.advanced) {
-        advanced_items.push(item);
-      } else {
-        regular_items.push(item);
-      }
-    });
     return html`
-      ${regular_items.map((group: SettingsGroup) => this._generateSettingsGroup(group, errors))}
-      ${advanced_items.length
-        ? html` <ha-expansion-panel .header=${"Advanced"} outlined>
-            ${advanced_items.map((group: SettingsGroup) =>
-              this._generateSettingsGroup(group, errors),
-            )}
-          </ha-expansion-panel>`
-        : nothing}
+      ${schema.map((group: SettingsGroup) => this._generateSettingsGroup(group, errors))}
     `;
   }
 

@@ -38,46 +38,49 @@ export class KnxSyncStateSelectorRow extends LitElement {
   }
 
   protected render(): TemplateResult {
-    return html` <div class="inline">
-      <ha-selector-select
-        .hass=${this.hass}
-        .label=${"Strategy"}
-        .selector=${{
-          select: {
-            multiple: false,
-            custom_value: false,
-            mode: "dropdown",
-            options: [
-              { value: true, label: "Default" },
-              ...(this.noneValid ? [{ value: false, label: "Never" }] : []),
-              { value: "init", label: "Once when connection established" },
-              { value: "expire", label: "Expire after last value update" },
-              { value: "every", label: "Scheduled every" },
-            ],
-          },
-        }}
-        .key=${"strategy"}
-        .value=${this._strategy}
-        @value-changed=${this._handleChange}
-      >
-      </ha-selector-select>
-      <ha-selector-number
-        .hass=${this.hass}
-        .disabled=${!this._hasMinutes(this._strategy)}
-        .selector=${{
-          number: {
-            min: 2,
-            max: 1440,
-            step: 1,
-            unit_of_measurement: "minutes",
-          },
-        }}
-        .key=${"minutes"}
-        .value=${this._minutes}
-        @value-changed=${this._handleChange}
-      >
-      </ha-selector-number>
-    </div>`;
+    return html` <p class="description">
+        Actively request state updates from KNX bus for state addresses.
+      </p>
+      <div class="inline">
+        <ha-selector-select
+          .hass=${this.hass}
+          .label=${"Strategy"}
+          .selector=${{
+            select: {
+              multiple: false,
+              custom_value: false,
+              mode: "dropdown",
+              options: [
+                { value: true, label: "Default" },
+                ...(this.noneValid ? [{ value: false, label: "Never" }] : []),
+                { value: "init", label: "Once when connection established" },
+                { value: "expire", label: "Expire after last value update" },
+                { value: "every", label: "Scheduled every" },
+              ],
+            },
+          }}
+          .key=${"strategy"}
+          .value=${this._strategy}
+          @value-changed=${this._handleChange}
+        >
+        </ha-selector-select>
+        <ha-selector-number
+          .hass=${this.hass}
+          .disabled=${!this._hasMinutes(this._strategy)}
+          .selector=${{
+            number: {
+              min: 2,
+              max: 1440,
+              step: 1,
+              unit_of_measurement: "minutes",
+            },
+          }}
+          .key=${"minutes"}
+          .value=${this._minutes}
+          @value-changed=${this._handleChange}
+        >
+        </ha-selector-number>
+      </div>`;
   }
 
   private _handleChange(ev) {
@@ -97,6 +100,21 @@ export class KnxSyncStateSelectorRow extends LitElement {
 
   static get styles() {
     return css`
+      .description {
+        margin: 0;
+        display: block;
+        padding-top: 4px;
+        padding-bottom: 8px;
+        font-family: var(
+          --mdc-typography-body2-font-family,
+          var(--mdc-typography-font-family, Roboto, sans-serif)
+        );
+        -webkit-font-smoothing: antialiased;
+        font-size: var(--mdc-typography-body2-font-size, 0.875rem);
+        font-weight: var(--mdc-typography-body2-font-weight, 400);
+        line-height: normal;
+        color: var(--secondary-text-color);
+      }
       .inline {
         width: 100%;
         display: inline-flex;
@@ -104,7 +122,6 @@ export class KnxSyncStateSelectorRow extends LitElement {
         gap: 16px;
         justify-content: space-between;
       }
-
       .inline > * {
         flex: 1;
         width: 100%; /* to not overflow when wrapped */
