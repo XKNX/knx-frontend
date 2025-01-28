@@ -24,26 +24,38 @@ export class KnxSelectorRow extends LitElement {
 
   private _haSelectorValue: any = null;
 
+  private _inlineSelector = false;
+
+  private _optionalBooleanSelector = false;
+
   public connectedCallback() {
     super.connectedCallback();
     this._disabled = !!this.selector.optional && this.value === undefined;
     // apply default value if available or no value is set yet
     this._haSelectorValue = this.value ?? this.selector.default ?? null;
+
+    const booleanSelector = "boolean" in this.selector.selector;
+    const possibleInlineSelector = booleanSelector || "number" in this.selector.selector;
+    this._inlineSelector = !this.selector.optional && possibleInlineSelector;
+    // optional boolean should not show as 2 switches (one for optional and one for value)
+    this._optionalBooleanSelector = !!this.selector.optional && booleanSelector;
+    if (this._optionalBooleanSelector) {
+      // either true or the key will be unset (via this._disabled)
+      this._haSelectorValue = true;
+    }
   }
 
   protected render(): TemplateResult {
-    const possibleInlineSelector =
-      "boolean" in this.selector.selector || "number" in this.selector.selector;
-    const inlineSelector = !this.selector.optional && possibleInlineSelector;
-
-    const haSelector = html`<ha-selector
-      class=${classMap({ "newline-selector": !inlineSelector })}
-      .hass=${this.hass}
-      .selector=${this.selector.selector}
-      .disabled=${this._disabled}
-      .value=${this._haSelectorValue}
-      @value-changed=${this._valueChange}
-    ></ha-selector>`;
+    const haSelector = this._optionalBooleanSelector
+      ? nothing
+      : html`<ha-selector
+          class=${classMap({ "newline-selector": !this._inlineSelector })}
+          .hass=${this.hass}
+          .selector=${this.selector.selector}
+          .disabled=${this._disabled}
+          .value=${this._haSelectorValue}
+          @value-changed=${this._valueChange}
+        ></ha-selector>`;
 
     return html`
       <div class="body">
@@ -58,11 +70,11 @@ export class KnxSelectorRow extends LitElement {
               .value=${!this._disabled}
               @value-changed=${this._toggleDisabled}
             ></ha-selector>`
-          : inlineSelector
+          : this._inlineSelector
             ? haSelector
             : nothing}
       </div>
-      ${inlineSelector ? nothing : haSelector}
+      ${this._inlineSelector ? nothing : haSelector}
     `;
   }
 

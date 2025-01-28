@@ -20,7 +20,7 @@ export type KnxHaSelector = {
   name: string;
   type: "selector";
   default?: any;
-  optional?: boolean;
+  optional?: boolean; // for optional boolean selectors, there shall be no default value (can't get applied)
   selector: Selector;
   label: string;
   helper?: string;
@@ -58,6 +58,81 @@ export type GroupSelect = {
     schema: (SettingsGroup | SelectorSchema)[];
   }[];
 };
+
+export const binarySensorSchema: SettingsGroup[] = [
+  {
+    type: "settings_group",
+    heading: "Binary sensor",
+    description: "DPT 1 group addresses representing binary states.",
+    selectors: [
+      {
+        name: "ga_sensor",
+        type: "group_address",
+        options: {
+          state: { required: true },
+          passive: true,
+          validDPTs: [{ main: 1, sub: null }],
+        },
+      },
+      {
+        name: "invert",
+        type: "selector",
+        selector: { boolean: null },
+        label: "Invert",
+        helper: "Invert payload before processing.",
+        optional: true,
+        // default: false, // does this work? - no, it doesn't - isn't forwarded to data when loading
+      },
+    ],
+  },
+  {
+    type: "settings_group",
+    collapsible: true,
+    heading: "State properties",
+    description: "Properties of the binary sensor state.",
+    selectors: [
+      {
+        name: "ignore_internal_state",
+        type: "selector",
+        selector: { boolean: null },
+        label: "Force update",
+        helper: "Write each update to the state machine, even if the data is the same.",
+        optional: true,
+      },
+      {
+        name: "context_timeout",
+        type: "selector",
+        selector: { number: { min: 0, max: 10, step: 0.05, unit_of_measurement: "s" } },
+        label: "Context timeout",
+        helper:
+          "The time in seconds between multiple identical telegram payloads would count towards an internal counter. This can be used to automate on mulit-clicks of a button. `0` to disable this feature.",
+        default: 0.8, // not forwarded to data when loading - fine when optional: true
+        optional: true,
+      },
+      {
+        name: "reset_after",
+        type: "selector",
+        selector: { number: { min: 0, max: 10, step: 0.1, unit_of_measurement: "s" } },
+        label: "Reset after",
+        helper: "Reset back to “off” state after specified seconds.",
+        default: 0.8, // not forwarded to data when loading - fine when optional: true
+        optional: true,
+      },
+    ],
+  },
+  {
+    type: "settings_group",
+    advanced: true,
+    heading: "State updater",
+    description: "Actively request state updates from KNX bus for state addresses.",
+    selectors: [
+      {
+        name: "sync_state",
+        type: "sync_state",
+      },
+    ],
+  },
+];
 
 export const switchSchema: SettingsGroup[] = [
   {
