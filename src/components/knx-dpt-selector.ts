@@ -2,6 +2,7 @@ import { LitElement, html, css, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 
 import "@ha/components/ha-formfield";
+import "@ha/components/ha-radio";
 import { fireEvent } from "@ha/common/dom/fire_event";
 
 import type { DPTOption } from "../utils/schema";
