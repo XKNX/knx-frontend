@@ -1,5 +1,5 @@
 import { LitElement, html, css, nothing } from "lit";
-import type { TemplateResult, CSSResultGroup } from "lit";
+import type { TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 
@@ -20,7 +20,7 @@ export class KnxSelectorRow extends LitElement {
 
   @property() public value?: any;
 
-  @state() private _disabled: boolean = false;
+  @state() private _disabled = false;
 
   private _haSelectorValue: any = null;
 
@@ -94,48 +94,46 @@ export class KnxSelectorRow extends LitElement {
     fireEvent(this, "value-changed", { value: this._disabled ? undefined : this._haSelectorValue });
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      :host {
-        display: block;
-        padding: 8px 16px 8px 0;
-        border-top: 1px solid var(--divider-color);
-      }
-      .newline-selector {
-        display: block;
-        padding-top: 8px;
-      }
-      .body {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        row-gap: 8px;
-      }
-      .body > * {
-        flex-grow: 1;
-      }
-      .text {
-        flex-basis: 260px; /* min size of text - if inline selector is too big it will be pushed to next row */
-      }
-      .heading {
-        margin: 0;
-      }
-      .description {
-        margin: 0;
-        display: block;
-        padding-top: 4px;
-        font-family: var(
-          --mdc-typography-body2-font-family,
-          var(--mdc-typography-font-family, Roboto, sans-serif)
-        );
-        -webkit-font-smoothing: antialiased;
-        font-size: var(--mdc-typography-body2-font-size, 0.875rem);
-        font-weight: var(--mdc-typography-body2-font-weight, 400);
-        line-height: normal;
-        color: var(--secondary-text-color);
-      }
-    `;
-  }
+  static styles = css`
+    :host {
+      display: block;
+      padding: 8px 16px 8px 0;
+      border-top: 1px solid var(--divider-color);
+    }
+    .newline-selector {
+      display: block;
+      padding-top: 8px;
+    }
+    .body {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      row-gap: 8px;
+    }
+    .body > * {
+      flex-grow: 1;
+    }
+    .text {
+      flex-basis: 260px; /* min size of text - if inline selector is too big it will be pushed to next row */
+    }
+    .heading {
+      margin: 0;
+    }
+    .description {
+      margin: 0;
+      display: block;
+      padding-top: 4px;
+      font-family: var(
+        --mdc-typography-body2-font-family,
+        var(--mdc-typography-font-family, Roboto, sans-serif)
+      );
+      -webkit-font-smoothing: antialiased;
+      font-size: var(--mdc-typography-body2-font-size, 0.875rem);
+      font-weight: var(--mdc-typography-body2-font-weight, 400);
+      line-height: normal;
+      color: var(--secondary-text-color);
+    }
+  `;
 }
 
 declare global {

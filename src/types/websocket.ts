@@ -41,10 +41,10 @@ export interface KNXProjectResponse {
 
 export interface KNXProject {
   info: KNXProjectInfo;
-  group_addresses: { [key: string]: GroupAddress };
-  group_ranges: { [key: string]: GroupRange };
-  devices: { [key: string]: Device };
-  communication_objects: { [key: string]: CommunicationObject };
+  group_addresses: Record<string, GroupAddress>;
+  group_ranges: Record<string, GroupRange>;
+  devices: Record<string, Device>;
+  communication_objects: Record<string, CommunicationObject>;
 }
 
 export interface GroupRange {
@@ -53,7 +53,7 @@ export interface GroupRange {
   address_end: number;
   comment: string;
   group_addresses: string[];
-  group_ranges: { [key: string]: GroupRange };
+  group_ranges: Record<string, GroupRange>;
 }
 
 export interface GroupAddress {

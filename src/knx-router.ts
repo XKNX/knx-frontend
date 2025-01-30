@@ -11,7 +11,7 @@ import { KNXLogger } from "./tools/knx-logger";
 
 const logger = new KNXLogger("router");
 
-export const BASE_URL: string = "/knx";
+export const BASE_URL = "/knx";
 
 const knxMainTabs = (hasProject: boolean): PageNavigation[] => [
   {

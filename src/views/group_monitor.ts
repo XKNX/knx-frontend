@@ -49,7 +49,7 @@ export class KNXGroupMonitor extends LitElement {
 
   @state() private _dialogIndex: number | null = null;
 
-  @state() private _pause: boolean = false;
+  @state() private _pause = false;
 
   public disconnectedCallback() {
     super.disconnectedCallback();
@@ -193,7 +193,7 @@ export class KNXGroupMonitor extends LitElement {
     };
   }
 
-  protected render(): TemplateResult | void {
+  protected render(): TemplateResult {
     if (this.subscribed === undefined) {
       return html` <hass-loading-screen
         .message=${this.knx.localize("group_monitor_waiting_to_connect")}
@@ -255,7 +255,7 @@ export class KNXGroupMonitor extends LitElement {
   }
 
   private async _rowClicked(ev: HASSDomEvent<RowClickedEvent>): Promise<void> {
-    const telegramIndex: number = Number(ev.detail.id);
+    const telegramIndex = Number(ev.detail.id);
     this._dialogIndex = telegramIndex;
   }
 

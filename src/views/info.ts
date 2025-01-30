@@ -1,5 +1,5 @@
 import { mdiFileUpload } from "@mdi/js";
-import type { TemplateResult, CSSResultGroup } from "lit";
+import type { TemplateResult } from "lit";
 import { css, nothing, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
@@ -42,7 +42,7 @@ export class KNXInfo extends LitElement {
 
   @state() private _projectFile?: File;
 
-  protected render(): TemplateResult | void {
+  protected render(): TemplateResult {
     return html`
       <hass-tabs-subpage
         .hass=${this.hass}
@@ -233,117 +233,115 @@ export class KNXInfo extends LitElement {
     }
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
+  static styles = css`
+    .columns {
+      display: flex;
+      justify-content: center;
+    }
+
+    @media screen and (max-width: 1232px) {
       .columns {
-        display: flex;
-        justify-content: center;
-      }
-
-      @media screen and (max-width: 1232px) {
-        .columns {
-          flex-direction: column;
-        }
-
-        .knx-button-row {
-          margin-top: 20px;
-        }
-
-        .knx-info {
-          margin-right: 8px;
-        }
-      }
-
-      @media screen and (min-width: 1233px) {
-        .knx-button-row {
-          margin-top: auto;
-        }
-
-        .knx-info {
-          width: 400px;
-        }
-      }
-
-      .knx-info {
-        margin-left: 8px;
-        margin-top: 8px;
-      }
-
-      .knx-content {
-        display: flex;
         flex-direction: column;
-        height: 100%;
-        box-sizing: border-box;
-      }
-
-      .knx-content-row {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-      }
-
-      .knx-content-row > div:nth-child(2) {
-        margin-left: 1rem;
       }
 
       .knx-button-row {
-        display: flex;
-        flex-direction: row;
-        vertical-align: bottom;
-        padding-top: 16px;
-      }
-
-      .push-left {
-        margin-right: auto;
-      }
-
-      .push-right {
-        margin-left: auto;
-      }
-
-      .knx-warning {
-        --mdc-theme-primary: var(--error-color);
-      }
-
-      .knx-project-description {
-        margin-top: -8px;
-        padding: 0px 16px 16px;
-      }
-
-      .knx-delete-project-button {
-        position: absolute;
-        bottom: 0;
-        right: 0;
-      }
-
-      .knx-bug-report {
         margin-top: 20px;
-
-        a {
-          text-decoration: none;
-        }
       }
 
-      .header {
-        color: var(--ha-card-header-color, --primary-text-color);
-        font-family: var(--ha-card-header-font-family, inherit);
-        font-size: var(--ha-card-header-font-size, 24px);
-        letter-spacing: -0.012em;
-        line-height: 48px;
-        padding: -4px 16px 16px;
-        display: inline-block;
-        margin-block-start: 0px;
-        margin-block-end: 4px;
-        font-weight: normal;
+      .knx-info {
+        margin-right: 8px;
+      }
+    }
+
+    @media screen and (min-width: 1233px) {
+      .knx-button-row {
+        margin-top: auto;
       }
 
-      ha-file-upload,
-      ha-selector-text {
-        width: 100%;
-        margin-top: 8px;
+      .knx-info {
+        width: 400px;
       }
-    `;
-  }
+    }
+
+    .knx-info {
+      margin-left: 8px;
+      margin-top: 8px;
+    }
+
+    .knx-content {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      box-sizing: border-box;
+    }
+
+    .knx-content-row {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+    }
+
+    .knx-content-row > div:nth-child(2) {
+      margin-left: 1rem;
+    }
+
+    .knx-button-row {
+      display: flex;
+      flex-direction: row;
+      vertical-align: bottom;
+      padding-top: 16px;
+    }
+
+    .push-left {
+      margin-right: auto;
+    }
+
+    .push-right {
+      margin-left: auto;
+    }
+
+    .knx-warning {
+      --mdc-theme-primary: var(--error-color);
+    }
+
+    .knx-project-description {
+      margin-top: -8px;
+      padding: 0px 16px 16px;
+    }
+
+    .knx-delete-project-button {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+    }
+
+    .knx-bug-report {
+      margin-top: 20px;
+
+      a {
+        text-decoration: none;
+      }
+    }
+
+    .header {
+      color: var(--ha-card-header-color, --primary-text-color);
+      font-family: var(--ha-card-header-font-family, inherit);
+      font-size: var(--ha-card-header-font-size, 24px);
+      letter-spacing: -0.012em;
+      line-height: 48px;
+      padding: -4px 16px 16px;
+      display: inline-block;
+      margin-block-start: 0px;
+      margin-block-end: 4px;
+      font-weight: normal;
+    }
+
+    ha-file-upload,
+    ha-selector-text {
+      width: 100%;
+      margin-top: 8px;
+    }
+  `;
 }
 
 declare global {

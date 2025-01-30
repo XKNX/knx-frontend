@@ -344,70 +344,68 @@ export class KNXCreateEntity extends LitElement {
     });
   }
 
-  static get styles() {
-    return css`
-      hass-loading-screen {
-        --app-header-background-color: var(--sidebar-background-color);
-        --app-header-text-color: var(--sidebar-text-color);
-      }
+  static styles = css`
+    hass-loading-screen {
+      --app-header-background-color: var(--sidebar-background-color);
+      --app-header-text-color: var(--sidebar-text-color);
+    }
 
-      .type-selection {
-        margin: 20px auto 80px;
-        max-width: 720px;
-      }
+    .type-selection {
+      margin: 20px auto 80px;
+      max-width: 720px;
+    }
 
-      @media screen and (max-width: 600px) {
-        .panel {
-          display: none;
-        }
+    @media screen and (max-width: 600px) {
+      .panel {
+        display: none;
       }
+    }
 
-      .content {
-        display: flex;
-        flex-direction: row;
+    .content {
+      display: flex;
+      flex-direction: row;
+      height: 100%;
+      width: 100%;
+
+      & > .entity-config {
+        flex-grow: 1;
+        flex-shrink: 1;
         height: 100%;
-        width: 100%;
-
-        & > .entity-config {
-          flex-grow: 1;
-          flex-shrink: 1;
-          height: 100%;
-          overflow-y: scroll;
-        }
-
-        & > .panel {
-          flex-grow: 0;
-          flex-shrink: 3;
-          width: 480px;
-          min-width: 280px;
-        }
+        overflow-y: scroll;
       }
 
-      knx-configure-entity {
-        display: block;
-        margin: 20px auto 40px; /* leave 80px space for fab */
-        max-width: 720px;
+      & > .panel {
+        flex-grow: 0;
+        flex-shrink: 3;
+        width: 480px;
+        min-width: 280px;
       }
+    }
 
-      ha-alert {
-        display: block;
-        margin: 20px auto;
-        max-width: 720px;
+    knx-configure-entity {
+      display: block;
+      margin: 20px auto 40px; /* leave 80px space for fab */
+      max-width: 720px;
+    }
 
-        & summary {
-          padding: 10px;
-        }
+    ha-alert {
+      display: block;
+      margin: 20px auto;
+      max-width: 720px;
+
+      & summary {
+        padding: 10px;
       }
+    }
 
-      ha-fab {
-        /* not slot="fab" to move out of panel */
-        float: right;
-        margin-right: calc(16px + env(safe-area-inset-right));
-        margin-bottom: 40px;
-        z-index: 1;
-      }
-    `;
-  }
+    ha-fab {
+      /* not slot="fab" to move out of panel */
+      float: right;
+      margin-right: calc(16px + env(safe-area-inset-right));
+      margin-bottom: 40px;
+      z-index: 1;
+    }
+  `;
 }
 
 declare global {

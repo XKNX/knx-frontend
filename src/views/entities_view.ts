@@ -200,7 +200,7 @@ export class KNXEntitiesView extends LitElement {
     });
   };
 
-  protected render(): TemplateResult | void {
+  protected render(): TemplateResult {
     if (!this.hass || !this.knx_entities) {
       return html` <hass-loading-screen></hass-loading-screen> `;
     }
@@ -235,14 +235,12 @@ export class KNXEntitiesView extends LitElement {
     navigate("/knx/entities/create");
   }
 
-  static get styles() {
-    return css`
-      hass-loading-screen {
-        --app-header-background-color: var(--sidebar-background-color);
-        --app-header-text-color: var(--sidebar-text-color);
-      }
-    `;
-  }
+  static styles = css`
+    hass-loading-screen {
+      --app-header-background-color: var(--sidebar-background-color);
+      --app-header-text-color: var(--sidebar-text-color);
+    }
+  `;
 }
 
 declare global {
