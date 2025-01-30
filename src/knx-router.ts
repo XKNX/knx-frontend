@@ -6,6 +6,7 @@ import { HassRouterPage } from "@ha/layouts/hass-router-page";
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import type { HomeAssistant, Route } from "@ha/types";
 
+import { mainWindow } from "@ha/common/dom/get_main_window";
 import type { KNX } from "./types/knx";
 import { KNXLogger } from "./tools/knx-logger";
 
@@ -27,7 +28,7 @@ const knxMainTabs = (hasProject: boolean): PageNavigation[] => [
   ...(hasProject
     ? [
         {
-          translationKey: "project_view_title",
+          translationKey: "project_title",
           path: `${BASE_URL}/project`,
           iconPath: mdiFileTreeOutline,
         },
@@ -92,8 +93,23 @@ export class KnxRouter extends HassRouterPage {
     },
   };
 
-  protected updatePageEl(el) {
-    logger.debug(`Current Page: ${this._currentPage} Route: ${this.route.path}`);
+  protected updatePageEl(el, changedProps) {
+    // skip title setting when sub-router is called - it will set the title itself when calling this method
+    // changedProps is undefined when the element was just loaded
+    if (!(el instanceof KnxRouter) && changedProps === undefined) {
+      // look for translation of "prefix_currentPage_title" and set it as title
+      let pathSlug: string[] = [];
+      if (this.route.prefix.startsWith("/knx/")) {
+        pathSlug = this.route.prefix.substring(5).split("/");
+      }
+      pathSlug.push(this._currentPage, "title");
+      const title_translation_key = pathSlug.join("_");
+      const title = this.knx.localize(title_translation_key);
+      mainWindow.document.title =
+        title === title_translation_key
+          ? "KNX - Home Assistant"
+          : `${title} - KNX - Home Assistant`;
+    }
 
     el.hass = this.hass;
     el.knx = this.knx;
