@@ -23,7 +23,7 @@ export class KNXError extends LitElement {
 
   @property({ type: Array, reflect: false }) public tabs!: PageNavigation[];
 
-  protected render(): TemplateResult | void {
+  protected render(): TemplateResult {
     const error = mainWindow.history.state?.message ?? "Unknown error";
     return html`
       <hass-error-screen

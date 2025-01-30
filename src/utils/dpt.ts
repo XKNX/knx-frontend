@@ -16,7 +16,7 @@ export const isValidDPT = (testDPT: DPT, validDPTs: DPT[]): boolean =>
 export const filterValidGroupAddresses = (
   project: KNXProject,
   validDPTs: DPT[],
-): { [id: string]: GroupAddress } =>
+): Record<string, GroupAddress> =>
   Object.entries(project.group_addresses).reduce(
     (acc, [id, groupAddress]) => {
       if (groupAddress.dpt && isValidDPT(groupAddress.dpt, validDPTs)) {
@@ -24,13 +24,13 @@ export const filterValidGroupAddresses = (
       }
       return acc;
     },
-    {} as { [id: string]: GroupAddress },
+    {} as Record<string, GroupAddress>,
   );
 
 export const filterValidComObjects = (
   project: KNXProject,
   validDPTs: DPT[],
-): { [id: string]: CommunicationObject } => {
+): Record<string, CommunicationObject> => {
   const validGroupAddresses = filterValidGroupAddresses(project, validDPTs);
   return Object.entries(project.communication_objects).reduce(
     (acc, [id, comObject]) => {
@@ -39,7 +39,7 @@ export const filterValidComObjects = (
       }
       return acc;
     },
-    {} as { [id: string]: CommunicationObject },
+    {} as Record<string, CommunicationObject>,
   );
 };
 

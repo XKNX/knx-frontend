@@ -1,13 +1,13 @@
 import type { Selector } from "@ha/data/selector";
 import type { DPT } from "../types/websocket";
 
-export type SettingsGroup = {
+export interface SettingsGroup {
   type: "settings_group";
   heading: string;
   description?: string;
   selectors: SelectorSchema[];
   collapsible?: boolean;
-};
+}
 
 export type SelectorSchema =
   | GASchema
@@ -15,7 +15,7 @@ export type SelectorSchema =
   | { name: "sync_state"; type: "sync_state" }
   | KnxHaSelector;
 
-export type KnxHaSelector = {
+export interface KnxHaSelector {
   name: string;
   type: "selector";
   default?: any;
@@ -23,31 +23,31 @@ export type KnxHaSelector = {
   selector: Selector;
   label: string;
   helper?: string;
-};
+}
 
-export type GASchema = {
+export interface GASchema {
   name: string;
   type: "group_address";
   label?: string;
   options: GASchemaOptions;
-};
+}
 
-export type GASchemaOptions = {
+export interface GASchemaOptions {
   write?: { required: boolean };
   state?: { required: boolean };
   passive?: boolean;
   validDPTs?: DPT[]; // one of validDPts or dptSelect shall be set
   dptSelect?: DPTOption[];
-};
+}
 
-export type DPTOption = {
+export interface DPTOption {
   value: string;
   label: string;
   description?: string;
   dpt: DPT;
-};
+}
 
-export type GroupSelect = {
+export interface GroupSelect {
   type: "group_select";
   name: string;
   options: {
@@ -56,7 +56,7 @@ export type GroupSelect = {
     description?: string;
     schema: (SettingsGroup | SelectorSchema)[];
   }[];
-};
+}
 
 export const binarySensorSchema: SettingsGroup[] = [
   {

@@ -3,13 +3,13 @@ import { FALLBACK_DOMAIN_ICONS } from "@ha/data/icons";
 import * as schema from "./schema";
 import type { SupportedPlatform } from "../types/entity_data";
 
-export type PlatformInfo = {
+export interface PlatformInfo {
   name: string;
   iconPath: string;
   color: string;
   description?: string;
   schema: schema.SettingsGroup[];
-};
+}
 
 export const platformConstants: Record<SupportedPlatform, PlatformInfo> = {
   binary_sensor: {

@@ -70,7 +70,7 @@ class KnxDevicePicker extends LitElement {
   private _getDevices = memoizeOne(
     (
       devices: DeviceRegistryEntry[],
-      areas: { [id: string]: AreaRegistryEntry },
+      areas: Record<string, AreaRegistryEntry>,
     ): ScorableDevice[] => {
       const outputDevices = devices.map((device) => {
         const name = device.name_by_user ?? device.name ?? "";

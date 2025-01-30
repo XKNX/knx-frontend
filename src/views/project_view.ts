@@ -51,11 +51,11 @@ export class KNXProjectView extends LitElement {
 
   @state() private _visibleGroupAddresses: string[] = [];
 
-  @state() private _groupRangeAvailable: boolean = false;
+  @state() private _groupRangeAvailable = false;
 
   @state() private _subscribed?: () => void;
 
-  @state() private _lastTelegrams: { [ga: string]: TelegramDict } = {};
+  @state() private _lastTelegrams: Record<string, TelegramDict> = {};
 
   public disconnectedCallback() {
     super.disconnectedCallback();
@@ -211,7 +211,7 @@ export class KNXProjectView extends LitElement {
     this._visibleGroupAddresses = ev.detail.groupAddresses;
   }
 
-  protected render(): TemplateResult | void {
+  protected render(): TemplateResult {
     if (!this.hass || !this.knx.project) {
       return html` <hass-loading-screen></hass-loading-screen> `;
     }
@@ -267,40 +267,38 @@ export class KNXProjectView extends LitElement {
     this.rangeSelectorHidden = !this.rangeSelectorHidden;
   }
 
-  static get styles() {
-    return css`
-      hass-loading-screen {
-        --app-header-background-color: var(--sidebar-background-color);
-        --app-header-text-color: var(--sidebar-text-color);
-      }
-      .sections {
-        display: flex;
-        flex-direction: row;
-        height: 100%;
-      }
+  static styles = css`
+    hass-loading-screen {
+      --app-header-background-color: var(--sidebar-background-color);
+      --app-header-text-color: var(--sidebar-text-color);
+    }
+    .sections {
+      display: flex;
+      flex-direction: row;
+      height: 100%;
+    }
 
-      :host([narrow]) knx-project-tree-view {
-        position: absolute;
-        max-width: calc(100% - 60px); /* 100% -> max 871px before not narrow */
-        z-index: 1;
-        right: 0;
-        transition: 0.5s;
-        border-left: 1px solid var(--divider-color);
-      }
+    :host([narrow]) knx-project-tree-view {
+      position: absolute;
+      max-width: calc(100% - 60px); /* 100% -> max 871px before not narrow */
+      z-index: 1;
+      right: 0;
+      transition: 0.5s;
+      border-left: 1px solid var(--divider-color);
+    }
 
-      :host([narrow][range-selector-hidden]) knx-project-tree-view {
-        width: 0;
-      }
+    :host([narrow][range-selector-hidden]) knx-project-tree-view {
+      width: 0;
+    }
 
-      :host(:not([narrow])) knx-project-tree-view {
-        max-width: 255px; /* min 616px - 816px for tree-view + ga-table (depending on side menu) */
-      }
+    :host(:not([narrow])) knx-project-tree-view {
+      max-width: 255px; /* min 616px - 816px for tree-view + ga-table (depending on side menu) */
+    }
 
-      .ga-table {
-        flex: 1;
-      }
-    `;
-  }
+    .ga-table {
+      flex: 1;
+    }
+  `;
 }
 
 declare global {

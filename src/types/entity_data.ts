@@ -25,10 +25,10 @@ export interface SwitchEntityData {
 
 export type KnxEntityData = SwitchEntityData;
 
-export type EntityData = {
+export interface EntityData {
   entity: BaseEntityData;
   knx: KnxEntityData;
-};
+}
 
 export interface CreateEntityData {
   platform: SupportedPlatform;

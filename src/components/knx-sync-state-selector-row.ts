@@ -19,7 +19,7 @@ export class KnxSyncStateSelectorRow extends LitElement {
 
   private _strategy: boolean | "init" | "expire" | "every" = true;
 
-  private _minutes: number = 60;
+  private _minutes = 60;
 
   protected _hasMinutes(strategy: boolean | string): boolean {
     return strategy === "expire" || strategy === "every";
@@ -98,36 +98,34 @@ export class KnxSyncStateSelectorRow extends LitElement {
     fireEvent(this, "value-changed", { value });
   }
 
-  static get styles() {
-    return css`
-      .description {
-        margin: 0;
-        display: block;
-        padding-top: 4px;
-        padding-bottom: 8px;
-        font-family: var(
-          --mdc-typography-body2-font-family,
-          var(--mdc-typography-font-family, Roboto, sans-serif)
-        );
-        -webkit-font-smoothing: antialiased;
-        font-size: var(--mdc-typography-body2-font-size, 0.875rem);
-        font-weight: var(--mdc-typography-body2-font-weight, 400);
-        line-height: normal;
-        color: var(--secondary-text-color);
-      }
-      .inline {
-        width: 100%;
-        display: inline-flex;
-        flex-flow: row wrap;
-        gap: 16px;
-        justify-content: space-between;
-      }
-      .inline > * {
-        flex: 1;
-        width: 100%; /* to not overflow when wrapped */
-      }
-    `;
-  }
+  static styles = css`
+    .description {
+      margin: 0;
+      display: block;
+      padding-top: 4px;
+      padding-bottom: 8px;
+      font-family: var(
+        --mdc-typography-body2-font-family,
+        var(--mdc-typography-font-family, Roboto, sans-serif)
+      );
+      -webkit-font-smoothing: antialiased;
+      font-size: var(--mdc-typography-body2-font-size, 0.875rem);
+      font-weight: var(--mdc-typography-body2-font-weight, 400);
+      line-height: normal;
+      color: var(--secondary-text-color);
+    }
+    .inline {
+      width: 100%;
+      display: inline-flex;
+      flex-flow: row wrap;
+      gap: 16px;
+      justify-content: space-between;
+    }
+    .inline > * {
+      flex: 1;
+      width: 100%; /* to not overflow when wrapped */
+    }
+  `;
 }
 
 declare global {

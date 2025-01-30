@@ -1,4 +1,4 @@
-import type { CSSResultGroup, TemplateResult } from "lit";
+import type { TemplateResult } from "lit";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
@@ -32,12 +32,12 @@ export class KNXProjectTreeView extends LitElement {
 
   @property({ attribute: false }) multiselect = false;
 
-  @state() private _selectableRanges: { [key: string]: RangeInfo } = {};
+  @state() private _selectableRanges: Record<string, RangeInfo> = {};
 
   connectedCallback() {
     super.connectedCallback();
 
-    const initSelectableRanges = (data: { [key: string]: GroupRange }) => {
+    const initSelectableRanges = (data: Record<string, GroupRange>) => {
       Object.entries(data).forEach(([key, groupRange]) => {
         if (groupRange.group_addresses.length > 0) {
           this._selectableRanges[key] = {
@@ -56,7 +56,7 @@ export class KNXProjectTreeView extends LitElement {
     return html`<div class="ha-tree-view">${this._recurseData(this.data.group_ranges)}</div>`;
   }
 
-  protected _recurseData(data: { [key: string]: GroupRange }, level: number = 0): TemplateResult {
+  protected _recurseData(data: Record<string, GroupRange>, level = 0): TemplateResult {
     const childTemplates = Object.entries(data).map(([key, groupRange]) => {
       const hasSubRange = Object.keys(groupRange.group_ranges).length > 0;
       const empty = !(hasSubRange || groupRange.group_addresses.length > 0);
@@ -129,92 +129,90 @@ export class KNXProjectTreeView extends LitElement {
     fireEvent(this, "knx-group-range-selection-changed", { groupAddresses: _gaOfSelectedRanges });
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      :host {
-        margin: 0;
-        height: 100%;
-        overflow-y: scroll;
-        overflow-x: hidden;
+  static styles = css`
+    :host {
+      margin: 0;
+      height: 100%;
+      overflow-y: scroll;
+      overflow-x: hidden;
+      background-color: var(--card-background-color);
+    }
+
+    .ha-tree-view {
+      cursor: default;
+    }
+
+    .root-group {
+      margin-bottom: 8px;
+    }
+
+    .root-group > * {
+      padding-top: 5px;
+      padding-bottom: 5px;
+    }
+
+    .range-item {
+      display: block;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: 0.875rem;
+    }
+
+    .range-item > * {
+      vertical-align: middle;
+      pointer-events: none;
+    }
+
+    .range-key {
+      color: var(--text-primary-color);
+      font-size: 0.75rem;
+      font-weight: 700;
+      background-color: var(--label-badge-grey);
+      border-radius: 4px;
+      padding: 1px 4px;
+      margin-right: 2px;
+    }
+
+    .root-range {
+      padding-left: 8px;
+      font-weight: 500;
+      background-color: var(--secondary-background-color);
+
+      & .range-key {
+        color: var(--primary-text-color);
         background-color: var(--card-background-color);
       }
+    }
 
-      .ha-tree-view {
-        cursor: default;
+    .sub-range {
+      padding-left: 13px;
+    }
+
+    .selectable {
+      cursor: pointer;
+    }
+
+    .selectable:hover {
+      background-color: rgba(var(--rgb-primary-text-color), 0.04);
+    }
+
+    .selected-range {
+      background-color: rgba(var(--rgb-primary-color), 0.12);
+
+      & .range-key {
+        background-color: var(--primary-color);
       }
+    }
 
-      .root-group {
-        margin-bottom: 8px;
-      }
+    .selected-range:hover {
+      background-color: rgba(var(--rgb-primary-color), 0.07);
+    }
 
-      .root-group > * {
-        padding-top: 5px;
-        padding-bottom: 5px;
-      }
-
-      .range-item {
-        display: block;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        font-size: 0.875rem;
-      }
-
-      .range-item > * {
-        vertical-align: middle;
-        pointer-events: none;
-      }
-
-      .range-key {
-        color: var(--text-primary-color);
-        font-size: 0.75rem;
-        font-weight: 700;
-        background-color: var(--label-badge-grey);
-        border-radius: 4px;
-        padding: 1px 4px;
-        margin-right: 2px;
-      }
-
-      .root-range {
-        padding-left: 8px;
-        font-weight: 500;
-        background-color: var(--secondary-background-color);
-
-        & .range-key {
-          color: var(--primary-text-color);
-          background-color: var(--card-background-color);
-        }
-      }
-
-      .sub-range {
-        padding-left: 13px;
-      }
-
-      .selectable {
-        cursor: pointer;
-      }
-
-      .selectable:hover {
-        background-color: rgba(var(--rgb-primary-text-color), 0.04);
-      }
-
-      .selected-range {
-        background-color: rgba(var(--rgb-primary-color), 0.12);
-
-        & .range-key {
-          background-color: var(--primary-color);
-        }
-      }
-
-      .selected-range:hover {
-        background-color: rgba(var(--rgb-primary-color), 0.07);
-      }
-
-      .non-selected-range {
-        background-color: var(--card-background-color);
-      }
-    `;
-  }
+    .non-selected-range {
+      background-color: var(--card-background-color);
+    }
+  `;
 }
 
 declare global {

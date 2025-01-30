@@ -59,7 +59,7 @@ export class GroupAddressSelector extends LitElement {
 
   private _validGADropTarget?: boolean;
 
-  private _dragOverTimeout: { [key: string]: NodeJS.Timeout } = {};
+  private _dragOverTimeout: Record<string, NodeJS.Timeout> = {};
 
   @query(".passive") private _passiveContainer!: HTMLDivElement;
 

@@ -1,0 +1,9 @@
+import "./clean.js";
+import "./compress.js";
+import "./entry-html.js";
+import "./fetch-nightly-translations.js";
+import "./gen-icons-json.js";
+import "./knx.js";
+import "./locale-data.js";
+import "./rspack.js";
+import "./translations.js";

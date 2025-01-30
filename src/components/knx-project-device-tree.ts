@@ -1,5 +1,5 @@
 import { mdiNetworkOutline, mdiSwapHorizontalCircle, mdiArrowLeft, mdiDragVertical } from "@mdi/js";
-import type { CSSResultGroup, TemplateResult } from "lit";
+import type { TemplateResult } from "lit";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { repeat } from "lit/directives/repeat";
@@ -243,161 +243,159 @@ export class KNXProjectDeviceTree extends LitElement {
     this.scrollTop = 0;
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      :host {
-        display: block;
-        box-sizing: border-box;
-        margin: 0;
-        height: 100%;
-        overflow-y: scroll;
-        overflow-x: hidden;
-        background-color: var(--sidebar-background-color);
-        color: var(--sidebar-menu-button-text-color, --primary-text-color);
-        margin-right: env(safe-area-inset-right);
-        border-left: 1px solid var(--divider-color);
-        padding-left: 8px;
-      }
+  static styles = css`
+    :host {
+      display: block;
+      box-sizing: border-box;
+      margin: 0;
+      height: 100%;
+      overflow-y: scroll;
+      overflow-x: hidden;
+      background-color: var(--sidebar-background-color);
+      color: var(--sidebar-menu-button-text-color, --primary-text-color);
+      margin-right: env(safe-area-inset-right);
+      border-left: 1px solid var(--divider-color);
+      padding-left: 8px;
+    }
 
-      ha-alert {
-        display: block;
-        margin-right: 8px;
-        margin-top: 8px;
-      }
+    ha-alert {
+      display: block;
+      margin-right: 8px;
+      margin-top: 8px;
+    }
 
-      ul {
-        list-style-type: none;
-        padding: 0;
-        margin-block-start: 8px;
-      }
+    ul {
+      list-style-type: none;
+      padding: 0;
+      margin-block-start: 8px;
+    }
 
-      li {
-        display: block;
-        margin-bottom: 4px;
-        & div.item {
-          /* icon and text */
-          display: flex;
-          align-items: center;
-          pointer-events: none;
-          & > div {
-            /* optional container for multiple paragraphs */
-            min-width: 0;
-            width: 100%;
-          }
-        }
-      }
-
-      li p {
-        margin: 0;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-      }
-
-      span.icon {
-        flex: 0 0 auto;
-        display: inline-flex;
-        /* align-self: stretch; */
+    li {
+      display: block;
+      margin-bottom: 4px;
+      & div.item {
+        /* icon and text */
+        display: flex;
         align-items: center;
+        pointer-events: none;
+        & > div {
+          /* optional container for multiple paragraphs */
+          min-width: 0;
+          width: 100%;
+        }
+      }
+    }
 
-        color: var(--text-primary-color);
-        font-size: 1rem;
-        font-weight: 700;
-        border-radius: 12px;
-        padding: 3px 6px;
+    li p {
+      margin: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    span.icon {
+      flex: 0 0 auto;
+      display: inline-flex;
+      /* align-self: stretch; */
+      align-items: center;
+
+      color: var(--text-primary-color);
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 12px;
+      padding: 3px 6px;
+      margin-right: 4px;
+
+      & > ha-svg-icon {
+        float: left;
+        width: 16px;
+        height: 16px;
         margin-right: 4px;
-
-        & > ha-svg-icon {
-          float: left;
-          width: 16px;
-          height: 16px;
-          margin-right: 4px;
-        }
-
-        & > span {
-          /* icon text */
-          flex: 1;
-          text-align: center;
-        }
       }
 
-      span.ia {
-        flex-basis: 70px;
-        background-color: var(--label-badge-grey);
-        & > ha-svg-icon {
-          transform: rotate(90deg);
-        }
+      & > span {
+        /* icon text */
+        flex: 1;
+        text-align: center;
       }
+    }
 
-      span.co {
-        flex-basis: 44px;
-        background-color: var(--amber-color);
+    span.ia {
+      flex-basis: 70px;
+      background-color: var(--label-badge-grey);
+      & > ha-svg-icon {
+        transform: rotate(90deg);
       }
+    }
 
-      span.ga {
-        flex-basis: 54px;
-        background-color: var(--knx-green);
-      }
+    span.co {
+      flex-basis: 44px;
+      background-color: var(--amber-color);
+    }
 
-      .description {
-        margin-top: 4px;
-        margin-bottom: 4px;
-      }
+    span.ga {
+      flex-basis: 54px;
+      background-color: var(--knx-green);
+    }
 
-      p.co-info,
-      p.ga-info {
-        font-size: 0.85rem;
-        font-weight: 300;
-      }
+    .description {
+      margin-top: 4px;
+      margin-bottom: 4px;
+    }
 
-      .back-item {
-        margin-left: -8px; /* revert host padding to have gapless border */
-        padding-left: 8px;
-        margin-top: -8px; /* revert ul margin-block-start to have gapless hover effect */
-        padding-top: 8px;
-        padding-bottom: 8px;
-        border-bottom: 1px solid var(--divider-color);
-        margin-bottom: 8px;
-      }
+    p.co-info,
+    p.ga-info {
+      font-size: 0.85rem;
+      font-weight: 300;
+    }
 
-      .back-icon {
-        margin-right: 8px;
-        color: var(--label-badge-grey);
-      }
+    .back-item {
+      margin-left: -8px; /* revert host padding to have gapless border */
+      padding-left: 8px;
+      margin-top: -8px; /* revert ul margin-block-start to have gapless hover effect */
+      padding-top: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--divider-color);
+      margin-bottom: 8px;
+    }
 
-      li.channel {
-        border-top: 1px solid var(--divider-color);
-        border-bottom: 1px solid var(--divider-color);
-        padding: 4px 16px;
-        font-weight: 500;
-      }
+    .back-icon {
+      margin-right: 8px;
+      color: var(--label-badge-grey);
+    }
 
-      li.clickable {
-        cursor: pointer;
-      }
-      li.clickable:hover {
-        background-color: rgba(var(--rgb-primary-text-color), 0.04);
-      }
+    li.channel {
+      border-top: 1px solid var(--divider-color);
+      border-bottom: 1px solid var(--divider-color);
+      padding: 4px 16px;
+      font-weight: 500;
+    }
 
-      li[draggable="true"] {
-        cursor: grab;
-      }
-      li[draggable="true"]:hover {
-        border-radius: 12px;
-        background-color: rgba(var(--rgb-primary-color), 0.2);
-      }
+    li.clickable {
+      cursor: pointer;
+    }
+    li.clickable:hover {
+      background-color: rgba(var(--rgb-primary-text-color), 0.04);
+    }
 
-      ul.group-addresses {
-        margin-top: 0;
-        margin-bottom: 8px;
+    li[draggable="true"] {
+      cursor: grab;
+    }
+    li[draggable="true"]:hover {
+      border-radius: 12px;
+      background-color: rgba(var(--rgb-primary-color), 0.2);
+    }
 
-        & > li:not(:first-child) {
-          /* passive addresses for this com-object */
-          opacity: 0.8;
-        }
+    ul.group-addresses {
+      margin-top: 0;
+      margin-bottom: 8px;
+
+      & > li:not(:first-child) {
+        /* passive addresses for this com-object */
+        opacity: 0.8;
       }
-    `;
-  }
+    }
+  `;
 }
 
 declare global {

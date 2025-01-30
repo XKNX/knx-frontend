@@ -85,9 +85,9 @@ class KnxFrontend extends KnxElement {
     `;
   }
 
-  static get styles() {
+  static styles =
     // apply "Settings" style toolbar color for `hass-subpage`
-    return css`
+    css`
       :host {
         --app-header-background-color: var(--sidebar-background-color);
         --app-header-text-color: var(--sidebar-text-color);
@@ -96,7 +96,6 @@ class KnxFrontend extends KnxElement {
         --knx-blue: #2a4691;
       }
     `;
-  }
 
   private _setRoute(ev: LocationChangedEvent): void {
     if (!ev.detail?.route) {

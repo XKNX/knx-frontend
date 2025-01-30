@@ -74,7 +74,7 @@ export class KNXConfigureEntity extends LitElement {
     current[keysTail] = value;
   }
 
-  protected render(): TemplateResult | void {
+  protected render(): TemplateResult {
     const errors = extractValidationErrors(this.validationErrors, "data"); // "data" is root key in our python schema
     return html`
       <div class="header">
@@ -250,111 +250,109 @@ export class KNXConfigureEntity extends LitElement {
     };
   }
 
-  static get styles() {
-    return css`
-      p {
-        color: var(--secondary-text-color);
-      }
+  static styles = css`
+    p {
+      color: var(--secondary-text-color);
+    }
 
-      .header {
-        color: var(--ha-card-header-color, --primary-text-color);
-        font-family: var(--ha-card-header-font-family, inherit);
-        padding: 0 16px 16px;
+    .header {
+      color: var(--ha-card-header-color, --primary-text-color);
+      font-family: var(--ha-card-header-font-family, inherit);
+      padding: 0 16px 16px;
 
-        & h1 {
-          display: inline-flex;
-          align-items: center;
-          font-size: 26px;
-          letter-spacing: -0.012em;
-          line-height: 48px;
-          font-weight: normal;
-          margin-bottom: 14px;
-
-          & ha-svg-icon {
-            color: var(--text-primary-color);
-            padding: 8px;
-            background-color: var(--blue-color);
-            border-radius: 50%;
-            margin-right: 8px;
-          }
-        }
-
-        & p {
-          margin-top: -8px;
-          line-height: 24px;
-        }
-      }
-
-      ::slotted(ha-alert) {
-        margin-top: 0 !important;
-      }
-
-      ha-card {
-        margin-bottom: 24px;
-        padding: 16px;
-
-        & .card-header {
-          display: inline-flex;
-          align-items: center;
-        }
-      }
-
-      ha-expansion-panel {
-        margin-bottom: 16px;
-      }
-      ha-expansion-panel > :first-child:not(ha-settings-row) {
-        margin-top: 16px; /* ha-settings-row has this margin internally */
-      }
-      ha-expansion-panel > ha-settings-row:first-child,
-      ha-expansion-panel > knx-selector-row:first-child {
-        border: 0;
-      }
-
-      ha-settings-row {
-        margin-bottom: 8px;
-        padding: 0;
-      }
-      ha-control-select {
-        padding: 0;
-        margin-bottom: 16px;
-      }
-
-      .group-description {
+      & h1 {
+        display: inline-flex;
         align-items: center;
+        font-size: 26px;
+        letter-spacing: -0.012em;
+        line-height: 48px;
+        font-weight: normal;
+        margin-bottom: 14px;
+
+        & ha-svg-icon {
+          color: var(--text-primary-color);
+          padding: 8px;
+          background-color: var(--blue-color);
+          border-radius: 50%;
+          margin-right: 8px;
+        }
+      }
+
+      & p {
         margin-top: -8px;
-        padding-left: 8px;
-        padding-bottom: 8px;
+        line-height: 24px;
       }
+    }
 
-      .group-selection {
-        padding-left: 16px;
-        padding-right: 16px;
-        & ha-settings-row:first-child {
-          border-top: 0;
-        }
+    ::slotted(ha-alert) {
+      margin-top: 0 !important;
+    }
+
+    ha-card {
+      margin-bottom: 24px;
+      padding: 16px;
+
+      & .card-header {
+        display: inline-flex;
+        align-items: center;
       }
+    }
 
-      knx-group-address-selector,
-      ha-selector,
-      ha-selector-text,
-      ha-selector-select,
-      knx-sync-state-selector-row,
-      knx-device-picker {
-        display: block;
-        margin-bottom: 16px;
+    ha-expansion-panel {
+      margin-bottom: 16px;
+    }
+    ha-expansion-panel > :first-child:not(ha-settings-row) {
+      margin-top: 16px; /* ha-settings-row has this margin internally */
+    }
+    ha-expansion-panel > ha-settings-row:first-child,
+    ha-expansion-panel > knx-selector-row:first-child {
+      border: 0;
+    }
+
+    ha-settings-row {
+      margin-bottom: 8px;
+      padding: 0;
+    }
+    ha-control-select {
+      padding: 0;
+      margin-bottom: 16px;
+    }
+
+    .group-description {
+      align-items: center;
+      margin-top: -8px;
+      padding-left: 8px;
+      padding-bottom: 8px;
+    }
+
+    .group-selection {
+      padding-left: 16px;
+      padding-right: 16px;
+      & ha-settings-row:first-child {
+        border-top: 0;
       }
+    }
 
-      ha-alert {
-        display: block;
-        margin: 20px auto;
-        max-width: 720px;
+    knx-group-address-selector,
+    ha-selector,
+    ha-selector-text,
+    ha-selector-select,
+    knx-sync-state-selector-row,
+    knx-device-picker {
+      display: block;
+      margin-bottom: 16px;
+    }
 
-        & summary {
-          padding: 10px;
-        }
+    ha-alert {
+      display: block;
+      margin: 20px auto;
+      max-width: 720px;
+
+      & summary {
+        padding: 10px;
       }
-    `;
-  }
+    }
+  `;
 }
 
 declare global {
