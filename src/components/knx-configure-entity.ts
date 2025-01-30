@@ -10,6 +10,7 @@ import "@ha/components/ha-expansion-panel";
 import "@ha/components/ha-selector/ha-selector";
 import "@ha/components/ha-settings-row";
 
+import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import type { HomeAssistant } from "@ha/types";
 
@@ -43,9 +44,34 @@ export class KNXConfigureEntity extends LitElement {
   connectedCallback(): void {
     super.connectedCallback();
     if (!this.config) {
-      // fill base keys to get better validation error messages
+      // set base keys to get better validation error messages
       this.config = { entity: {}, knx: {} };
+
+      // url params are extracted to config.
+      // /knx/entities/create/binary_sensor?knx.ga_sensor.state=0/1/4
+      // would set this.conifg.knx.ga_sensor.state to "0/1/4"
+      // TODO: this is not checked against any schema
+      const urlParams = new URLSearchParams(mainWindow.location.search);
+      this._url_suggestions = Object.fromEntries(urlParams.entries());
+      for (const [path, value] of Object.entries(this._url_suggestions)) {
+        this._setNestedValue(path, value);
+        fireEvent(this, "knx-entity-configuration-changed", this.config);
+      }
     }
+  }
+
+  private _setNestedValue(path: string, value: any) {
+    const keys = path.split(".");
+    const keysTail = keys.pop();
+    if (!keysTail) return;
+    let current = this.config!;
+    for (const key of keys) {
+      if (!(key in current)) {
+        current[key] = {};
+      }
+      current = current[key];
+    }
+    current[keysTail] = value;
   }
 
   protected render(): TemplateResult | void {

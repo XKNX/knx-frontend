@@ -116,9 +116,6 @@ export class KNXCreateEntity extends LitElement {
             this._loading = false;
           });
       }
-      // const urlParams = new URLSearchParams(mainWindow.location.search);
-      // const referrerGA = urlParams.get("ga");
-      // console.log(referrerGA);
     }
   }
 

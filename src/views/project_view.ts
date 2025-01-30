@@ -1,4 +1,4 @@
-import { mdiFilterVariant } from "@mdi/js";
+import { mdiFilterVariant, mdiPlus } from "@mdi/js";
 import type { TemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
@@ -6,6 +6,7 @@ import { customElement, property, state } from "lit/decorators";
 import memoize from "memoize-one";
 
 import type { HASSDomEvent } from "@ha/common/dom/fire_event";
+import { navigate } from "@ha/common/navigate";
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-tabs-subpage";
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
@@ -14,8 +15,8 @@ import "@ha/components/ha-icon-button";
 import "@ha/components/ha-icon-overflow-menu";
 import "@ha/components/data-table/ha-data-table";
 import type { DataTableColumnContainer } from "@ha/components/data-table/ha-data-table";
+import type { IconOverflowMenuItem } from "@ha/components/ha-icon-overflow-menu";
 import { relativeTime } from "@ha/common/datetime/relative_time";
-import { navigate } from "@ha/common/navigate";
 
 import "../components/knx-project-tree-view";
 
@@ -104,6 +105,7 @@ export class KNXProjectView extends LitElement {
   private _columns = memoize((_narrow, _language): DataTableColumnContainer<GroupAddress> => {
     const addressWidth = "100px";
     const dptWidth = "82px";
+    const overflowMenuWidth = "72px";
 
     return {
       address: {
@@ -159,8 +161,35 @@ export class KNXProjectView extends LitElement {
           </div>`;
         },
       },
+      actions: {
+        title: "",
+        minWidth: overflowMenuWidth,
+        type: "overflow-menu",
+        template: (ga: GroupAddress) => this._groupAddressMenu(ga),
+      },
     };
   });
+
+  private _groupAddressMenu(groupAddress: GroupAddress): TemplateResult | typeof nothing {
+    const items: IconOverflowMenuItem[] = [];
+    if (groupAddress.dpt?.main === 1) {
+      items.push({
+        path: mdiPlus,
+        label: "Create binary sensor",
+        action: () => {
+          navigate(
+            "/knx/entities/create/binary_sensor?knx.ga_sensor.state=" + groupAddress.address,
+          );
+        },
+      });
+    }
+
+    return items.length
+      ? html`
+          <ha-icon-overflow-menu .hass=${this.hass} narrow .items=${items}> </ha-icon-overflow-menu>
+        `
+      : nothing;
+  }
 
   private _getRows(visibleGroupAddresses: string[]): GroupAddress[] {
     if (!visibleGroupAddresses.length)
