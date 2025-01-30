@@ -25,7 +25,7 @@
   "group_monitor_telegram": "Telegramm",
   "group_monitor_type": "Typ",
   "group_monitor_payload": "Daten",
-  "group_monitor_connected_waiting_telegrams": "Grouppenmonitor ist verbunden und wartet auf Telegramme",
+  "group_monitor_connected_waiting_telegrams": "Gruppenmonitor ist verbunden und wartet auf Telegramme",
   "group_monitor_value": "Wert",
   "group_monitor_waiting_to_connect": "Warte auf Websocket-Verbindung",
   "project_view_title": "Projekt",
