@@ -111,7 +111,9 @@ export const binarySensorSchema: SettingsGroup[] = [
       {
         name: "reset_after",
         type: "selector",
-        selector: { number: { min: 0, step: 0.1, unit_of_measurement: "s" } },
+        selector: {
+          number: { min: 0, max: 600, mode: "box", step: 0.1, unit_of_measurement: "s" },
+        },
         label: "Reset after",
         helper: "Reset back to “off” state after specified seconds.",
         default: 1, // not forwarded to data when loading - fine when optional: true
