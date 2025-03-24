@@ -28,7 +28,7 @@
   },
   "resolutionsOverride": {},
   "dependencies": {
-    "@babel/runtime": "7.26.7",
+    "@babel/runtime": "7.26.10",
     "@braintree/sanitize-url": "7.1.1",
     "@codemirror/autocomplete": "6.18.4",
     "@codemirror/commands": "6.8.0",
