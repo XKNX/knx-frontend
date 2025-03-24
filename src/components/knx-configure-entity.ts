@@ -108,20 +108,28 @@ export class KNXConfigureEntity extends LitElement {
   }
 
   private _generateSettingsGroup(group: SettingsGroup, errors?: ErrorDescription[]) {
-    if (group.collapsible === true) {
-      return html` <ha-expansion-panel
-        outlined
-        .header=${group.heading}
-        .secondary=${group.description}
-        .expanded=${this._groupHasGroupAddressInConfig(group)}
-        >${this._generateItems(group.selectors, errors)}
-      </ha-expansion-panel>`;
-    }
-    return html` <ha-settings-row narrow>
-      <div slot="heading">${group.heading}</div>
-      <div slot="description">${group.description}</div>
-      ${this._generateItems(group.selectors, errors)}
-    </ha-settings-row>`;
+    // if (group.collapsible === true) {
+    //   return html` <ha-expansion-panel
+    //     outlined
+    //     .header=${group.heading}
+    //     .secondary=${group.description}
+    //     .expanded=${this._groupHasGroupAddressInConfig(group)}
+    //     >${this._generateItems(group.selectors, errors)}
+    //   </ha-expansion-panel>`;
+    // }
+    // return html` <ha-settings-row narrow>
+    //   <div slot="heading">${group.heading}</div>
+    //   <div slot="description">${group.description}</div>
+    //   ${this._generateItems(group.selectors, errors)}
+    // </ha-settings-row>`;
+    return html` <ha-expansion-panel
+      .header=${group.heading}
+      .secondary=${group.description}
+      .expanded=${!group.collapsible || this._groupHasGroupAddressInConfig(group)}
+      .noCollapse=${!group.collapsible}
+      .outlined=${!!group.collapsible}
+      >${this._generateItems(group.selectors, errors)}
+    </ha-expansion-panel>`;
   }
 
   private _groupHasGroupAddressInConfig(group: SettingsGroup) {
@@ -308,6 +316,10 @@ export class KNXConfigureEntity extends LitElement {
     ha-expansion-panel > knx-selector-row:first-child {
       border: 0;
     }
+    ha-expansion-panel > * {
+      margin-left: 8px;
+      margin-right: 8px;
+    }
 
     ha-settings-row {
       margin-bottom: 8px;
@@ -315,6 +327,8 @@ export class KNXConfigureEntity extends LitElement {
     }
     ha-control-select {
       padding: 0;
+      margin-left: 0;
+      margin-right: 0;
       margin-bottom: 16px;
     }
 
@@ -326,8 +340,8 @@ export class KNXConfigureEntity extends LitElement {
     }
 
     .group-selection {
-      padding-left: 16px;
-      padding-right: 16px;
+      padding-left: 8px;
+      padding-right: 8px;
       & ha-settings-row:first-child {
         border-top: 0;
       }
