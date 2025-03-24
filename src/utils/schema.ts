@@ -134,6 +134,163 @@ export const binarySensorSchema: SettingsGroup[] = [
   },
 ];
 
+export const coverSchema: SettingsGroup[] = [
+  {
+    type: "settings_group",
+    heading: "Up/Down control",
+    description: "DPT 1 group addresses triggering full movement.",
+    selectors: [
+      {
+        name: "ga_up_down",
+        type: "group_address",
+        options: {
+          write: { required: false },
+          passive: true,
+          validDPTs: [{ main: 1, sub: null }],
+        },
+      },
+      {
+        name: "invert_up_down",
+        type: "selector",
+        selector: { boolean: null },
+        label: "Invert",
+        helper:
+          "Default is UP (0) to open a cover and DOWN (1) to close of a cover. Enable this to invert the up/down commands from/to your KNX actuator.",
+        optional: true,
+      },
+    ],
+  },
+  {
+    type: "settings_group",
+    heading: "Stop",
+    description: "DPT 1 group addresses for stopping movement.",
+    selectors: [
+      {
+        name: "ga_stop",
+        type: "group_address",
+        label: "Stop",
+        options: {
+          write: { required: false },
+          passive: true,
+          validDPTs: [{ main: 1, sub: null }],
+        },
+      },
+      {
+        name: "ga_short_up_down",
+        type: "group_address",
+        label: "Stepwise move",
+        options: {
+          write: { required: false },
+          passive: true,
+          validDPTs: [{ main: 1, sub: 7 }],
+        },
+      },
+    ],
+  },
+  {
+    type: "settings_group",
+    collapsible: true,
+    heading: "Position",
+    description: "DPT 5 group addresses for cover position.",
+    selectors: [
+      {
+        name: "ga_position_set",
+        type: "group_address",
+        label: "Set position",
+        options: {
+          write: { required: false },
+          passive: true,
+          validDPTs: [{ main: 5, sub: 1 }],
+        },
+      },
+      {
+        name: "ga_position_state",
+        type: "group_address",
+        label: "Current Position",
+        options: {
+          state: { required: false },
+          passive: true,
+          validDPTs: [{ main: 5, sub: 1 }],
+        },
+      },
+      {
+        name: "invert_position",
+        type: "selector",
+        selector: { boolean: null },
+        label: "Invert",
+        helper: "Invert payload before processing. Enable if KNX reports 0% as fully closed.",
+        optional: true,
+      },
+    ],
+  },
+  {
+    type: "settings_group",
+    collapsible: true,
+    heading: "Tilt",
+    description: "DPT 5 group addresses for slat tilt angle.",
+    selectors: [
+      {
+        name: "ga_angle",
+        type: "group_address",
+        label: "Tilt angle",
+        options: {
+          write: { required: false },
+          state: { required: false },
+          passive: true,
+          validDPTs: [{ main: 5, sub: 1 }],
+        },
+      },
+      {
+        name: "invert_angle",
+        type: "selector",
+        selector: { boolean: null },
+        label: "Invert",
+        helper: "Invert payload before processing. Enable if KNX reports 0% as fully closed.",
+        optional: true,
+      },
+    ],
+  },
+  {
+    type: "settings_group",
+    heading: "Travel time",
+    description: "Used to calculate intermediate positions of the cover while traveling.",
+    selectors: [
+      {
+        name: "travelling_time_down",
+        type: "selector",
+        selector: {
+          number: { min: 0, max: 1000, mode: "box", step: 0.1, unit_of_measurement: "s" },
+        },
+        label: "Travel time down",
+        helper: "Time the cover needs to fully close in seconds.",
+        default: 25,
+      },
+      {
+        name: "travelling_time_up",
+        type: "selector",
+        selector: {
+          number: { min: 0, max: 1000, mode: "box", step: 0.1, unit_of_measurement: "s" },
+        },
+        label: "Travel time up",
+        helper: "Time the cover needs to fully open in seconds.",
+        default: 25,
+      },
+    ],
+  },
+  // TODO: device class?
+  {
+    type: "settings_group",
+    collapsible: true,
+    heading: "State updater",
+    selectors: [
+      {
+        name: "sync_state",
+        type: "sync_state",
+      },
+    ],
+  },
+];
+
 export const switchSchema: SettingsGroup[] = [
   {
     type: "settings_group",
@@ -163,7 +320,7 @@ export const switchSchema: SettingsGroup[] = [
         type: "selector",
         selector: { boolean: null },
         label: "Respond to read",
-        helper: "Respond to GroupValueRead telegrams received to the configured address.",
+        helper: "Respond to GroupValueRead telegrams received to the configured send address.",
       },
     ],
   },

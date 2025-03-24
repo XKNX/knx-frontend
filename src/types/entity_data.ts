@@ -1,6 +1,6 @@
 export type EntityCategory = "config" | "diagnostic";
 
-export type SupportedPlatform = "switch" | "light" | "binary_sensor";
+export type SupportedPlatform = "switch" | "light" | "binary_sensor" | "cover";
 
 export interface GASchema {
   write?: string;
