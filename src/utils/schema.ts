@@ -150,7 +150,7 @@ export const coverSchema: SettingsGroup[] = [
         },
       },
       {
-        name: "invert_up_down",
+        name: "invert_updown",
         type: "selector",
         selector: { boolean: null },
         label: "Invert",
@@ -176,7 +176,7 @@ export const coverSchema: SettingsGroup[] = [
         },
       },
       {
-        name: "ga_short_up_down",
+        name: "ga_step",
         type: "group_address",
         label: "Stepwise move",
         options: {
