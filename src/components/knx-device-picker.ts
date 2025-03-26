@@ -52,6 +52,8 @@ class KnxDevicePicker extends LitElement {
 
   @property() public label?: string;
 
+  @property() public helper?: string;
+
   @property() public value?: string;
 
   @state() private _opened?: boolean;
@@ -139,6 +141,7 @@ class KnxDevicePicker extends LitElement {
         .label=${this.label === undefined && this.hass
           ? this.hass.localize("ui.components.device-picker.device")
           : this.label}
+        .helper=${this.helper}
         .value=${this._deviceId}
         .renderer=${rowRenderer}
         item-id-path="id"

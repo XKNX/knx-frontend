@@ -1,4 +1,4 @@
-import { mdiToggleSwitchVariant, mdiCheckCircle } from "@mdi/js";
+import { mdiToggleSwitchVariant, mdiCheckCircle, mdiWindowShutter } from "@mdi/js";
 import { FALLBACK_DOMAIN_ICONS } from "@ha/data/icons";
 import * as schema from "./schema";
 import type { SupportedPlatform } from "../types/entity_data";
@@ -33,5 +33,12 @@ export const platformConstants: Record<SupportedPlatform, PlatformInfo> = {
     description:
       "The KNX light platform is used as an interface to dimming actuators, LED controllers, DALI gateways and similar.",
     schema: schema.lightSchema,
+  },
+  cover: {
+    name: "Cover",
+    iconPath: mdiWindowShutter,
+    color: "var(--cyan-color)",
+    description: "The KNX cover platform is used as an interface to shutter actuators.",
+    schema: schema.coverSchema,
   },
 };

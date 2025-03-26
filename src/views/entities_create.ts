@@ -97,6 +97,8 @@ export class KNXCreateEntity extends LitElement {
         const entityPlatform = this.route.path.split("/")[1];
         this.entityPlatform = entityPlatform;
         this._config = undefined; // clear config - eg. when `back` was used
+        this._validationErrors = undefined; // clear validation errors - eg. when `back` was used
+        this._validationBaseError = undefined;
         this._loading = false;
       } else if (intent === "edit") {
         // knx/entities/edit/light.living_room -> path: "/light.living_room"
@@ -216,7 +218,7 @@ export class KNXCreateEntity extends LitElement {
             ${this._validationBaseError
               ? html`<ha-alert slot="knx-validation-error" alert-type="error">
                   <details>
-                    <summary><b>Validation error</b></summary>
+                    <summary><b>Validation error details</b></summary>
                     <p>Base error: ${this._validationBaseError}</p>
                     ${this._validationErrors?.map(
                       (err) =>
