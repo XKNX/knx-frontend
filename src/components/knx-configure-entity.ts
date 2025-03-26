@@ -76,6 +76,9 @@ export class KNXConfigureEntity extends LitElement {
 
   protected render(): TemplateResult {
     const errors = extractValidationErrors(this.validationErrors, "data"); // "data" is root key in our python schema
+    const knxErrors = extractValidationErrors(errors, "knx");
+    const knxBaseError = knxErrors?.find((err) => (err.path ? err.path.length === 0 : true));
+
     return html`
       <div class="header">
         <h1>
@@ -87,10 +90,12 @@ export class KNXConfigureEntity extends LitElement {
         </h1>
         <p>${this.platform.description}</p>
       </div>
-      <slot name="knx-validation-error"></slot>
       <ha-card outlined>
         <h1 class="card-header">KNX configuration</h1>
-        ${this.generateRootGroups(this.platform.schema, extractValidationErrors(errors, "knx"))}
+        ${knxBaseError
+          ? html`<ha-alert .alertType=${"error"} .title=${knxBaseError.error_message}></ha-alert>`
+          : nothing}
+        ${this.generateRootGroups(this.platform.schema, knxErrors)}
       </ha-card>
       ${renderConfigureEntityCard(
         this.hass,
@@ -98,6 +103,7 @@ export class KNXConfigureEntity extends LitElement {
         this._updateConfig("entity"),
         extractValidationErrors(errors, "entity"),
       )}
+      <slot name="knx-validation-error"></slot>
     `;
   }
 
