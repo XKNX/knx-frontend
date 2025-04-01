@@ -31,6 +31,8 @@ const logger = new KNXLogger("knx-entities-view");
 export interface EntityRow extends ExtEntityRegistryEntry {
   entityState?: HassEntity;
   area?: AreaRegistryEntry;
+  friendly_name: string;
+  device_name: string;
 }
 
 @customElement("knx-entities-view")
@@ -71,6 +73,8 @@ export class KNXEntitiesView extends LitElement {
             ...entry,
             entityState,
             area,
+            friendly_name: entityState.attributes.friendly_name ?? entry.name ?? "",
+            device_name: device?.name ?? "",
           };
         });
       })
@@ -104,22 +108,19 @@ export class KNXEntitiesView extends LitElement {
         sortable: true,
         title: "Friendly Name",
         flex: 2,
-        template: (entry) => entry.entityState?.attributes.friendly_name ?? "",
+        // sorting didn't work properly with templates
       },
       entity_id: {
         filterable: true,
         sortable: true,
         title: "Entity ID",
         flex: 1,
-        // template: (entry) => entry.entity_id,
       },
-      device: {
+      device_name: {
         filterable: true,
         sortable: true,
         title: "Device",
         flex: 1,
-        template: (entry) =>
-          entry.device_id ? (this.hass.devices[entry.device_id].name ?? "") : "",
       },
       device_id: {
         hidden: true, // for filtering only
