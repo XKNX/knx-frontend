@@ -7,6 +7,7 @@ import "./entry-html.js";
 import "./gen-icons-json.js";
 import "./rspack.js";
 import "./translations.js";
+import "./locale-data.js";
 
 gulp.task(
   "develop-knx",

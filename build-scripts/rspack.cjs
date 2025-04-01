@@ -2,12 +2,16 @@
 const { existsSync } = require("fs");
 const path = require("path");
 const rspack = require("@rspack/core");
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const { RsdoctorRspackPlugin } = require("@rsdoctor/rspack-plugin");
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const { StatsWriterPlugin } = require("webpack-stats-plugin");
-const filterStats = require("@bundle-stats/plugin-webpack-filter").default;
+const filterStats = require("@bundle-stats/plugin-webpack-filter");
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const TerserPlugin = require("terser-webpack-plugin");
 const { WebpackManifestPlugin } = require("rspack-manifest-plugin");
 const log = require("fancy-log");
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const WebpackBar = require("webpackbar/rspack");
 const paths = require("./paths.cjs");
 const bundle = require("./bundle.cjs");
@@ -122,7 +126,7 @@ const createRspackConfig = ({
         },
       }),
       new rspack.NormalModuleReplacementPlugin(
-        new RegExp(bundle.emptyPackages({ latestBuild, isHassioBuild }).join("|")),
+        new RegExp(bundle.emptyPackages({ isHassioBuild }).join("|")),
         path.resolve(paths.polymer_dir, "homeassistant-frontend/src/util/empty.js"),
       ),
       !isProdBuild && new LogStartCompilePlugin(),
@@ -148,6 +152,7 @@ const createRspackConfig = ({
         "lit/directives/if-defined$": "lit/directives/if-defined.js",
         "lit/directives/guard$": "lit/directives/guard.js",
         "lit/directives/cache$": "lit/directives/cache.js",
+        "lit/directives/join$": "lit/directives/join.js",
         "lit/directives/repeat$": "lit/directives/repeat.js",
         "lit/directives/live$": "lit/directives/live.js",
         "lit/directives/keyed$": "lit/directives/keyed.js",
