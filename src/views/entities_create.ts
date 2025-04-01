@@ -97,6 +97,8 @@ export class KNXCreateEntity extends LitElement {
         const entityPlatform = this.route.path.split("/")[1];
         this.entityPlatform = entityPlatform;
         this._config = undefined; // clear config - eg. when `back` was used
+        this._validationErrors = undefined; // clear validation errors - eg. when `back` was used
+        this._validationBaseError = undefined;
         this._loading = false;
       } else if (intent === "edit") {
         // knx/entities/edit/light.living_room -> path: "/light.living_room"

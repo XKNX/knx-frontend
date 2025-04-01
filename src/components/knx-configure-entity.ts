@@ -76,6 +76,9 @@ export class KNXConfigureEntity extends LitElement {
 
   protected render(): TemplateResult {
     const errors = extractValidationErrors(this.validationErrors, "data"); // "data" is root key in our python schema
+    const knxErrors = extractValidationErrors(errors, "knx");
+    const knxBaseError = knxErrors?.find((err) => (err.path ? err.path.length === 0 : true));
+
     return html`
       <div class="header">
         <h1>
@@ -90,7 +93,10 @@ export class KNXConfigureEntity extends LitElement {
       <slot name="knx-validation-error"></slot>
       <ha-card outlined>
         <h1 class="card-header">KNX configuration</h1>
-        ${this.generateRootGroups(this.platform.schema, extractValidationErrors(errors, "knx"))}
+        ${knxBaseError
+          ? html`<ha-alert .alertType=${"error"} .title=${knxBaseError.error_message}></ha-alert>`
+          : nothing}
+        ${this.generateRootGroups(this.platform.schema, knxErrors)}
       </ha-card>
       ${renderConfigureEntityCard(
         this.hass,
@@ -108,20 +114,14 @@ export class KNXConfigureEntity extends LitElement {
   }
 
   private _generateSettingsGroup(group: SettingsGroup, errors?: ErrorDescription[]) {
-    if (group.collapsible === true) {
-      return html` <ha-expansion-panel
-        outlined
-        .header=${group.heading}
-        .secondary=${group.description}
-        .expanded=${this._groupHasGroupAddressInConfig(group)}
-        >${this._generateItems(group.selectors, errors)}
-      </ha-expansion-panel>`;
-    }
-    return html` <ha-settings-row narrow>
-      <div slot="heading">${group.heading}</div>
-      <div slot="description">${group.description}</div>
-      ${this._generateItems(group.selectors, errors)}
-    </ha-settings-row>`;
+    return html` <ha-expansion-panel
+      .header=${group.heading}
+      .secondary=${group.description}
+      .expanded=${!group.collapsible || this._groupHasGroupAddressInConfig(group)}
+      .noCollapse=${!group.collapsible}
+      .outlined=${!!group.collapsible}
+      >${this._generateItems(group.selectors, errors)}
+    </ha-expansion-panel>`;
   }
 
   private _groupHasGroupAddressInConfig(group: SettingsGroup) {
@@ -308,6 +308,10 @@ export class KNXConfigureEntity extends LitElement {
     ha-expansion-panel > knx-selector-row:first-child {
       border: 0;
     }
+    ha-expansion-panel > * {
+      margin-left: 8px;
+      margin-right: 8px;
+    }
 
     ha-settings-row {
       margin-bottom: 8px;
@@ -315,6 +319,8 @@ export class KNXConfigureEntity extends LitElement {
     }
     ha-control-select {
       padding: 0;
+      margin-left: 0;
+      margin-right: 0;
       margin-bottom: 16px;
     }
 
@@ -326,8 +332,8 @@ export class KNXConfigureEntity extends LitElement {
     }
 
     .group-selection {
-      padding-left: 16px;
-      padding-right: 16px;
+      padding-left: 8px;
+      padding-right: 8px;
       & ha-settings-row:first-child {
         border-top: 0;
       }

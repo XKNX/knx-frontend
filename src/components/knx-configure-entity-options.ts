@@ -5,7 +5,6 @@ import "@ha/components/ha-card";
 import "@ha/components/ha-expansion-panel";
 import "@ha/components/ha-selector/ha-selector-select";
 import "@ha/components/ha-selector/ha-selector-text";
-import "@ha/components/ha-settings-row";
 import type { HomeAssistant } from "@ha/types";
 
 import "./knx-sync-state-selector-row";
@@ -37,22 +36,23 @@ export const renderConfigureEntityCard = (
             ></ha-alert>`
           : nothing
         : nothing}
-      <ha-settings-row narrow>
-        <div slot="heading">Device</div>
-        <div slot="description">A device allows to group multiple entities.</div>
+      <ha-expansion-panel
+        header="Device and entity name"
+        secondary="Define how the entity should be named in Home Assistant."
+        expanded
+        .noCollapse=${true}
+      >
         <knx-device-picker
           .hass=${hass}
           .key=${"device_info"}
+          .helper=${"A device allows to group multiple entities. Select the device this entity belongs to or create a new one."}
           .value=${config.device_info ?? undefined}
           @value-changed=${updateConfig}
         ></knx-device-picker>
-      </ha-settings-row>
-      <ha-settings-row narrow>
-        <div slot="heading">Name</div>
-        <div slot="description">Name of the entity.</div>
         <ha-selector-text
           .hass=${hass}
-          .label=${"Name"}
+          label="Entity name"
+          helper="Optional if a device is selected, otherwise required. If the entity is assigned to a device, the device name is used as prefix."
           .required=${!device}
           .selector=${{
             text: { type: "text", prefix: deviceName },
@@ -61,12 +61,12 @@ export const renderConfigureEntityCard = (
           .value=${config.name}
           @value-changed=${updateConfig}
         ></ha-selector-text>
-      </ha-settings-row>
-      <ha-expansion-panel .header=${"Advanced"} outlined>
+      </ha-expansion-panel>
+      <ha-expansion-panel .header=${"Entity category"} outlined>
         <ha-selector-select
           .hass=${hass}
           .label=${"Entity category"}
-          .helper=${"Leave empty for standard behaviour."}
+          .helper=${"Classification of a non-primary entity. Leave empty for standard behaviour."}
           .required=${false}
           .selector=${{
             select: {
