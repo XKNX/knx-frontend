@@ -155,7 +155,7 @@ export const coverSchema: SettingsGroup[] = [
         selector: { boolean: null },
         label: "Invert",
         helper:
-          "Default is UP (0) to open a cover and DOWN (1) to close of a cover. Enable this to invert the up/down commands from/to your KNX actuator.",
+          "Default is UP (0) to open a cover and DOWN (1) to close a cover. Enable this to invert the up/down commands from/to your KNX actuator.",
         optional: true,
       },
     ],
