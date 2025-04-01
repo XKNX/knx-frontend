@@ -16,7 +16,6 @@ import { navigate } from "@ha/common/navigate";
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import type { DataTableColumnContainer } from "@ha/components/data-table/ha-data-table";
-import type { AreaRegistryEntry } from "@ha/data/area_registry";
 import type { ExtEntityRegistryEntry } from "@ha/data/entity_registry";
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
@@ -30,7 +29,9 @@ const logger = new KNXLogger("knx-entities-view");
 
 export interface EntityRow extends ExtEntityRegistryEntry {
   entityState?: HassEntity;
-  area?: AreaRegistryEntry;
+  friendly_name: string;
+  device_name: string;
+  area_name: string;
 }
 
 @customElement("knx-entities-view")
@@ -70,7 +71,9 @@ export class KNXEntitiesView extends LitElement {
           return {
             ...entry,
             entityState,
-            area,
+            friendly_name: entityState.attributes.friendly_name ?? entry.name ?? "",
+            device_name: device?.name ?? "",
+            area_name: area?.name ?? "",
           };
         });
       })
@@ -104,22 +107,19 @@ export class KNXEntitiesView extends LitElement {
         sortable: true,
         title: "Friendly Name",
         flex: 2,
-        template: (entry) => entry.entityState?.attributes.friendly_name ?? "",
+        // sorting didn't work properly with templates
       },
       entity_id: {
         filterable: true,
         sortable: true,
         title: "Entity ID",
         flex: 1,
-        // template: (entry) => entry.entity_id,
       },
-      device: {
+      device_name: {
         filterable: true,
         sortable: true,
         title: "Device",
         flex: 1,
-        template: (entry) =>
-          entry.device_id ? (this.hass.devices[entry.device_id].name ?? "") : "",
       },
       device_id: {
         hidden: true, // for filtering only
@@ -127,12 +127,11 @@ export class KNXEntitiesView extends LitElement {
         filterable: true,
         template: (entry) => entry.device_id ?? "",
       },
-      area: {
+      area_name: {
         title: "Area",
         sortable: true,
         filterable: true,
         flex: 1,
-        template: (entry) => entry.area?.name ?? "",
       },
       actions: {
         showNarrow: true,
