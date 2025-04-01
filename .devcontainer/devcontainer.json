@@ -1,37 +1,44 @@
 {
-  "name": "KNX Panel for Home Assistant",
-  "build": {
-    "dockerfile": "Dockerfile",
-    "context": ".."
-  },
-  "context": "..",
-  "postCreateCommand": "script/bootstrap",
-  "extensions": [
-    "github.vscode-pull-request-github",
-    "dbaeumer.vscode-eslint",
-    "ms-vscode.vscode-typescript-tslint-plugin",
-    "esbenp.prettier-vscode",
-    "bierner.lit-html",
-    "runem.lit-plugin",
-    "ms-python.vscode-pylance"
-  ],
-  "containerEnv": {
-    "DEV_CONTAINER": "1",
-    "WORKSPACE_DIRECTORY": "${containerWorkspaceFolder}"
-  },
-  "settings": {
-    "terminal.integrated.shell.linux": "/bin/bash",
-    "files.eol": "\n",
-    "editor.tabSize": 2,
-    "editor.formatOnPaste": false,
-    "editor.formatOnSave": true,
-    "editor.formatOnType": true,
-    "[typescript]": {
-      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "name": "KNX Panel for Home Assistant",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".."
     },
-    "[javascript]": {
-      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "postCreateCommand": "./homeassistant-frontend/.devcontainer/post_create.sh",
+    "postStartCommand": "script/bootstrap",
+    "containerEnv": {
+        "DEV_CONTAINER": "1",
+        "WORKSPACE_DIRECTORY": "${containerWorkspaceFolder}"
     },
-    "files.trimTrailingWhitespace": true
-  }
+    "remoteEnv": {
+        "NODE_OPTIONS": "--max_old_space_size=8192"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "github.vscode-pull-request-github",
+                "dbaeumer.vscode-eslint",
+                "ms-vscode.vscode-typescript-tslint-plugin",
+                "esbenp.prettier-vscode",
+                "bierner.lit-html",
+                "runem.lit-plugin",
+                "ms-python.vscode-pylance"
+            ],
+            "settings": {
+                "terminal.integrated.shell.linux": "/bin/bash",
+                "files.eol": "\n",
+                "editor.tabSize": 2,
+                "editor.formatOnPaste": false,
+                "editor.formatOnSave": true,
+                "editor.formatOnType": true,
+                "[typescript]": {
+                    "editor.defaultFormatter": "esbenp.prettier-vscode"
+                },
+                "[javascript]": {
+                    "editor.defaultFormatter": "esbenp.prettier-vscode"
+                },
+                "files.trimTrailingWhitespace": true
+            }
+        }
+    }
 }
