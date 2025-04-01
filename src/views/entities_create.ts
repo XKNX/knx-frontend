@@ -218,7 +218,7 @@ export class KNXCreateEntity extends LitElement {
             ${this._validationBaseError
               ? html`<ha-alert slot="knx-validation-error" alert-type="error">
                   <details>
-                    <summary><b>Validation error details</b></summary>
+                    <summary><b>Validation error</b></summary>
                     <p>Base error: ${this._validationBaseError}</p>
                     ${this._validationErrors?.map(
                       (err) =>

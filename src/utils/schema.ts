@@ -277,7 +277,6 @@ export const coverSchema: SettingsGroup[] = [
       },
     ],
   },
-  // TODO: device class?
   {
     type: "settings_group",
     collapsible: true,

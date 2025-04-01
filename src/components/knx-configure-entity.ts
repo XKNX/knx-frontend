@@ -90,6 +90,7 @@ export class KNXConfigureEntity extends LitElement {
         </h1>
         <p>${this.platform.description}</p>
       </div>
+      <slot name="knx-validation-error"></slot>
       <ha-card outlined>
         <h1 class="card-header">KNX configuration</h1>
         ${knxBaseError
@@ -103,7 +104,6 @@ export class KNXConfigureEntity extends LitElement {
         this._updateConfig("entity"),
         extractValidationErrors(errors, "entity"),
       )}
-      <slot name="knx-validation-error"></slot>
     `;
   }
 
