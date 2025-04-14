@@ -15,6 +15,17 @@ export type SelectorSchema =
   | { name: "sync_state"; type: "sync_state" }
   | KnxHaSelector;
 
+export interface GroupSelect {
+  type: "group_select";
+  name: string;
+  options: {
+    value: string;
+    label: string;
+    description?: string;
+    schema: (SettingsGroup | SelectorSchema)[];
+  }[];
+}
+
 export interface KnxHaSelector {
   name: string;
   type: "selector";
@@ -45,17 +56,6 @@ export interface DPTOption {
   label: string;
   description?: string;
   dpt: DPT;
-}
-
-export interface GroupSelect {
-  type: "group_select";
-  name: string;
-  options: {
-    value: string;
-    label: string;
-    description?: string;
-    schema: (SettingsGroup | SelectorSchema)[];
-  }[];
 }
 
 export const binarySensorSchema: SettingsGroup[] = [

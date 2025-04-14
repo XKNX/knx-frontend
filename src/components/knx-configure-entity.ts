@@ -13,6 +13,7 @@ import "@ha/components/ha-settings-row";
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import type { HomeAssistant } from "@ha/types";
+import type { ControlSelectOption } from "@ha/components/ha-control-select";
 
 import "./knx-group-address-selector";
 import "./knx-selector-row";
@@ -202,18 +203,61 @@ export class KNXConfigureEntity extends LitElement {
     }
   }
 
-  private _generateGroupSelect(selector: GroupSelect, errors?: ErrorDescription[]) {
-    const value: string =
-      this.config!.knx[selector.name] ??
-      // set default if nothing is set yet
-      (this.config!.knx[selector.name] = selector.options[0].value);
-    const option = selector.options.find((item) => item.value === value);
-    if (option === undefined) {
-      logger.error("No option found for value", value);
+  private _getRequiredKeys(options: (SettingsGroup | SelectorSchema)[]): string[] {
+    const requiredOptions: string[] = [];
+    options.forEach((option) => {
+      if (option.type === "settings_group") {
+        // settings_group is transparent (flattend)
+        requiredOptions.push(...this._getRequiredKeys(option.selectors));
+        return;
+      }
+      if (option.type === "group_address") {
+        if (option.options.write?.required || option.options.state?.required) {
+          requiredOptions.push(option.name);
+        }
+        return;
+      }
+      if (option.type === "selector" && !option.optional) {
+        requiredOptions.push(option.name);
+      }
+      // optional "selector", nested "group_select" and "sync_state" are ignored
+    });
+    return requiredOptions;
+  }
+
+  private _getOptionIndex(selector: GroupSelect, configFragment: Record<string, any>): number {
+    // check if sub-schema is in this.config - if not, default to first option (index 0)
+    if (!configFragment[selector.name]) {
+      return 0;
     }
+    // get non-optional subkeys for each groupSelect schema by index
+    // get index of first option that has all keys in config
+    const optionIndex = selector.options.findIndex((option) =>
+      this._getRequiredKeys(option.schema).every((key) => key in configFragment[selector.name]),
+    );
+    return optionIndex === -1 ? 0 : optionIndex; // Fallback to the first option if no match is found
+  }
+
+  private _generateGroupSelect(selector: GroupSelect, errors?: ErrorDescription[]) {
+    const optionIndex = this._getOptionIndex(selector, this.config!.knx);
+    const option = selector.options[optionIndex];
+    if (option === undefined) {
+      logger.error("No option for index", optionIndex, selector.options);
+    }
+    // handle value-changed of groupSelect explicitly
+    //   - pack into key - use different function @value-changed=${this._updateSubConfig("knx", selector.name)}
+    //     or.. change updateConfig to recursively setting values
+    //   - clear data of key when changing option
+    //   - Optional: while editing, keep data (FE) of non-active option in config to be able to peek other options and go back
+
+    const controlSelectOptions: ControlSelectOption[] = selector.options.map((item, index) => ({
+      value: index.toString(), // maybe use item.label here too
+      label: item.label,
+    }));
+
     return html` <ha-control-select
-        .options=${selector.options}
-        .value=${value}
+        .options=${controlSelectOptions}
+        .value=${optionIndex.toString()}
         .key=${selector.name}
         @value-changed=${this._updateConfig("knx")}
       ></ha-control-select>
