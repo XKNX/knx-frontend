@@ -1,6 +1,6 @@
 import type { TemplateResult } from "lit";
 import { css, html, LitElement, nothing } from "lit";
-import { customElement, property } from "lit/decorators";
+import { customElement, property, state } from "lit/decorators";
 import { styleMap } from "lit/directives/style-map";
 
 import "@ha/components/ha-card";
@@ -41,6 +41,8 @@ export class KNXConfigureEntity extends LitElement {
   @property({ type: Array }) public schema!: SettingsGroup[];
 
   @property({ attribute: false }) public validationErrors?: ErrorDescription[];
+
+  @state() private _selectedGroupSelectOptions: Record<string, number> = {};
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -239,7 +241,9 @@ export class KNXConfigureEntity extends LitElement {
   }
 
   private _generateGroupSelect(selector: GroupSelect, errors?: ErrorDescription[]) {
-    const optionIndex = this._getOptionIndex(selector, this.config!.knx);
+    const optionIndex =
+      this._selectedGroupSelectOptions[selector.name] ??
+      this._getOptionIndex(selector, this.config!.knx);
     const option = selector.options[optionIndex];
     if (option === undefined) {
       logger.error("No option for index", optionIndex, selector.options);
@@ -259,7 +263,7 @@ export class KNXConfigureEntity extends LitElement {
         .options=${controlSelectOptions}
         .value=${optionIndex.toString()}
         .key=${selector.name}
-        @value-changed=${this._updateConfig("knx")}
+        @value-changed=${this._updateGroupSelectOption("knx")}
       ></ha-control-select>
       ${option
         ? html` <p class="group-description">${option.description}</p>
@@ -274,6 +278,21 @@ export class KNXConfigureEntity extends LitElement {
               })}
             </div>`
         : nothing}`;
+  }
+
+  private _updateGroupSelectOption(baseKey: string) {
+    return (ev) => {
+      ev.stopPropagation();
+      const key = ev.target.key;
+      const selectedIndex = parseInt(ev.detail.value, 10);
+      if (!this.config[baseKey]) {
+        this.config[baseKey] = {};
+      }
+      this.config[baseKey][key] = {};
+      this._selectedGroupSelectOptions[key] = selectedIndex;
+      fireEvent(this, "knx-entity-configuration-changed", this.config);
+      this.requestUpdate();
+    };
   }
 
   private _updateConfig(baseKey: string) {
