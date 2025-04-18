@@ -44,7 +44,7 @@ export const renderConfigureEntityCard = (
       >
         <knx-device-picker
           .hass=${hass}
-          .key=${"device_info"}
+          .key=${"entity.device_info"}
           .helper=${"A device allows to group multiple entities. Select the device this entity belongs to or create a new one."}
           .value=${config.device_info ?? undefined}
           @value-changed=${updateConfig}
@@ -57,7 +57,7 @@ export const renderConfigureEntityCard = (
           .selector=${{
             text: { type: "text", prefix: deviceName },
           }}
-          .key=${"name"}
+          .key=${"entity.name"}
           .value=${config.name}
           @value-changed=${updateConfig}
         ></ha-selector-text>
@@ -79,7 +79,7 @@ export const renderConfigureEntityCard = (
               ],
             },
           }}
-          .key=${"entity_category"}
+          .key=${"entity.entity_category"}
           .value=${config.entity_category}
           @value-changed=${updateConfig}
         ></ha-selector-select>

@@ -19,7 +19,6 @@ export interface GroupSelect {
   type: "group_select";
   name: string;
   options: {
-    value: string;
     label: string;
     description?: string;
     schema: (SettingsGroup | SelectorSchema)[];
@@ -450,7 +449,6 @@ export const lightSchema: SettingsGroup[] = [
           {
             label: "Single address",
             description: "RGB, RGBW or XYY color controlled by a single group address",
-            value: "default",
             schema: [
               {
                 name: "ga_color",
@@ -486,7 +484,6 @@ export const lightSchema: SettingsGroup[] = [
           {
             label: "Individual addresses",
             description: "RGB(W) using individual state and brightness group addresses",
-            value: "individual",
             schema: [
               {
                 type: "settings_group",
@@ -611,7 +608,6 @@ export const lightSchema: SettingsGroup[] = [
           {
             label: "HSV",
             description: "Hue, saturation and brightness using individual group addresses",
-            value: "hsv",
             schema: [
               {
                 type: "settings_group",
