@@ -21,7 +21,7 @@ import "./knx-sync-state-selector-row";
 import { renderConfigureEntityCard } from "./knx-configure-entity-options";
 import { KNXLogger } from "../tools/knx-logger";
 import { extractValidationErrors } from "../utils/validation";
-import type { EntityData, ErrorDescription, KnxEntityData } from "../types/entity_data";
+import type { EntityData, ErrorDescription } from "../types/entity_data";
 import type { KNX } from "../types/knx";
 import type { PlatformInfo } from "../utils/common";
 import type { SettingsGroup, SelectorSchema, GroupSelect, GASchema } from "../utils/schema";
@@ -75,12 +75,26 @@ export class KNXConfigureEntity extends LitElement {
       current = current[key];
     }
     if (value === undefined) {
-      logger.debug(`remove "${keysTail}" at "${keys}"`);
+      logger.debug(`remove ${keysTail} at ${path}`);
       delete current[keysTail];
     } else {
-      logger.debug(`update "${keysTail}" at "${keys}" with "${value}"`);
+      logger.debug(`update ${keysTail} at ${path} with value`, value);
       current[keysTail] = value;
     }
+  }
+
+  private _getNestedValue(path: string) {
+    const keys = path.split(".");
+    const keysTail = keys.pop();
+    if (!keysTail) return undefined;
+    let current = this.config!;
+    for (const key of keys) {
+      if (!(key in current)) {
+        return undefined;
+      }
+      current = current[key];
+    }
+    return current[keysTail];
   }
 
   protected render(): TemplateResult {
@@ -126,26 +140,25 @@ export class KNXConfigureEntity extends LitElement {
     return html` <ha-expansion-panel
       .header=${group.heading}
       .secondary=${group.description}
-      .expanded=${!group.collapsible || this._groupHasGroupAddressInConfig(group)}
+      .expanded=${!group.collapsible || this._groupHasGroupAddressInConfig(group, path)}
       .noCollapse=${!group.collapsible}
       .outlined=${!!group.collapsible}
       >${this._generateItems(group.selectors, path, errors)}
     </ha-expansion-panel>`;
   }
 
-  private _groupHasGroupAddressInConfig(group: SettingsGroup) {
+  private _groupHasGroupAddressInConfig(group: SettingsGroup, path: string) {
     if (this.config === undefined) {
       return false;
     }
     return group.selectors.some((selector) => {
-      if (selector.type === "group_address")
-        return this._hasGroupAddressInConfig(selector, this.config!.knx);
+      if (selector.type === "group_address") return this._hasGroupAddressInConfig(selector, path);
       if (selector.type === "group_select")
         return selector.options.some((options) =>
           options.schema.some((schema) => {
-            if (schema.type === "settings_group") return this._groupHasGroupAddressInConfig(schema);
-            if (schema.type === "group_address")
-              return this._hasGroupAddressInConfig(schema, this.config!.knx);
+            if (schema.type === "settings_group")
+              return this._groupHasGroupAddressInConfig(schema, path);
+            if (schema.type === "group_address") return this._hasGroupAddressInConfig(schema, path);
             return false;
           }),
         );
@@ -153,13 +166,12 @@ export class KNXConfigureEntity extends LitElement {
     });
   }
 
-  private _hasGroupAddressInConfig(ga_selector: GASchema, knxData: KnxEntityData) {
-    if (!(ga_selector.name in knxData)) return false;
-
-    const knxEntry = knxData[ga_selector.name];
-    if (knxEntry.write !== undefined) return true;
-    if (knxEntry.state !== undefined) return true;
-    if (knxEntry.passive?.length) return true;
+  private _hasGroupAddressInConfig(ga_selector: GASchema, path: string) {
+    const gaData = this._getNestedValue(path + "." + ga_selector.name);
+    if (!gaData) return false;
+    if (gaData.write !== undefined) return true;
+    if (gaData.state !== undefined) return true;
+    if (gaData.passive?.length) return true;
 
     return false;
   }
@@ -171,15 +183,16 @@ export class KNXConfigureEntity extends LitElement {
   }
 
   private _generateItem(selector: SelectorSchema, path: string, errors?: ErrorDescription[]) {
+    const selectorPath = path + "." + selector.name;
     switch (selector.type) {
       case "group_address":
         return html`
           <knx-group-address-selector
             .hass=${this.hass}
             .knx=${this.knx}
-            .key=${path + "." + selector.name}
+            .key=${selectorPath}
             .label=${selector.label}
-            .config=${this.config!.knx[selector.name] ?? {}}
+            .config=${this._getNestedValue(selectorPath) ?? {}}
             .options=${selector.options}
             .validationErrors=${extractValidationErrors(errors, selector.name)}
             @value-changed=${this._updateConfig}
@@ -189,9 +202,9 @@ export class KNXConfigureEntity extends LitElement {
         return html`
           <knx-selector-row
             .hass=${this.hass}
-            .key=${path + "." + selector.name}
+            .key=${selectorPath}
             .selector=${selector}
-            .value=${this.config!.knx[selector.name]}
+            .value=${this._getNestedValue(selectorPath)}
             @value-changed=${this._updateConfig}
           ></knx-selector-row>
         `;
@@ -199,8 +212,8 @@ export class KNXConfigureEntity extends LitElement {
         return html`
           <knx-sync-state-selector-row
             .hass=${this.hass}
-            .key=${path + "." + selector.name}
-            .value=${this.config!.knx[selector.name] ?? true}
+            .key=${selectorPath}
+            .value=${this._getNestedValue(selectorPath) ?? true}
             .noneValid=${false}
             @value-changed=${this._updateConfig}
           ></knx-sync-state-selector-row>
@@ -250,7 +263,11 @@ export class KNXConfigureEntity extends LitElement {
     const optionIndex = selector.options.findIndex((option) =>
       this._getRequiredKeys(option.schema).every((key) => key in configFragment[selector.name]),
     );
-    return optionIndex === -1 ? 0 : optionIndex; // Fallback to the first option if no match is found
+    if (optionIndex === -1) {
+      logger.debug("No valid option found for group select", groupPath, configFragment);
+      return 0; // Fallback to the first option if no match is found
+    }
+    return optionIndex;
   }
 
   private _generateGroupSelect(selector: GroupSelect, path: string, errors?: ErrorDescription[]) {
