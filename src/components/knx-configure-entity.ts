@@ -55,8 +55,8 @@ export class KNXConfigureEntity extends LitElement {
       // would set this.conifg.knx.ga_sensor.state to "0/1/4"
       // TODO: this is not checked against any schema
       const urlParams = new URLSearchParams(mainWindow.location.search);
-      this._url_suggestions = Object.fromEntries(urlParams.entries());
-      for (const [path, value] of Object.entries(this._url_suggestions)) {
+      const url_suggestions = Object.fromEntries(urlParams.entries());
+      for (const [path, value] of Object.entries(url_suggestions)) {
         this._setNestedValue(path, value);
         fireEvent(this, "knx-entity-configuration-changed", this.config);
       }
