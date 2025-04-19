@@ -70,6 +70,7 @@ export class KNXConfigureEntity extends LitElement {
     let current = this.config!;
     for (const key of keys) {
       if (!(key in current)) {
+        if (value === undefined) return; // don't create to remove
         current[key] = {};
       }
       current = current[key];
@@ -85,8 +86,6 @@ export class KNXConfigureEntity extends LitElement {
 
   private _getNestedValue(path: string) {
     const keys = path.split(".");
-    const keysTail = keys.pop();
-    if (!keysTail) return undefined;
     let current = this.config!;
     for (const key of keys) {
       if (!(key in current)) {
@@ -94,7 +93,7 @@ export class KNXConfigureEntity extends LitElement {
       }
       current = current[key];
     }
-    return current[keysTail];
+    return current;
   }
 
   protected render(): TemplateResult {
@@ -250,13 +249,10 @@ export class KNXConfigureEntity extends LitElement {
 
   private _getOptionIndex(selector: GroupSelect, groupPath: string): number {
     // check if sub-schema is in this.config
-    const keys = groupPath.split(".");
-    let configFragment = this.config!;
-    for (const key of keys) {
-      if (!(key in configFragment)) {
-        return 0; // default to first option if key is not in config
-      }
-      configFragment = configFragment[key];
+    const configFragment = this._getNestedValue(groupPath);
+    if (configFragment === undefined) {
+      logger.debug("No config found for group select", groupPath);
+      return 0; // Fallback to first option if key is not in config
     }
     // get non-optional subkeys for each groupSelect schema by index
     // get index of first option that has all keys in config
