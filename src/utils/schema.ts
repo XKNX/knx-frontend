@@ -444,7 +444,7 @@ export const lightSchema: SettingsGroup[] = [
     selectors: [
       {
         type: "group_select",
-        name: "_light_color_mode_schema",
+        name: "color",
         options: [
           {
             label: "Single address",
