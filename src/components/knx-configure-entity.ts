@@ -24,7 +24,7 @@ import { extractValidationErrors } from "../utils/validation";
 import type { EntityData, ErrorDescription } from "../types/entity_data";
 import type { KNX } from "../types/knx";
 import type { PlatformInfo } from "../utils/common";
-import type { SettingsGroup, SelectorSchema, GroupSelect, GASchema } from "../utils/schema";
+import type { SettingsGroup, SelectorSchema, GroupSelect, GASelector } from "../utils/schema";
 
 const logger = new KNXLogger("knx-configure-entity");
 
@@ -165,7 +165,7 @@ export class KNXConfigureEntity extends LitElement {
     });
   }
 
-  private _hasGroupAddressInConfig(ga_selector: GASchema, path: string) {
+  private _hasGroupAddressInConfig(ga_selector: GASelector, path: string) {
     const gaData = this._getNestedValue(path + "." + ga_selector.name);
     if (!gaData) return false;
     if (gaData.write !== undefined) return true;

@@ -10,7 +10,7 @@ export interface SettingsGroup {
 }
 
 export type SelectorSchema =
-  | GASchema
+  | GASelector
   | GroupSelect
   | { name: "sync_state"; type: "sync_state" }
   | KnxHaSelector;
@@ -35,14 +35,14 @@ export interface KnxHaSelector {
   helper?: string;
 }
 
-export interface GASchema {
+export interface GASelector {
   name: string;
   type: "group_address";
   label?: string;
-  options: GASchemaOptions;
+  options: GASelectorOptions;
 }
 
-export interface GASchemaOptions {
+export interface GASelectorOptions {
   write?: { required: boolean };
   state?: { required: boolean };
   passive?: boolean;

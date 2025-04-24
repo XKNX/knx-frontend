@@ -16,7 +16,7 @@ import type { DragDropContext } from "../utils/drag-drop-context";
 import { dragDropContext } from "../utils/drag-drop-context";
 import { isValidDPT } from "../utils/dpt";
 import { extractValidationErrors } from "../utils/validation";
-import type { GASchemaOptions } from "../utils/schema";
+import type { GASelectorOptions } from "../utils/schema";
 import type { KNX } from "../types/knx";
 import type { DPT, GroupAddress } from "../types/websocket";
 import type { ErrorDescription, GASchema } from "../types/entity_data";
@@ -41,7 +41,7 @@ export class GroupAddressSelector extends LitElement {
 
   @property({ attribute: false }) public config: GASchema = {};
 
-  @property({ attribute: false }) public options!: GASchemaOptions;
+  @property({ attribute: false }) public options!: GASelectorOptions;
 
   @property({ reflect: true }) public key!: string;
 
