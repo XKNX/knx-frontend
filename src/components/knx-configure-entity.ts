@@ -78,6 +78,10 @@ export class KNXConfigureEntity extends LitElement {
     if (value === undefined) {
       logger.debug(`remove ${keysTail} at ${path}`);
       delete current[keysTail];
+      if (!Object.keys(current).length && keys.length > 0) {
+        // when no other keys in this, recursively remove empty objects
+        this._setNestedValue(keys.join("."), undefined);
+      }
     } else {
       logger.debug(`update ${keysTail} at ${path} with value`, value);
       current[keysTail] = value;
@@ -276,7 +280,7 @@ export class KNXConfigureEntity extends LitElement {
     }
 
     const controlSelectOptions: ControlSelectOption[] = selector.options.map((item, index) => ({
-      value: index.toString(), // maybe use item.label here too
+      value: index.toString(),
       label: item.label,
     }));
 
@@ -306,9 +310,10 @@ export class KNXConfigureEntity extends LitElement {
     const key = ev.target.key;
     const selectedIndex = parseInt(ev.detail.value, 10);
     // clear data of key when changing option
-    this._setNestedValue(key, {});
+    this._setNestedValue(key, undefined);
     // keep index in state
-    // TODO: Optional: while editing, keep data (in FE) of non-active option in config to be able to peek other options and go back
+    // TODO: Optional: while editing, keep config data of non-active option in map (FE only)
+    //       to be able to peek other options and go back without loosing config
     this._selectedGroupSelectOptions[key] = selectedIndex;
     fireEvent(this, "knx-entity-configuration-changed", this.config);
     this.requestUpdate();
