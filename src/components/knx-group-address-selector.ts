@@ -4,6 +4,7 @@ import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state, query, queryAll } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 import { consume } from "@lit-labs/context";
+import memoize from "memoize-one";
 
 import "@ha/components/ha-list-item";
 import "@ha/components/ha-selector/ha-selector-select";
@@ -16,7 +17,7 @@ import type { DragDropContext } from "../utils/drag-drop-context";
 import { dragDropContext } from "../utils/drag-drop-context";
 import { isValidDPT } from "../utils/dpt";
 import { extractValidationErrors } from "../utils/validation";
-import type { GASelectorOptions } from "../utils/schema";
+import type { GASelectorOptions, DPTOption } from "../utils/schema";
 import type { KNX } from "../types/knx";
 import type { DPT, GroupAddress } from "../types/websocket";
 import type { ErrorDescription, GASchema } from "../types/entity_data";
@@ -49,6 +50,8 @@ export class GroupAddressSelector extends LitElement {
 
   @state() private _showPassive = false;
 
+  private _selectedDPTValue?: string;
+
   validGroupAddresses: GroupAddress[] = [];
 
   filteredGroupAddresses: GroupAddress[] = [];
@@ -73,11 +76,16 @@ export class GroupAddressSelector extends LitElement {
       : [];
   }
 
-  getValidDptFromConfigValue(): DPT | undefined {
-    return this.config.dpt
-      ? this.options.dptSelect?.find((dpt) => dpt.value === this.config.dpt)?.dpt
-      : undefined;
+  getDptOptionByValue(value: string | undefined): DPTOption | undefined {
+    return value ? this.options.dptSelect?.find((dpt) => dpt.value === value) : undefined;
   }
+
+  setFilteredGroupAddresses = memoize((dpt: DPT | undefined) => {
+    this.filteredGroupAddresses = dpt
+      ? this.getValidGroupAddresses([dpt])
+      : this.validGroupAddresses;
+    this.addressOptions = getAddressOptions(this.filteredGroupAddresses);
+  });
 
   connectedCallback() {
     super.connectedCallback();
@@ -95,13 +103,10 @@ export class GroupAddressSelector extends LitElement {
 
   protected willUpdate(changedProps: PropertyValues<this>) {
     if (changedProps.has("config")) {
-      const selectedDPT = this.getValidDptFromConfigValue();
-      if (changedProps.get("config")?.dpt !== this.config.dpt) {
-        this.filteredGroupAddresses = selectedDPT
-          ? this.getValidGroupAddresses([selectedDPT])
-          : this.validGroupAddresses;
-        this.addressOptions = getAddressOptions(this.filteredGroupAddresses);
-      }
+      this._selectedDPTValue = this.config.dpt ?? this._selectedDPTValue;
+      const selectedDPT = this.getDptOptionByValue(this._selectedDPTValue)?.dpt;
+      this.setFilteredGroupAddresses(selectedDPT);
+
       if (selectedDPT && this.knx.project?.project_loaded) {
         const allDpts = [
           this.config.write,
@@ -226,7 +231,7 @@ export class GroupAddressSelector extends LitElement {
       .key=${"dpt"}
       .label=${"Datapoint type"}
       .options=${this.options.dptSelect}
-      .value=${this.config.dpt}
+      .value=${this._selectedDPTValue}
       .disabled=${this.dptSelectorDisabled}
       .invalid=${!!invalid}
       .invalidMessage=${invalid?.error_message}
@@ -240,42 +245,58 @@ export class GroupAddressSelector extends LitElement {
     const target = ev.target as any;
     const value = ev.detail.value;
     const newConfig = { ...this.config, [target.key]: value };
-    this._updateDptSelector(target.key, newConfig);
+    const hasGroupAddresses = !!(newConfig.write || newConfig.state || newConfig.passive?.length);
+
+    this._updateDptSelector(target.key, newConfig, hasGroupAddresses);
     this.config = newConfig;
-    fireEvent(this, "value-changed", { value: this.config });
+
+    const newValue = hasGroupAddresses ? newConfig : undefined;
+    fireEvent(this, "value-changed", { value: newValue });
     this.requestUpdate();
   }
 
-  private _updateDptSelector(targetKey: string, newConfig: GASchema) {
-    if (!(this.options.dptSelect && this.knx.project?.project_loaded)) return;
+  private _updateDptSelector(targetKey: string, newConfig: GASchema, hasGroupAddresses: boolean) {
     // updates newConfig in place
-    let newGa: string | undefined;
-    if (targetKey === "write" || targetKey === "state") {
-      newGa = newConfig[targetKey];
-    } else if (targetKey === "passive") {
-      // for passive ignore removals, only use additions
-      const addedGa = newConfig.passive?.filter((ga) => !this.config.passive?.includes(ga))?.[0];
-      newGa = addedGa;
-    } else {
-      return;
-    }
-    // disable when project is loaded and everything matches -> not here
-    if (!newConfig.write && !newConfig.state && !newConfig.passive?.length) {
-      // when all GAs have been cleared, reset dpt field
+    if (!this.options.dptSelect) return;
+
+    if (targetKey === "dpt") {
+      this._selectedDPTValue = newConfig.dpt;
+    } else if (!hasGroupAddresses) {
+      // when all GAs have actively been cleared, reset dpt field
       newConfig.dpt = undefined;
+      this._selectedDPTValue = undefined;
+      return;
+    } else {
+      newConfig.dpt = this._selectedDPTValue;
     }
-    if (this.config.dpt === undefined) {
-      const newDpt = this.validGroupAddresses.find((ga) => ga.address === newGa)?.dpt;
-      if (!newDpt) return;
-      const exactDptMatch = this.options.dptSelect.find(
-        (dptOption) => dptOption.dpt.main === newDpt.main && dptOption.dpt.sub === newDpt.sub,
-      );
-      const newDptValue = exactDptMatch
-        ? exactDptMatch.value
-        : // fallback to first valid DPT if allowed in options; otherwise undefined
-          this.options.dptSelect.find((dptOption) => isValidDPT(newDpt, [dptOption.dpt]))?.value;
-      newConfig.dpt = newDptValue;
+
+    // below only applies to loaded projects as it inferes DPT from selected group address
+    if (!this.knx.project?.project_loaded) return;
+
+    const newGa = this._getAddedGroupAddress(targetKey, newConfig);
+    if (!newGa || this._selectedDPTValue !== undefined) return;
+
+    const newDpt = this.validGroupAddresses.find((ga) => ga.address === newGa)?.dpt;
+    if (!newDpt) return;
+
+    const exactDptMatch = this.options.dptSelect.find(
+      (dptOption) => dptOption.dpt.main === newDpt.main && dptOption.dpt.sub === newDpt.sub,
+    );
+    newConfig.dpt = exactDptMatch
+      ? exactDptMatch.value
+      : // fallback to first valid DPT if allowed in options; otherwise undefined
+        this.options.dptSelect.find((dptOption) => isValidDPT(newDpt, [dptOption.dpt]))?.value;
+  }
+
+  private _getAddedGroupAddress(targetKey: string, newConfig: GASchema): string | undefined {
+    if (targetKey === "write" || targetKey === "state") {
+      return newConfig[targetKey];
     }
+    if (targetKey === "passive") {
+      // for passive ignore removals, only use additions
+      return newConfig.passive?.find((ga) => !this.config.passive?.includes(ga));
+    }
+    return undefined;
   }
 
   private _togglePassiveVisibility(ev: CustomEvent) {
