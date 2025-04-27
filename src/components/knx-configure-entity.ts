@@ -156,15 +156,18 @@ export class KNXConfigureEntity extends LitElement {
     }
     return group.selectors.some((selector) => {
       if (selector.type === "group_address") return this._hasGroupAddressInConfig(selector, path);
-      if (selector.type === "group_select")
+      if (selector.type === "group_select") {
+        const groupPath = path + "." + selector.name;
         return selector.options.some((options) =>
           options.schema.some((schema) => {
             if (schema.type === "settings_group")
-              return this._groupHasGroupAddressInConfig(schema, path);
-            if (schema.type === "group_address") return this._hasGroupAddressInConfig(schema, path);
+              return this._groupHasGroupAddressInConfig(schema, groupPath);
+            if (schema.type === "group_address")
+              return this._hasGroupAddressInConfig(schema, groupPath);
             return false;
           }),
         );
+      }
       return false;
     });
   }
