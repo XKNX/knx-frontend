@@ -21,3 +21,17 @@ export const extractValidationErrors = (
 
   return errorsForItem.length ? errorsForItem : undefined;
 };
+
+// group select validation errors may have no "write" or "state" path key since the ga-key isn't in config
+// so we show a general exception.
+// When `itemName` is undefined, this gets the general error for a group address item without "write" or "state" key
+// if an `itemName` is provided, it will return the error for that item.
+export const getValidationError = (
+  errors: ErrorDescription[] | undefined,
+  itemName: string | undefined = undefined,
+): ErrorDescription | undefined => {
+  if (itemName) {
+    errors = extractValidationErrors(errors, itemName);
+  }
+  return errors?.find((error) => error.path?.length === 0);
+};

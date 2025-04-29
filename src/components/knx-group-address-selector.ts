@@ -1,4 +1,4 @@
-import { mdiChevronDown, mdiChevronUp } from "@mdi/js";
+import { mdiChevronDown, mdiChevronUp, mdiAlertCircleOutline } from "@mdi/js";
 import type { PropertyValues } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state, query, queryAll } from "lit/decorators";
@@ -16,7 +16,7 @@ import "./knx-dpt-selector";
 import type { DragDropContext } from "../utils/drag-drop-context";
 import { dragDropContext } from "../utils/drag-drop-context";
 import { isValidDPT } from "../utils/dpt";
-import { extractValidationErrors } from "../utils/validation";
+import { getValidationError } from "../utils/validation";
 import type { GASelectorOptions, DPTOption } from "../utils/schema";
 import type { KNX } from "../types/knx";
 import type { DPT, GroupAddress } from "../types/websocket";
@@ -133,7 +133,7 @@ export class GroupAddressSelector extends LitElement {
     if (!changedProps.has("validationErrors")) return;
     this._gaSelectors.forEach(async (selector) => {
       await selector.updateComplete;
-      const firstError = extractValidationErrors(this.validationErrors, selector.key)?.[0];
+      const firstError = getValidationError(this.validationErrors, selector.key);
       // only ha-selector-select with custom_value or multiple have comboBox
       selector.comboBox.errorMessage = firstError?.error_message;
       selector.comboBox.invalid = !!firstError;
@@ -146,7 +146,16 @@ export class GroupAddressSelector extends LitElement {
     const validGADropTargetClass = this._validGADropTarget === true;
     const invalidGADropTargetClass = this._validGADropTarget === false;
 
+    const generalValidationError = getValidationError(this.validationErrors);
+
     return html`
+      ${generalValidationError
+        ? html`<p class="error">
+            <ha-svg-icon .path=${mdiAlertCircleOutline}></ha-svg-icon>
+            <b>Validation error:</b>
+            ${generalValidationError.error_message}
+          </p>`
+        : nothing}
       <div class="main">
         <div class="selectors">
           ${this.options.write
@@ -226,7 +235,7 @@ export class GroupAddressSelector extends LitElement {
   }
 
   private _renderDptSelector() {
-    const invalid = extractValidationErrors(this.validationErrors, "dpt")?.[0];
+    const invalid = getValidationError(this.validationErrors, "dpt");
     return html`<knx-dpt-selector
       .key=${"dpt"}
       .label=${"Datapoint type"}
@@ -419,6 +428,10 @@ export class GroupAddressSelector extends LitElement {
 
     .invalid-drop-zone.active-drop-zone {
       box-shadow: 0px 0px 5px 2px var(--error-color);
+    }
+
+    .error {
+      color: var(--error-color);
     }
   `;
 }

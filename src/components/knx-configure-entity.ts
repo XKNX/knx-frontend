@@ -20,7 +20,7 @@ import "./knx-selector-row";
 import "./knx-sync-state-selector-row";
 import { renderConfigureEntityCard } from "./knx-configure-entity-options";
 import { KNXLogger } from "../tools/knx-logger";
-import { extractValidationErrors } from "../utils/validation";
+import { extractValidationErrors, getValidationError } from "../utils/validation";
 import type { EntityData, ErrorDescription } from "../types/entity_data";
 import type { KNX } from "../types/knx";
 import type { PlatformInfo } from "../utils/common";
@@ -103,7 +103,7 @@ export class KNXConfigureEntity extends LitElement {
   protected render(): TemplateResult {
     const errors = extractValidationErrors(this.validationErrors, "data"); // "data" is root key in our python schema
     const knxErrors = extractValidationErrors(errors, "knx");
-    const knxBaseError = knxErrors?.find((err) => (err.path ? err.path.length === 0 : true));
+    const knxBaseError = getValidationError(knxErrors);
 
     return html`
       <div class="header">
@@ -276,6 +276,8 @@ export class KNXConfigureEntity extends LitElement {
 
   private _generateGroupSelect(selector: GroupSelect, path: string, errors?: ErrorDescription[]) {
     const groupPath = path + "." + selector.name;
+    const groupErrors = extractValidationErrors(errors, selector.name);
+
     const optionIndex =
       this._selectedGroupSelectOptions[groupPath] ?? this._getOptionIndex(selector, groupPath);
     const option = selector.options[optionIndex];
@@ -300,9 +302,9 @@ export class KNXConfigureEntity extends LitElement {
               ${option.schema.map((item: SettingsGroup | SelectorSchema) => {
                 switch (item.type) {
                   case "settings_group":
-                    return this._generateSettingsGroup(item, groupPath, errors);
+                    return this._generateSettingsGroup(item, groupPath, groupErrors);
                   default:
-                    return this._generateItem(item, groupPath, errors);
+                    return this._generateItem(item, groupPath, groupErrors);
                 }
               })}
             </div>`
