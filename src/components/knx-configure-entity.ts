@@ -264,9 +264,15 @@ export class KNXConfigureEntity extends LitElement {
     }
     // get non-optional subkeys for each groupSelect schema by index
     // get index of first option that has all keys in config
-    const optionIndex = selector.options.findIndex((option) =>
-      this._getRequiredKeys(option.schema).every((key) => key in configFragment[selector.name]),
-    );
+    const optionIndex = selector.options.findIndex((option) => {
+      const requiredKeys = this._getRequiredKeys(option.schema);
+      if (requiredKeys.length === 0) {
+        // no required keys, so this option would always be valid - warn to fix schema
+        logger.warn("No required keys for GroupSelect option", groupPath, option);
+        return false; // skip this option
+      }
+      return requiredKeys.every((key) => key in configFragment);
+    });
     if (optionIndex === -1) {
       logger.debug("No valid option found for group select", groupPath, configFragment);
       return 0; // Fallback to the first option if no match is found
@@ -278,8 +284,13 @@ export class KNXConfigureEntity extends LitElement {
     const groupPath = path + "." + selector.name;
     const groupErrors = extractValidationErrors(errors, selector.name);
 
-    const optionIndex =
-      this._selectedGroupSelectOptions[groupPath] ?? this._getOptionIndex(selector, groupPath);
+    if (!(groupPath in this._selectedGroupSelectOptions)) {
+      // if not set, get index of first option that has all required keys in config
+      // this is used to keep the selected option when editing
+      this._selectedGroupSelectOptions[groupPath] = this._getOptionIndex(selector, groupPath);
+    }
+    const optionIndex = this._selectedGroupSelectOptions[groupPath];
+
     const option = selector.options[optionIndex];
     if (option === undefined) {
       logger.error("No option for index", optionIndex, selector.options);

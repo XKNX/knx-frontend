@@ -454,7 +454,7 @@ export const lightSchema: SettingsGroup[] = [
                 name: "ga_color",
                 type: "group_address",
                 options: {
-                  write: { required: false },
+                  write: { required: true },
                   state: { required: false },
                   passive: true,
                   dptSelect: [
@@ -506,7 +506,7 @@ export const lightSchema: SettingsGroup[] = [
                     type: "group_address",
                     label: "Brightness",
                     options: {
-                      write: { required: false },
+                      write: { required: true },
                       state: { required: false },
                       passive: true,
                       validDPTs: [{ main: 5, sub: 1 }],
@@ -536,7 +536,7 @@ export const lightSchema: SettingsGroup[] = [
                     type: "group_address",
                     label: "Brightness",
                     options: {
-                      write: { required: false },
+                      write: { required: true },
                       state: { required: false },
                       passive: true,
                       validDPTs: [{ main: 5, sub: 1 }],
@@ -565,7 +565,7 @@ export const lightSchema: SettingsGroup[] = [
                     type: "group_address",
                     label: "Brightness",
                     options: {
-                      write: { required: false },
+                      write: { required: true },
                       state: { required: false },
                       passive: true,
                       validDPTs: [{ main: 5, sub: 1 }],
