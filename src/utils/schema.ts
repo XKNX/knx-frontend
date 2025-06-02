@@ -10,10 +10,20 @@ export interface SettingsGroup {
 }
 
 export type SelectorSchema =
-  | GASchema
+  | GASelector
   | GroupSelect
   | { name: "sync_state"; type: "sync_state" }
   | KnxHaSelector;
+
+export interface GroupSelect {
+  type: "group_select";
+  name: string;
+  options: {
+    label: string;
+    description?: string;
+    schema: (SettingsGroup | SelectorSchema)[];
+  }[];
+}
 
 export interface KnxHaSelector {
   name: string;
@@ -25,14 +35,14 @@ export interface KnxHaSelector {
   helper?: string;
 }
 
-export interface GASchema {
+export interface GASelector {
   name: string;
   type: "group_address";
   label?: string;
-  options: GASchemaOptions;
+  options: GASelectorOptions;
 }
 
-export interface GASchemaOptions {
+export interface GASelectorOptions {
   write?: { required: boolean };
   state?: { required: boolean };
   passive?: boolean;
@@ -45,17 +55,6 @@ export interface DPTOption {
   label: string;
   description?: string;
   dpt: DPT;
-}
-
-export interface GroupSelect {
-  type: "group_select";
-  name: string;
-  options: {
-    value: string;
-    label: string;
-    description?: string;
-    schema: (SettingsGroup | SelectorSchema)[];
-  }[];
 }
 
 export const binarySensorSchema: SettingsGroup[] = [
@@ -445,18 +444,17 @@ export const lightSchema: SettingsGroup[] = [
     selectors: [
       {
         type: "group_select",
-        name: "_light_color_mode_schema",
+        name: "color",
         options: [
           {
             label: "Single address",
             description: "RGB, RGBW or XYY color controlled by a single group address",
-            value: "default",
             schema: [
               {
                 name: "ga_color",
                 type: "group_address",
                 options: {
-                  write: { required: false },
+                  write: { required: true },
                   state: { required: false },
                   passive: true,
                   dptSelect: [
@@ -486,7 +484,6 @@ export const lightSchema: SettingsGroup[] = [
           {
             label: "Individual addresses",
             description: "RGB(W) using individual state and brightness group addresses",
-            value: "individual",
             schema: [
               {
                 type: "settings_group",
@@ -509,7 +506,7 @@ export const lightSchema: SettingsGroup[] = [
                     type: "group_address",
                     label: "Brightness",
                     options: {
-                      write: { required: false },
+                      write: { required: true },
                       state: { required: false },
                       passive: true,
                       validDPTs: [{ main: 5, sub: 1 }],
@@ -539,7 +536,7 @@ export const lightSchema: SettingsGroup[] = [
                     type: "group_address",
                     label: "Brightness",
                     options: {
-                      write: { required: false },
+                      write: { required: true },
                       state: { required: false },
                       passive: true,
                       validDPTs: [{ main: 5, sub: 1 }],
@@ -568,7 +565,7 @@ export const lightSchema: SettingsGroup[] = [
                     type: "group_address",
                     label: "Brightness",
                     options: {
-                      write: { required: false },
+                      write: { required: true },
                       state: { required: false },
                       passive: true,
                       validDPTs: [{ main: 5, sub: 1 }],
@@ -611,7 +608,6 @@ export const lightSchema: SettingsGroup[] = [
           {
             label: "HSV",
             description: "Hue, saturation and brightness using individual group addresses",
-            value: "hsv",
             schema: [
               {
                 type: "settings_group",

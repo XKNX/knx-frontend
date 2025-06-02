@@ -253,7 +253,7 @@ export class KNXCreateEntity extends LitElement {
 
   private _configChanged(ev) {
     ev.stopPropagation();
-    logger.warn("configChanged", ev.detail);
+    logger.debug("configChanged", ev.detail);
     this._config = ev.detail;
     if (this._validationErrors) {
       this._entityValidate();

@@ -15,11 +15,13 @@ import type { BaseEntityData, ErrorDescription } from "../types/entity_data";
 
 export const renderConfigureEntityCard = (
   hass: HomeAssistant,
-  config: Partial<BaseEntityData>,
+  entityConfig: Partial<BaseEntityData>,
   updateConfig: (ev: CustomEvent) => void,
   errors?: ErrorDescription[],
 ) => {
-  const device = config.device_info ? deviceFromIdentifier(hass, config.device_info) : undefined;
+  const device = entityConfig.device_info
+    ? deviceFromIdentifier(hass, entityConfig.device_info)
+    : undefined;
   const deviceName = device ? (device.name_by_user ?? device.name) : "";
   // currently only baseError is possible, others shouldn't be possible due to selectors / optional
   const entityBaseError = errors?.find((err) => (err.path ? err.path.length === 0 : true));
@@ -44,9 +46,9 @@ export const renderConfigureEntityCard = (
       >
         <knx-device-picker
           .hass=${hass}
-          .key=${"device_info"}
+          .key=${"entity.device_info"}
           .helper=${"A device allows to group multiple entities. Select the device this entity belongs to or create a new one."}
-          .value=${config.device_info ?? undefined}
+          .value=${entityConfig.device_info ?? undefined}
           @value-changed=${updateConfig}
         ></knx-device-picker>
         <ha-selector-text
@@ -57,8 +59,8 @@ export const renderConfigureEntityCard = (
           .selector=${{
             text: { type: "text", prefix: deviceName },
           }}
-          .key=${"name"}
-          .value=${config.name}
+          .key=${"entity.name"}
+          .value=${entityConfig.name}
           @value-changed=${updateConfig}
         ></ha-selector-text>
       </ha-expansion-panel>
@@ -79,8 +81,8 @@ export const renderConfigureEntityCard = (
               ],
             },
           }}
-          .key=${"entity_category"}
-          .value=${config.entity_category}
+          .key=${"entity.entity_category"}
+          .value=${entityConfig.entity_category}
           @value-changed=${updateConfig}
         ></ha-selector-select>
       </ha-expansion-panel>

@@ -1,6 +1,6 @@
 import type { TemplateResult } from "lit";
 import { css, html, LitElement, nothing } from "lit";
-import { customElement, property } from "lit/decorators";
+import { customElement, property, state } from "lit/decorators";
 import { styleMap } from "lit/directives/style-map";
 
 import "@ha/components/ha-card";
@@ -12,18 +12,19 @@ import "@ha/components/ha-settings-row";
 
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
-import type { HomeAssistant } from "@ha/types";
+import type { HomeAssistant, ValueChangedEvent } from "@ha/types";
+import type { ControlSelectOption } from "@ha/components/ha-control-select";
 
 import "./knx-group-address-selector";
 import "./knx-selector-row";
 import "./knx-sync-state-selector-row";
 import { renderConfigureEntityCard } from "./knx-configure-entity-options";
 import { KNXLogger } from "../tools/knx-logger";
-import { extractValidationErrors } from "../utils/validation";
-import type { EntityData, ErrorDescription, KnxEntityData } from "../types/entity_data";
+import { extractValidationErrors, getValidationError } from "../utils/validation";
+import type { EntityData, ErrorDescription } from "../types/entity_data";
 import type { KNX } from "../types/knx";
 import type { PlatformInfo } from "../utils/common";
-import type { SettingsGroup, SelectorSchema, GroupSelect, GASchema } from "../utils/schema";
+import type { SettingsGroup, SelectorSchema, GroupSelect, GASelector } from "../utils/schema";
 
 const logger = new KNXLogger("knx-configure-entity");
 
@@ -41,6 +42,8 @@ export class KNXConfigureEntity extends LitElement {
 
   @property({ attribute: false }) public validationErrors?: ErrorDescription[];
 
+  @state() private _selectedGroupSelectOptions: Record<string, number> = {};
+
   connectedCallback(): void {
     super.connectedCallback();
     if (!this.config) {
@@ -52,8 +55,8 @@ export class KNXConfigureEntity extends LitElement {
       // would set this.conifg.knx.ga_sensor.state to "0/1/4"
       // TODO: this is not checked against any schema
       const urlParams = new URLSearchParams(mainWindow.location.search);
-      this._url_suggestions = Object.fromEntries(urlParams.entries());
-      for (const [path, value] of Object.entries(this._url_suggestions)) {
+      const url_suggestions = Object.fromEntries(urlParams.entries());
+      for (const [path, value] of Object.entries(url_suggestions)) {
         this._setNestedValue(path, value);
         fireEvent(this, "knx-entity-configuration-changed", this.config);
       }
@@ -67,17 +70,40 @@ export class KNXConfigureEntity extends LitElement {
     let current = this.config!;
     for (const key of keys) {
       if (!(key in current)) {
+        if (value === undefined) return; // don't create to remove
         current[key] = {};
       }
       current = current[key];
     }
-    current[keysTail] = value;
+    if (value === undefined) {
+      logger.debug(`remove ${keysTail} at ${path}`);
+      delete current[keysTail];
+      if (!Object.keys(current).length && keys.length > 0) {
+        // when no other keys in this, recursively remove empty objects
+        this._setNestedValue(keys.join("."), undefined);
+      }
+    } else {
+      logger.debug(`update ${keysTail} at ${path} with value`, value);
+      current[keysTail] = value;
+    }
+  }
+
+  private _getNestedValue(path: string) {
+    const keys = path.split(".");
+    let current = this.config!;
+    for (const key of keys) {
+      if (!(key in current)) {
+        return undefined;
+      }
+      current = current[key];
+    }
+    return current;
   }
 
   protected render(): TemplateResult {
     const errors = extractValidationErrors(this.validationErrors, "data"); // "data" is root key in our python schema
     const knxErrors = extractValidationErrors(errors, "knx");
-    const knxBaseError = knxErrors?.find((err) => (err.path ? err.path.length === 0 : true));
+    const knxBaseError = getValidationError(knxErrors);
 
     return html`
       <div class="header">
@@ -101,7 +127,7 @@ export class KNXConfigureEntity extends LitElement {
       ${renderConfigureEntityCard(
         this.hass,
         this.config!.entity ?? {},
-        this._updateConfig("entity"),
+        this._updateConfig,
         extractValidationErrors(errors, "entity"),
       )}
     `;
@@ -109,113 +135,177 @@ export class KNXConfigureEntity extends LitElement {
 
   generateRootGroups(schema: SettingsGroup[], errors?: ErrorDescription[]) {
     return html`
-      ${schema.map((group: SettingsGroup) => this._generateSettingsGroup(group, errors))}
+      ${schema.map((group: SettingsGroup) => this._generateSettingsGroup(group, "knx", errors))}
     `;
   }
 
-  private _generateSettingsGroup(group: SettingsGroup, errors?: ErrorDescription[]) {
+  private _generateSettingsGroup(group: SettingsGroup, path: string, errors?: ErrorDescription[]) {
     return html` <ha-expansion-panel
       .header=${group.heading}
       .secondary=${group.description}
-      .expanded=${!group.collapsible || this._groupHasGroupAddressInConfig(group)}
+      .expanded=${!group.collapsible || this._groupHasGroupAddressInConfig(group, path)}
       .noCollapse=${!group.collapsible}
       .outlined=${!!group.collapsible}
-      >${this._generateItems(group.selectors, errors)}
+      >${this._generateItems(group.selectors, path, errors)}
     </ha-expansion-panel>`;
   }
 
-  private _groupHasGroupAddressInConfig(group: SettingsGroup) {
+  private _groupHasGroupAddressInConfig(group: SettingsGroup, path: string) {
     if (this.config === undefined) {
       return false;
     }
     return group.selectors.some((selector) => {
-      if (selector.type === "group_address")
-        return this._hasGroupAddressInConfig(selector, this.config!.knx);
-      if (selector.type === "group_select")
+      if (selector.type === "group_address") return this._hasGroupAddressInConfig(selector, path);
+      if (selector.type === "group_select") {
+        const groupPath = path + "." + selector.name;
+        if (groupPath in this._selectedGroupSelectOptions) return true;
         return selector.options.some((options) =>
           options.schema.some((schema) => {
-            if (schema.type === "settings_group") return this._groupHasGroupAddressInConfig(schema);
+            if (schema.type === "settings_group")
+              return this._groupHasGroupAddressInConfig(schema, groupPath);
             if (schema.type === "group_address")
-              return this._hasGroupAddressInConfig(schema, this.config!.knx);
+              return this._hasGroupAddressInConfig(schema, groupPath);
             return false;
           }),
         );
+      }
       return false;
     });
   }
 
-  private _hasGroupAddressInConfig(ga_selector: GASchema, knxData: KnxEntityData) {
-    if (!(ga_selector.name in knxData)) return false;
-
-    const knxEntry = knxData[ga_selector.name];
-    if (knxEntry.write !== undefined) return true;
-    if (knxEntry.state !== undefined) return true;
-    if (knxEntry.passive?.length) return true;
+  private _hasGroupAddressInConfig(ga_selector: GASelector, path: string) {
+    const gaData = this._getNestedValue(path + "." + ga_selector.name);
+    if (!gaData) return false;
+    if (gaData.write !== undefined) return true;
+    if (gaData.state !== undefined) return true;
+    if (gaData.passive?.length) return true;
 
     return false;
   }
 
-  private _generateItems(selectors: SelectorSchema[], errors?: ErrorDescription[]) {
-    return html`${selectors.map((selector: SelectorSchema) => this._generateItem(selector, errors))}`;
+  private _generateItems(selectors: SelectorSchema[], path: string, errors?: ErrorDescription[]) {
+    return html`${selectors.map((selector: SelectorSchema) =>
+      this._generateItem(selector, path, errors),
+    )}`;
   }
 
-  private _generateItem(selector: SelectorSchema, errors?: ErrorDescription[]) {
+  private _generateItem(selector: SelectorSchema, path: string, errors?: ErrorDescription[]) {
+    const selectorPath = path + "." + selector.name;
     switch (selector.type) {
       case "group_address":
         return html`
           <knx-group-address-selector
             .hass=${this.hass}
             .knx=${this.knx}
-            .key=${selector.name}
+            .key=${selectorPath}
             .label=${selector.label}
-            .config=${this.config!.knx[selector.name] ?? {}}
+            .config=${this._getNestedValue(selectorPath) ?? {}}
             .options=${selector.options}
             .validationErrors=${extractValidationErrors(errors, selector.name)}
-            @value-changed=${this._updateConfig("knx")}
+            @value-changed=${this._updateConfig}
           ></knx-group-address-selector>
         `;
       case "selector":
         return html`
           <knx-selector-row
             .hass=${this.hass}
-            .key=${selector.name}
+            .key=${selectorPath}
             .selector=${selector}
-            .value=${this.config!.knx[selector.name]}
-            @value-changed=${this._updateConfig("knx")}
+            .value=${this._getNestedValue(selectorPath)}
+            @value-changed=${this._updateConfig}
           ></knx-selector-row>
         `;
       case "sync_state":
         return html`
           <knx-sync-state-selector-row
             .hass=${this.hass}
-            .key=${selector.name}
-            .value=${this.config!.knx[selector.name] ?? true}
+            .key=${selectorPath}
+            .value=${this._getNestedValue(selectorPath) ?? true}
             .noneValid=${false}
-            @value-changed=${this._updateConfig("knx")}
+            @value-changed=${this._updateConfig}
           ></knx-sync-state-selector-row>
         `;
       case "group_select":
-        return this._generateGroupSelect(selector, errors);
+        return this._generateGroupSelect(selector, path, errors);
       default:
         logger.error("Unknown selector type", selector);
         return nothing;
     }
   }
 
-  private _generateGroupSelect(selector: GroupSelect, errors?: ErrorDescription[]) {
-    const value: string =
-      this.config!.knx[selector.name] ??
-      // set default if nothing is set yet
-      (this.config!.knx[selector.name] = selector.options[0].value);
-    const option = selector.options.find((item) => item.value === value);
-    if (option === undefined) {
-      logger.error("No option found for value", value);
+  private _getRequiredKeys(options: (SettingsGroup | SelectorSchema)[]): string[] {
+    const requiredOptions: string[] = [];
+    options.forEach((option) => {
+      if (option.type === "settings_group") {
+        // settings_group is transparent (flattend)
+        requiredOptions.push(...this._getRequiredKeys(option.selectors));
+        return;
+      }
+      if (option.type === "group_address") {
+        if (option.options.write?.required || option.options.state?.required) {
+          requiredOptions.push(option.name);
+        }
+        return;
+      }
+      if (option.type === "selector" && !option.optional) {
+        requiredOptions.push(option.name);
+      }
+      // optional "selector", nested "group_select" and "sync_state" are ignored
+    });
+    return requiredOptions;
+  }
+
+  private _getOptionIndex(selector: GroupSelect, groupPath: string): number {
+    // check if sub-schema is in this.config
+    const configFragment = this._getNestedValue(groupPath);
+    if (configFragment === undefined) {
+      logger.debug("No config found for group select", groupPath);
+      return 0; // Fallback to first option if key is not in config
     }
+    // get non-optional subkeys for each groupSelect schema by index
+    // get index of first option that has all keys in config
+    const optionIndex = selector.options.findIndex((option) => {
+      const requiredKeys = this._getRequiredKeys(option.schema);
+      if (requiredKeys.length === 0) {
+        // no required keys, so this option would always be valid - warn to fix schema
+        logger.warn("No required keys for GroupSelect option", groupPath, option);
+        return false; // skip this option
+      }
+      return requiredKeys.every((key) => key in configFragment);
+    });
+    if (optionIndex === -1) {
+      logger.debug("No valid option found for group select", groupPath, configFragment);
+      return 0; // Fallback to the first option if no match is found
+    }
+    return optionIndex;
+  }
+
+  private _generateGroupSelect(selector: GroupSelect, path: string, errors?: ErrorDescription[]) {
+    const groupPath = path + "." + selector.name;
+    const groupErrors = extractValidationErrors(errors, selector.name);
+
+    if (!(groupPath in this._selectedGroupSelectOptions)) {
+      // if not set, get index of first option that has all required keys in config
+      // this is used to keep the selected option when editing
+      this._selectedGroupSelectOptions[groupPath] = this._getOptionIndex(selector, groupPath);
+    }
+    const optionIndex = this._selectedGroupSelectOptions[groupPath];
+
+    const option = selector.options[optionIndex];
+    if (option === undefined) {
+      logger.error("No option for index", optionIndex, selector.options);
+    }
+
+    const controlSelectOptions: ControlSelectOption[] = selector.options.map((item, index) => ({
+      value: index.toString(),
+      label: item.label,
+    }));
+
     return html` <ha-control-select
-        .options=${selector.options}
-        .value=${value}
-        .key=${selector.name}
-        @value-changed=${this._updateConfig("knx")}
+        .options=${controlSelectOptions}
+        .value=${optionIndex.toString()}
+        .key=${groupPath}
+        @value-changed=${this._updateGroupSelectOption}
       ></ha-control-select>
       ${option
         ? html` <p class="group-description">${option.description}</p>
@@ -223,31 +313,36 @@ export class KNXConfigureEntity extends LitElement {
               ${option.schema.map((item: SettingsGroup | SelectorSchema) => {
                 switch (item.type) {
                   case "settings_group":
-                    return this._generateSettingsGroup(item, errors);
+                    return this._generateSettingsGroup(item, groupPath, groupErrors);
                   default:
-                    return this._generateItem(item, errors);
+                    return this._generateItem(item, groupPath, groupErrors);
                 }
               })}
             </div>`
         : nothing}`;
   }
 
-  private _updateConfig(baseKey: string) {
-    return (ev) => {
-      ev.stopPropagation();
-      if (!this.config[baseKey]) {
-        this.config[baseKey] = {};
-      }
-      if (ev.detail.value === undefined) {
-        logger.debug(`remove ${baseKey} key "${ev.target.key}"`);
-        delete this.config[baseKey][ev.target.key];
-      } else {
-        logger.debug(`update ${baseKey} key "${ev.target.key}" with "${ev.detail.value}"`);
-        this.config[baseKey][ev.target.key] = ev.detail.value;
-      }
-      fireEvent(this, "knx-entity-configuration-changed", this.config);
-      this.requestUpdate();
-    };
+  private _updateGroupSelectOption(ev: ValueChangedEvent<any>) {
+    ev.stopPropagation();
+    const key = ev.target.key;
+    const selectedIndex = parseInt(ev.detail.value, 10);
+    // clear data of key when changing option
+    this._setNestedValue(key, undefined);
+    // keep index in state
+    // TODO: Optional: while editing, keep config data of non-active option in map (FE only)
+    //       to be able to peek other options and go back without loosing config
+    this._selectedGroupSelectOptions[key] = selectedIndex;
+    fireEvent(this, "knx-entity-configuration-changed", this.config);
+    this.requestUpdate();
+  }
+
+  private _updateConfig(ev: ValueChangedEvent<any>) {
+    ev.stopPropagation();
+    const key = ev.target.key;
+    const value = ev.detail.value;
+    this._setNestedValue(key, value);
+    fireEvent(this, "knx-entity-configuration-changed", this.config);
+    this.requestUpdate();
   }
 
   static styles = css`
