@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
 const path = require("path");
 
 module.exports = {
-  polymer_dir: path.resolve(__dirname, ".."),
+  root_dir: path.resolve(__dirname, ".."),
 
   src_dir: path.resolve(__dirname, "../src"),
 

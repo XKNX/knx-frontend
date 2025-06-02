@@ -3,7 +3,7 @@ import type { TemplateResult } from "lit";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { repeat } from "lit/directives/repeat";
-import { consume } from "@lit-labs/context";
+import { consume } from "@lit/context";
 
 import "@ha/components/ha-alert";
 import "@ha/components/ha-svg-icon";
