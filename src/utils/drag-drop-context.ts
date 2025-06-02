@@ -1,4 +1,4 @@
-import { createContext } from "@lit-labs/context";
+import { createContext } from "@lit/context";
 import type { GroupAddress } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
 

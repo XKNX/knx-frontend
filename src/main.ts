@@ -9,7 +9,7 @@ import { listenMediaQuery } from "@ha/common/dom/media_query";
 import { computeRTL, computeDirectionStyles } from "@ha/common/util/compute_rtl";
 import { navigate } from "@ha/common/navigate";
 import { makeDialogManager } from "@ha/dialogs/make-dialog-manager";
-import "@ha/resources/ha-style";
+import "@ha/resources/append-ha-style";
 import type { HomeAssistant, Route } from "@ha/types";
 
 import { KnxElement } from "./knx";

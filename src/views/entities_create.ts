@@ -2,7 +2,7 @@ import { mdiPlus, mdiFloppy } from "@mdi/js";
 import type { TemplateResult, PropertyValues } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state, query } from "lit/decorators";
-import { ContextProvider } from "@lit-labs/context";
+import { ContextProvider } from "@lit/context";
 
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-subpage";

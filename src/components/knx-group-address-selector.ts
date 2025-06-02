@@ -3,7 +3,7 @@ import type { PropertyValues } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state, query, queryAll } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
-import { consume } from "@lit-labs/context";
+import { consume } from "@lit/context";
 import memoize from "memoize-one";
 
 import "@ha/components/ha-list-item";
