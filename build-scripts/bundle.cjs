@@ -12,14 +12,15 @@ module.exports.emptyPackages = ({ isHassioBuild }) =>
     require.resolve("@vaadin/vaadin-material-styles/typography.js"),
     require.resolve("@vaadin/vaadin-material-styles/font-icons.js"),
     // Icons in supervisor conflict with icons in HA so we don't load.
-    isHassioBuild &&
-      require.resolve(
-        path.resolve(paths.root_dir, "homeassistant-frontend/src/components/ha-icon.ts"),
-      ),
-    isHassioBuild &&
-      require.resolve(
-        path.resolve(paths.root_dir, "homeassistant-frontend/src/components/ha-icon-picker.ts"),
-      ),
+    // ... for KNX we seem to need it - probably due to iframe.
+    // isHassioBuild &&
+    //   require.resolve(
+    //     path.resolve(paths.root_dir, "homeassistant-frontend/src/components/ha-icon.ts"),
+    //   ),
+    // isHassioBuild &&
+    //   require.resolve(
+    //     path.resolve(paths.root_dir, "homeassistant-frontend/src/components/ha-icon-picker.ts"),
+    //   ),
   ].filter(Boolean);
 
 module.exports.definedVars = ({ isProdBuild, latestBuild, defineOverlay }) => ({

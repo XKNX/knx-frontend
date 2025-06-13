@@ -1,4 +1,10 @@
-import { mdiDelete, mdiInformationSlabCircleOutline, mdiPlus, mdiPencilOutline } from "@mdi/js";
+import {
+  mdiDelete,
+  mdiInformationSlabCircleOutline,
+  mdiInformationOffOutline,
+  mdiPlus,
+  mdiPencilOutline,
+} from "@mdi/js";
 import type { TemplateResult } from "lit";
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators";
@@ -9,6 +15,7 @@ import memoize from "memoize-one";
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-tabs-subpage-data-table";
 import "@ha/components/ha-fab";
+import "@ha/components/ha-icon";
 import "@ha/components/ha-icon-button";
 import "@ha/components/ha-state-icon";
 import "@ha/components/ha-svg-icon";
@@ -32,6 +39,7 @@ export interface EntityRow extends ExtEntityRegistryEntry {
   friendly_name: string;
   device_name: string;
   area_name: string;
+  disabled: boolean;
 }
 
 @customElement("knx-entities-view")
@@ -64,16 +72,18 @@ export class KNXEntitiesView extends LitElement {
       .then((entries) => {
         logger.debug(`Fetched ${entries.length} entity entries.`);
         this.knx_entities = entries.map((entry) => {
-          const entityState = this.hass.states[entry.entity_id];
+          const entityState: HassEntity | undefined = this.hass.states[entry.entity_id]; // undefined for disabled entities
           const device = entry.device_id ? this.hass.devices[entry.device_id] : undefined;
           const areaId = entry.area_id ?? device?.area_id;
           const area = areaId ? this.hass.areas[areaId] : undefined;
           return {
             ...entry,
             entityState,
-            friendly_name: entityState.attributes.friendly_name ?? entry.name ?? "",
+            friendly_name:
+              entityState?.attributes.friendly_name ?? entry.name ?? entry.original_name ?? "",
             device_name: device?.name ?? "",
             area_name: area?.name ?? "",
+            disabled: !!entry.disabled_by,
           };
         });
       })
@@ -93,13 +103,21 @@ export class KNXEntitiesView extends LitElement {
         minWidth: iconWidth,
         maxWidth: iconWidth,
         type: "icon",
-        template: (entry) => html`
-          <ha-state-icon
-            slot="item-icon"
-            .hass=${this.hass}
-            .stateObj=${entry.entityState}
-          ></ha-state-icon>
-        `,
+        template: (entry) =>
+          entry.disabled
+            ? html`<ha-svg-icon
+                slot="icon"
+                label="Disabled entity"
+                .path=${mdiInformationOffOutline}
+                style="color: var(--disabled-text-color);"
+              ></ha-svg-icon>`
+            : html`
+                <ha-state-icon
+                  slot="item-icon"
+                  .hass=${this.hass}
+                  .stateObj=${entry.entityState}
+                ></ha-state-icon>
+              `,
       },
       friendly_name: {
         showNarrow: true,
