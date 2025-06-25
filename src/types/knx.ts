@@ -9,4 +9,6 @@ export interface KNX {
   info: KNXInfoData;
   project: KNXProjectResponse | null;
   loadProject(): Promise<void>;
+  schema: Record<string, any>;
+  loadSchema(platform: string): Promise<void>;
 }

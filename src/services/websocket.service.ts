@@ -61,6 +61,12 @@ export const getKnxProject = (hass: HomeAssistant): Promise<KNXProjectResponse> 
 /**
  * Entity store calls.
  */
+export const getSchema = (hass: HomeAssistant, platform: string): Promise<Record<string, any>> =>
+  hass.callWS({
+    type: "knx/get_schema",
+    platform,
+  });
+
 export const validateEntity = (
   hass: HomeAssistant,
   entityData: CreateEntityData | UpdateEntityData,

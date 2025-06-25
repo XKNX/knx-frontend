@@ -8,7 +8,7 @@ export interface PlatformInfo {
   iconPath: string;
   color: string;
   description?: string;
-  schema: schema.SettingsGroup[];
+  schema: schema.Section[]; // TODO: remove hardcoded schema
 }
 
 export const platformConstants: Record<SupportedPlatform, PlatformInfo> = {

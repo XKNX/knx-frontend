@@ -1,5 +1,6 @@
+import memoize from "memoize-one";
 import type { DPT, KNXProject, CommunicationObject, GroupAddress } from "../types/websocket";
-import type { SettingsGroup } from "./schema";
+import type { Section, SelectorSchema, GroupSelect, GroupSelectOption } from "./schema";
 
 export const equalDPT = (dpt1: DPT, dpt2: DPT): boolean =>
   dpt1.main === dpt2.main && dpt1.sub === dpt2.sub;
@@ -49,18 +50,27 @@ export const filterDupicateDPTs = (dpts: DPT[]): DPT[] =>
     [] as DPT[],
   );
 
-export const validDPTsForSchema = (schema: SettingsGroup[]): DPT[] => {
+function _validDPTsForSchema(
+  schema: (Section | SelectorSchema | GroupSelect | GroupSelectOption)[],
+): DPT[] {
   const result: DPT[] = [];
-  schema.forEach((group) => {
-    group.selectors.forEach((selector) => {
-      if (selector.type === "group_address") {
-        if (selector.options.validDPTs) {
-          result.push(...selector.options.validDPTs);
-        } else if (selector.options.dptSelect) {
-          result.push(...selector.options.dptSelect.map((dptOption) => dptOption.dpt));
-        }
+  schema.forEach((item) => {
+    if (item.type === "knx_group_address") {
+      if (item.options.validDPTs) {
+        result.push(...item.options.validDPTs);
+      } else if (item.options.dptSelect) {
+        result.push(...item.options.dptSelect.map((dptOption) => dptOption.dpt));
       }
-    });
+      return;
+    }
+    if ("schema" in item) {
+      // Section or GroupSelect
+      result.push(..._validDPTsForSchema(item.schema));
+    }
   });
-  return filterDupicateDPTs(result);
-};
+  return result;
+}
+
+export const validDPTsForSchema = memoize((schema: Section[]): DPT[] =>
+  filterDupicateDPTs(_validDPTsForSchema(schema)),
+);

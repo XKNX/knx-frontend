@@ -1,43 +1,51 @@
 import type { Selector } from "@ha/data/selector";
 import type { DPT } from "../types/websocket";
 
-export interface SettingsGroup {
-  type: "settings_group";
+interface BaseSection {
+  name: string;
   heading: string;
   description?: string;
-  selectors: SelectorSchema[];
   collapsible?: boolean;
 }
 
-export type SelectorSchema =
-  | GASelector
-  | GroupSelect
-  | { name: "sync_state"; type: "sync_state" }
-  | KnxHaSelector;
+export interface Section extends BaseSection {
+  type: "knx_section";
+  schema: SelectorSchema[];
+}
 
-export interface GroupSelect {
-  type: "group_select";
+export interface GroupSelect extends BaseSection {
+  type: "knx_group_select";
+  schema: GroupSelectOption[];
+}
+
+export interface GroupSelectOption {
+  type: "knx_group_select_option";
+  label: string;
+  description?: string;
+  schema: (Section | SelectorSchema)[];
+}
+
+export type SelectorSchema = GASelector | GroupSelect | SyncStateSelector | KnxHaSelector;
+
+export interface SyncStateSelector {
+  type: "knx_sync_state";
   name: string;
-  options: {
-    label: string;
-    description?: string;
-    schema: (SettingsGroup | SelectorSchema)[];
-  }[];
+  allow_false?: boolean; // allow false to be sent to the state machine
 }
 
 export interface KnxHaSelector {
+  type: "ha_selector";
   name: string;
-  type: "selector";
   default?: any;
   optional?: boolean; // for optional boolean selectors, there shall be no default value (can't get applied)
   selector: Selector;
-  label: string;
+  label: string; // TODO: label and helper not present
   helper?: string;
 }
 
 export interface GASelector {
   name: string;
-  type: "group_address";
+  type: "knx_group_address";
   label?: string;
   options: GASelectorOptions;
 }
@@ -46,7 +54,7 @@ export interface GASelectorOptions {
   write?: { required: boolean };
   state?: { required: boolean };
   passive?: boolean;
-  validDPTs?: DPT[]; // one of validDPts or dptSelect shall be set
+  validDPTs?: DPT[]; // one of validDPTs or dptSelect shall be set
   dptSelect?: DPTOption[];
 }
 
@@ -57,12 +65,12 @@ export interface DPTOption {
   dpt: DPT;
 }
 
-export const binarySensorSchema: SettingsGroup[] = [
+export const binarySensorSchema: Section[] = [
   {
-    type: "settings_group",
+    type: "knx_section",
     heading: "Binary sensor",
     description: "DPT 1 group addresses representing binary states.",
-    selectors: [
+    schema: [
       {
         name: "ga_sensor",
         type: "group_address",
@@ -84,11 +92,11 @@ export const binarySensorSchema: SettingsGroup[] = [
     ],
   },
   {
-    type: "settings_group",
+    type: "knx_section",
     collapsible: true,
     heading: "State properties",
     description: "Properties of the binary sensor state.",
-    selectors: [
+    schema: [
       {
         name: "ignore_internal_state",
         type: "selector",
@@ -121,24 +129,24 @@ export const binarySensorSchema: SettingsGroup[] = [
     ],
   },
   {
-    type: "settings_group",
+    type: "knx_section",
     collapsible: true,
     heading: "State updater",
-    selectors: [
+    schema: [
       {
         name: "sync_state",
-        type: "sync_state",
+        type: "knx_sync_state",
       },
     ],
   },
 ];
 
-export const coverSchema: SettingsGroup[] = [
+export const coverSchema: Section[] = [
   {
-    type: "settings_group",
+    type: "knx_section",
     heading: "Up/Down control",
     description: "DPT 1 group addresses triggering full movement.",
-    selectors: [
+    schema: [
       {
         name: "ga_up_down",
         type: "group_address",
@@ -160,10 +168,10 @@ export const coverSchema: SettingsGroup[] = [
     ],
   },
   {
-    type: "settings_group",
+    type: "knx_section",
     heading: "Stop",
     description: "DPT 1 group addresses for stopping movement.",
-    selectors: [
+    schema: [
       {
         name: "ga_stop",
         type: "group_address",
@@ -187,11 +195,11 @@ export const coverSchema: SettingsGroup[] = [
     ],
   },
   {
-    type: "settings_group",
+    type: "knx_section",
     collapsible: true,
     heading: "Position",
     description: "DPT 5 group addresses for cover position.",
-    selectors: [
+    schema: [
       {
         name: "ga_position_set",
         type: "group_address",
@@ -223,11 +231,11 @@ export const coverSchema: SettingsGroup[] = [
     ],
   },
   {
-    type: "settings_group",
+    type: "knx_section",
     collapsible: true,
     heading: "Tilt",
     description: "DPT 5 group addresses for slat tilt angle.",
-    selectors: [
+    schema: [
       {
         name: "ga_angle",
         type: "group_address",
@@ -250,10 +258,10 @@ export const coverSchema: SettingsGroup[] = [
     ],
   },
   {
-    type: "settings_group",
+    type: "knx_section",
     heading: "Travel time",
     description: "Used to calculate intermediate positions of the cover while traveling.",
-    selectors: [
+    schema: [
       {
         name: "travelling_time_down",
         type: "selector",
@@ -277,24 +285,24 @@ export const coverSchema: SettingsGroup[] = [
     ],
   },
   {
-    type: "settings_group",
+    type: "knx_section",
     collapsible: true,
     heading: "State updater",
-    selectors: [
+    schema: [
       {
         name: "sync_state",
-        type: "sync_state",
+        type: "knx_sync_state",
       },
     ],
   },
 ];
 
-export const switchSchema: SettingsGroup[] = [
+export const switchSchema: Section[] = [
   {
-    type: "settings_group",
+    type: "knx_section",
     heading: "Switching",
     description: "DPT 1 group addresses controlling the switch function.",
-    selectors: [
+    schema: [
       {
         name: "ga_switch",
         type: "group_address",
@@ -323,24 +331,24 @@ export const switchSchema: SettingsGroup[] = [
     ],
   },
   {
-    type: "settings_group",
+    type: "knx_section",
     collapsible: true,
     heading: "State updater",
-    selectors: [
+    schema: [
       {
         name: "sync_state",
-        type: "sync_state",
+        type: "knx_sync_state",
       },
     ],
   },
 ];
 
-export const lightSchema: SettingsGroup[] = [
+export const lightSchema: Section[] = [
   {
-    type: "settings_group",
+    type: "knx_section",
     heading: "Switching",
     description: "DPT 1 group addresses turning the light on or off.",
-    selectors: [
+    schema: [
       {
         name: "ga_switch",
         type: "group_address",
@@ -354,10 +362,10 @@ export const lightSchema: SettingsGroup[] = [
     ],
   },
   {
-    type: "settings_group",
+    type: "knx_section",
     heading: "Brightness",
     description: "DPT 5 group addresses controlling the brightness.",
-    selectors: [
+    schema: [
       {
         name: "ga_brightness",
         type: "group_address",
@@ -371,11 +379,11 @@ export const lightSchema: SettingsGroup[] = [
     ],
   },
   {
-    type: "settings_group",
+    type: "knx_section",
     heading: "Color temperature",
     description: "Control the lights color temperature.",
     collapsible: true,
-    selectors: [
+    schema: [
       {
         name: "ga_color_temp",
         type: "group_address",
@@ -437,16 +445,17 @@ export const lightSchema: SettingsGroup[] = [
     ],
   },
   {
-    type: "settings_group",
+    type: "knx_section",
     heading: "Color",
     description: "Control the light color.",
     collapsible: true,
-    selectors: [
+    schema: [
       {
-        type: "group_select",
+        type: "knx_group_select",
         name: "color",
-        options: [
+        schema: [
           {
+            type: "knx_group_select_option",
             label: "Single address",
             description: "RGB, RGBW or XYY color controlled by a single group address",
             schema: [
@@ -482,14 +491,15 @@ export const lightSchema: SettingsGroup[] = [
             ],
           },
           {
+            type: "knx_group_select_option",
             label: "Individual addresses",
             description: "RGB(W) using individual state and brightness group addresses",
             schema: [
               {
-                type: "settings_group",
+                type: "knx_section",
                 heading: "Red",
                 description: "Control the lights red color. Brightness group address is required.",
-                selectors: [
+                schema: [
                   {
                     name: "ga_red_switch",
                     type: "group_address",
@@ -515,11 +525,11 @@ export const lightSchema: SettingsGroup[] = [
                 ],
               },
               {
-                type: "settings_group",
+                type: "knx_section",
                 heading: "Green",
                 description:
                   "Control the lights green color. Brightness group address is required.",
-                selectors: [
+                schema: [
                   {
                     name: "ga_green_switch",
                     type: "group_address",
@@ -545,10 +555,10 @@ export const lightSchema: SettingsGroup[] = [
                 ],
               },
               {
-                type: "settings_group",
+                type: "knx_section",
                 heading: "Blue",
                 description: "Control the lights blue color. Brightness group address is required.",
-                selectors: [
+                schema: [
                   {
                     name: "ga_blue_switch",
                     type: "group_address",
@@ -574,11 +584,11 @@ export const lightSchema: SettingsGroup[] = [
                 ],
               },
               {
-                type: "settings_group",
+                type: "knx_section",
                 heading: "White",
                 description:
                   "Control the lights white color. Brightness group address is required.",
-                selectors: [
+                schema: [
                   {
                     name: "ga_white_switch",
                     type: "group_address",
@@ -606,14 +616,15 @@ export const lightSchema: SettingsGroup[] = [
             ],
           },
           {
+            type: "knx_group_select_option",
             label: "HSV",
             description: "Hue, saturation and brightness using individual group addresses",
             schema: [
               {
-                type: "settings_group",
+                type: "knx_section",
                 heading: "Hue",
                 description: "Control the lights hue.",
-                selectors: [
+                schema: [
                   {
                     name: "ga_hue",
                     type: "group_address",
@@ -627,10 +638,10 @@ export const lightSchema: SettingsGroup[] = [
                 ],
               },
               {
-                type: "settings_group",
+                type: "knx_section",
                 heading: "Saturation",
                 description: "Control the lights saturation.",
-                selectors: [
+                schema: [
                   {
                     name: "ga_saturation",
                     type: "group_address",
@@ -650,13 +661,13 @@ export const lightSchema: SettingsGroup[] = [
     ],
   },
   {
-    type: "settings_group",
+    type: "knx_section",
     collapsible: true,
     heading: "State updater",
-    selectors: [
+    schema: [
       {
         name: "sync_state",
-        type: "sync_state",
+        type: "knx_sync_state",
       },
     ],
   },

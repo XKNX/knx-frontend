@@ -11,6 +11,7 @@ import "./knx-sync-state-selector-row";
 import "./knx-device-picker";
 
 import { deviceFromIdentifier } from "../utils/device";
+import { getValidationError } from "../utils/validation";
 import type { BaseEntityData, ErrorDescription } from "../types/entity_data";
 
 export const renderConfigureEntityCard = (
@@ -24,7 +25,7 @@ export const renderConfigureEntityCard = (
     : undefined;
   const deviceName = device ? (device.name_by_user ?? device.name) : "";
   // currently only baseError is possible, others shouldn't be possible due to selectors / optional
-  const entityBaseError = errors?.find((err) => (err.path ? err.path.length === 0 : true));
+  const entityBaseError = getValidationError(errors);
 
   return html`
     <ha-card outlined>

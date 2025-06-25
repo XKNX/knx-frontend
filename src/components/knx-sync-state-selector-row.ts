@@ -15,7 +15,7 @@ export class KnxSyncStateSelectorRow extends LitElement {
 
   @property() public key = "sync_state";
 
-  @property({ attribute: false }) noneValid = true;
+  @property({ attribute: false }) allowFalse?: boolean = false;
 
   private _strategy: boolean | "init" | "expire" | "every" = true;
 
@@ -52,7 +52,7 @@ export class KnxSyncStateSelectorRow extends LitElement {
               mode: "dropdown",
               options: [
                 { value: true, label: "Default" },
-                ...(this.noneValid ? [{ value: false, label: "Never" }] : []),
+                ...(this.allowFalse ? [{ value: false, label: "Never" }] : []),
                 { value: "init", label: "Once when connection established" },
                 { value: "expire", label: "Expire after last value update" },
                 { value: "every", label: "Scheduled every" },

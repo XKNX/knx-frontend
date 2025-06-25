@@ -8,7 +8,7 @@ import type { HomeAssistant } from "@ha/types";
 
 import { localize } from "./localize/localize";
 import { KNXLogger } from "./tools/knx-logger";
-import { getKnxInfoData, getKnxProject } from "./services/websocket.service";
+import { getKnxInfoData, getKnxProject, getSchema } from "./services/websocket.service";
 import type { KNX } from "./types/knx";
 
 export class KnxElement extends ProvideHassLitMixin(LitElement) {
@@ -28,6 +28,8 @@ export class KnxElement extends ProvideHassLitMixin(LitElement) {
         info: knxInfo,
         project: null,
         loadProject: () => this._loadProjectPromise(),
+        schema: {},
+        loadSchema: (platform: string) => this._loadSchema(platform),
       };
     } catch (err) {
       new KNXLogger().error("Failed to initialize KNX", err);
@@ -45,5 +47,15 @@ export class KnxElement extends ProvideHassLitMixin(LitElement) {
         this.knx.log.error("getKnxProject", err);
         navigate("/knx/error", { replace: true, data: err });
       });
+  }
+
+  private async _loadSchema(platform: string): Promise<void> {
+    // load schema only once per platform
+    if (platform in this.knx.schema) {
+      return Promise.resolve();
+    }
+    return getSchema(this.hass, platform).then((schema) => {
+      this.knx.schema[platform] = schema;
+    });
   }
 }

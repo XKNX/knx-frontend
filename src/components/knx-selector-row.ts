@@ -7,8 +7,11 @@ import { fireEvent } from "@ha/common/dom/fire_event";
 import "@ha/components/ha-checkbox";
 import "@ha/components/ha-selector/ha-selector";
 import "@ha/components/ha-switch";
+
 import type { HomeAssistant } from "@ha/types";
+import { getValidationError } from "../utils/validation";
 import type { KnxHaSelector } from "../utils/schema";
+import type { ErrorDescription } from "../types/entity_data";
 
 @customElement("knx-selector-row")
 export class KnxSelectorRow extends LitElement {
@@ -19,6 +22,8 @@ export class KnxSelectorRow extends LitElement {
   @property({ attribute: false }) public selector!: KnxHaSelector;
 
   @property() public value?: any;
+
+  @property({ attribute: false }) public validationErrors?: ErrorDescription[];
 
   @state() private _disabled = false;
 
@@ -46,6 +51,7 @@ export class KnxSelectorRow extends LitElement {
   }
 
   protected render(): TemplateResult {
+    const invalid = getValidationError(this.validationErrors);
     const haSelector = this._optionalBooleanSelector
       ? nothing
       : html`<ha-selector
@@ -60,10 +66,10 @@ export class KnxSelectorRow extends LitElement {
     return html`
       <div class="body">
         <div class="text">
-          <p class="heading">${this.selector.label}</p>
+          <p class="heading ${classMap({ invalid: !!invalid })}">${this.selector.label}</p>
           <p class="description">${this.selector.helper}</p>
         </div>
-        ${this.selector.optional
+        ${this.selector.optional // TODO: && (this.selector.default !== undefined)  // since default is applied in schema anyway? test this!
           ? html`<ha-selector
               class="optional-switch"
               .selector=${{ boolean: {} }}
@@ -75,6 +81,7 @@ export class KnxSelectorRow extends LitElement {
             : nothing}
       </div>
       ${this._inlineSelector ? nothing : haSelector}
+      ${invalid ? html`<p class="invalid-message">${invalid.error_message}</p>` : nothing}
     `;
   }
 
@@ -132,6 +139,15 @@ export class KnxSelectorRow extends LitElement {
       font-weight: var(--mdc-typography-body2-font-weight, 400);
       line-height: normal;
       color: var(--secondary-text-color);
+    }
+
+    .invalid {
+      color: var(--error-color);
+    }
+    .invalid-message {
+      font-size: 0.75rem;
+      color: var(--error-color);
+      padding-left: 16px;
     }
   `;
 }

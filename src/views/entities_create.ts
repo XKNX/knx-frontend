@@ -34,6 +34,7 @@ import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
 import { KNXLogger } from "../tools/knx-logger";
 import type { KNX } from "../types/knx";
 import type { PlatformInfo } from "../utils/common";
+import type { Section } from "../utils/schema";
 
 const logger = new KNXLogger("knx-create-entity");
 
@@ -91,6 +92,7 @@ export class KNXCreateEntity extends LitElement {
         return;
       }
 
+      this._loading = true;
       if (intent === "create") {
         // knx/entities/create -> path: ""; knx/entities/create/ -> path: "/"
         // knx/entities/create/light -> path: "/light"
@@ -99,11 +101,9 @@ export class KNXCreateEntity extends LitElement {
         this._config = undefined; // clear config - eg. when `back` was used
         this._validationErrors = undefined; // clear validation errors - eg. when `back` was used
         this._validationBaseError = undefined;
-        this._loading = false;
       } else if (intent === "edit") {
         // knx/entities/edit/light.living_room -> path: "/light.living_room"
         this.entityId = this.route.path.split("/")[1];
-        this._loading = true;
         getEntityConfig(this.hass, this.entityId)
           .then((entityConfigData) => {
             const { platform: entityPlatform, data: config } = entityConfigData;
@@ -113,11 +113,22 @@ export class KNXCreateEntity extends LitElement {
           .catch((err) => {
             logger.warn("Fetching entity config failed.", err);
             this.entityPlatform = undefined; // used as error marker
-          })
-          .finally(() => {
-            this._loading = false;
           });
       }
+      if (!this.entityPlatform) {
+        this._loading = false;
+        return;
+      }
+      this.knx
+        .loadSchema(this.entityPlatform)
+        .catch((err) => {
+          logger.warn("Fetching entity schema failed.", err);
+          this.entityPlatform = undefined; // used as error marker
+          navigate("/knx/error", { replace: true, data: err });
+        })
+        .finally(() => {
+          this._loading = false;
+        });
     }
   }
 
@@ -133,24 +144,26 @@ export class KNXCreateEntity extends LitElement {
     if (!this.entityPlatform) {
       return this._renderTypeSelection();
     }
+    const schema = this.knx.schema[this.entityPlatform];
     const platformInfo = platformConstants[this.entityPlatform];
     if (!platformInfo) {
       logger.error("Unknown platform", this.entityPlatform);
       return this._renderTypeSelection();
     }
-    return this._renderEntityConfig(platformInfo, true);
+    return this._renderEntityConfig(schema, platformInfo, true);
   }
 
   private _renderEdit(): TemplateResult {
     if (!this.entityPlatform) {
       return this._renderNotFound();
     }
+    const schema = this.knx.schema[this.entityPlatform];
     const platformInfo = platformConstants[this.entityPlatform];
     if (!platformInfo) {
       logger.error("Unknown platform", this.entityPlatform);
       return this._renderNotFound();
     }
-    return this._renderEntityConfig(platformInfo, false);
+    return this._renderEntityConfig(schema, platformInfo, false);
   }
 
   private _renderNotFound(): TemplateResult {
@@ -198,7 +211,11 @@ export class KNXCreateEntity extends LitElement {
     `;
   }
 
-  private _renderEntityConfig(platformInfo: PlatformInfo, create: boolean): TemplateResult {
+  private _renderEntityConfig(
+    schema: Section[],
+    platformInfo: PlatformInfo,
+    create: boolean,
+  ): TemplateResult {
     return html`<hass-subpage
       .hass=${this.hass}
       .narrow=${this.narrow!}
@@ -212,6 +229,7 @@ export class KNXCreateEntity extends LitElement {
             .knx=${this.knx}
             .platform=${platformInfo}
             .config=${this._config}
+            .schema=${schema}
             .validationErrors=${this._validationErrors}
             @knx-entity-configuration-changed=${this._configChanged}
           >
@@ -243,7 +261,7 @@ export class KNXCreateEntity extends LitElement {
           ? html` <div class="panel">
               <knx-project-device-tree
                 .data=${this.knx.project.knxproject}
-                .validDPTs=${validDPTsForSchema(platformInfo.schema)}
+                .validDPTs=${validDPTsForSchema(schema)}
               ></knx-project-device-tree>
             </div>`
           : nothing}
