@@ -84,7 +84,7 @@ export class KNXCreateEntity extends LitElement {
     }
   }
 
-  protected willUpdate(changedProperties: PropertyValues<this>) {
+  protected async willUpdate(changedProperties: PropertyValues<this>) {
     if (changedProperties.has("route")) {
       const intent = this.route.prefix.split("/").at(-1);
       if (intent === "create" || intent === "edit") {
@@ -107,31 +107,28 @@ export class KNXCreateEntity extends LitElement {
       } else if (intent === "edit") {
         // knx/entities/edit/light.living_room -> path: "/light.living_room"
         this.entityId = this.route.path.split("/")[1];
-        getEntityConfig(this.hass, this.entityId)
-          .then((entityConfigData) => {
-            const { platform: entityPlatform, data: config } = entityConfigData;
-            this.entityPlatform = entityPlatform;
-            this._config = config;
-          })
-          .catch((err) => {
-            logger.warn("Fetching entity config failed.", err);
-            this.entityPlatform = undefined; // used as error marker
-          });
+        try {
+          const { platform, data } = await getEntityConfig(this.hass, this.entityId);
+          this.entityPlatform = platform;
+          this._config = data;
+        } catch (err) {
+          logger.warn("Fetching entity config failed.", err);
+          this.entityPlatform = undefined; // used as error marker
+        }
       }
       if (!this.entityPlatform) {
         this._loading = false;
         return;
       }
-      this.knx
-        .loadSchema(this.entityPlatform)
-        .catch((err) => {
-          logger.warn("Fetching entity schema failed.", err);
-          this.entityPlatform = undefined; // used as error marker
-          navigate("/knx/error", { replace: true, data: err });
-        })
-        .finally(() => {
-          this._loading = false;
-        });
+      try {
+        await this.knx.loadSchema(this.entityPlatform);
+      } catch (err) {
+        logger.warn("Fetching entity schema failed.", err);
+        this.entityPlatform = undefined; // used as error marker
+        navigate("/knx/error", { replace: true, data: err });
+      } finally {
+        this._loading = false;
+      }
     }
   }
 
