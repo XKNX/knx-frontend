@@ -23,9 +23,9 @@ import { renderConfigureEntityCard } from "./knx-configure-entity-options";
 import { KNXLogger } from "../tools/knx-logger";
 import { setNestedValue, getNestedValue } from "../utils/config-helper";
 import { extractValidationErrors, getValidationError } from "../utils/validation";
-import type { EntityData, ErrorDescription } from "../types/entity_data";
+import type { EntityData, ErrorDescription, SupportedPlatform } from "../types/entity_data";
 import type { KNX } from "../types/knx";
-import type { PlatformInfo } from "../utils/common";
+import { platformConstants } from "../utils/common";
 import type { Section, SelectorSchema, GroupSelect, GASelector } from "../utils/schema";
 
 const logger = new KNXLogger("knx-configure-entity");
@@ -36,7 +36,7 @@ export class KNXConfigureEntity extends LitElement {
 
   @property({ attribute: false }) public knx!: KNX;
 
-  @property({ type: Object }) public platform!: PlatformInfo;
+  @property({ type: String }) public platform!: SupportedPlatform;
 
   @property({ type: Object }) public config?: EntityData;
 
@@ -45,6 +45,10 @@ export class KNXConfigureEntity extends LitElement {
   @property({ attribute: false }) public validationErrors?: ErrorDescription[];
 
   @state() private _selectedGroupSelectOptions: Record<string, number> = {};
+
+  private _backendLocalize = (path: string) =>
+    this.hass.localize(`component.knx.config_panel.entities.create.${this.platform}.${path}`) ||
+    this.hass.localize(`component.knx.config_panel.entities.create._.${path}`);
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -69,21 +73,22 @@ export class KNXConfigureEntity extends LitElement {
     const errors = extractValidationErrors(this.validationErrors, "data"); // "data" is root key in our python schema
     const knxErrors = extractValidationErrors(errors, "knx");
     const knxBaseError = getValidationError(knxErrors);
+    const platformInfo = platformConstants[this.platform];
 
     return html`
       <div class="header">
         <h1>
           <ha-svg-icon
-            .path=${this.platform.iconPath}
-            style=${styleMap({ "background-color": this.platform.color })}
+            .path=${platformInfo.iconPath}
+            style=${styleMap({ "background-color": platformInfo.color })}
           ></ha-svg-icon>
-          ${this.platform.name}
+          ${this.hass.localize(`component.${this.platform}.title`) || this.platform}
         </h1>
-        <p>${this.platform.description}</p>
+        <p>${this._backendLocalize("description")}</p>
       </div>
       <slot name="knx-validation-error"></slot>
       <ha-card outlined>
-        <h1 class="card-header">KNX configuration</h1>
+        <h1 class="card-header">${this._backendLocalize("knx.title")}</h1>
         ${knxBaseError
           ? html`<ha-alert .alertType=${"error"} .title=${knxBaseError.error_message}></ha-alert>`
           : nothing}
@@ -94,6 +99,7 @@ export class KNXConfigureEntity extends LitElement {
         this.config!.entity ?? {},
         this._updateConfig,
         extractValidationErrors(errors, "entity"),
+        this._backendLocalize,
       )}
     `;
   }
@@ -105,8 +111,8 @@ export class KNXConfigureEntity extends LitElement {
   private _generateSection(section: Section, path: string, errors?: ErrorDescription[]) {
     const sectionBaseError = getValidationError(errors);
     return html` <ha-expansion-panel
-      .header=${section.heading}
-      .secondary=${section.description}
+      .header=${this._backendLocalize(`${path}.title`)}
+      .secondary=${this._backendLocalize(`${path}.description`)}
       .expanded=${!section.collapsible || this._groupHasGroupAddressInConfig(section, path)}
       .noCollapse=${!section.collapsible}
       .outlined=${!!section.collapsible}
@@ -187,18 +193,19 @@ export class KNXConfigureEntity extends LitElement {
             .hass=${this.hass}
             .knx=${this.knx}
             .key=${selectorPath}
-            .label=${selector.label}
+            .label=${this._backendLocalize(`${selectorPath}.label`)}
             .config=${getNestedValue(this.config!, selectorPath) ?? {}}
             .options=${selector.options}
             .validationErrors=${selectorErrors}
+            .localizeFunction=${this._backendLocalize}
             @value-changed=${this._updateConfig}
           ></knx-group-address-selector>
         `;
       case "knx_sync_state":
         return html`
           <ha-expansion-panel
-            .header=${"TODO Sync State"}
-            .secondary=${"TODO Sync State Description"}
+            .header=${this._backendLocalize(`${selectorPath}.title`)}
+            .secondary=${this._backendLocalize(`${selectorPath}.description`)}
             .outlined=${true}
           >
             <knx-sync-state-selector-row
@@ -206,6 +213,7 @@ export class KNXConfigureEntity extends LitElement {
               .key=${selectorPath}
               .value=${this._getNestedValue(selectorPath) ?? true}
               .allowFalse=${selector.allow_false}
+              .localizeFunction=${this._backendLocalize}
               @value-changed=${this._updateConfig}
             ></knx-sync-state-selector-row
           ></ha-expansion-panel>
@@ -218,6 +226,7 @@ export class KNXConfigureEntity extends LitElement {
             .selector=${selector}
             .value=${getNestedValue(this.config!, selectorPath)}
             .validationErrors=${selectorErrors}
+            .localizeFunction=${this._backendLocalize}
             @value-changed=${this._updateConfig}
           ></knx-selector-row>
         `;
@@ -282,19 +291,19 @@ export class KNXConfigureEntity extends LitElement {
     }
     const optionIndex = this._selectedGroupSelectOptions[path];
 
-    const option = selector.schema[optionIndex];
-    if (option === undefined) {
+    const currentOption = selector.schema[optionIndex];
+    if (currentOption === undefined) {
       logger.error("No option for index", optionIndex, selector.schema);
     }
 
-    const controlSelectOptions: ControlSelectOption[] = selector.schema.map((item, index) => ({
+    const controlSelectOptions: ControlSelectOption[] = selector.schema.map((option, index) => ({
       value: index.toString(),
-      label: item.label,
+      label: this._backendLocalize(`${path}.options.${option.translation_key}.label`),
     }));
 
     return html` <ha-expansion-panel
-      .header=${selector.heading}
-      .secondary=${selector.description}
+      .header=${this._backendLocalize(`${path}.title`)}
+      .secondary=${this._backendLocalize(`${path}.description`)}
       .expanded=${!selector.collapsible || this._groupHasGroupAddressInConfig(selector, path)}
       .noCollapse=${!selector.collapsible}
       .outlined=${!!selector.collapsible}
@@ -305,10 +314,14 @@ export class KNXConfigureEntity extends LitElement {
         .key=${path}
         @value-changed=${this._updateGroupSelectOption}
       ></ha-control-select>
-      ${option
-        ? html` <p class="group-description">${option.description}</p>
+      ${currentOption
+        ? html` <p class="group-description">
+              ${this._backendLocalize(
+                `${path}.options.${currentOption.translation_key}.description`,
+              )}
+            </p>
             <div class="group-selection">
-              ${option.schema.map((item: Section | SelectorSchema) =>
+              ${currentOption.schema.map((item: Section | SelectorSchema) =>
                 this._generateItem(item, path, errors),
               )}
             </div>`

@@ -3,11 +3,13 @@ import { FALLBACK_DOMAIN_ICONS } from "@ha/data/icons";
 import * as schema from "./schema";
 import type { SupportedPlatform } from "../types/entity_data";
 
+export const SUPPORTED_PLATFORMS = ["switch", "light", "binary_sensor", "cover"] as const;
+
 export interface PlatformInfo {
   name: string;
   iconPath: string;
   color: string;
-  description?: string;
+  description?: string; // TODO: remove hardcoded description
   schema: schema.Section[]; // TODO: remove hardcoded schema
 }
 
@@ -27,12 +29,8 @@ export const platformConstants: Record<SupportedPlatform, PlatformInfo> = {
     schema: schema.switchSchema,
   },
   light: {
-    name: "Light",
     iconPath: FALLBACK_DOMAIN_ICONS.light,
     color: "var(--amber-color)",
-    description:
-      "The KNX light platform is used as an interface to dimming actuators, LED controllers, DALI gateways and similar.",
-    schema: schema.lightSchema,
   },
   cover: {
     name: "Cover",

@@ -17,12 +17,25 @@ export class KnxSyncStateSelectorRow extends LitElement {
 
   @property({ attribute: false }) allowFalse?: boolean = false;
 
+  @property({ attribute: false }) public localizeFunction: (key: string) => string = (
+    key: string,
+  ) => key;
+
   private _strategy: boolean | "init" | "expire" | "every" = true;
 
   private _minutes = 60;
 
+  private _options = [true, "init", "expire", "every"];
+
   protected _hasMinutes(strategy: boolean | string): boolean {
     return strategy === "expire" || strategy === "every";
+  }
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    if (this.allowFalse && !this._options.includes(false)) {
+      this._options.push(false);
+    }
   }
 
   protected willUpdate() {
@@ -38,49 +51,42 @@ export class KnxSyncStateSelectorRow extends LitElement {
   }
 
   protected render(): TemplateResult {
-    return html` <p class="description">
-        Actively request state updates from KNX bus for state addresses.
-      </p>
-      <div class="inline">
-        <ha-selector-select
-          .hass=${this.hass}
-          .label=${"Strategy"}
-          .selector=${{
-            select: {
-              multiple: false,
-              custom_value: false,
-              mode: "dropdown",
-              options: [
-                { value: true, label: "Default" },
-                ...(this.allowFalse ? [{ value: false, label: "Never" }] : []),
-                { value: "init", label: "Once when connection established" },
-                { value: "expire", label: "Expire after last value update" },
-                { value: "every", label: "Scheduled every" },
-              ],
-            },
-          }}
-          .key=${"strategy"}
-          .value=${this._strategy}
-          @value-changed=${this._handleChange}
-        >
-        </ha-selector-select>
-        <ha-selector-number
-          .hass=${this.hass}
-          .disabled=${!this._hasMinutes(this._strategy)}
-          .selector=${{
-            number: {
-              min: 2,
-              max: 1440,
-              step: 1,
-              unit_of_measurement: "minutes",
-            },
-          }}
-          .key=${"minutes"}
-          .value=${this._minutes}
-          @value-changed=${this._handleChange}
-        >
-        </ha-selector-number>
-      </div>`;
+    return html` <div class="inline">
+      <ha-selector-select
+        .hass=${this.hass}
+        .label=${this.localizeFunction(`${this.key}.title`)}
+        .localizeValue=${this.localizeFunction}
+        .selector=${{
+          select: {
+            translation_key: this.key,
+            multiple: false,
+            custom_value: false,
+            mode: "dropdown",
+            options: this._options,
+          },
+        }}
+        .key=${"strategy"}
+        .value=${this._strategy}
+        @value-changed=${this._handleChange}
+      >
+      </ha-selector-select>
+      <ha-selector-number
+        .hass=${this.hass}
+        .disabled=${!this._hasMinutes(this._strategy)}
+        .selector=${{
+          number: {
+            min: 2,
+            max: 1440,
+            step: 1,
+            unit_of_measurement: "minutes",
+          },
+        }}
+        .key=${"minutes"}
+        .value=${this._minutes}
+        @value-changed=${this._handleChange}
+      >
+      </ha-selector-number>
+    </div>`;
   }
 
   private _handleChange(ev) {
