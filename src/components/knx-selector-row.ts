@@ -25,6 +25,10 @@ export class KnxSelectorRow extends LitElement {
 
   @property({ attribute: false }) public validationErrors?: ErrorDescription[];
 
+  @property({ attribute: false }) public localizeFunction: (key: string) => string = (
+    key: string,
+  ) => key;
+
   @state() private _disabled = false;
 
   private _haSelectorValue: any = null;
@@ -66,8 +70,10 @@ export class KnxSelectorRow extends LitElement {
     return html`
       <div class="body">
         <div class="text">
-          <p class="heading ${classMap({ invalid: !!invalid })}">${this.selector.label}</p>
-          <p class="description">${this.selector.helper}</p>
+          <p class="heading ${classMap({ invalid: !!invalid })}">
+            ${this.localizeFunction(`${this.key}.label`)}
+          </p>
+          <p class="description">${this.localizeFunction(`${this.key}.description`)}</p>
         </div>
         ${this.selector.optional // TODO: && (this.selector.default !== undefined)  // since default is applied in schema anyway? test this!
           ? html`<ha-selector

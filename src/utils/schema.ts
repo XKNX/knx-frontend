@@ -3,8 +3,6 @@ import type { DPT } from "../types/websocket";
 
 interface BaseSection {
   name: string;
-  heading: string;
-  description?: string;
   collapsible?: boolean;
 }
 
@@ -20,8 +18,7 @@ export interface GroupSelect extends BaseSection {
 
 export interface GroupSelectOption {
   type: "knx_group_select_option";
-  label: string;
-  description?: string;
+  translation_key: string;
   schema: (Section | SelectorSchema)[];
 }
 
