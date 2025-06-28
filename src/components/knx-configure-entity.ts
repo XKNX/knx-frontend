@@ -126,44 +126,6 @@ export class KNXConfigureEntity extends LitElement {
     </ha-expansion-panel>`;
   }
 
-  private _groupHasGroupAddressInConfig(group: Section | GroupSelect, path: string) {
-    if (this.config === undefined) {
-      return false;
-    }
-    return group.schema.some((selector) => {
-      if (selector.type === "knx_group_address")
-        return this._hasGroupAddressInConfig(selector, path);
-      if (selector.type === "knx_section") {
-        const groupPath = path + "." + selector.name;
-        return this._groupHasGroupAddressInConfig(selector.schema, groupPath);
-      }
-      if (selector.type === "knx_group_select") {
-        const groupPath = path + "." + selector.name;
-        if (groupPath in this._selectedGroupSelectOptions) return true;
-        return selector.schema.some((option) =>
-          option.schema.some((schema) => {
-            if (schema.type === "knx_section")
-              return this._groupHasGroupAddressInConfig(schema, groupPath); // TODO: does this need to add section-name?
-            if (schema.type === "knx_group_address")
-              return this._hasGroupAddressInConfig(schema, groupPath);
-            return false;
-          }),
-        );
-      }
-      return false;
-    });
-  }
-
-  private _hasGroupAddressInConfig(ga_selector: GASelector, path: string) {
-    const gaData = getNestedValue(this.config!, path + "." + ga_selector.name);
-    if (!gaData) return false;
-    if (gaData.write !== undefined) return true;
-    if (gaData.state !== undefined) return true;
-    if (gaData.passive?.length) return true;
-
-    return false;
-  }
-
   private _generateSectionItems(
     schema: SelectorSchema[],
     path: string,
@@ -172,6 +134,52 @@ export class KNXConfigureEntity extends LitElement {
     return html`${schema.map((selector: SelectorSchema) =>
       this._generateItem(selector, path, errors),
     )}`;
+  }
+
+  private _generateGroupSelect(selector: GroupSelect, path: string, errors?: ErrorDescription[]) {
+    if (!(path in this._selectedGroupSelectOptions)) {
+      // if not set, get index of first option that has all required keys in config
+      // this is used to keep the selected option when editing
+      this._selectedGroupSelectOptions[path] = this._getOptionIndex(selector, path);
+    }
+    const optionIndex = this._selectedGroupSelectOptions[path];
+
+    const currentOption = selector.schema[optionIndex];
+    if (currentOption === undefined) {
+      logger.error("No option for index", optionIndex, selector.schema);
+    }
+
+    const controlSelectOptions: ControlSelectOption[] = selector.schema.map((option, index) => ({
+      value: index.toString(),
+      label: this._backendLocalize(`${path}.options.${option.translation_key}.label`),
+    }));
+
+    return html` <ha-expansion-panel
+      .header=${this._backendLocalize(`${path}.title`)}
+      .secondary=${this._backendLocalize(`${path}.description`)}
+      .expanded=${!selector.collapsible || this._groupHasGroupAddressInConfig(selector, path)}
+      .noCollapse=${!selector.collapsible}
+      .outlined=${!!selector.collapsible}
+    >
+      <ha-control-select
+        .options=${controlSelectOptions}
+        .value=${optionIndex.toString()}
+        .key=${path}
+        @value-changed=${this._updateGroupSelectOption}
+      ></ha-control-select>
+      ${currentOption
+        ? html` <p class="group-description">
+              ${this._backendLocalize(
+                `${path}.options.${currentOption.translation_key}.description`,
+              )}
+            </p>
+            <div class="group-selection">
+              ${currentOption.schema.map((item: Section | SelectorSchema) =>
+                this._generateItem(item, path, errors),
+              )}
+            </div>`
+        : nothing}
+    </ha-expansion-panel>`;
   }
 
   private _generateItem(
@@ -211,7 +219,7 @@ export class KNXConfigureEntity extends LitElement {
             <knx-sync-state-selector-row
               .hass=${this.hass}
               .key=${selectorPath}
-              .value=${this._getNestedValue(selectorPath) ?? true}
+              .value=${getNestedValue(this.config!, selectorPath) ?? true}
               .allowFalse=${selector.allow_false}
               .localizeFunction=${this._backendLocalize}
               @value-changed=${this._updateConfig}
@@ -234,6 +242,44 @@ export class KNXConfigureEntity extends LitElement {
         logger.error("Unknown selector type", selector);
         return nothing;
     }
+  }
+
+  private _groupHasGroupAddressInConfig(group: Section | GroupSelect, path: string) {
+    if (this.config === undefined) {
+      return false;
+    }
+    return group.schema.some((selector) => {
+      if (selector.type === "knx_group_address")
+        return this._hasGroupAddressInConfig(selector, path);
+      if (selector.type === "knx_section") {
+        const groupPath = path + "." + selector.name;
+        return this._groupHasGroupAddressInConfig(selector.schema, groupPath);
+      }
+      if (selector.type === "knx_group_select") {
+        const groupPath = path + "." + selector.name;
+        if (groupPath in this._selectedGroupSelectOptions) return true;
+        return selector.schema.some((option) =>
+          option.schema.some((schema) => {
+            if (schema.type === "knx_section")
+              return this._groupHasGroupAddressInConfig(schema, groupPath); // TODO: does this need to add section-name?
+            if (schema.type === "knx_group_address")
+              return this._hasGroupAddressInConfig(schema, groupPath);
+            return false;
+          }),
+        );
+      }
+      return false;
+    });
+  }
+
+  private _hasGroupAddressInConfig(ga_selector: GASelector, path: string) {
+    const gaData = getNestedValue(this.config!, path + "." + ga_selector.name);
+    if (!gaData) return false;
+    if (gaData.write !== undefined) return true;
+    if (gaData.state !== undefined) return true;
+    if (gaData.passive?.length) return true;
+
+    return false;
   }
 
   private _getRequiredKeys(options: (Section | SelectorSchema)[]): string[] {
@@ -281,52 +327,6 @@ export class KNXConfigureEntity extends LitElement {
       return 0; // Fallback to the first option if no match is found
     }
     return optionIndex;
-  }
-
-  private _generateGroupSelect(selector: GroupSelect, path: string, errors?: ErrorDescription[]) {
-    if (!(path in this._selectedGroupSelectOptions)) {
-      // if not set, get index of first option that has all required keys in config
-      // this is used to keep the selected option when editing
-      this._selectedGroupSelectOptions[path] = this._getOptionIndex(selector, path);
-    }
-    const optionIndex = this._selectedGroupSelectOptions[path];
-
-    const currentOption = selector.schema[optionIndex];
-    if (currentOption === undefined) {
-      logger.error("No option for index", optionIndex, selector.schema);
-    }
-
-    const controlSelectOptions: ControlSelectOption[] = selector.schema.map((option, index) => ({
-      value: index.toString(),
-      label: this._backendLocalize(`${path}.options.${option.translation_key}.label`),
-    }));
-
-    return html` <ha-expansion-panel
-      .header=${this._backendLocalize(`${path}.title`)}
-      .secondary=${this._backendLocalize(`${path}.description`)}
-      .expanded=${!selector.collapsible || this._groupHasGroupAddressInConfig(selector, path)}
-      .noCollapse=${!selector.collapsible}
-      .outlined=${!!selector.collapsible}
-    >
-      <ha-control-select
-        .options=${controlSelectOptions}
-        .value=${optionIndex.toString()}
-        .key=${path}
-        @value-changed=${this._updateGroupSelectOption}
-      ></ha-control-select>
-      ${currentOption
-        ? html` <p class="group-description">
-              ${this._backendLocalize(
-                `${path}.options.${currentOption.translation_key}.description`,
-              )}
-            </p>
-            <div class="group-selection">
-              ${currentOption.schema.map((item: Section | SelectorSchema) =>
-                this._generateItem(item, path, errors),
-              )}
-            </div>`
-        : nothing}
-    </ha-expansion-panel>`;
   }
 
   private _updateGroupSelectOption(ev: ValueChangedEvent<any>) {
