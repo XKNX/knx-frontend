@@ -1,6 +1,14 @@
 import type { Selector } from "@ha/data/selector";
 import type { DPT } from "../types/websocket";
 
+export type SelectorSchema =
+  | Section
+  | SectionFlat
+  | GroupSelect
+  | GASelector
+  | SyncStateSelector
+  | KnxHaSelector;
+
 interface BaseSection {
   name: string;
   collapsible?: boolean;
@@ -11,18 +19,21 @@ export interface Section extends BaseSection {
   schema: SelectorSchema[];
 }
 
+export interface SectionFlat extends BaseSection {
+  type: "knx_section_flat";
+}
+
 export interface GroupSelect extends BaseSection {
   type: "knx_group_select";
   schema: GroupSelectOption[];
 }
 
 export interface GroupSelectOption {
+  // no name key
   type: "knx_group_select_option";
   translation_key: string;
-  schema: (Section | SelectorSchema)[];
+  schema: SelectorSchema[];
 }
-
-export type SelectorSchema = GASelector | GroupSelect | SyncStateSelector | KnxHaSelector;
 
 export interface SyncStateSelector {
   type: "knx_sync_state";
@@ -45,6 +56,7 @@ export interface GASelector {
   type: "knx_group_address";
   label?: string;
   options: GASelectorOptions;
+  required?: boolean; // if true, the group address is required to be set else voluptuous_serialize omits this and adds `optional`
 }
 
 export interface GASelectorOptions {
