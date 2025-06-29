@@ -26,7 +26,13 @@ import { extractValidationErrors, getValidationError } from "../utils/validation
 import type { EntityData, ErrorDescription, SupportedPlatform } from "../types/entity_data";
 import type { KNX } from "../types/knx";
 import { platformConstants } from "../utils/common";
-import type { Section, SelectorSchema, GroupSelect, GASelector } from "../utils/schema";
+import type {
+  Section,
+  SelectorSchema,
+  SectionFlat,
+  GroupSelect,
+  GASelector,
+} from "../utils/schema";
 
 const logger = new KNXLogger("knx-configure-entity");
 
@@ -40,7 +46,7 @@ export class KNXConfigureEntity extends LitElement {
 
   @property({ type: Object }) public config?: EntityData;
 
-  @property({ type: Array }) public schema!: Section[];
+  @property({ type: Array }) public schema!: SelectorSchema[];
 
   @property({ attribute: false }) public validationErrors?: ErrorDescription[];
 
@@ -104,8 +110,8 @@ export class KNXConfigureEntity extends LitElement {
     `;
   }
 
-  generateRootGroups(schema: Section[], errors?: ErrorDescription[]) {
-    return html` ${schema.map((item: Section) => this._generateItem(item, "knx", errors))} `;
+  generateRootGroups(schema: SelectorSchema[], errors?: ErrorDescription[]) {
+    return this._generateItems(schema, "knx", errors);
   }
 
   private _generateSection(section: Section, path: string, errors?: ErrorDescription[]) {
@@ -118,22 +124,12 @@ export class KNXConfigureEntity extends LitElement {
       .outlined=${!!section.collapsible}
     >
       ${sectionBaseError
-        ? html` <ha-alert .alertType=${"error"} .title=${"Validation error"}
-            >${sectionBaseError.error_message}</ha-alert
-          >`
+        ? html` <ha-alert .alertType=${"error"} .title=${"Validation error"}>
+            ${sectionBaseError.error_message}
+          </ha-alert>`
         : nothing}
-      ${this._generateSectionItems(section.schema, path, errors)}
+      ${this._generateItems(section.schema, path, errors)}
     </ha-expansion-panel>`;
-  }
-
-  private _generateSectionItems(
-    schema: SelectorSchema[],
-    path: string,
-    errors?: ErrorDescription[],
-  ) {
-    return html`${schema.map((selector: SelectorSchema) =>
-      this._generateItem(selector, path, errors),
-    )}`;
   }
 
   private _generateGroupSelect(selector: GroupSelect, path: string, errors?: ErrorDescription[]) {
@@ -174,16 +170,71 @@ export class KNXConfigureEntity extends LitElement {
               )}
             </p>
             <div class="group-selection">
-              ${currentOption.schema.map((item: Section | SelectorSchema) =>
-                this._generateItem(item, path, errors),
-              )}
+              ${this._generateItems(currentOption.schema, path, errors)}
             </div>`
         : nothing}
     </ha-expansion-panel>`;
   }
 
+  private _generateItems(schema: SelectorSchema[], path: string, errors?: ErrorDescription[]) {
+    // wrap items into a `knx_section_flat` or forward to _generateItem - schema is flat, not nested
+
+    const result: TemplateResult[] = [];
+    let flatSection: SectionFlat | undefined;
+    let flatSectionSelectors: Exclude<SelectorSchema, SectionFlat>[] = [];
+
+    const writeFlatSection = () => {
+      if (flatSectionSelectors.length === 0 || flatSection === undefined) return; // no content to write
+      const flatSectionPath = path + "." + flatSection.name;
+      const expanded =
+        !flatSection.collapsible ||
+        flatSectionSelectors.some((selector) => {
+          if (selector.type === "knx_group_address") {
+            return this._hasGroupAddressInConfig(selector, path);
+          }
+          return false;
+        });
+      result.push(
+        html`<ha-expansion-panel
+          .header=${this._backendLocalize(`${flatSectionPath}.title`)}
+          .secondary=${this._backendLocalize(`${flatSectionPath}.description`)}
+          .expanded=${expanded}
+          .noCollapse=${!flatSection.collapsible}
+          .outlined=${!!flatSection.collapsible}
+        >
+          ${flatSectionSelectors.map((selector) => this._generateItem(selector, path, errors))}
+        </ha-expansion-panel> `,
+      );
+      flatSectionSelectors = [];
+    };
+
+    for (const selector of schema) {
+      if (selector.type === "knx_section_flat") {
+        // write previous flat-section content if exists
+        writeFlatSection();
+        flatSection = selector;
+        continue;
+      } else if (["knx_section", "knx_group_select", "knx_sync_state"].includes(selector.type)) {
+        // write previous content before new nested section
+        writeFlatSection();
+        flatSection = undefined;
+      }
+
+      if (flatSection === undefined) {
+        // no flat-section for this item, so render it directly
+        result.push(this._generateItem(selector, path, errors) as TemplateResult);
+      } else {
+        flatSectionSelectors.push(selector);
+      }
+    }
+    // render last flat-section content if exists
+    writeFlatSection();
+
+    return result;
+  }
+
   private _generateItem(
-    selector: Section | SelectorSchema,
+    selector: Exclude<SelectorSchema, SectionFlat>,
     path: string,
     errors?: ErrorDescription[],
   ) {
@@ -248,25 +299,18 @@ export class KNXConfigureEntity extends LitElement {
     if (this.config === undefined) {
       return false;
     }
+    if (group.type === "knx_group_select") {
+      // check if group select base path is in config
+      return !!this._getNestedValue(path);
+    }
     return group.schema.some((selector) => {
-      if (selector.type === "knx_group_address")
+      if (selector.type === "knx_group_address") {
         return this._hasGroupAddressInConfig(selector, path);
-      if (selector.type === "knx_section") {
-        const groupPath = path + "." + selector.name;
-        return this._groupHasGroupAddressInConfig(selector.schema, groupPath);
       }
-      if (selector.type === "knx_group_select") {
+      if (selector.type === "knx_section" || selector.type === "knx_group_select") {
+        // nested section or group select
         const groupPath = path + "." + selector.name;
-        if (groupPath in this._selectedGroupSelectOptions) return true;
-        return selector.schema.some((option) =>
-          option.schema.some((schema) => {
-            if (schema.type === "knx_section")
-              return this._groupHasGroupAddressInConfig(schema, groupPath); // TODO: does this need to add section-name?
-            if (schema.type === "knx_group_address")
-              return this._hasGroupAddressInConfig(schema, groupPath);
-            return false;
-          }),
-        );
+        return this._groupHasGroupAddressInConfig(selector, groupPath);
       }
       return false;
     });
@@ -282,18 +326,15 @@ export class KNXConfigureEntity extends LitElement {
     return false;
   }
 
-  private _getRequiredKeys(options: (Section | SelectorSchema)[]): string[] {
+  private _getRequiredKeys(options: SelectorSchema[]): string[] {
     const requiredOptions: string[] = [];
     options.forEach((option) => {
       if (option.type === "knx_section") {
-        // TODO: knx_section was transparent (flattend) - does this still work or do we need to traverse nested required keys in _getOptionIndex?
         requiredOptions.push(...this._getRequiredKeys(option.schema));
         return;
       }
-      if (option.type === "knx_group_address") {
-        if (option.options.write?.required || option.options.state?.required) {
-          requiredOptions.push(option.name);
-        }
+      if (option.type === "knx_group_address" && !!option.required) {
+        requiredOptions.push(option.name);
         return;
       }
       if (option.type === "ha_selector" && !option.optional) {
