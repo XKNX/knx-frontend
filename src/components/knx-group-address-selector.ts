@@ -17,6 +17,7 @@ import type { DragDropContext } from "../utils/drag-drop-context";
 import { dragDropContext } from "../utils/drag-drop-context";
 import { isValidDPT } from "../utils/dpt";
 import { getValidationError } from "../utils/validation";
+import { dptToString } from "../utils/format";
 import type { GASelectorOptions, DPTOption } from "../utils/schema";
 import type { KNX } from "../types/knx";
 import type { DPT, GroupAddress } from "../types/websocket";
@@ -240,6 +241,12 @@ export class GroupAddressSelector extends LitElement {
           @drop=${this._dropHandler}
         ></ha-selector-select>
       </div>
+      ${this.options.validDPTs
+        ? html`<p class="valid-dpts">
+            ${this._baseTranslation("valid_dpts")}:
+            ${this.options.validDPTs.map((dpt) => dptToString(dpt)).join(", ")}
+          </p>`
+        : nothing}
       ${this.options.dptSelect ? this._renderDptSelector() : nothing}
     `;
   }
@@ -416,6 +423,15 @@ export class GroupAddressSelector extends LitElement {
 
     .passive.expanded {
       height: auto;
+    }
+
+    .valid-dpts {
+      margin-top: 0;
+      margin-left: 16px;
+      margin-right: 64px;
+      color: var(--secondary-text-color);
+      font-size: var(--ha-font-size-s);
+      font-weight: var(--ha-font-weight-medium);
     }
 
     ha-selector-select {
