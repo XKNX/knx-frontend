@@ -2,19 +2,19 @@ import type { HomeAssistant } from "@ha/types";
 import type { ExtEntityRegistryEntry } from "@ha/data/entity_registry";
 import type { DeviceRegistryEntry } from "@ha/data/device_registry";
 import type {
-  KNXInfoData,
-  TelegramDict,
-  GroupMonitorInfoData,
-  KNXProjectResponse,
-} from "../types/websocket";
-import type {
   CreateEntityData,
   CreateEntityResult,
   UpdateEntityData,
   DeviceCreateData,
   SupportedPlatform,
 } from "../types/entity_data";
-import type { SelectorSchema } from "../utils/schema";
+import type { SelectorSchema } from "../types/schema";
+import type {
+  KNXInfoData,
+  TelegramDict,
+  GroupMonitorInfoData,
+  KNXProjectResponse,
+} from "../types/websocket";
 
 export const getKnxInfoData = (hass: HomeAssistant): Promise<KNXInfoData> =>
   hass.callWS({

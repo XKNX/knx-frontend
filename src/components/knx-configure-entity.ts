@@ -32,7 +32,7 @@ import type {
   SectionFlat,
   GroupSelect,
   GASelector,
-} from "../utils/schema";
+} from "../types/schema";
 
 const logger = new KNXLogger("knx-configure-entity");
 

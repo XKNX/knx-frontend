@@ -1,5 +1,5 @@
 import type { Selector } from "@ha/data/selector";
-import type { DPT } from "../types/websocket";
+import type { DPT } from "./websocket";
 
 export type SelectorSchema =
   | Section

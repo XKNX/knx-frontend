@@ -5,7 +5,7 @@ import "@ha/components/ha-formfield";
 import "@ha/components/ha-radio";
 import { fireEvent } from "@ha/common/dom/fire_event";
 
-import type { DPTOption } from "../utils/schema";
+import type { DPTOption } from "../types/schema";
 
 @customElement("knx-dpt-selector")
 class KnxDptSelector extends LitElement {

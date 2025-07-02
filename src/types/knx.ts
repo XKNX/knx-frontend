@@ -1,7 +1,7 @@
 import type { ConfigEntry } from "@ha/data/config_entries";
 import type { SupportedPlatform } from "./entity_data";
+import type { SelectorSchema } from "./schema";
 import type { KNXInfoData, KNXProjectResponse } from "./websocket";
-import type { SelectorSchema } from "../utils/schema";
 
 export interface KNX {
   language: string;
