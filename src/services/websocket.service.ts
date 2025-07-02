@@ -12,7 +12,9 @@ import type {
   CreateEntityResult,
   UpdateEntityData,
   DeviceCreateData,
+  SupportedPlatform,
 } from "../types/entity_data";
+import type { SelectorSchema } from "../utils/schema";
 
 export const getKnxInfoData = (hass: HomeAssistant): Promise<KNXInfoData> =>
   hass.callWS({
@@ -61,7 +63,10 @@ export const getKnxProject = (hass: HomeAssistant): Promise<KNXProjectResponse> 
 /**
  * Entity store calls.
  */
-export const getSchema = (hass: HomeAssistant, platform: string): Promise<Record<string, any>> =>
+export const getSchema = (
+  hass: HomeAssistant,
+  platform: string,
+): Promise<Record<SupportedPlatform, SelectorSchema[]>> =>
   hass.callWS({
     type: "knx/get_schema",
     platform,
