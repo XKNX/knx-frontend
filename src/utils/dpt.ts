@@ -1,6 +1,6 @@
 import memoize from "memoize-one";
 import type { DPT, KNXProject, CommunicationObject, GroupAddress } from "../types/websocket";
-import type { SelectorSchema, GroupSelectOption } from "./schema";
+import type { SelectorSchema, GroupSelectOption } from "../types/schema";
 
 export const equalDPT = (dpt1: DPT, dpt2: DPT): boolean =>
   dpt1.main === dpt2.main && dpt1.sub === dpt2.sub;

@@ -18,10 +18,10 @@ import { dragDropContext } from "../utils/drag-drop-context";
 import { isValidDPT } from "../utils/dpt";
 import { getValidationError } from "../utils/validation";
 import { dptToString } from "../utils/format";
-import type { GASelectorOptions, DPTOption } from "../utils/schema";
-import type { KNX } from "../types/knx";
-import type { DPT, GroupAddress } from "../types/websocket";
 import type { ErrorDescription, GASchema } from "../types/entity_data";
+import type { KNX } from "../types/knx";
+import type { GASelectorOptions, DPTOption } from "../types/schema";
+import type { DPT, GroupAddress } from "../types/websocket";
 
 const getAddressOptions = (
   validGroupAddresses: GroupAddress[],

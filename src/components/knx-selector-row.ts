@@ -10,8 +10,8 @@ import "@ha/components/ha-switch";
 
 import type { HomeAssistant } from "@ha/types";
 import { getValidationError } from "../utils/validation";
-import type { KnxHaSelector } from "../utils/schema";
 import type { ErrorDescription } from "../types/entity_data";
+import type { KnxHaSelector } from "../types/schema";
 
 @customElement("knx-selector-row")
 export class KnxSelectorRow extends LitElement {
