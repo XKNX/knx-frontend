@@ -1,6 +1,6 @@
 import memoize from "memoize-one";
 import type { DPT, KNXProject, CommunicationObject, GroupAddress } from "../types/websocket";
-import type { Section, SelectorSchema, GroupSelect, GroupSelectOption } from "./schema";
+import type { SelectorSchema, GroupSelectOption } from "./schema";
 
 export const equalDPT = (dpt1: DPT, dpt2: DPT): boolean =>
   dpt1.main === dpt2.main && dpt1.sub === dpt2.sub;
@@ -44,15 +44,13 @@ export const filterValidComObjects = (
   );
 };
 
-export const filterDupicateDPTs = (dpts: DPT[]): DPT[] =>
+export const filterDuplicateDPTs = (dpts: DPT[]): DPT[] =>
   dpts.reduce(
     (acc, dpt) => (acc.some((resultDpt) => equalDPT(resultDpt, dpt)) ? acc : acc.concat([dpt])),
     [] as DPT[],
   );
 
-function _validDPTsForSchema(
-  schema: (Section | SelectorSchema | GroupSelect | GroupSelectOption)[],
-): DPT[] {
+function _validDPTsForSchema(schema: (SelectorSchema | GroupSelectOption)[]): DPT[] {
   const result: DPT[] = [];
   schema.forEach((item) => {
     if (item.type === "knx_group_address") {
@@ -71,6 +69,6 @@ function _validDPTsForSchema(
   return result;
 }
 
-export const validDPTsForSchema = memoize((schema: Section[]): DPT[] =>
-  filterDupicateDPTs(_validDPTsForSchema(schema)),
+export const validDPTsForSchema = memoize((schema: SelectorSchema[]): DPT[] =>
+  filterDuplicateDPTs(_validDPTsForSchema(schema)),
 );

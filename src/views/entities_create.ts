@@ -217,7 +217,7 @@ export class KNXCreateEntity extends LitElement {
   }
 
   private _renderEntityConfig(platform: SupportedPlatform, create: boolean): TemplateResult {
-    const schema = this.knx.schema[platform];
+    const schema = this.knx.schema[platform]!;
 
     return html`<hass-subpage
       .hass=${this.hass}
