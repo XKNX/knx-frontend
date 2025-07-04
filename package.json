@@ -30,7 +30,8 @@
   "license": "MIT",
   "type": "module",
   "dependenciesOverride": {
-    "compare-versions": "6.1.0"
+    "compare-versions": "6.1.0",
+    "@lit/task": "1.0.2"
   },
   "resolutionsOverride": {},
   "dependencies": {
@@ -66,6 +67,7 @@
     "@lit-labs/virtualizer": "2.1.1",
     "@lit/context": "1.1.6",
     "@lit/reactive-element": "2.1.1",
+    "@lit/task": "1.0.2",
     "@material/chips": "=14.0.0-canary.53b3cad2f.0",
     "@material/data-table": "=14.0.0-canary.53b3cad2f.0",
     "@material/mwc-base": "0.27.0",
