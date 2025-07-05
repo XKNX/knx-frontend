@@ -274,8 +274,8 @@ export class KNXConfigureEntity extends LitElement {
               .allowFalse=${selector.allow_false}
               .localizeFunction=${this._backendLocalize}
               @value-changed=${this._updateConfig}
-            ></knx-sync-state-selector-row
-          ></ha-expansion-panel>
+            ></knx-sync-state-selector-row>
+          </ha-expansion-panel>
         `;
       case "ha_selector":
         return html`
