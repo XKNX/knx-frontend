@@ -337,7 +337,7 @@ export class KNXConfigureEntity extends LitElement {
         requiredOptions.push(option.name);
         return;
       }
-      if (option.type === "ha_selector" && !option.optional) {
+      if (option.type === "ha_selector" && !!option.required) {
         requiredOptions.push(option.name);
       }
       // optional "selector", nested "knx_group_select" and "knx_sync_state" are ignored
