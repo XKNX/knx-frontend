@@ -39,15 +39,15 @@ export class KnxSelectorRow extends LitElement {
 
   public connectedCallback() {
     super.connectedCallback();
-    this._disabled = !!this.selector.optional && this.value === undefined;
+    this._disabled = !this.selector.required && this.value === undefined;
     // apply default value if available or no value is set yet
     this._haSelectorValue = this.value ?? this.selector.default ?? null;
 
     const booleanSelector = "boolean" in this.selector.selector;
     const possibleInlineSelector = booleanSelector || "number" in this.selector.selector;
-    this._inlineSelector = !this.selector.optional && possibleInlineSelector;
+    this._inlineSelector = !!this.selector.required && possibleInlineSelector;
     // optional boolean should not show as 2 switches (one for optional and one for value)
-    this._optionalBooleanSelector = !!this.selector.optional && booleanSelector;
+    this._optionalBooleanSelector = !this.selector.required && booleanSelector;
     if (this._optionalBooleanSelector) {
       // either true or the key will be unset (via this._disabled)
       this._haSelectorValue = true;
@@ -75,16 +75,18 @@ export class KnxSelectorRow extends LitElement {
           </p>
           <p class="description">${this.localizeFunction(`${this.key}.description`)}</p>
         </div>
-        ${this.selector.optional // TODO: && (this.selector.default !== undefined)  // since default is applied in schema anyway? test this!
+        ${!this.selector.required // TODO: && (this.selector.default !== undefined)  // since default is applied in schema anyway? test this!
           ? html`<ha-selector
               class="optional-switch"
               .selector=${{ boolean: {} }}
               .value=${!this._disabled}
               @value-changed=${this._toggleDisabled}
             ></ha-selector>`
-          : this._inlineSelector
-            ? haSelector
-            : nothing}
+          : nothing}
+        ${
+          // inline selector is never optional, so optional-switch and this can't be shown together
+          this._inlineSelector ? haSelector : nothing
+        }
       </div>
       ${this._inlineSelector ? nothing : haSelector}
       ${invalid ? html`<p class="invalid-message">${invalid.error_message}</p>` : nothing}

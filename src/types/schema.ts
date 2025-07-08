@@ -45,7 +45,7 @@ export interface KnxHaSelector {
   type: "ha_selector";
   name: string;
   default?: any;
-  optional?: boolean; // for optional boolean selectors, there shall be no default value (can't get applied)
+  required?: boolean; // for optional boolean selectors, there shall be no default value (can't get applied)
   selector: Selector;
   label: string; // TODO: label and helper not present
   helper?: string;
