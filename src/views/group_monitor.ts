@@ -1301,7 +1301,7 @@ export class KNXGroupMonitor extends LitElement {
                 ></mwc-button>
               </ha-alert>
             `
-          : ""}
+          : nothing}
         ${this._isPaused
           ? html`
               <ha-alert
