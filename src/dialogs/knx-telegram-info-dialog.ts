@@ -81,7 +81,12 @@ class TelegramInfoDialog extends LitElement {
     const directionClass = isOutgoing ? "outgoing" : "incoming";
 
     return html`
-      <ha-dialog open @closed=${this.closeDialog} .heading=${"Header"}>
+      <!-- 
+        The .heading property is required for the header slot to be rendered,
+        even though we override it with our custom knx-dialog-header component.
+        The value is not displayed but must be truthy for the slot to work.
+      -->
+      <ha-dialog open @closed=${this.closeDialog} .heading=${" "}>
         <knx-dialog-header slot="heading" .showBorder=${true}>
           <ha-icon-button
             slot="navigationIcon"
