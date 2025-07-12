@@ -63,3 +63,46 @@ export const dptToString = (dpt: DPT | null): string => {
   if (dpt == null) return "";
   return dpt.main + (dpt.sub ? "." + dpt.sub.toString().padStart(3, "0") : "");
 };
+
+/**
+ * Format a Date object to a time string with milliseconds.
+ */
+export const formatTimeWithMilliseconds = (date: Date): string =>
+  date.toLocaleTimeString(undefined, {
+    hour12: false,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    fractionalSecondDigits: 3,
+  });
+
+/**
+ * Format a Date object to a date and time string with milliseconds.
+ */
+export const formatDateTimeWithMilliseconds = (date: Date): string =>
+  date.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }) +
+  ", " +
+  date.toLocaleTimeString(undefined, {
+    hour12: false,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    fractionalSecondDigits: 3,
+  });
+
+/**
+ * Format a Date object representing a time offset to MM:SS.MMM format.
+ *
+ * @param offset - The Date object containing the time difference
+ * @returns Formatted string in MM:SS.MMM format
+ */
+export const formatOffset = (offset: Date): string => {
+  const minutes = offset.getUTCMinutes().toString().padStart(2, "0");
+  const seconds = offset.getUTCSeconds().toString().padStart(2, "0");
+  const milliseconds = offset.getUTCMilliseconds().toString().padStart(3, "0");
+  return `${minutes}:${seconds}.${milliseconds}`;
+};
