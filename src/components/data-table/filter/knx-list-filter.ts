@@ -632,7 +632,7 @@ export class KnxListFilter<T = any> extends LitElement {
             <div class="options-list" tabindex="0">
               ${repeat(
                 options,
-                (opt) => opt.idField + opt.primaryField + opt.secondaryField,
+                (opt) => opt.idField,
                 (opt) => this._renderOptionItem(opt),
               )}
             </div>
