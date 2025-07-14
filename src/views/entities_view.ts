@@ -4,6 +4,7 @@ import {
   mdiInformationOffOutline,
   mdiPlus,
   mdiPencilOutline,
+  mdiMathLog,
 } from "@mdi/js";
 import type { TemplateResult } from "lit";
 import { LitElement, html, css } from "lit";
@@ -28,7 +29,7 @@ import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/sho
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import type { HomeAssistant, Route } from "@ha/types";
 
-import { getEntityEntries, deleteEntity } from "../services/websocket.service";
+import { getEntityEntries, deleteEntity, getEntityConfig } from "../services/websocket.service";
 import type { KNX } from "../types/knx";
 import { KNXLogger } from "../tools/knx-logger";
 
@@ -95,7 +96,7 @@ export class KNXEntitiesView extends LitElement {
 
   private _columns = memoize((_language): DataTableColumnContainer<EntityRow> => {
     const iconWidth = "56px";
-    const actionWidth = "176px"; // 48px*3 + 16px*2 padding
+    const actionWidth = "224px"; // 48px*4 + 16px*3 padding
 
     return {
       icon: {
@@ -171,6 +172,12 @@ export class KNXEntitiesView extends LitElement {
             @click=${this._entityEdit}
           ></ha-icon-button>
           <ha-icon-button
+            .label=${this.knx.localize("entities_view_monitor_telegrams")}
+            .path=${mdiMathLog}
+            .entityEntry=${entry}
+            @click=${this._showEntityTelegrams}
+          ></ha-icon-button>
+          <ha-icon-button
             .label=${this.hass.localize("ui.common.delete")}
             .path=${mdiDelete}
             .entityEntry=${entry}
@@ -183,21 +190,60 @@ export class KNXEntitiesView extends LitElement {
 
   private _entityEdit = (ev: Event) => {
     ev.stopPropagation();
-    const entry = ev.target.entityEntry as EntityRow;
+    const entry = (ev.target as any).entityEntry as EntityRow;
     navigate("/knx/entities/edit/" + entry.entity_id);
   };
 
   private _entityMoreInfo = (ev: Event) => {
     ev.stopPropagation();
-    const entry = ev.target.entityEntry as EntityRow;
+    const entry = (ev.target as any).entityEntry as EntityRow;
     fireEvent(mainWindow.document.querySelector("home-assistant")!, "hass-more-info", {
       entityId: entry.entity_id,
     });
   };
 
+  private _showEntityTelegrams = async (ev: Event) => {
+    ev.stopPropagation();
+    const entry = (ev.target as any)?.entityEntry as EntityRow;
+
+    if (!entry) {
+      logger.error("No entity entry found in event target");
+      navigate("/knx/group_monitor");
+      return;
+    }
+
+    try {
+      const entityConfig = await getEntityConfig(this.hass, entry.entity_id);
+      const knxData = entityConfig.data.knx;
+
+      // Extract all group addresses from KNX entity configuration
+      const groupAddresses = Object.values(knxData)
+        .flatMap((config) => {
+          if (typeof config !== "object" || config === null) return [];
+          const { write, state: stateAddress, passive } = config as any;
+          return [write, stateAddress, ...(Array.isArray(passive) ? passive : [])];
+        })
+        .filter((address): address is string => Boolean(address));
+
+      // Navigate to group monitor with entity-specific filter
+      const uniqueAddresses = [...new Set(groupAddresses)];
+      if (uniqueAddresses.length > 0) {
+        const destinationFilter = uniqueAddresses.join(",");
+        navigate(`/knx/group_monitor?destination=${encodeURIComponent(destinationFilter)}`);
+      } else {
+        logger.warn("No group addresses found for entity", entry.entity_id);
+        navigate("/knx/group_monitor");
+      }
+    } catch (err) {
+      logger.error("Failed to load entity configuration for monitor", entry.entity_id, err);
+      // Fallback to unfiltered monitor on error
+      navigate("/knx/group_monitor");
+    }
+  };
+
   private _entityDelete = (ev: Event) => {
     ev.stopPropagation();
-    const entry = ev.target.entityEntry as EntityRow;
+    const entry = (ev.target as any).entityEntry as EntityRow;
     showConfirmationDialog(this, {
       text: `${this.hass.localize("ui.common.delete")} ${entry.entity_id}?`,
     }).then((confirmed) => {

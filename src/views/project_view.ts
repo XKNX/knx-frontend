@@ -1,4 +1,4 @@
-import { mdiFilterVariant, mdiPlus } from "@mdi/js";
+import { mdiFilterVariant, mdiPlus, mdiMathLog } from "@mdi/js";
 import type { TemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
@@ -170,12 +170,22 @@ export class KNXProjectView extends LitElement {
     };
   });
 
-  private _groupAddressMenu(groupAddress: GroupAddress): TemplateResult | typeof nothing {
+  private _groupAddressMenu(groupAddress: GroupAddress): TemplateResult {
     const items: IconOverflowMenuItem[] = [];
+
+    // Add menu item to view telegrams for this group address
+    items.push({
+      path: mdiMathLog,
+      label: this.knx.localize("project_view_menu_view_telegrams"),
+      action: () => {
+        navigate(`/knx/group_monitor?destination=${groupAddress.address}`);
+      },
+    });
+
     if (groupAddress.dpt?.main === 1) {
       items.push({
         path: mdiPlus,
-        label: "Create binary sensor",
+        label: this.knx.localize("project_view_menu_create_binary_sensor"),
         action: () => {
           navigate(
             "/knx/entities/create/binary_sensor?knx.ga_sensor.state=" + groupAddress.address,
@@ -184,11 +194,9 @@ export class KNXProjectView extends LitElement {
       });
     }
 
-    return items.length
-      ? html`
-          <ha-icon-overflow-menu .hass=${this.hass} narrow .items=${items}> </ha-icon-overflow-menu>
-        `
-      : nothing;
+    return html`
+      <ha-icon-overflow-menu .hass=${this.hass} narrow .items=${items}> </ha-icon-overflow-menu>
+    `;
   }
 
   private _getRows(visibleGroupAddresses: string[]): GroupAddress[] {
