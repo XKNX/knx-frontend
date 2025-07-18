@@ -237,8 +237,6 @@ export class KNXGroupMonitor extends LitElement {
    * Sets filters from URL parameters whenever the route changes
    */
   public willUpdate(changedProperties: Map<string | number | symbol, unknown>): void {
-    super.willUpdate(changedProperties);
-
     // Initialize filters from URL when route changes
     if (changedProperties.has("route") && this.route) {
       this._setFiltersFromUrl();
