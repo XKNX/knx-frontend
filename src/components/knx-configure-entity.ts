@@ -20,6 +20,7 @@ import "./knx-selector-row";
 import "./knx-sync-state-selector-row";
 import { renderConfigureEntityCard } from "./knx-configure-entity-options";
 import { KNXLogger } from "../tools/knx-logger";
+import { setNestedValue, getNestedValue } from "../utils/config-helper";
 import { extractValidationErrors, getValidationError } from "../utils/validation";
 import type { EntityData, ErrorDescription } from "../types/entity_data";
 import type { KNX } from "../types/knx";
@@ -57,47 +58,10 @@ export class KNXConfigureEntity extends LitElement {
       const urlParams = new URLSearchParams(mainWindow.location.search);
       const url_suggestions = Object.fromEntries(urlParams.entries());
       for (const [path, value] of Object.entries(url_suggestions)) {
-        this._setNestedValue(path, value);
+        setNestedValue(this.config!, path, value, logger);
         fireEvent(this, "knx-entity-configuration-changed", this.config);
       }
     }
-  }
-
-  private _setNestedValue(path: string, value: any) {
-    const keys = path.split(".");
-    const keysTail = keys.pop();
-    if (!keysTail) return;
-    let current = this.config!;
-    for (const key of keys) {
-      if (!(key in current)) {
-        if (value === undefined) return; // don't create to remove
-        current[key] = {};
-      }
-      current = current[key];
-    }
-    if (value === undefined) {
-      logger.debug(`remove ${keysTail} at ${path}`);
-      delete current[keysTail];
-      if (!Object.keys(current).length && keys.length > 0) {
-        // when no other keys in this, recursively remove empty objects
-        this._setNestedValue(keys.join("."), undefined);
-      }
-    } else {
-      logger.debug(`update ${keysTail} at ${path} with value`, value);
-      current[keysTail] = value;
-    }
-  }
-
-  private _getNestedValue(path: string) {
-    const keys = path.split(".");
-    let current = this.config!;
-    for (const key of keys) {
-      if (!(key in current)) {
-        return undefined;
-      }
-      current = current[key];
-    }
-    return current;
   }
 
   protected render(): TemplateResult {
@@ -174,7 +138,7 @@ export class KNXConfigureEntity extends LitElement {
   }
 
   private _hasGroupAddressInConfig(ga_selector: GASelector, path: string) {
-    const gaData = this._getNestedValue(path + "." + ga_selector.name);
+    const gaData = getNestedValue(this.config!, path + "." + ga_selector.name);
     if (!gaData) return false;
     if (gaData.write !== undefined) return true;
     if (gaData.state !== undefined) return true;
@@ -199,7 +163,7 @@ export class KNXConfigureEntity extends LitElement {
             .knx=${this.knx}
             .key=${selectorPath}
             .label=${selector.label}
-            .config=${this._getNestedValue(selectorPath) ?? {}}
+            .config=${getNestedValue(this.config!, selectorPath) ?? {}}
             .options=${selector.options}
             .validationErrors=${extractValidationErrors(errors, selector.name)}
             @value-changed=${this._updateConfig}
@@ -211,7 +175,7 @@ export class KNXConfigureEntity extends LitElement {
             .hass=${this.hass}
             .key=${selectorPath}
             .selector=${selector}
-            .value=${this._getNestedValue(selectorPath)}
+            .value=${getNestedValue(this.config!, selectorPath)}
             @value-changed=${this._updateConfig}
           ></knx-selector-row>
         `;
@@ -220,7 +184,7 @@ export class KNXConfigureEntity extends LitElement {
           <knx-sync-state-selector-row
             .hass=${this.hass}
             .key=${selectorPath}
-            .value=${this._getNestedValue(selectorPath) ?? true}
+            .value=${getNestedValue(this.config!, selectorPath) ?? true}
             .noneValid=${false}
             @value-changed=${this._updateConfig}
           ></knx-sync-state-selector-row>
@@ -257,7 +221,7 @@ export class KNXConfigureEntity extends LitElement {
 
   private _getOptionIndex(selector: GroupSelect, groupPath: string): number {
     // check if sub-schema is in this.config
-    const configFragment = this._getNestedValue(groupPath);
+    const configFragment = getNestedValue(this.config!, groupPath);
     if (configFragment === undefined) {
       logger.debug("No config found for group select", groupPath);
       return 0; // Fallback to first option if key is not in config
@@ -327,7 +291,7 @@ export class KNXConfigureEntity extends LitElement {
     const key = ev.target.key;
     const selectedIndex = parseInt(ev.detail.value, 10);
     // clear data of key when changing option
-    this._setNestedValue(key, undefined);
+    setNestedValue(this.config!, key, undefined, logger);
     // keep index in state
     // TODO: Optional: while editing, keep config data of non-active option in map (FE only)
     //       to be able to peek other options and go back without loosing config
@@ -340,7 +304,7 @@ export class KNXConfigureEntity extends LitElement {
     ev.stopPropagation();
     const key = ev.target.key;
     const value = ev.detail.value;
-    this._setNestedValue(key, value);
+    setNestedValue(this.config!, key, value, logger);
     fireEvent(this, "knx-entity-configuration-changed", this.config);
     this.requestUpdate();
   }
