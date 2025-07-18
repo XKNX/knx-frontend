@@ -50,6 +50,9 @@
   "project_view_table_description": "Beschreibung",
   "project_view_table_dpt": "DPT",
   "project_view_table_updated": "Aktualisiert",
+  "project_view_menu_view_telegrams": "Telegramme anzeigen",
+  "project_view_menu_create_binary_sensor": "Binärsensor erstellen",
+  "entities_view_monitor_telegrams": "Telegramme überwachen",
   "Incoming": "Eingehend",
   "Outgoing": "Ausgehend",
 
