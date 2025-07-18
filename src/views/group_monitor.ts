@@ -28,7 +28,7 @@ import { mdiDeleteSweep, mdiFastForward, mdiPause, mdiRefresh } from "@mdi/js";
 import { formatTimeWithMilliseconds, formatOffset } from "utils/format";
 import { subscribeKnxTelegrams, getGroupMonitorInfo } from "../services/websocket.service";
 import { KNXLogger } from "../tools/knx-logger";
-import { TelegramRow } from "../types/telegram-row";
+import { TelegramRow, type TelegramRowKeys } from "../types/telegram-row";
 import type { ToggleFilterEvent } from "../components/data-table/cell/knx-table-cell-filterable";
 
 import type { KNX } from "../types/knx";
@@ -192,7 +192,7 @@ export class KNXGroupMonitor extends LitElement {
           return telegram.cachedRow;
         });
 
-      if (sortColumn === "timestamp") {
+      if (sortColumn === ("timestampIso" as TelegramRowKeys)) {
         this._calculateRelativeTimeOffsets(rows);
       }
 
@@ -810,7 +810,7 @@ export class KNXGroupMonitor extends LitElement {
       _language: string,
     ): DataTableColumnContainer<TelegramRow> => ({
       // Timestamp column with relative time offsets when sorting by time
-      timestamp: {
+      ["timestampIso" as TelegramRowKeys]: {
         showNarrow: false,
         filterable: true,
         sortable: true,
@@ -821,7 +821,7 @@ export class KNXGroupMonitor extends LitElement {
         template: (row) => html`
           <knx-table-cell>
             <div class="primary" slot="primary">${formatTimeWithMilliseconds(row.timestamp)}</div>
-            ${row.offset.getTime() >= 0 && this._sortColumn === "timestamp"
+            ${row.offset.getTime() >= 0 && this._sortColumn === ("timestampIso" as TelegramRowKeys)
               ? html`
                   <div class="secondary" slot="secondary">
                     <span style="margin-right: 2px;">+</span>

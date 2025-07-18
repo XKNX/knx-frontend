@@ -95,6 +95,38 @@ export const formatDateTimeWithMilliseconds = (date: Date): string =>
   });
 
 /**
+ * Format an ISO timestamp string to a date and time string with microsecond precision.
+ *
+ * @param timestampIso - The ISO timestamp string containing microsecond precision
+ * @returns Formatted date and time string with microsecond precision
+ */
+export const formatIsoTimestampWithMicroseconds = (timestampIso: string): string => {
+  // Create Date object from ISO timestamp
+  const date = new Date(timestampIso);
+
+  // Extract microseconds from ISO timestamp (format: YYYY-MM-DDTHH:MM:SS.ffffff)
+  const microsecondMatch = timestampIso.match(/\.(\d{6})/);
+  const microseconds = microsecondMatch ? microsecondMatch[1] : "000000";
+
+  return (
+    date.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }) +
+    ", " +
+    date.toLocaleTimeString(undefined, {
+      hour12: false,
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }) +
+    "." +
+    microseconds
+  );
+};
+
+/**
  * Format a Date object representing a time offset to MM:SS.MMM format.
  *
  * @param offset - The Date object containing the time difference
