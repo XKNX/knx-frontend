@@ -23,7 +23,12 @@ import type { KNXLogger } from "../tools/knx-logger";
  * // Result: { knx: { ga_switch: "1/1/1" } } (removes ga_color and empty color object)
  * ```
  */
-export function setNestedValue(config: object, path: string, value: any, logger?: KNXLogger) {
+export function setNestedValue(
+  config: Record<string, any>,
+  path: string,
+  value: any,
+  logger?: KNXLogger,
+) {
   const keys = path.split(".");
   const keysTail = keys.pop();
   if (!keysTail) return;
@@ -66,7 +71,7 @@ export function setNestedValue(config: object, path: string, value: any, logger?
  * // Returns: undefined
  * ```
  */
-export function getNestedValue(config: object, path: string): any {
+export function getNestedValue(config: Record<string, any>, path: string): any {
   const keys = path.split(".");
   let current = config;
   for (const key of keys) {
