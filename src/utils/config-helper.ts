@@ -16,7 +16,7 @@ import type { KNXLogger } from "../tools/knx-logger";
  * setNestedValue(config, "knx.color.ga_color", "1/2/3");
  * // Result: { knx: { color: { ga_color: "1/2/3" } } }
  *
- * setNestedValue(config, "knx.ga_seitch", "1/1/1");
+ * setNestedValue(config, "knx.ga_switch", "1/1/1");
  * // Result: { knx: { color: { ga_color: "1/2/3" }, ga_switch: "1/1/1" } }
  *
  * setNestedValue(config, "knx.color.ga_color", undefined);
