@@ -11,6 +11,12 @@ import type { TelegramDict } from "./websocket";
 import { TelegramDictFormatter } from "../utils/format";
 
 /**
+ * Type for TelegramRow property keys
+ * Provides type safety when referencing TelegramRow properties
+ */
+export type TelegramRowKeys = keyof TelegramRow;
+
+/**
  * KNX telegram row model implementing the DataTableRowData interface
  * Transforms raw telegram data into a structured format for table display
  */
@@ -28,8 +34,14 @@ export class TelegramRow implements DataTableRowData {
   id: string;
 
   /**
+   * Original timestamp string as received from the telegram
+   * Preserves the microsecond precision that Date objects do not support
+   */
+  timestampIso: string;
+
+  /**
    * Parsed timestamp when the telegram was captured
-   * Converted from string representation to Date object for processing
+   * Converted from ISO 8601 string to Date object for processing
    */
   timestamp: Date;
 
@@ -184,7 +196,7 @@ export class TelegramRow implements DataTableRowData {
 
     /**
      * Generate unique identifier from timestamp and address components
-     * Combines multiple fields to minimize collision risk in large datasets
+     * Combines multiple fields to minimize collision risk
      * Format: "timestamp_source_destination" (sanitized)
      */
     this.id = [
@@ -196,6 +208,9 @@ export class TelegramRow implements DataTableRowData {
     // ============================================================================
     // Timestamp Processing
     // ============================================================================
+
+    /** Store original timestamp string for reference */
+    this.timestampIso = telegram.timestamp;
 
     /** Convert timestamp string to Date object for proper date/time handling */
     this.timestamp = new Date(telegram.timestamp);

@@ -8,7 +8,7 @@ import "@ha/components/ha-svg-icon";
 import "../components/knx-dialog-header";
 import { mdiArrowLeft, mdiArrowRight, mdiClose } from "@mdi/js";
 
-import { formatDateTimeWithMilliseconds } from "utils/format";
+import { formatDateTimeWithMilliseconds, formatIsoTimestampWithMicroseconds } from "utils/format";
 import type { KNX } from "../types/knx";
 import type { TelegramRow } from "../types/telegram-row";
 import "@ha/components/ha-relative-time";
@@ -99,7 +99,10 @@ class TelegramInfoDialog extends LitElement {
             ${this.knx.localize("knx_telegram_info_dialog_telegram")}
           </div>
           <div slot="subtitle">
-            ${formatDateTimeWithMilliseconds(this.telegram.timestamp) + " "} (<ha-relative-time
+            <span title=${formatIsoTimestampWithMicroseconds(this.telegram.timestampIso)}>
+              ${formatDateTimeWithMilliseconds(this.telegram.timestamp) + " "}
+            </span>
+            (<ha-relative-time
               .hass=${this.hass}
               .datetime=${this.telegram.timestamp}
               .capitalize=${false}
