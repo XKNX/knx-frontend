@@ -30,8 +30,8 @@ export function setNestedValue(
   logger?: KNXLogger,
 ) {
   const keys = path.split(".");
-  const keysTail = keys.pop();
-  if (!keysTail) return;
+  const targetKey = keys.pop();
+  if (!targetKey) return;
   let current = config;
   for (const key of keys) {
     if (!(key in current)) {
@@ -41,15 +41,15 @@ export function setNestedValue(
     current = current[key];
   }
   if (value === undefined) {
-    if (logger) logger.debug(`remove ${keysTail} at ${path}`);
-    delete current[keysTail];
+    if (logger) logger.debug(`remove ${targetKey} at ${path}`);
+    delete current[targetKey];
     if (!Object.keys(current).length && keys.length > 0) {
       // when no other keys in this, recursively remove empty objects
       setNestedValue(config, keys.join("."), undefined);
     }
   } else {
-    if (logger) logger.debug(`update ${keysTail} at ${path} with value`, value);
-    current[keysTail] = value;
+    if (logger) logger.debug(`update ${targetKey} at ${path} with value`, value);
+    current[targetKey] = value;
   }
 }
 
