@@ -762,7 +762,8 @@ export class KNXGroupMonitor extends LitElement {
       : `${this.route.prefix}${this.route.path}`;
 
     // Update URL without triggering navigation
-    navigate(newPath, { replace: true });
+    // Decode URL for better readability
+    navigate(decodeURIComponent(newPath), { replace: true });
   }
 
   /** Sets filters from URL query parameters */
