@@ -3,6 +3,7 @@ import type { TemplateResult, PropertyValues } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state, query } from "lit/decorators";
 import { ContextProvider } from "@lit/context";
+import { Task } from "@lit/task";
 
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-subpage";
@@ -26,14 +27,18 @@ import {
   getEntityConfig,
   validateEntity,
 } from "services/websocket.service";
-import type { EntityData, ErrorDescription, CreateEntityResult } from "types/entity_data";
+import type {
+  EntityData,
+  ErrorDescription,
+  CreateEntityResult,
+  SupportedPlatform,
+} from "types/entity_data";
 
-import { platformConstants } from "../utils/common";
+import { platformConstants, SUPPORTED_PLATFORMS } from "../utils/common";
 import { validDPTsForSchema } from "../utils/dpt";
 import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
 import { KNXLogger } from "../tools/knx-logger";
 import type { KNX } from "../types/knx";
-import type { PlatformInfo } from "../utils/common";
 
 const logger = new KNXLogger("knx-create-entity");
 
@@ -51,8 +56,6 @@ export class KNXCreateEntity extends LitElement {
 
   @state() private _config?: EntityData;
 
-  @state() private _loading = false;
-
   @state() private _validationErrors?: ErrorDescription[];
 
   @state() private _validationBaseError?: string;
@@ -61,9 +64,28 @@ export class KNXCreateEntity extends LitElement {
 
   private _intent?: "create" | "edit";
 
+  // setting entityPlatform or entityId will trigger the load tasks and a rerender
   private entityPlatform?: string;
 
   private entityId?: string; // only used for "edit" intent
+
+  private _schemaLoadTask = new Task(this, {
+    args: () => [this.entityPlatform] as const,
+    task: async ([entityPlatform]) => {
+      if (!entityPlatform) return;
+      await this.knx.loadSchema(entityPlatform);
+    },
+  });
+
+  private _entityConfigLoadTask = new Task(this, {
+    args: () => [this.entityId] as const,
+    task: async ([entityId]) => {
+      if (!entityId) return;
+      const { platform, data } = await getEntityConfig(this.hass, entityId);
+      this.entityPlatform = platform;
+      this._config = data;
+    },
+  });
 
   private _dragDropContextProvider = new ContextProvider(this, {
     context: dragDropContext,
@@ -91,41 +113,30 @@ export class KNXCreateEntity extends LitElement {
         return;
       }
 
+      this._config = undefined; // clear config - eg. when `back` was used
+      this._validationErrors = undefined; // clear validation errors - eg. when `back` was used
+      this._validationBaseError = undefined;
+
       if (intent === "create") {
         // knx/entities/create -> path: ""; knx/entities/create/ -> path: "/"
         // knx/entities/create/light -> path: "/light"
-        const entityPlatform = this.route.path.split("/")[1];
-        this.entityPlatform = entityPlatform;
-        this._config = undefined; // clear config - eg. when `back` was used
-        this._validationErrors = undefined; // clear validation errors - eg. when `back` was used
-        this._validationBaseError = undefined;
-        this._loading = false;
+        this.entityId = undefined; // clear entityId for create intent
+        this.entityPlatform = this.route.path.split("/")[1];
       } else if (intent === "edit") {
         // knx/entities/edit/light.living_room -> path: "/light.living_room"
         this.entityId = this.route.path.split("/")[1];
-        this._loading = true;
-        getEntityConfig(this.hass, this.entityId)
-          .then((entityConfigData) => {
-            const { platform: entityPlatform, data: config } = entityConfigData;
-            this.entityPlatform = entityPlatform;
-            this._config = config;
-          })
-          .catch((err) => {
-            logger.warn("Fetching entity config failed.", err);
-            this.entityPlatform = undefined; // used as error marker
-          })
-          .finally(() => {
-            this._loading = false;
-          });
+        // this.entityPlatform will be set from load task result - triggering the next load task
       }
     }
   }
 
   protected render(): TemplateResult {
-    if (!this.hass || !this.knx.project || !this._intent || this._loading) {
+    if (!this.hass || !this.knx.project || !this._intent) {
       return html` <hass-loading-screen></hass-loading-screen> `;
     }
-    if (this._intent === "edit") return this._renderEdit();
+    if (this._intent === "edit") {
+      return this._renderEdit();
+    }
     return this._renderCreate();
   }
 
@@ -133,36 +144,73 @@ export class KNXCreateEntity extends LitElement {
     if (!this.entityPlatform) {
       return this._renderTypeSelection();
     }
-    const platformInfo = platformConstants[this.entityPlatform];
-    if (!platformInfo) {
+    if (!SUPPORTED_PLATFORMS.includes(this.entityPlatform)) {
       logger.error("Unknown platform", this.entityPlatform);
       return this._renderTypeSelection();
     }
-    return this._renderEntityConfig(platformInfo, true);
+    return this._renderLoadSchema();
   }
 
   private _renderEdit(): TemplateResult {
-    if (!this.entityPlatform) {
-      return this._renderNotFound();
-    }
-    const platformInfo = platformConstants[this.entityPlatform];
-    if (!platformInfo) {
-      logger.error("Unknown platform", this.entityPlatform);
-      return this._renderNotFound();
-    }
-    return this._renderEntityConfig(platformInfo, false);
+    return this._entityConfigLoadTask.render({
+      initial: () => html`
+        <hass-loading-screen .message=${"Waiting to fetch entity data."}></hass-loading-screen>
+      `,
+      pending: () => html`
+        <hass-loading-screen .message=${"Loading entity data."}></hass-loading-screen>
+      `,
+      error: (err) =>
+        this._renderError(
+          html`${this.hass.localize("ui.card.common.entity_not_found")}:
+            <code>${this.entityId}</code>`,
+          err,
+        ),
+      complete: () => {
+        if (!this.entityPlatform) {
+          return this._renderError(
+            html`${this.hass.localize("ui.card.common.entity_not_found")}:
+              <code>${this.entityId}</code>`,
+            new Error("Entity platform unknown"),
+          );
+        }
+        if (!SUPPORTED_PLATFORMS.includes(this.entityPlatform)) {
+          return this._renderError(
+            "Unsupported platform",
+            "Unsupported platform: " + this.entityPlatform,
+          );
+        }
+        return this._renderLoadSchema();
+      },
+    });
   }
 
-  private _renderNotFound(): TemplateResult {
+  private _renderLoadSchema(): TemplateResult {
+    return this._schemaLoadTask.render({
+      initial: () => html`
+        <hass-loading-screen .message=${"Waiting to fetch schema."}></hass-loading-screen>
+      `,
+      pending: () => html`
+        <hass-loading-screen .message=${"Loading entity platform schema."}></hass-loading-screen>
+      `,
+      error: (err) => this._renderError("Error loading schema", err),
+      complete: () => this._renderEntityConfig(this.entityPlatform),
+    });
+  }
+
+  private _renderError(
+    errorContent: TemplateResult | string,
+    error?: Error | string,
+  ): TemplateResult {
+    logger.error("Error in create/edit entity", error);
     return html`
       <hass-subpage
         .hass=${this.hass}
         .narrow=${this.narrow!}
         .back-path=${this.backPath}
-        .header=${"Edit entity"}
+        .header=${this.hass.localize("ui.panel.config.integrations.config_flow.error")}
       >
         <div class="content">
-          <ha-alert alert-type="error">Entity not found: <code>${this.entityId}</code></ha-alert>
+          <ha-alert alert-type="error"> ${errorContent} </ha-alert>
         </div>
       </hass-subpage>
     `;
@@ -174,23 +222,32 @@ export class KNXCreateEntity extends LitElement {
         .hass=${this.hass}
         .narrow=${this.narrow!}
         .back-path=${this.backPath}
-        .header=${"Select entity type"}
+        .header=${this.hass.localize(
+          "component.knx.config_panel.entities.create.type_selection.title",
+        )}
       >
         <div class="type-selection">
-          <ha-card outlined .header=${"Create KNX entity"}>
+          <ha-card
+            outlined
+            .header=${this.hass.localize(
+              "component.knx.config_panel.entities.create.type_selection.header",
+            )}
+          >
             <!-- <p>Some help text</p> -->
             <ha-navigation-list
               .hass=${this.hass}
               .narrow=${this.narrow}
               .pages=${Object.entries(platformConstants).map(([platform, platformInfo]) => ({
-                name: platformInfo.name,
-                description: platformInfo.description,
+                name: `${this.hass.localize(`component.${platform}.title`)}`,
+                description: `${this.hass.localize(`component.knx.config_panel.entities.create.${platform}.description`)}`,
                 iconPath: platformInfo.iconPath,
                 iconColor: platformInfo.color,
                 path: `/knx/entities/create/${platform}`,
               }))}
               has-secondary
-              .label=${"Select entity type"}
+              .label=${this.hass.localize(
+                "component.knx.config_panel.entities.create.type_selection.title",
+              )}
             ></ha-navigation-list>
           </ha-card>
         </div>
@@ -198,20 +255,26 @@ export class KNXCreateEntity extends LitElement {
     `;
   }
 
-  private _renderEntityConfig(platformInfo: PlatformInfo, create: boolean): TemplateResult {
+  private _renderEntityConfig(platform: SupportedPlatform): TemplateResult {
+    const create = this._intent === "create";
+    const schema = this.knx.schema[platform]!;
+
     return html`<hass-subpage
       .hass=${this.hass}
       .narrow=${this.narrow!}
       .back-path=${this.backPath}
-      .header=${create ? "Create new entity" : `Edit ${this.entityId}`}
+      .header=${create
+        ? this.hass.localize("component.knx.config_panel.entities.create.header")
+        : `${this.hass.localize("ui.common.edit")}: ${this.entityId}`}
     >
       <div class="content">
         <div class="entity-config">
           <knx-configure-entity
             .hass=${this.hass}
             .knx=${this.knx}
-            .platform=${platformInfo}
+            .platform=${platform}
             .config=${this._config}
+            .schema=${schema}
             .validationErrors=${this._validationErrors}
             @knx-entity-configuration-changed=${this._configChanged}
           >
@@ -231,7 +294,9 @@ export class KNXCreateEntity extends LitElement {
               : nothing}
           </knx-configure-entity>
           <ha-fab
-            .label=${create ? "Create" : "Save"}
+            .label=${create
+              ? this.hass.localize("ui.common.create")
+              : this.hass.localize("ui.common.save")}
             extended
             @click=${create ? this._entityCreate : this._entityUpdate}
             ?disabled=${this._config === undefined}
@@ -243,7 +308,7 @@ export class KNXCreateEntity extends LitElement {
           ? html` <div class="panel">
               <knx-project-device-tree
                 .data=${this.knx.project.knxproject}
-                .validDPTs=${validDPTsForSchema(platformInfo.schema)}
+                .validDPTs=${validDPTsForSchema(schema)}
               ></knx-project-device-tree>
             </div>`
           : nothing}

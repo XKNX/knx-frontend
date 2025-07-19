@@ -7,8 +7,11 @@ import { fireEvent } from "@ha/common/dom/fire_event";
 import "@ha/components/ha-checkbox";
 import "@ha/components/ha-selector/ha-selector";
 import "@ha/components/ha-switch";
+
 import type { HomeAssistant } from "@ha/types";
-import type { KnxHaSelector } from "../utils/schema";
+import { getValidationError } from "../utils/validation";
+import type { ErrorDescription } from "../types/entity_data";
+import type { KnxHaSelector } from "../types/schema";
 
 @customElement("knx-selector-row")
 export class KnxSelectorRow extends LitElement {
@@ -20,6 +23,12 @@ export class KnxSelectorRow extends LitElement {
 
   @property() public value?: any;
 
+  @property({ attribute: false }) public validationErrors?: ErrorDescription[];
+
+  @property({ attribute: false }) public localizeFunction: (key: string) => string = (
+    key: string,
+  ) => key;
+
   @state() private _disabled = false;
 
   private _haSelectorValue: any = null;
@@ -30,15 +39,15 @@ export class KnxSelectorRow extends LitElement {
 
   public connectedCallback() {
     super.connectedCallback();
-    this._disabled = !!this.selector.optional && this.value === undefined;
+    this._disabled = !this.selector.required && this.value === undefined;
     // apply default value if available or no value is set yet
     this._haSelectorValue = this.value ?? this.selector.default ?? null;
 
     const booleanSelector = "boolean" in this.selector.selector;
     const possibleInlineSelector = booleanSelector || "number" in this.selector.selector;
-    this._inlineSelector = !this.selector.optional && possibleInlineSelector;
+    this._inlineSelector = !!this.selector.required && possibleInlineSelector;
     // optional boolean should not show as 2 switches (one for optional and one for value)
-    this._optionalBooleanSelector = !!this.selector.optional && booleanSelector;
+    this._optionalBooleanSelector = !this.selector.required && booleanSelector;
     if (this._optionalBooleanSelector) {
       // either true or the key will be unset (via this._disabled)
       this._haSelectorValue = true;
@@ -46,6 +55,7 @@ export class KnxSelectorRow extends LitElement {
   }
 
   protected render(): TemplateResult {
+    const invalid = getValidationError(this.validationErrors);
     const haSelector = this._optionalBooleanSelector
       ? nothing
       : html`<ha-selector
@@ -60,21 +70,26 @@ export class KnxSelectorRow extends LitElement {
     return html`
       <div class="body">
         <div class="text">
-          <p class="heading">${this.selector.label}</p>
-          <p class="description">${this.selector.helper}</p>
+          <p class="heading ${classMap({ invalid: !!invalid })}">
+            ${this.localizeFunction(`${this.key}.label`)}
+          </p>
+          <p class="description">${this.localizeFunction(`${this.key}.description`)}</p>
         </div>
-        ${this.selector.optional
+        ${!this.selector.required // TODO: && (this.selector.default !== undefined)  // since default is applied in schema anyway? test this!
           ? html`<ha-selector
               class="optional-switch"
               .selector=${{ boolean: {} }}
               .value=${!this._disabled}
               @value-changed=${this._toggleDisabled}
             ></ha-selector>`
-          : this._inlineSelector
-            ? haSelector
-            : nothing}
+          : nothing}
+        ${
+          // inline selector is never optional, so optional-switch and this can't be shown together
+          this._inlineSelector ? haSelector : nothing
+        }
       </div>
       ${this._inlineSelector ? nothing : haSelector}
+      ${invalid ? html`<p class="invalid-message">${invalid.error_message}</p>` : nothing}
     `;
   }
 
@@ -132,6 +147,15 @@ export class KnxSelectorRow extends LitElement {
       font-weight: var(--mdc-typography-body2-font-weight, 400);
       line-height: normal;
       color: var(--secondary-text-color);
+    }
+
+    .invalid {
+      color: var(--error-color);
+    }
+    .invalid-message {
+      font-size: 0.75rem;
+      color: var(--error-color);
+      padding-left: 16px;
     }
   `;
 }
