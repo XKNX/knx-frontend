@@ -25,17 +25,14 @@ export class KnxSyncStateSelectorRow extends LitElement {
 
   private _minutes = 60;
 
-  private _options = [true, "init", "expire", "every"];
+  private get _options(): (boolean | "init" | "expire" | "every")[] {
+    return this.allowFalse
+      ? [true, "init", "expire", "every", false]
+      : [true, "init", "expire", "every"];
+  }
 
   protected _hasMinutes(strategy: boolean | string): boolean {
     return strategy === "expire" || strategy === "every";
-  }
-
-  connectedCallback(): void {
-    super.connectedCallback();
-    if (this.allowFalse && !this._options.includes(false)) {
-      this._options.push(false);
-    }
   }
 
   protected willUpdate() {
