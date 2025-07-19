@@ -64,7 +64,7 @@ interface TelegramDistinctValues {
 const logger = new KNXLogger("group_monitor");
 
 // Maximum number of telegrams to keep in local storage (ring buffer)
-const MAX_TELEGRAM_STORAGE = 5000;
+const MAX_TELEGRAM_STORAGE = 30000;
 
 /**
  * KNX Group Monitor Component
@@ -75,7 +75,7 @@ const MAX_TELEGRAM_STORAGE = 5000;
  * - Sortable data table with detailed telegram information
  * - Navigation between telegrams with detailed view dialog
  * - Historical telegram loading and management
- * - Ring buffer storage with 5,000 telegram limit for performance optimization
+ * - Ring buffer storage with 30,000 telegram limit
  * - Smart refresh that merges new telegrams with existing cache (no data loss)
  * - URL-based filtering for deep linking and to persist filter combinations
  *
