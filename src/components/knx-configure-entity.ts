@@ -301,7 +301,7 @@ export class KNXConfigureEntity extends LitElement {
     }
     if (group.type === "knx_group_select") {
       // check if group select base path is in config
-      return !!this._getNestedValue(path);
+      return !!getNestedValue(this.config!, path);
     }
     return group.schema.some((selector) => {
       if (selector.type === "knx_group_address") {
