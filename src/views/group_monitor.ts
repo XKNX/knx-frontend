@@ -492,6 +492,7 @@ export class KNXGroupMonitor extends LitElement {
   /** Clears all active filters */
   private _handleClearFilters(): void {
     this._filters = {};
+    this._updateUrlFromFilters();
   }
 
   /**
