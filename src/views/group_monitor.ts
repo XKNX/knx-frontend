@@ -63,9 +63,6 @@ interface TelegramDistinctValues {
 
 const logger = new KNXLogger("group_monitor");
 
-// Maximum number of telegrams to keep in local storage (ring buffer)
-const MAX_TELEGRAM_STORAGE = 30000;
-
 /**
  * KNX Group Monitor Component
  *
@@ -75,7 +72,7 @@ const MAX_TELEGRAM_STORAGE = 30000;
  * - Sortable data table with detailed telegram information
  * - Navigation between telegrams with detailed view dialog
  * - Historical telegram loading and management
- * - Ring buffer storage with 30,000 telegram limit
+ * - Ring buffer storage with dynamic limit based on recent telegrams plus buffer
  * - Smart refresh that merges new telegrams with existing cache (no data loss)
  * - URL-based filtering for deep linking and to persist filter combinations
  *
@@ -97,6 +94,9 @@ const MAX_TELEGRAM_STORAGE = 30000;
  */
 @customElement("knx-group-monitor")
 export class KNXGroupMonitor extends LitElement {
+  /** Minimum buffer size for telegram storage beyond recent telegrams length */
+  private static readonly MIN_TELEGRAM_STORAGE_BUFFER = 1000;
+
   // Static definitions
   static get styles(): CSSResultGroup {
     return [
@@ -180,6 +180,9 @@ export class KNXGroupMonitor extends LitElement {
 
   /** Current connection error message, if any */
   @state() private _connectionError: string | null = null;
+
+  /** Dynamic telegram storage limit based on recent telegrams length plus buffer */
+  private _telegramStorageLimit = KNXGroupMonitor.MIN_TELEGRAM_STORAGE_BUFFER;
 
   /**
    * Distinct values for filter dropdowns with counts
@@ -597,17 +600,29 @@ export class KNXGroupMonitor extends LitElement {
   // ============================================================================
 
   /**
+   * Calculates the buffer size for telegram storage
+   * Buffer is 10% of recent telegrams length, rounded up to nearest hundred, minimum 1000
+   * @param recentTelegramsLength - Length of recent telegrams array
+   * @returns Calculated buffer size
+   */
+  private _calculateTelegramStorageBuffer(recentTelegramsLength: number): number {
+    const tenPercentBuffer = Math.ceil(recentTelegramsLength * 0.1);
+    const roundedBuffer = Math.ceil(tenPercentBuffer / 100) * 100;
+    return Math.max(roundedBuffer, KNXGroupMonitor.MIN_TELEGRAM_STORAGE_BUFFER);
+  }
+
+  /**
    * Enforces the ring buffer limit on telegram storage
    * Removes oldest telegrams when limit is exceeded
    * @param telegrams - Array of telegrams to limit
-   * @returns Limited array with at most MAX_TELEGRAM_STORAGE entries
+   * @returns Limited array with at most _telegramStorageLimit entries
    */
   private _enforceRingBufferLimit(telegrams: TelegramDictWithCache[]): TelegramDictWithCache[] {
-    if (telegrams.length <= MAX_TELEGRAM_STORAGE) {
+    if (telegrams.length <= this._telegramStorageLimit) {
       return telegrams;
     }
     // Keep the newest telegrams, remove the oldest ones
-    return telegrams.slice(-MAX_TELEGRAM_STORAGE);
+    return telegrams.slice(-this._telegramStorageLimit);
   }
 
   /**
@@ -661,6 +676,11 @@ export class KNXGroupMonitor extends LitElement {
     try {
       const info = await getGroupMonitorInfo(this.hass);
       this._isProjectLoaded = info.project_loaded;
+
+      // Calculate dynamic telegram storage limit based on recent telegrams length plus buffer
+      const telegramsLength = info.recent_telegrams.length;
+      const buffer = this._calculateTelegramStorageBuffer(telegramsLength);
+      this._telegramStorageLimit = telegramsLength + buffer;
 
       // Merge new telegrams with existing ones
       this._telegrams = this._mergeTelegrams(this._telegrams, info.recent_telegrams);
