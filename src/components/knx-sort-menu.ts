@@ -273,6 +273,7 @@ export class KnxSortMenu extends LitElement {
   static styles = css`
     .menu-container {
       position: relative;
+      z-index: 1000;
       --mdc-list-vertical-padding: 0;
     }
 

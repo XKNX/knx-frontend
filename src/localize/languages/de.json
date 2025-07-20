@@ -94,6 +94,7 @@
   "knx_list_filter_sort_ascending_tooltip": "Aufsteigend sortiert",
   "knx_list_filter_sort_descending_tooltip": "Absteigend sortiert",
   "knx_list_filter_no_results": "Keine Ergebnisse gefunden",
+  "knx_list_filter_scroll_to_selection": "Zur Auswahl scrollen",
   "knx_telegram_info_dialog_telegram": "KNX Telegramm",
   "knx_telegram_info_dialog_source": "Quelle",
   "knx_telegram_info_dialog_destination": "Ziel",
