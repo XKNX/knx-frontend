@@ -17,6 +17,8 @@ import "@ha/components/ha-icon-button";
 import { haStyle } from "@ha/resources/styles";
 import type { HomeAssistant, Route } from "@ha/types";
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
+import { navigate } from "@ha/common/navigate";
+import { mainWindow } from "@ha/common/dom/get_main_window";
 
 import "../components/data-table/cell/knx-table-cell";
 import "../components/data-table/cell/knx-table-cell-filterable";
@@ -61,9 +63,6 @@ interface TelegramDistinctValues {
 
 const logger = new KNXLogger("group_monitor");
 
-// Maximum number of telegrams to keep in local storage (ring buffer)
-const MAX_TELEGRAM_STORAGE = 5000;
-
 /**
  * KNX Group Monitor Component
  *
@@ -73,11 +72,31 @@ const MAX_TELEGRAM_STORAGE = 5000;
  * - Sortable data table with detailed telegram information
  * - Navigation between telegrams with detailed view dialog
  * - Historical telegram loading and management
- * - Ring buffer storage with 5,000 telegram limit for performance optimization
+ * - Ring buffer storage with dynamic limit based on recent telegrams plus buffer
  * - Smart refresh that merges new telegrams with existing cache (no data loss)
+ * - URL-based filtering for deep linking and to persist filter combinations
+ *
+ * ## URL Filter Parameters
+ *
+ * The component supports URL-based filtering:
+ *
+ * - `?source=1.2.3,4.5.6` - Filter by source addresses (comma-separated)
+ * - `?destination=1/2/3,4/5/6` - Filter by destination addresses (comma-separated)
+ * - `?direction=Incoming` - Filter by telegram direction (comma-separated)
+ * - `?telegramtype=GroupValueWrite,GroupValueRead` - Filter by telegram types (comma-separated)
+ *
+ * **Examples:**
+ * ```
+ * /knx/group_monitor?source=1.1.1&destination=2/3/4
+ * /knx/group_monitor?direction=Incoming&telegramtype=GroupValueWrite
+ * /knx/group_monitor?source=1.2.3,1.2.4&destination=5/6/7
+ * ```
  */
 @customElement("knx-group-monitor")
 export class KNXGroupMonitor extends LitElement {
+  /** Minimum buffer size for telegram storage beyond recent telegrams length */
+  private static readonly MIN_TELEGRAM_STORAGE_BUFFER = 1000;
+
   // Static definitions
   static get styles(): CSSResultGroup {
     return [
@@ -162,6 +181,9 @@ export class KNXGroupMonitor extends LitElement {
   /** Current connection error message, if any */
   @state() private _connectionError: string | null = null;
 
+  /** Dynamic telegram storage limit based on recent telegrams length plus buffer */
+  private _telegramStorageLimit = KNXGroupMonitor.MIN_TELEGRAM_STORAGE_BUFFER;
+
   /**
    * Distinct values for filter dropdowns with counts
    * Updated incrementally as new telegrams arrive
@@ -214,11 +236,23 @@ export class KNXGroupMonitor extends LitElement {
   // ============================================================================
 
   /**
+   * Called before each update to check if filters need to be initialized from URL
+   * Sets filters from URL parameters whenever the route changes
+   */
+  public willUpdate(changedProperties: Map<string | number | symbol, unknown>): void {
+    // Initialize filters from URL when route changes
+    if (changedProperties.has("route") && this.route) {
+      this._setFiltersFromUrl();
+    }
+  }
+
+  /**
    * Component initialization - loads recent telegrams and establishes WebSocket connection
    * Called once when the component is first rendered
    */
   public async firstUpdated(): Promise<void> {
     if (this._subscribed) return;
+
     if (!(await this._loadRecentTelegrams())) return;
 
     try {
@@ -461,6 +495,7 @@ export class KNXGroupMonitor extends LitElement {
   /** Clears all active filters */
   private _handleClearFilters(): void {
     this._filters = {};
+    this._updateUrlFromFilters();
   }
 
   /**
@@ -565,17 +600,29 @@ export class KNXGroupMonitor extends LitElement {
   // ============================================================================
 
   /**
+   * Calculates the buffer size for telegram storage
+   * Buffer is 10% of recent telegrams length, rounded up to nearest hundred, minimum 1000
+   * @param recentTelegramsLength - Length of recent telegrams array
+   * @returns Calculated buffer size
+   */
+  private _calculateTelegramStorageBuffer(recentTelegramsLength: number): number {
+    const tenPercentBuffer = Math.ceil(recentTelegramsLength * 0.1);
+    const roundedBuffer = Math.ceil(tenPercentBuffer / 100) * 100;
+    return Math.max(roundedBuffer, KNXGroupMonitor.MIN_TELEGRAM_STORAGE_BUFFER);
+  }
+
+  /**
    * Enforces the ring buffer limit on telegram storage
    * Removes oldest telegrams when limit is exceeded
    * @param telegrams - Array of telegrams to limit
-   * @returns Limited array with at most MAX_TELEGRAM_STORAGE entries
+   * @returns Limited array with at most _telegramStorageLimit entries
    */
   private _enforceRingBufferLimit(telegrams: TelegramDictWithCache[]): TelegramDictWithCache[] {
-    if (telegrams.length <= MAX_TELEGRAM_STORAGE) {
+    if (telegrams.length <= this._telegramStorageLimit) {
       return telegrams;
     }
     // Keep the newest telegrams, remove the oldest ones
-    return telegrams.slice(-MAX_TELEGRAM_STORAGE);
+    return telegrams.slice(-this._telegramStorageLimit);
   }
 
   /**
@@ -630,13 +677,18 @@ export class KNXGroupMonitor extends LitElement {
       const info = await getGroupMonitorInfo(this.hass);
       this._isProjectLoaded = info.project_loaded;
 
-      // Merge new telegrams with existing ones instead of replacing
+      // Calculate dynamic telegram storage limit based on recent telegrams length plus buffer
+      const telegramsLength = info.recent_telegrams.length;
+      const buffer = this._calculateTelegramStorageBuffer(telegramsLength);
+      this._telegramStorageLimit = telegramsLength + buffer;
+
+      // Merge new telegrams with existing ones
       this._telegrams = this._mergeTelegrams(this._telegrams, info.recent_telegrams);
 
       if (this._connectionError !== null) this._connectionError = null;
 
-      // Initialize distinct values from full dataset for performance
-      this._initializeDistinctValues(this._telegrams);
+      // Initialize distinct values from full dataset
+      this._initializeDistinctValues(this._telegrams, this._filters);
 
       this._isReloadEnabled = false;
       return true;
@@ -706,6 +758,57 @@ export class KNXGroupMonitor extends LitElement {
   // ============================================================================
 
   /**
+   * URL parameter event handlers and management methods
+   */
+
+  /** Updates the URL with current filter state without triggering navigation */
+  private _updateUrlFromFilters(): void {
+    if (!this.route) {
+      logger.warn("Route not available, cannot update URL");
+      return;
+    }
+
+    const params = new URLSearchParams();
+
+    // Add filter parameters to URL
+    Object.entries(this._filters).forEach(([key, values]) => {
+      if (Array.isArray(values) && values.length > 0) {
+        params.set(key, values.join(","));
+      }
+    });
+
+    // Build new URL
+    const newPath = params.toString()
+      ? `${this.route.prefix}${this.route.path}?${params.toString()}`
+      : `${this.route.prefix}${this.route.path}`;
+
+    // Update URL without triggering navigation
+    // Decode URL for better readability
+    navigate(decodeURIComponent(newPath), { replace: true });
+  }
+
+  /** Sets filters from URL query parameters */
+  private _setFiltersFromUrl(): void {
+    const searchParams = new URLSearchParams(mainWindow.location.search);
+    const source = searchParams.get("source");
+    const destination = searchParams.get("destination");
+    const direction = searchParams.get("direction");
+    const telegramtype = searchParams.get("telegramtype");
+
+    if (!source && !destination && !direction && !telegramtype) {
+      return;
+    }
+
+    // Parse comma-separated values from URL parameters
+    this._filters = {
+      source: source ? source.split(",") : [],
+      destination: destination ? destination.split(",") : [],
+      direction: direction ? direction.split(",") : [],
+      telegramtype: telegramtype ? telegramtype.split(",") : [],
+    };
+  }
+
+  /**
    * Determines if a telegram should be displayed based on current filters
    * @param telegram - The telegram to check against filters
    * @returns boolean - true if telegram matches all active filters
@@ -740,6 +843,9 @@ export class KNXGroupMonitor extends LitElement {
     } else {
       this._filters = { ...this._filters, [field]: [...currentFilters, value] };
     }
+
+    // Update URL with new filter state
+    this._updateUrlFromFilters();
   }
 
   /**
@@ -751,6 +857,9 @@ export class KNXGroupMonitor extends LitElement {
   private _setFilterFieldValue(field: string, value: string[]): void {
     const oldFilterValues = this._filters[field] || [];
     this._filters = { ...this._filters, [field]: value };
+
+    // Update URL with new filter state
+    this._updateUrlFromFilters();
 
     // Remove deselected items from distinct values if they have count = 0
     // (items that were preserved only for filter state but have no actual telegram matches)
@@ -1065,37 +1174,41 @@ export class KNXGroupMonitor extends LitElement {
    * Preserves currently selected filter values and their descriptions to maintain filter dropdown state
    */
   private _resetDistinctValues(): void {
-    const freshDistinctValues = this._createEmptyDistinctValues();
-
-    // Preserve currently selected filter values with their descriptions so they remain available in filter components
-    Object.entries(this._filters).forEach(([filterType, selectedValues]) => {
-      if (selectedValues?.length) {
-        selectedValues.forEach((value) => {
-          if (freshDistinctValues[filterType as keyof TelegramDistinctValues]) {
-            // Try to recover the name/description from existing distinct values
-            const existingEntry =
-              this._distinctValues[filterType as keyof TelegramDistinctValues]?.[value];
-            freshDistinctValues[filterType as keyof TelegramDistinctValues][value] = {
-              id: value,
-              name: existingEntry?.name || "",
-              count: 0,
-            };
-          }
-        });
-      }
-    });
-
-    this._distinctValues = freshDistinctValues;
+    this._initializeDistinctValues([], this._filters);
   }
 
   /**
    * Initialize distinct values from full dataset (used when loading recent telegrams)
    * Optimized to cause only one state change at the end
    * @param telegrams - Array of telegrams to process
+   * @param filters - Optional filter values to ensure they exist in distinct values even if no telegrams match
    */
-  private _initializeDistinctValues(telegrams: TelegramDictWithCache[]): void {
+  private _initializeDistinctValues(
+    telegrams: TelegramDictWithCache[],
+    filters?: Record<string, string[]>,
+  ): void {
     // Create fresh local copies to avoid triggering state changes during computation
     const localDistinctValues: TelegramDistinctValues = this._createEmptyDistinctValues();
+
+    // First, add filter values with count 0 if provided
+    if (filters) {
+      Object.entries(filters).forEach(([filterType, values]) => {
+        if (Array.isArray(values) && values.length > 0) {
+          const distinctValuesProperty = filterType as keyof TelegramDistinctValues;
+          values.forEach((value) => {
+            if (localDistinctValues[distinctValuesProperty]) {
+              // Try to preserve existing name/description from current distinct values
+              const existingEntry = this._distinctValues[distinctValuesProperty]?.[value];
+              localDistinctValues[distinctValuesProperty][value] = {
+                id: value,
+                name: existingEntry?.name || "", // Preserve existing name if available
+                count: 0, // Zero count indicates no matching telegrams yet
+              };
+            }
+          });
+        }
+      });
+    }
 
     // Process all telegrams to build distinct values in local variables
     for (const telegram of telegrams) {
@@ -1142,6 +1255,10 @@ export class KNXGroupMonitor extends LitElement {
 
     if (distinctValues[propertyKey][id]) {
       distinctValues[propertyKey][id].count++;
+      if (distinctValues[propertyKey][id].name === "") {
+        // Preserve the name if it was empty before
+        distinctValues[propertyKey][id].name = name;
+      }
     } else {
       distinctValues[propertyKey][id] = {
         id,
