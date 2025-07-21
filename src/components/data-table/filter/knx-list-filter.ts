@@ -242,7 +242,7 @@ export class KnxListFilter<T = any> extends LitElement {
   /**
    * Maximum height for the separator when fully expanded
    */
-  private readonly _separatorMaxHeight = 32;
+  private readonly _separatorMaxHeight = 28;
 
   /**
    * Minimum height for the separator when collapsed
@@ -258,7 +258,7 @@ export class KnxListFilter<T = any> extends LitElement {
    * Scroll zone in pixels for separator height animation
    * When separator is within this distance from top, height animation is triggered
    */
-  private readonly _separatorScrollZone = 32;
+  private readonly _separatorScrollZone = 28;
 
   /**
    * Bound scroll handler for proper event listener cleanup
@@ -1233,8 +1233,9 @@ export class KnxListFilter<T = any> extends LitElement {
           display: flex;
           align-items: center;
           justify-content: center;
+          height: 100%;
           gap: 6px;
-          padding: 4px 16px;
+          padding: 8px;
           background: var(--primary-color);
           color: var(--text-primary-color);
           font-size: 0.8em;
@@ -1242,6 +1243,7 @@ export class KnxListFilter<T = any> extends LitElement {
           cursor: pointer;
           transition: opacity 0.2s ease;
           user-select: none;
+          box-sizing: border-box;
         }
 
         .separator-content:hover {
