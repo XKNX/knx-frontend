@@ -393,7 +393,9 @@ export class KnxListFilter<T = any> extends LitElement {
           (changedProperties.has("expanded") && this.expanded) ||
           (changedProperties.has("pinSelectedItems") && this.pinSelectedItems)
         ) {
-          this._handleSeparatorScroll();
+          requestAnimationFrame(() => {
+            this._handleSeparatorScroll();
+          });
         }
       });
     }
@@ -724,6 +726,11 @@ export class KnxListFilter<T = any> extends LitElement {
     } else {
       this._setSelectedOptions([...(this.selectedOptions ?? []), optionId]);
     }
+
+    // Update separator height when selection changes
+    requestAnimationFrame(() => {
+      this._handleSeparatorScroll();
+    });
   }
 
   // ============================================================================
