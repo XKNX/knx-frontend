@@ -19,12 +19,18 @@
 
 import type { TemplateResult } from "lit";
 import { css, html, LitElement, nothing } from "lit";
-import { customElement, property } from "lit/decorators";
+import { customElement, property, query } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 import { guard } from "lit/directives/guard";
 import { repeat } from "lit/directives/repeat";
 
-import { mdiFilterVariantRemove, mdiPin, mdiSortAscending, mdiSortDescending } from "@mdi/js";
+import {
+  mdiFilterVariantRemove,
+  mdiPin,
+  mdiSortAscending,
+  mdiSortDescending,
+  mdiChevronUp,
+} from "@mdi/js";
 
 import "@ha/components/ha-checkbox";
 import "@ha/components/ha-expansion-panel";
@@ -46,6 +52,8 @@ import { KnxCollator } from "../../../utils/sort";
 import "../../flex-content-expansion-panel";
 import "../../knx-sort-menu";
 import "../../knx-sort-menu-item";
+import "../../knx-separator";
+import type { KnxSeparator } from "../../knx-separator";
 
 // ============================================================================
 // Sorting Types
@@ -228,28 +236,100 @@ export class KnxListFilter<T = any> extends LitElement {
   @property({ attribute: "sort-direction" }) public sortDirection: SortDirection = "asc";
 
   // ============================================================================
+  // Separator State and Queries
+  // ============================================================================
+
+  /**
+   * Maximum height for the separator when fully expanded
+   */
+  private readonly _separatorMaxHeight = 28;
+
+  /**
+   * Minimum height for the separator when collapsed
+   */
+  private readonly _separatorMinHeight = 2;
+
+  /**
+   * Animation duration for separator transitions
+   */
+  private readonly _separatorAnimationDuration = 150;
+
+  /**
+   * Scroll zone in pixels for separator height animation
+   * When separator is within this distance from top, height animation is triggered
+   */
+  private readonly _separatorScrollZone = 28;
+
+  /**
+   * Bound scroll handler for proper event listener cleanup
+   */
+  private _boundScrollHandler?: (event: Event) => void;
+
+  /**
+   * Query selectors for separator functionality
+   */
+  @query("knx-separator") private _separator?: KnxSeparator;
+
+  @query(".options-list-wrapper") private _optionsListContainer?: HTMLElement;
+
+  @query(".separator-container") private _separatorContainer?: HTMLElement;
+
+  // ============================================================================
   // Core Data Processing
   // ============================================================================
 
   /**
-   * Main computation method that transforms, filters, and sorts the data
+   * Computes filtered and sorted options
+   * Returns a flat array of FilterOption objects
    *
-   * Process flow:
-   * 1. Transform raw data items into FilterOption objects using field mappers
-   * 2. Apply text-based filtering using the current search query
-   * 3. Sort using the selected criterion and direction
-   * 4. Optionally pin selected items to the top
-   *
-   * @returns Processed and ready-to-render FilterOption array
+   * @returns Processed FilterOption array
    */
   private _computeFilterSortedOptions(): FilterOption[] {
+    const options = this._computeFilteredOptions();
+    const comparator = this._getComparator();
+    return this._sortOptions(options, comparator, this.sortDirection);
+  }
+
+  /**
+   * Computes filtered and sorted options with pinning separation
+   * Returns selected and unselected options as separate arrays
+   *
+   * @returns Object containing separated selected and unselected FilterOption arrays
+   */
+  private _computeFilterSortedOptionsWithSeparator(): {
+    selected: FilterOption[];
+    unselected: FilterOption[];
+  } {
+    const options = this._computeFilteredOptions();
+    const comparator = this._getComparator();
+
+    const selected: FilterOption[] = [];
+    const unselected: FilterOption[] = [];
+
+    for (const option of options) {
+      if (option.selected) {
+        selected.push(option);
+      } else {
+        unselected.push(option);
+      }
+    }
+
+    return {
+      selected: this._sortOptions(selected, comparator, this.sortDirection),
+      unselected: this._sortOptions(unselected, comparator, this.sortDirection),
+    };
+  }
+
+  /**
+   * Helper method to get filtered options from raw data
+   * Transforms raw data into standardized FilterOption format and applies search filtering
+   *
+   * @returns Filtered FilterOption array before sorting
+   */
+  private _computeFilteredOptions(): FilterOption[] {
     const {
       data,
       config: { idField, primaryField, secondaryField, badgeField },
-      defaultComparators,
-      sortCriterion,
-      sortDirection,
-      pinSelectedItems,
       selectedOptions = [],
     } = this;
 
@@ -272,13 +352,148 @@ export class KnxListFilter<T = any> extends LitElement {
     });
 
     // Step 2: Apply search filtering across configured filterable fields
-    const filtered = this._applyFilterToOptions(mappedOptions);
+    return this._applyFilterToOptions(mappedOptions);
+  }
 
-    // Step 3: Apply sorting with selected criterion and direction
-    const comparator: Comparator<FilterOption> =
-      this.config[sortCriterion]?.comparator ?? defaultComparators[sortCriterion];
+  /**
+   * Gets the appropriate comparator for sorting based on current sort criterion
+   *
+   * @returns Comparator function for FilterOption sorting
+   */
+  private _getComparator(): Comparator<FilterOption> {
+    const { config, defaultComparators, sortCriterion } = this;
+    return config[sortCriterion]?.comparator ?? defaultComparators[sortCriterion];
+  }
 
-    return this._sortOptions(filtered, comparator, sortDirection, pinSelectedItems);
+  // ============================================================================
+  // Lifecycle Methods
+  // ============================================================================
+
+  /**
+   * Called after the component is first updated
+   * Sets up scroll event listeners for separator functionality
+   */
+  protected firstUpdated(): void {
+    this._setupSeparatorScrollHandler();
+  }
+
+  /**
+   * Called after each update cycle
+   * Re-establishes scroll handlers when the DOM structure changes
+   */
+  protected updated(changedProperties: Map<string | number | symbol, unknown>): void {
+    // Re-setup scroll handler if expansion state or pinning changed
+    if (changedProperties.has("expanded") || changedProperties.has("pinSelectedItems")) {
+      // Wait for next frame to ensure DOM is fully updated
+      requestAnimationFrame(() => {
+        this._setupSeparatorScrollHandler();
+
+        // Trigger scroll handler when expanding or enabling pinning to update separator height
+        if (
+          (changedProperties.has("expanded") && this.expanded) ||
+          (changedProperties.has("pinSelectedItems") && this.pinSelectedItems)
+        ) {
+          requestAnimationFrame(() => {
+            this._handleSeparatorScroll();
+          });
+        }
+      });
+    }
+  }
+
+  /**
+   * Called when the component is disconnected from the DOM
+   * Cleans up event listeners to prevent memory leaks
+   */
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._cleanupSeparatorScrollHandler();
+  }
+
+  // ============================================================================
+  // Separator Scroll Handling
+  // ============================================================================
+
+  /**
+   * Sets up scroll event listener for separator height animation
+   * Binds the handler to maintain proper 'this' context
+   */
+  private _setupSeparatorScrollHandler(): void {
+    // Clean up existing handler first
+    this._cleanupSeparatorScrollHandler();
+
+    if (!this._boundScrollHandler) {
+      this._boundScrollHandler = this._handleSeparatorScroll.bind(this);
+    }
+
+    // Only add handler if we have the necessary elements and pinning is enabled
+    if (this.pinSelectedItems && this._optionsListContainer) {
+      this._optionsListContainer.addEventListener("scroll", this._boundScrollHandler, {
+        passive: true,
+      });
+    }
+  }
+
+  /**
+   * Removes scroll event listener and cleans up references
+   * Prevents memory leaks when component is destroyed
+   */
+  private _cleanupSeparatorScrollHandler(): void {
+    if (this._boundScrollHandler && this._optionsListContainer) {
+      this._optionsListContainer.removeEventListener("scroll", this._boundScrollHandler);
+    }
+  }
+
+  /**
+   * Handles scroll events for dynamic separator height adjustment
+   */
+  private _handleSeparatorScroll(): void {
+    // Only handle scroll if pinning is enabled and separator exists
+    if (
+      !this.pinSelectedItems ||
+      !this._separator ||
+      !this._optionsListContainer ||
+      !this._separatorContainer
+    ) {
+      return;
+    }
+
+    const listRect = this._optionsListContainer.getBoundingClientRect();
+    const separatorRect = this._separatorContainer.getBoundingClientRect();
+
+    // Calculate distance from separator to top of list container
+    const distanceFromTop = separatorRect.top - listRect.top;
+
+    // Define scroll zone
+    const scrollZone = this._separatorScrollZone;
+
+    if (distanceFromTop <= scrollZone && distanceFromTop >= 0) {
+      // Calculate height based on proximity to top
+      const progress = 1 - distanceFromTop / scrollZone;
+      const newHeight =
+        this._separatorMinHeight + progress * (this._separatorMaxHeight - this._separatorMinHeight);
+
+      // Update separator height smoothly without animation during scroll
+      this._separator.setHeight(Math.round(newHeight), false);
+    } else if (distanceFromTop > scrollZone) {
+      // Reset to minimum height when far from top
+      const currentHeight = this._separator.height || this._separatorMinHeight;
+      if (currentHeight !== this._separatorMinHeight) {
+        this._separator.setHeight(this._separatorMinHeight, false);
+      }
+    }
+  }
+
+  /**
+   * Handles click on separator to scroll to top of selected items
+   */
+  private _handleSeparatorClick(): void {
+    if (this._optionsListContainer) {
+      this._optionsListContainer.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    }
   }
 
   /**
@@ -332,7 +547,7 @@ export class KnxListFilter<T = any> extends LitElement {
       return options;
     }
 
-    const query = this.filterQuery.toLowerCase();
+    const searchQuery = this.filterQuery.toLowerCase();
     const { idField, primaryField, secondaryField, badgeField } = this.config;
 
     // Build list of field accessors for filterable fields only
@@ -345,36 +560,28 @@ export class KnxListFilter<T = any> extends LitElement {
     return options.filter((option) =>
       accessors.some((getField) => {
         const val = getField(option);
-        return typeof val === "string" && val.toLowerCase().includes(query);
+        return typeof val === "string" && val.toLowerCase().includes(searchQuery);
       }),
     );
   }
 
   /**
-   * Sorts options using the provided comparator with direction and pinning support
+   * Sorts options using the provided comparator with direction
    *
    * @param options - Array of FilterOption items to sort
    * @param comparator - Comparison function for determining sort order
    * @param direction - Sort direction ("asc" or "desc")
-   * @param pinSelected - Whether to pin selected items at the top
    * @returns New sorted array (does not mutate input)
    */
   private _sortOptions(
     options: readonly FilterOption[],
     comparator: Comparator<FilterOption>,
     direction: SortDirection = SORT_ASC,
-    pinSelected = false,
   ): FilterOption[] {
     const directionFactor = direction === SORT_ASC ? 1 : -1;
 
-    const combinedComparator: Comparator<FilterOption> = (a, b) => {
-      // Priority 1: Pin selected items to the top when enabled
-      if (pinSelected && a.selected !== b.selected) {
-        return a.selected ? -1 : 1;
-      }
-      // Priority 2: Apply configured comparator with direction
-      return comparator(a, b) * directionFactor;
-    };
+    const combinedComparator: Comparator<FilterOption> = (a, b) =>
+      comparator(a, b) * directionFactor;
 
     return [...options].sort(combinedComparator);
   }
@@ -519,6 +726,11 @@ export class KnxListFilter<T = any> extends LitElement {
     } else {
       this._setSelectedOptions([...(this.selectedOptions ?? []), optionId]);
     }
+
+    // Update separator height when selection changes
+    requestAnimationFrame(() => {
+      this._handleSeparatorScroll();
+    });
   }
 
   // ============================================================================
@@ -601,13 +813,11 @@ export class KnxListFilter<T = any> extends LitElement {
 
   /**
    * Renders the main options list with filtered and sorted results
-   * Uses guard() for performance optimization and repeat() for efficient updates
+   * Uses guard() for performance optimization and delegates to specialized templates
    *
    * @returns Template result for the scrollable options list
    */
   private _renderOptionsList(): TemplateResult {
-    const emptyMsg = this.knx.localize("knx_list_filter_no_results");
-
     return html`
       ${guard(
         // Guard prevents re-rendering unless these specific values change
@@ -621,24 +831,98 @@ export class KnxListFilter<T = any> extends LitElement {
           this.config,
           this.pinSelectedItems,
         ],
-        () => {
-          const options = this._computeFilterSortedOptions();
+        () =>
+          this.pinSelectedItems
+            ? this._renderPinnedOptionsList()
+            : this._renderRegularOptionsList(),
+      )}
+    `;
+  }
 
-          if (options.length === 0) {
-            return html`<div class="empty-message" role="alert">${emptyMsg}</div>`;
-          }
+  /**
+   * Renders options list with pinned items separated by a separator
+   * Shows selected items first, then separator, then unselected items
+   *
+   * @returns Template result for pinned options layout
+   */
+  private _renderPinnedOptionsList(): TemplateResult {
+    const emptyMsg = this.knx.localize("knx_list_filter_no_results");
+    const { selected, unselected } = this._computeFilterSortedOptionsWithSeparator();
 
-          return html`
-            <div class="options-list" tabindex="0">
+    if (selected.length === 0 && unselected.length === 0) {
+      return html`<div class="empty-message" role="alert">${emptyMsg}</div>`;
+    }
+
+    return html`
+      <div class="options-list" tabindex="0">
+        <!-- Render selected items first -->
+        ${selected.length > 0
+          ? html`
               ${repeat(
-                options,
+                selected,
                 (opt) => opt.idField,
                 (opt) => this._renderOptionItem(opt),
               )}
-            </div>
-          `;
-        },
-      )}
+            `
+          : nothing}
+
+        <!-- Render separator between selected and unselected items -->
+        ${selected.length > 0 && unselected.length > 0
+          ? html`
+              <div class="separator-container">
+                <knx-separator
+                  .height=${this._separator?.height || this._separatorMinHeight}
+                  .maxHeight=${this._separatorMaxHeight}
+                  .minHeight=${this._separatorMinHeight}
+                  .animationDuration=${this._separatorAnimationDuration}
+                  customClass="list-separator"
+                >
+                  <div class="separator-content" @click=${this._handleSeparatorClick}>
+                    <ha-svg-icon .path=${mdiChevronUp}></ha-svg-icon>
+                    <span class="separator-text">
+                      ${this.knx.localize("knx_list_filter_scroll_to_selection")}
+                    </span>
+                  </div>
+                </knx-separator>
+              </div>
+            `
+          : nothing}
+
+        <!-- Render unselected items -->
+        ${unselected.length > 0
+          ? html`
+              ${repeat(
+                unselected,
+                (opt) => opt.idField,
+                (opt) => this._renderOptionItem(opt),
+              )}
+            `
+          : nothing}
+      </div>
+    `;
+  }
+
+  /**
+   * Renders options list - all items in a single sorted list
+   *
+   * @returns Template result for regular options layout
+   */
+  private _renderRegularOptionsList(): TemplateResult {
+    const emptyMsg = this.knx.localize("knx_list_filter_no_results");
+    const options = this._computeFilterSortedOptions();
+
+    if (options.length === 0) {
+      return html`<div class="empty-message" role="alert">${emptyMsg}</div>`;
+    }
+
+    return html`
+      <div class="options-list" tabindex="0">
+        ${repeat(
+          options,
+          (opt) => opt.idField,
+          (opt) => this._renderOptionItem(opt),
+        )}
+      </div>
     `;
   }
 
@@ -736,10 +1020,10 @@ export class KnxListFilter<T = any> extends LitElement {
           ? html`
               <div class="filter-content">
                 ${this._hasFilterableOrSortableFields() ? this._renderFilterControl() : nothing}
-
-                <!-- Filter options list -->
-                <div class="options-list ha-scrollbar">${this._renderOptionsList()}</div>
               </div>
+
+              <!-- Filter options list - moved outside filter-content for proper sticky behavior -->
+              <div class="options-list-wrapper ha-scrollbar">${this._renderOptionsList()}</div>
             `
           : nothing}
       </flex-content-expansion-panel>
@@ -820,8 +1104,20 @@ export class KnxListFilter<T = any> extends LitElement {
         .filter-content {
           display: flex;
           flex-direction: column;
+          flex-shrink: 0;
+        }
+
+        .options-list-wrapper {
           flex: 1;
-          overflow: hidden;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .options-list {
+          display: block;
+          padding: 0;
+          flex: 1;
         }
 
         .filter-toolbar {
@@ -844,12 +1140,6 @@ export class KnxListFilter<T = any> extends LitElement {
           display: block;
           flex: 1;
           padding: 8px 0;
-        }
-
-        .options-list {
-          overflow-y: auto;
-          display: block;
-          padding: 0;
         }
 
         .option-item {
@@ -935,6 +1225,54 @@ export class KnxListFilter<T = any> extends LitElement {
         knx-sort-menu ha-icon-button-toggle[selected] {
           --primary-background-color: var(--primary-color);
           --primary-text-color: transparent;
+        }
+
+        /* Separator Styling */
+        .separator-container {
+          position: sticky;
+          top: 0;
+          z-index: 10;
+          background: var(--card-background-color);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .separator-content {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+          gap: 6px;
+          padding: 8px;
+          background: var(--primary-color);
+          color: var(--text-primary-color);
+          font-size: 0.8em;
+          font-weight: 500;
+          cursor: pointer;
+          transition: opacity 0.2s ease;
+          user-select: none;
+          box-sizing: border-box;
+        }
+
+        .separator-content:hover {
+          opacity: 0.9;
+        }
+
+        .separator-content ha-svg-icon {
+          --mdc-icon-size: 16px;
+        }
+
+        .separator-text {
+          text-align: center;
+        }
+
+        .list-separator {
+          position: relative;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Enhanced separator visibility when scrolled */
+        .options-list:not(:hover) .separator-container {
+          transition: box-shadow 0.2s ease;
         }
       `,
     ];

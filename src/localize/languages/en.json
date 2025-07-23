@@ -98,6 +98,7 @@
   "knx_list_filter_sort_ascending_tooltip": "Sorted ascending",
   "knx_list_filter_sort_descending_tooltip": "Sorted descending",
   "knx_list_filter_no_results": "No results found",
+  "knx_list_filter_scroll_to_selection": "Scroll to selection",
   "knx_telegram_info_dialog_telegram": "KNX Telegram",
   "knx_telegram_info_dialog_source": "Source",
   "knx_telegram_info_dialog_destination": "Destination",
