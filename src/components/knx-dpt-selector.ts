@@ -40,7 +40,9 @@ class KnxDptSelector extends LitElement {
                 @change=${this._valueChanged}
               ></ha-radio>
               <label .value=${item.value} @click=${this._valueChanged}>
-                <p>${this.localizeValue(this.translation_key + ".options." + item.value)}</p>
+                <p>
+                  ${this.localizeValue(this.translation_key + ".options." + item.translation_key)}
+                </p>
                 <p class="secondary">DPT ${item.value}</p>
               </label>
             </div>

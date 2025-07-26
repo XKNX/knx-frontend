@@ -47,8 +47,6 @@ export interface KnxHaSelector {
   default?: any;
   required?: boolean; // for optional boolean selectors, there shall be no default value (can't get applied)
   selector: Selector;
-  label: string; // TODO: label and helper not present
-  helper?: string;
 }
 
 export interface GASelector {
@@ -69,7 +67,6 @@ export interface GASelectorOptions {
 
 export interface DPTOption {
   value: string;
-  label: string;
-  description?: string;
+  translation_key: string;
   dpt: DPT;
 }
