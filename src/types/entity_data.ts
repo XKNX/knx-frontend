@@ -1,6 +1,8 @@
+import type { SUPPORTED_PLATFORMS } from "../utils/common";
+
 export type EntityCategory = "config" | "diagnostic";
 
-export type SupportedPlatform = "switch" | "light" | "binary_sensor" | "cover";
+export type SupportedPlatform = (typeof SUPPORTED_PLATFORMS)[number];
 
 export interface GASchema {
   write?: string;
