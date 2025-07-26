@@ -38,6 +38,11 @@ cp homeassistant-frontend/.browserslistrc .
 echo "Merging requirements"
 node ./script/merge_requirements.js
 
+echo "Updating Yarn version to match frontend"
+cd homeassistant-frontend
+yarn set version self
+cd ..
+
 echo "Installing modules"
 yarn install
 yarn dedupe
