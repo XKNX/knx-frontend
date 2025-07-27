@@ -1,10 +1,10 @@
-import "@material/mwc-button/mwc-button";
 import { LitElement, nothing, html, css } from "lit";
 import { customElement, property } from "lit/decorators";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import { haStyleDialog } from "@ha/resources/styles";
 import type { HomeAssistant } from "@ha/types";
 import "@ha/components/ha-svg-icon";
+import "@ha/components/ha-button";
 import "../components/knx-dialog-header";
 import { mdiArrowLeft, mdiArrowRight, mdiClose } from "@mdi/js";
 
@@ -177,20 +177,20 @@ class TelegramInfoDialog extends LitElement {
 
         <!-- Navigation buttons: previous / next -->
         <div slot="secondaryAction" style="margin: 0;">
-          <mwc-button
+          <ha-button
             class="nav-button"
             @click=${this._previousTelegram}
             .disabled=${this.disablePrevious}
           >
             <ha-svg-icon .path=${mdiArrowLeft}></ha-svg-icon>
             ${this.hass.localize("ui.common.previous")}
-          </mwc-button>
+          </ha-button>
         </div>
         <div slot="primaryAction">
-          <mwc-button class="nav-button" @click=${this._nextTelegram} .disabled=${this.disableNext}>
+          <ha-button class="nav-button" @click=${this._nextTelegram} .disabled=${this.disableNext}>
             ${this.hass.localize("ui.common.next")}
             <ha-svg-icon .path=${mdiArrowRight}></ha-svg-icon>
-          </mwc-button>
+          </ha-button>
         </div>
       </ha-dialog>
     `;
