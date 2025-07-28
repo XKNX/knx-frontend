@@ -87,7 +87,9 @@ export class KnxSortMenu extends LitElement {
    * Reference to the underlying ha-menu element
    * Provides programmatic access to menu state and methods
    */
-  @query("ha-menu") private _menu?: any; /**
+  @query("ha-menu") private _menu?: any;
+
+  /**
    * References to all slotted knx-sort-menu-item children
    * Automatically updated when child elements change
    */
