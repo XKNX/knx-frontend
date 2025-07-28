@@ -23,7 +23,7 @@ import { mdiArrowDown, mdiArrowUp } from "@mdi/js";
 
 import "@ha/components/ha-icon-button";
 import "@ha/components/ha-svg-icon";
-import "@material/mwc-list/mwc-list-item";
+import "@ha/components/ha-list-item";
 
 import type { SortDirection, SortCriterion } from "../types/sorting";
 import { KnxSortMenu } from "./knx-sort-menu";
@@ -150,10 +150,7 @@ export class KnxSortMenuItem extends LitElement {
    */
   protected render(): TemplateResult {
     return html`
-      <mwc-list-item
-        class="sort-row ${this.active ? "active" : ""}"
-        @click=${this._handleItemClick}
-      >
+      <ha-list-item class="sort-row ${this.active ? "active" : ""}" @click=${this._handleItemClick}>
         <div class="container">
           <div class="sort-field-name" title=${this.displayName} aria-label=${this.displayName}>
             ${this.displayName}
@@ -175,7 +172,7 @@ export class KnxSortMenuItem extends LitElement {
             ></ha-icon-button>
           </div>
         </div>
-      </mwc-list-item>
+      </ha-list-item>
     `;
   }
 

@@ -21,13 +21,13 @@
  * 5. Parent receives new device entry or undefined on cancellation
  */
 
-import "@material/mwc-button/mwc-button";
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
 import { navigate } from "@ha/common/navigate";
 import "@ha/components/ha-area-picker";
 import "@ha/components/ha-dialog";
+import "@ha/components/ha-button";
 import "@ha/components/ha-selector/ha-selector-text";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
@@ -191,12 +191,12 @@ class DeviceCreateDialog extends LitElement {
         @value-changed=${this._valueChanged}
       >
       </ha-area-picker>
-      <mwc-button slot="secondaryAction" @click=${this.closeDialog}>
+      <ha-button slot="secondaryAction" @click=${this.closeDialog}>
         ${this.hass.localize("ui.common.cancel")}
-      </mwc-button>
-      <mwc-button slot="primaryAction" @click=${this._createDevice}>
+      </ha-button>
+      <ha-button slot="primaryAction" @click=${this._createDevice}>
         ${this.hass.localize("ui.common.add")}
-      </mwc-button>
+      </ha-button>
     </ha-dialog>`;
   }
 

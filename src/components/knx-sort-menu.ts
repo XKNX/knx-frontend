@@ -7,7 +7,7 @@
  * - Sort state management and synchronization
  * - Event-driven communication with parent components
  * - Accessibility support with proper ARIA implementation
- * - Material Design integration with mwc-menu
+ * - Material Design integration with ha-menu
  * - Flexible positioning and anchor support
  *
  * Architecture:
@@ -32,8 +32,7 @@ import { fireEvent } from "@ha/common/dom/fire_event";
 import "@ha/components/ha-icon-button";
 import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-switch";
-import "@material/mwc-menu";
-import "@material/mwc-list/mwc-list-item";
+import "@ha/components/ha-menu";
 
 import "@ha/components/ha-icon-button-toggle";
 import type { SortDirection } from "../types/sorting";
@@ -85,15 +84,16 @@ export class KnxSortMenu extends LitElement {
   // ============================================================================
 
   /**
-   * Reference to the underlying mwc-menu element
-   * Used for programmatic menu control (open/close/positioning)
+   * Reference to the underlying ha-menu element
+   * Provides programmatic access to menu state and methods
    */
-  @query("mwc-menu") private _menu?: any;
+  @query("ha-menu") private _menu?: any;
 
   /**
    * References to all slotted knx-sort-menu-item children
    * Automatically updated when child elements change
    */
+
   @queryAssignedElements({
     selector: "knx-sort-menu-item",
   })
@@ -145,7 +145,7 @@ export class KnxSortMenu extends LitElement {
    * Main render method that creates the dropdown menu structure
    *
    * Structure:
-   * - mwc-menu container with positioning and event handling
+   * - ha-menu container with positioning and event handling
    * - Slotted header with customizable title and toolbar
    * - Divider separator between header and items
    * - Slotted menu items with event delegation
@@ -155,7 +155,7 @@ export class KnxSortMenu extends LitElement {
   protected render() {
     return html`
       <div class="menu-container">
-        <mwc-menu
+        <ha-menu
           .corner=${"BOTTOM_START"}
           .fixed=${true}
           @opened=${this._handleMenuOpened}
@@ -177,7 +177,7 @@ export class KnxSortMenu extends LitElement {
 
           <!-- Menu items will be slotted here -->
           <slot @sort-option-selected=${this._handleSortOptionSelected}></slot>
-        </mwc-menu>
+        </ha-menu>
       </div>
     `;
   }

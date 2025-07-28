@@ -6,7 +6,7 @@ import memoize from "memoize-one";
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-tabs-subpage-data-table";
 import "@ha/components/ha-alert";
-import "@material/mwc-button";
+import "@ha/components/ha-button";
 import type { HASSDomEvent } from "@ha/common/dom/fire_event";
 import type {
   DataTableColumnContainer,
@@ -1411,11 +1411,11 @@ export class KNXGroupMonitor extends LitElement {
                 .title=${this.knx.localize("group_monitor_connection_error_title")}
               >
                 ${this._connectionError}
-                <mwc-button
+                <ha-button
                   slot="action"
                   @click=${this._retryConnection}
                   .label=${this.knx.localize("group_monitor_retry_connection")}
-                ></mwc-button>
+                ></ha-button>
               </ha-alert>
             `
           : nothing}
@@ -1428,11 +1428,11 @@ export class KNXGroupMonitor extends LitElement {
                 .title=${this.knx.localize("group_monitor_paused_title")}
               >
                 ${this.knx.localize("group_monitor_paused_message")}
-                <mwc-button
+                <ha-button
                   slot="action"
                   @click=${this._handlePauseToggle}
                   .label=${this.knx.localize("group_monitor_resume")}
-                ></mwc-button>
+                ></ha-button>
               </ha-alert>
             `
           : ""}
