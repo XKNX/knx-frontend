@@ -16,6 +16,7 @@
   "info_project_upload_description": "Wir extrahieren Details wie Namen, Gruppenadressen, Geräte, Gruppenobjekte, Topologie und Gebäudestruktur aus deiner Projektdatei. Home Assistant speichert jedoch aus Sicherheitsgründen weder die Projektdatei selbst, noch das optionale Passwort.",
   "info_issue_tracker": "Wenn du einen Fehler melden oder eine neue Funktion vorschlagen möchtest, erstelle ein Issue in unserem GitHub-Repository",
   "info_my_knx": "Wenn du mehr über das KNX System oder ETS erfahren möchtest, besuche",
+  "entities_title": "Entitäten",
   "entities_view_title": "Entitäten",
   "entities_create_title": "Entität erstellen",
   "entities_edit_title": "Entität bearbeiten",
