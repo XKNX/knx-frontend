@@ -135,11 +135,17 @@ export const formatIsoTimestampWithMicroseconds = (timestampIso: string): string
  */
 export const formatOffset = (offset: Date): string => {
   const ms = offset.getTime();
-  const hours = Math.floor(ms / 3600000); // 60 * 60 * 1000
-  const remainder = ms % 3600000;
 
-  // Extract "MM:SS.mmm" from ISO string
-  const timeStr = new Date(remainder).toISOString().slice(14, 23);
+  // Extract time components using direct calculations
+  const hours = Math.floor(ms / 3_600_000);
+  const minutes = Math.floor(ms / 60_000) % 60;
+  const seconds = Math.floor(ms / 1_000) % 60;
+  const milliseconds = ms % 1_000;
 
-  return hours > 0 ? `${hours.toString().padStart(2, "0")}:${timeStr}` : timeStr;
+  // Helper to format with zero-padding
+  const pad = (value: number, length: number) => value.toString().padStart(length, "0");
+
+  const timeStr = `${pad(minutes, 2)}:${pad(seconds, 2)}.${pad(milliseconds, 3)}`;
+
+  return hours > 0 ? `${pad(hours, 2)}:${timeStr}` : timeStr;
 };
