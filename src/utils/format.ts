@@ -127,14 +127,19 @@ export const formatIsoTimestampWithMicroseconds = (timestampIso: string): string
 };
 
 /**
- * Format a Date object representing a time offset to MM:SS.MMM format.
+ * Formats a time duration into a human-readable string format.
+ * Returns MM:SS.mmm for durations under 1 hour, or HH:MM:SS.mmm for longer durations.
  *
- * @param offset - The Date object containing the time difference
- * @returns Formatted string in MM:SS.MMM format
+ * @param offset - Date object representing the duration (milliseconds since epoch)
+ * @returns Formatted duration string (e.g., "15:30.250" or "02:15:30.250")
  */
 export const formatOffset = (offset: Date): string => {
-  const minutes = offset.getUTCMinutes().toString().padStart(2, "0");
-  const seconds = offset.getUTCSeconds().toString().padStart(2, "0");
-  const milliseconds = offset.getUTCMilliseconds().toString().padStart(3, "0");
-  return `${minutes}:${seconds}.${milliseconds}`;
+  const ms = offset.getTime();
+  const hours = Math.floor(ms / 3600000); // 60 * 60 * 1000
+  const remainder = ms % 3600000;
+
+  // Extract "MM:SS.mmm" from ISO string
+  const timeStr = new Date(remainder).toISOString().slice(14, 23);
+
+  return hours > 0 ? `${hours.toString().padStart(2, "0")}:${timeStr}` : timeStr;
 };
