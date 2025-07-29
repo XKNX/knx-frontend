@@ -25,7 +25,8 @@ import "@ha/components/ha-icon-button";
 import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-list-item";
 
-import type { SortDirection, SortCriterion } from "../types/sorting";
+import type { SortDirection } from "../types/sorting";
+import type { SortCriterion } from "./data-table/filter/knx-list-filter";
 import { KnxSortMenu } from "./knx-sort-menu";
 import type { KNX } from "../types/knx";
 
