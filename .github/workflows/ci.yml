@@ -71,6 +71,8 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: ./test/coverage
           fail_ci_if_error: true
+          override_branch: ${{ github.ref_name }}
+          override_commit: ${{ github.sha }}
 
   build:
     name: Build
