@@ -17,13 +17,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: ".nvmrc"
-          cache: yarn
-      - name: Install dependencies
-        run: script/bootstrap
+
+      - name: Setup Node and Dependencies
+        uses: ./.github/actions/setup
 
       - name: Run eslint
         run: yarn run lint:eslint
@@ -34,6 +30,49 @@ jobs:
       - name: Check for duplicate dependencies
         run: yarn dedupe --check
 
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out files from GitHub
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node and Dependencies
+        uses: ./.github/actions/setup
+
+      - name: Run tests
+        run: yarn test
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Check out files from GitHub
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node and Dependencies
+        uses: ./.github/actions/setup
+
+      - name: Run tests with coverage
+        run: yarn run test:coverage
+
+      - name: Publish Coverage Report to PR
+        uses: davelosert/vitest-coverage-report-action@v2.8.3
+        # always() to also generate the report if tests are failing
+        if: always()
+        with:
+          json-summary-path: ./test/coverage/coverage-summary.json
+          json-final-path: ./test/coverage/coverage-final.json
+          vite-config-path: ./test/vitest.config.ts
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -42,13 +81,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: ".nvmrc"
-          cache: yarn
-      - name: Install dependencies
-        run: script/bootstrap
+
+      - name: Setup Node and Dependencies
+        uses: ./.github/actions/setup
 
       - name: Build
         run: yarn build
