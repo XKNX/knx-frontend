@@ -154,7 +154,7 @@ import { KNXLogger } from "../tools/knx-logger";
 7. **Error Boundaries**: Handle network failures gracefully with user feedback
 8. **Terminology Standards**: Use "Remove" for reversible actions, "Delete" for permanent actions; "Add" for existing items, "Create" for new items
 9. **Sentence Case**: Use sentence case for all UI text (buttons, labels, headings)
-10. **No Console Logs**: Use proper logging instead of console statements
+10. **No Console Logs**: Use KNXLogger for logging instead of console statements
 
 ## Interaction Style
 
