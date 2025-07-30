@@ -148,7 +148,7 @@ import { KNXLogger } from "../tools/knx-logger";
 1. **Reuse HA Components**: Prefer existing `<ha-*>` components over custom ones
 2. **Mobile-First**: Responsive design
 3. **Localize Everything**: No hardcoded strings, use translation keys
-4. **KNX Terminology**: Use "Group Address" not "GA", "telegram" for messages
+4. **KNX Terminology**: Use "Group Address" not "GA", "telegram" for messages. This rule applies to all user-facing text, including UI labels, documentation, and error messages. It does not apply to code comments or variable names.
 5. **WebSocket First**: Use integration's WS commands for all backend communication
 6. **Type Safety**: Define interfaces for all KNX data structures
 7. **Error Boundaries**: Handle network failures gracefully with user feedback
