@@ -17,13 +17,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: ".nvmrc"
-          cache: yarn
-      - name: Install dependencies
-        run: script/bootstrap
+
+      - name: Setup Node and Dependencies
+        uses: ./.github/actions/setup
 
       - name: Run eslint
         run: yarn run lint:eslint
@@ -34,6 +30,48 @@ jobs:
       - name: Check for duplicate dependencies
         run: yarn dedupe --check
 
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out files from GitHub
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node and Dependencies
+        uses: ./.github/actions/setup
+
+      - name: Run tests
+        run: yarn test
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Check out files from GitHub
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node and Dependencies
+        uses: ./.github/actions/setup
+
+      - name: Run tests with coverage
+        run: yarn run test:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        # always() to also upload coverage if tests are failing
+        if: always()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./test/coverage
+          fail_ci_if_error: true
+
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -42,13 +80,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: ".nvmrc"
-          cache: yarn
-      - name: Install dependencies
-        run: script/bootstrap
+
+      - name: Setup Node and Dependencies
+        uses: ./.github/actions/setup
 
       - name: Build
         run: yarn build

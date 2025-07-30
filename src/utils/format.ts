@@ -127,14 +127,25 @@ export const formatIsoTimestampWithMicroseconds = (timestampIso: string): string
 };
 
 /**
- * Format a Date object representing a time offset to MM:SS.MMM format.
+ * Formats a time duration into a human-readable string format.
+ * Returns MM:SS.mmm for durations under 1 hour, or HH:MM:SS.mmm for longer durations.
  *
- * @param offset - The Date object containing the time difference
- * @returns Formatted string in MM:SS.MMM format
+ * @param offset - Date object representing the duration (milliseconds since epoch)
+ * @returns Formatted duration string (e.g., "15:30.250" or "02:15:30.250")
  */
 export const formatOffset = (offset: Date): string => {
-  const minutes = offset.getUTCMinutes().toString().padStart(2, "0");
-  const seconds = offset.getUTCSeconds().toString().padStart(2, "0");
-  const milliseconds = offset.getUTCMilliseconds().toString().padStart(3, "0");
-  return `${minutes}:${seconds}.${milliseconds}`;
+  const ms = offset.getTime();
+
+  // Extract time components using direct calculations
+  const hours = Math.floor(ms / 3_600_000);
+  const minutes = Math.floor(ms / 60_000) % 60;
+  const seconds = Math.floor(ms / 1_000) % 60;
+  const milliseconds = ms % 1_000;
+
+  // Helper to format with zero-padding
+  const pad = (value: number, length: number) => value.toString().padStart(length, "0");
+
+  const timeStr = `${pad(minutes, 2)}:${pad(seconds, 2)}.${pad(milliseconds, 3)}`;
+
+  return hours > 0 ? `${pad(hours, 2)}:${timeStr}` : timeStr;
 };

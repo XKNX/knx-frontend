@@ -1,0 +1,28 @@
+name: 'Setup Node.js and Install Dependencies'
+description: 'Set up Node.js environment and install project dependencies with caching'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      id: setup-node
+      with:
+        node-version-file: ".nvmrc"
+        cache: 'yarn'
+
+    - name: Cache knx-frontend dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          .yarn/cache
+          .yarn/install-state.gz
+          node_modules
+        key: knx-frontend-deps-${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-${{ hashFiles('yarn.lock') }}
+        restore-keys: |
+          knx-frontend-deps-${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-
+          knx-frontend-deps-${{ runner.os }}-
+
+    - name: Install dependencies
+      shell: bash
+      run: script/bootstrap
