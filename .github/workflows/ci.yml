@@ -63,15 +63,14 @@ jobs:
       - name: Run tests with coverage
         run: yarn run test:coverage
 
-      - name: Publish Coverage Report to PR
-        uses: davelosert/vitest-coverage-report-action@v2.8.3
-        # always() to also generate the report if tests are failing
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        # always() to also upload coverage if tests are failing
         if: always()
         with:
-          json-summary-path: ./test/coverage/coverage-summary.json
-          json-final-path: ./test/coverage/coverage-final.json
-          vite-config-path: ./test/vitest.config.ts
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./test/coverage
+          fail_ci_if_error: true
 
   build:
     name: Build
