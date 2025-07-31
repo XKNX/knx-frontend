@@ -1,0 +1,373 @@
+#!/usr/bin/env bash
+
+# =============================================================================
+# KNX Frontend - AI Agent Setup Tool
+# =============================================================================
+# 
+# This script manages symlinks for AI agent instruction files,
+# linking them to the main GitHub Copilot instructions file.
+#
+# Usage: 
+#   ./setup-agents [link|unlink] [--force]
+#
+# =============================================================================
+
+set -euo pipefail
+
+# =============================================================================
+# Configuration Constants
+# =============================================================================
+
+readonly SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
+readonly PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly INSTRUCTIONS_FILE=".github/copilot-instructions.md"
+
+# AI agent instruction files to manage
+# NOTE: Keep this list synchronized with .gitignore
+readonly AI_AGENT_FILES=(
+    "AGENTS.md"                 # OpenAI Codex/ChatGPT
+    "CLAUDE.md"                 # Anthropic Claude
+    "GEMINI.md"                 # Google Gemini
+)
+
+# =============================================================================
+# Color Constants for Output
+# =============================================================================
+
+readonly COLOR_RED='\033[0;31m'
+readonly COLOR_GREEN='\033[0;32m'
+readonly COLOR_YELLOW='\033[1;33m'
+readonly COLOR_BLUE='\033[0;34m'
+readonly COLOR_RESET='\033[0m'
+
+# =============================================================================
+# Logging Functions
+# =============================================================================
+
+print_info() {
+    echo -e "${COLOR_BLUE}[INFO]${COLOR_RESET} $1" >&2
+}
+
+print_success() {
+    echo -e "${COLOR_GREEN}[SUCCESS]${COLOR_RESET} $1" >&2
+}
+
+print_warning() {
+    echo -e "${COLOR_YELLOW}[WARNING]${COLOR_RESET} $1" >&2
+}
+
+print_error() {
+    echo -e "${COLOR_RED}[ERROR]${COLOR_RESET} $1" >&2
+}
+
+# =============================================================================
+# Help and Usage Functions
+# =============================================================================
+
+show_usage() {
+    cat << EOF
+Usage: ${SCRIPT_NAME} [ACTION] [OPTIONS]
+
+Manages symlinks for AI agent instruction files in the KNX Frontend project.
+
+ACTIONS:
+    link                Link AI agent files to main instructions (default)
+    unlink              Unlink all AI agent instruction files
+    
+OPTIONS:
+    -h, --help          Show this help message and exit
+    -f, --force         Force overwrite/remove existing files
+
+EXAMPLES:
+    ${SCRIPT_NAME}                      # Link all agent instruction files (default)
+    ${SCRIPT_NAME} link                 # Link all agent instruction files (explicit)
+    ${SCRIPT_NAME} link --force         # Overwrite existing files
+    ${SCRIPT_NAME} unlink               # Unlink all agent instruction files
+    ${SCRIPT_NAME} unlink --force       # Remove files even if not symlinks
+
+AI AGENT FILES:
+EOF
+    for file in "${AI_AGENT_FILES[@]}"; do
+        echo "    ${file}"
+    done
+    echo
+    echo "All files will link to: ${INSTRUCTIONS_FILE}"
+    echo
+}
+
+# =============================================================================
+# Symlink Management Functions
+# =============================================================================
+
+validate_target_file() {
+    local -r target_file="${1}"
+    local -r target_path="${PROJECT_ROOT}/${target_file}"
+    
+    if [[ -e "${target_path}" || -L "${target_path}" ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+get_symlink_target() {
+    local -r symlink_path="${1}"
+    
+    if [[ -L "${symlink_path}" ]]; then
+        readlink "${symlink_path}"
+    else
+        return 1
+    fi
+}
+
+is_correct_symlink() {
+    local -r target_file="${1}"
+    local -r target_path="${PROJECT_ROOT}/${target_file}"
+    
+    if [[ -L "${target_path}" ]]; then
+        local current_target
+        current_target="$(get_symlink_target "${target_path}")"
+        [[ "${current_target}" == "${INSTRUCTIONS_FILE}" ]]
+    else
+        return 1
+    fi
+}
+
+create_symlink() {
+    local -r target_file="${1}"
+    local -r force_mode="${2:-false}"
+    local -r target_path="${PROJECT_ROOT}/${target_file}"
+    
+    # Handle existing files/symlinks
+    if validate_target_file "${target_file}"; then
+        if [[ "${force_mode}" == "true" ]]; then
+            rm -f "${target_path}"
+            print_warning "Removed existing ${target_file} (force mode enabled)"
+        elif is_correct_symlink "${target_file}"; then
+            print_info "${target_file} already linked to ${INSTRUCTIONS_FILE}"
+            return 0
+        elif [[ -L "${target_path}" ]]; then
+            local current_target
+            current_target="$(get_symlink_target "${target_path}")"
+            print_error "${target_file} is linked to '${current_target}' instead of '${INSTRUCTIONS_FILE}'"
+            return 1
+        else
+            print_error "${target_file} exists as a regular file (not a symlink)"
+            return 1
+        fi
+    fi
+    
+    # Create the symlink
+    if ln -sf "${INSTRUCTIONS_FILE}" "${target_path}"; then
+        print_success "Linked ${target_file} → ${INSTRUCTIONS_FILE}"
+        return 0
+    else
+        print_error "Failed to link ${target_file}"
+        return 1
+    fi
+}
+
+remove_symlink() {
+    local -r target_file="${1}"
+    local -r force_mode="${2:-false}"
+    local -r target_path="${PROJECT_ROOT}/${target_file}"
+    
+    if [[ -L "${target_path}" ]]; then
+        rm -f "${target_path}"
+        print_success "Unlinked ${target_file}"
+        return 0
+    elif [[ -e "${target_path}" ]]; then
+        if [[ "${force_mode}" == "true" ]]; then
+            rm -f "${target_path}"
+            print_success "Removed file ${target_file} (force mode enabled)"
+            return 0
+        else
+            print_error "${target_file} exists as a regular file (not a symlink) - use --force to remove"
+            return 1
+        fi
+    else
+        # File doesn't exist - that's fine for unlinking
+        return 0
+    fi
+}
+
+# =============================================================================
+# Batch Operations
+# =============================================================================
+
+link_all_agent_instructions() {
+    local -r force_mode="${1:-false}"
+    
+    print_info "Linking AI agent instruction files..."
+    print_info "Target instructions file: ${INSTRUCTIONS_FILE}"
+    
+    local linked_count=0
+    local failed_count=0
+    
+    for agent_file in "${AI_AGENT_FILES[@]}"; do
+        if create_symlink "${agent_file}" "${force_mode}"; then
+            ((linked_count++))
+        else
+            ((failed_count++))
+        fi
+    done
+    
+    # Print summary
+    echo
+    if [[ ${failed_count} -eq 0 ]]; then
+        print_success "Linking complete: ${linked_count} agent instruction file(s) processed successfully"
+        return 0
+    else
+        print_warning "Linking completed with issues: ${linked_count} successful, ${failed_count} failed"
+        return 1
+    fi
+}
+
+unlink_all_agent_instructions() {
+    local -r force_mode="${1:-false}"
+    
+    print_info "Unlinking AI agent instruction files..."
+    
+    local unlinked_count=0
+    local failed_count=0
+    local skipped_count=0
+    
+    for agent_file in "${AI_AGENT_FILES[@]}"; do
+        local target_path="${PROJECT_ROOT}/${agent_file}"
+        
+        if [[ ! -e "${target_path}" && ! -L "${target_path}" ]]; then
+            ((skipped_count++))
+            continue
+        fi
+        
+        if remove_symlink "${agent_file}" "${force_mode}"; then
+            ((unlinked_count++))
+        else
+            ((failed_count++))
+        fi
+    done
+    
+    # Print summary
+    echo
+    if [[ ${unlinked_count} -eq 0 && ${failed_count} -eq 0 ]]; then
+        print_info "No agent instruction files found to unlink"
+        return 0
+    elif [[ ${failed_count} -eq 0 ]]; then
+        print_success "Unlinking complete: ${unlinked_count} agent instruction file(s) unlinked successfully"
+        if [[ ${skipped_count} -gt 0 ]]; then
+            print_info "${skipped_count} file(s) were already missing"
+        fi
+        return 0
+    else
+        print_warning "Unlinking completed with issues: ${unlinked_count} unlinked, ${failed_count} failed"
+        if [[ ${skipped_count} -gt 0 ]]; then
+            print_info "${skipped_count} file(s) were already missing"
+        fi
+        return 1
+    fi
+}
+
+# =============================================================================
+# Validation Functions
+# =============================================================================
+
+validate_environment() {
+    # Check if we're in the correct directory
+    if [[ ! -f "${PROJECT_ROOT}/${INSTRUCTIONS_FILE}" ]]; then
+        print_error "Instructions file not found: ${INSTRUCTIONS_FILE}"
+        print_error "Please ensure you're running this script from the KNX Frontend project root"
+        return 1
+    fi
+    
+    # Check if we have write permissions
+    if [[ ! -w "${PROJECT_ROOT}" ]]; then
+        print_error "No write permission in project root: ${PROJECT_ROOT}"
+        return 1
+    fi
+    
+    return 0
+}
+
+# =============================================================================
+# Command Line Argument Parsing
+# =============================================================================
+
+parse_arguments() {
+    local action="link"
+    local force_mode="false"
+    
+    while [[ $# -gt 0 ]]; do
+        case "${1}" in
+            -h|--help)
+                show_usage
+                exit 0
+                ;;
+            link)
+                action="link"
+                shift
+                ;;
+            unlink)
+                action="unlink"
+                shift
+                ;;
+            -f|--force)
+                force_mode="true"
+                shift
+                ;;
+            *)
+                print_error "Unknown option: ${1}"
+                echo
+                show_usage
+                exit 1
+                ;;
+        esac
+    done
+    
+    # Export parsed values for use in main function
+    export PARSED_ACTION="${action}"
+    export PARSED_FORCE_MODE="${force_mode}"
+}
+
+# =============================================================================
+# Main Function
+# =============================================================================
+
+main() {
+    # Change to project root directory
+    cd "${PROJECT_ROOT}"
+    
+    # Parse command line arguments
+    parse_arguments "$@"
+    
+    # Validate environment
+    if ! validate_environment; then
+        exit 1
+    fi
+    
+    # Execute the requested action
+    case "${PARSED_ACTION}" in
+        link)
+            if ! link_all_agent_instructions "${PARSED_FORCE_MODE}"; then
+                exit 1
+            fi
+            ;;
+        unlink)
+            if ! unlink_all_agent_instructions "${PARSED_FORCE_MODE}"; then
+                exit 1
+            fi
+            ;;
+        *)
+            print_error "Unknown action: ${PARSED_ACTION}"
+            exit 1
+            ;;
+    esac
+}
+
+# =============================================================================
+# Script Entry Point
+# =============================================================================
+
+# Only run main if script is executed directly (not sourced)
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi

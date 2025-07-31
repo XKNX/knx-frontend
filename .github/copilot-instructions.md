@@ -1,6 +1,25 @@
-# KNX Frontend Copilot Instructions
+# KNX Frontend AI Agent Instructions
 
 You are an assistant helping with development of the Home Assistant KNX Frontend Panel. This is a TypeScript/Lit web application that provides KNX integration management within Home Assistant.
+
+## KNX Stack Architecture
+
+### Projects & Repositories
+
+| Layer                         | Role in the stack                                                      | GitHub repository                                                            |
+| ----------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| **Home Assistant Core**       | Main Python application and framework                                  | https://github.com/home-assistant/core                                       |
+| **KNX integration (in-tree)** | Glue code that wires KNX into HA (`homeassistant/components/knx`)      | https://github.com/home-assistant/core/tree/dev/homeassistant/components/knx |
+| **KNX integration proxy**     | Issue & discussion tracker for the integration                         | https://github.com/XKNX/knx-integration                                      |
+| **XKNX**                      | Asynchronous Python KNX/IP library that does the heavy lifting         | https://github.com/XKNX/xknx                                                 |
+| **KNX-frontend**              | TypeScript + Lit-Element HomeAssistant panel; packed as a Python wheel | https://github.com/XKNX/knx-frontend                                         |
+
+### How Components Interact
+
+1. **Backend flow**: Integration instantiates XKNX for KNX/IP connection; entities proxy between HA state machine and XKNX group-address abstractions
+2. **Frontend flow**: Panel registered via `async_register_built_in_panel()`, communicates via WebSocket API (`/api/websocket`)
+3. **Release pipeline**: Wheels composition (version pins + PyPI) - no git merges required
+4. **Issue tracking**: Use XKNX/knx-integration for integration issues, XKNX/knx-frontend for UI issues
 
 ## Core Principles
 
@@ -45,7 +64,7 @@ You are an assistant helping with development of the Home Assistant KNX Frontend
 - **Lighting**: On/off (DPT 1.001), dimming levels (DPT 5.001, 0-100%) → HA `light` entities
 - **Covers**: Up/down commands (DPT 1.008), position feedback (DPT 5.001) → HA `cover` entities
 - **Climate**: Temperature setpoints (DPT 9.001, °C), HVAC modes (DPT 20.102) → HA `climate` entities
-- **Sensors**: 
+- **Sensors**:
   - Motion detectors (DPT 1.002) → HA `binary_sensor` entities
   - Temperature probes (DPT 9.001) → HA `sensor` entities
   - Illumination meters (DPT 9.004, lux), humidity (DPT 9.007, %RH) → HA `sensor` entities
@@ -103,6 +122,26 @@ import { KNXLogger } from "../tools/knx-logger";
 - **Selectors**: Use `<ha-selector>` for form inputs (entity, device, area, text, number, boolean, etc.)
 - **Tables**: Use `<ha-data-table>` or semantic HTML with virtualization for large datasets
 - **Feedback**: Show loading states, success/error alerts with `<ha-alert>`
+
+## Project Structure
+
+- `/src`: Source code for AI agents to analyze and modify
+  - `/views`: Main panel views (group monitor, entities, project view)
+  - `/components`: Reusable Lit components that AI agents should understand and extend
+  - `/dialogs`: Dialog components for creating/editing KNX entities
+  - `/services`: WebSocket services for backend communication
+  - `/types`: TypeScript interfaces and type definitions for KNX data structures
+  - `/utils`: Utility functions for KNX address formatting and validation
+  - `/tools`: Development tools like KNXLogger
+- `/knx_frontend`: Python package containing compiled frontend assets and entry points (AI agents should not modify directly)
+- `/script`: Development and maintenance scripts
+  - `bootstrap`: Initialize submodules and install dependencies
+  - `build`: Production build script
+  - `develop`: Development server with live reload
+  - `upgrade-frontend`: Update Home Assistant frontend submodule
+- `/homeassistant-frontend`: Submodule (AI agents should not modify directly)
+- `/test`: Test files that AI agents should maintain and extend
+
 
 ## Testing
 
