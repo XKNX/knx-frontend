@@ -101,10 +101,10 @@ On Home Assistant OS you might use https://github.com/home-assistant/addons-deve
 This repository ships a set of instructions for AI coding agents.
 
 - GitHub Copilot comes pre-configured — its guidance lives in `.github/copilot-instructions.md`.
-- For other agents (currently OpenAI Codex, Anthropic Claude, Google Gemini), run
+- For other agents, you can easy symlink the Copilot instructions with:
 
     ```shell
-    yarn setup-agents
+    yarn agent:claude   # Creates CLAUDE.md
+    yarn agent:gemini   # Creates GEMINI.md  
+    yarn agent:codex    # Creates AGENTS.md
     ```
-
-    to create a symlink of `.github/copilot-instructions.md` for the respective agent.

@@ -17,7 +17,14 @@ You are an assistant helping with development of the Home Assistant KNX Frontend
 ### How Components Interact
 
 1. **Backend flow**: Integration instantiates XKNX for KNX/IP connection; entities proxy between HA state machine and XKNX group-address abstractions
-2. **Frontend flow**: Panel registered via `async_register_built_in_panel()`, communicates via WebSocket API (`/api/websocket`)
+2. **Frontend flow**: Panel registered via `panel_custom.async_register_panel()`, communicates via WebSocket API (`/api/websocket`)
+   - **Registration**: Panel loads as iframe with admin-only access, served from `/knx_static/entrypoint.{hash}.js`
+   - **Initialization**: Main component `knx-frontend` initializes KNX object with config entry and WebSocket services
+   - **Router**: `knx-router` handles navigation between views (info, group monitor, project, entities)
+   - **WebSocket Communication**: All backend communication via `hass.callWS()` with KNX-specific message types (`knx/info`, `knx/group_monitor_info`, `knx/create_entity`, etc.)
+   - **Theming**: Inherits HA themes, applies KNX-specific CSS custom properties (`--knx-green`, `--knx-blue`)
+   - **Components**: Built with Lit 3.x web components, uses HA design system (`<ha-*>` components)
+   - **Real-time Updates**: Telegram subscription via WebSocket for live KNX bus monitoring
 3. **Release pipeline**: Wheels composition (version pins + PyPI) - no git merges required
 4. **Issue tracking**: Use XKNX/knx-integration for integration issues, XKNX/knx-frontend for UI issues
 
