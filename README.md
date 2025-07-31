@@ -95,3 +95,16 @@ accessible at http://localhost:8123/knx.
 [hassos_dev_env]: https://developers.home-assistant.io/docs/development_environment/
 
 On Home Assistant OS you might use https://github.com/home-assistant/addons-development/tree/master/custom_deps
+
+### AI Agent Support
+
+This repository ships a set of instructions for AI coding agents.
+
+- GitHub Copilot comes pre-configured — its guidance lives in `.github/copilot-instructions.md`.
+- For other agents, you can easy symlink the Copilot instructions with:
+
+    ```shell
+    yarn agent:claude   # Creates CLAUDE.md
+    yarn agent:gemini   # Creates GEMINI.md  
+    yarn agent:codex    # Creates AGENTS.md
+    ```
