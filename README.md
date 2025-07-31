@@ -99,7 +99,7 @@ On Home Assistant OS you might use https://github.com/home-assistant/addons-deve
 ### AI Agent Support
 
 This repository ships a set of instructions for AI coding agents.
-	•	GitHub Copilot comes pre-configured — it's guidance lives in `.github/copilot-instructions.md`.
+	•	GitHub Copilot comes pre-configured — its guidance lives in `.github/copilot-instructions.md`.
 	•	For other (currently OpenAI Codex, Anthropic Claude, Google Gemini), run
 
     yarn setup-agents
