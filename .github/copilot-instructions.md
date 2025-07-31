@@ -31,7 +31,10 @@ You are an assistant helping with development of the Home Assistant KNX Frontend
 ### Core Concepts
 
 - **KNX**: Decentralized building automation protocol (EN 50090)
-- **Group Addresses**: Logical addresses (1/2/3 format) for device communication
+- **Group Addresses**: Logical addresses for device communication. Frontend supports all 3 formats:
+  - **3-level**: `1/2/3` (Main/Middle/Sub - most common)
+  - **2-level**: `1/2` (Main/Sub)
+  - **Free**: `12345` (single number 0-65535)
 - **Individual Addresses**: Physical device addresses (Area.Line.Device)
 - **Telegrams**: KNX messages sent between devices on the bus
 - **DPT (Datapoint Types)**: Data formats (DPT 1.001 = boolean, DPT 9.001 = temperature)
@@ -39,11 +42,18 @@ You are an assistant helping with development of the Home Assistant KNX Frontend
 
 ### Common Use Cases
 
-- **Lighting**: On/off (DPT 1.001), dimming (DPT 5.001)
-- **Shutters/Blinds**: Up/down commands, position feedback
-- **HVAC**: Temperature setpoints, mode control
-- **Sensors**: Motion, illumination, weather data
-- **Scenes**: Scene numbers (DPT 17.x)
+- **Lighting**: On/off (DPT 1.001), dimming levels (DPT 5.001, 0-100%) → HA `light` entities
+- **Covers**: Up/down commands (DPT 1.008), position feedback (DPT 5.001) → HA `cover` entities
+- **Climate**: Temperature setpoints (DPT 9.001, °C), HVAC modes (DPT 20.102) → HA `climate` entities
+- **Sensors**: 
+  - Motion detectors (DPT 1.002) → HA `binary_sensor` entities
+  - Temperature probes (DPT 9.001) → HA `sensor` entities
+  - Illumination meters (DPT 9.004, lux), humidity (DPT 9.007, %RH) → HA `sensor` entities
+  - Weather: Wind speed (DPT 9.005), rain alarm (DPT 1.005) → HA `sensor`/`binary_sensor` entities
+- **Switches**: Wall switches, push buttons (DPT 1.001) → HA `switch` or `binary_sensor` entities
+- **Fans**: Speed control (DPT 5.002) → HA `fan` entities
+- **Scenes**: Scene numbers (DPT 17.001) → HA `scene` entities
+- **Alarms**: Status/fault signals (DPT 1.005) → HA `binary_sensor` entities
 
 ### ETS Integration
 
@@ -89,9 +99,10 @@ import { KNXLogger } from "../tools/knx-logger";
 ### UI Components
 
 - **Dialogs**: Use `<ha-dialog>` with `HassDialog` interface
-- **Forms**: Prefer `<ha-form>` with schemas or manual `<mwc-textfield>`
+- **Forms**: Prefer `<ha-form>` with schemas or `<ha-selector>` components
+- **Selectors**: Use `<ha-selector>` for form inputs (entity, device, area, text, number, boolean, etc.)
 - **Tables**: Use `<ha-data-table>` or semantic HTML with virtualization for large datasets
-- **Feedback**: Show loading states, success/error alerts
+- **Feedback**: Show loading states, success/error alerts with `<ha-alert>`
 
 ## Testing
 
@@ -148,13 +159,13 @@ import { KNXLogger } from "../tools/knx-logger";
 1. **Reuse HA Components**: Prefer existing `<ha-*>` components over custom ones
 2. **Mobile-First**: Responsive design
 3. **Localize Everything**: No hardcoded strings, use translation keys
-4. **KNX Terminology**: Use "Group Address" not "GA", "telegram" for messages. This rule applies to all user-facing text, including UI labels, documentation, and error messages. It does not apply to code comments or variable names.
+4. **KNX Terminology**: Use "Group Address" not "GA", "telegram" for messages
 5. **WebSocket First**: Use integration's WS commands for all backend communication
 6. **Type Safety**: Define interfaces for all KNX data structures
 7. **Error Boundaries**: Handle network failures gracefully with user feedback
 8. **Terminology Standards**: Use "Remove" for reversible actions, "Delete" for permanent actions; "Add" for existing items, "Create" for new items
 9. **Sentence Case**: Use sentence case for all UI text (buttons, labels, headings)
-10. **No Console Logs**: Use KNXLogger for logging instead of console statements
+10. **No Console Logs**: Use proper logging instead of console statements
 
 ## Interaction Style
 
