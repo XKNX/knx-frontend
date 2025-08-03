@@ -147,15 +147,21 @@ const TIME_COMPONENT_PADDING = 2;
 const FRACTIONAL_COMPONENT_PADDING = 3;
 
 /**
- * Formats a time duration into a human-readable string.
- * - Under 1 hour:      MM:SS.mmm
- * - 1 hour or more:    HH:MM:SS.mmm
- * - Supports optional microsecond precision: HH:MM:SS.mmmuu
- * - Returns "—" for null input.
+ * Formats a time duration into a human-readable string with microsecond precision support.
  *
- * @param offsetMicros  Duration in microseconds (null for no previous event)
- * @param precision     "milliseconds" (default) or "microseconds"
- * @returns             Formatted time delta string
+ * Output formats:
+ * - Under 1 hour: MM:SS.mmm (or MM:SS.mmmuu with microsecond precision)
+ * - 1 hour or more: HH:MM:SS.mmm (or HH:MM:SS.mmmuu with microsecond precision)
+ * - Negative values: prefixed with "-"
+ * - Null input: "—" (em dash)
+ *
+ * @param offsetMicros - Duration in microseconds (null for no previous event)
+ * @param precision - "milliseconds" (default, rounds to 3 decimals) or "microseconds" (6 decimals)
+ * @returns Formatted time delta string or "—" for null input
+ *
+ * @example
+ * formatTimeDelta(150500000) // "02:30.500"
+ * formatTimeDelta(1123456, "microseconds") // "00:01.123456"
  */
 export function formatTimeDelta(
   offsetMicros: number | null,
