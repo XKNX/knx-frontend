@@ -29,7 +29,9 @@ export class TelegramBufferService {
       this._buffer.push(...telegramArray);
       // Sort if we have multiple telegrams that might be unsorted
       if (telegramArray.length > 1) {
-        this._buffer.sort((a, b) => a.timestampIso.localeCompare(b.timestampIso));
+        this._buffer.sort((a, b) =>
+          a.timestampIso < b.timestampIso ? -1 : a.timestampIso > b.timestampIso ? 1 : 0,
+        );
       }
     } else {
       const lastTimestamp = this._buffer[this._buffer.length - 1].timestampIso;
@@ -49,7 +51,9 @@ export class TelegramBufferService {
       } else {
         // Slow path: need to sort because order is not maintained
         this._buffer.push(...telegramArray);
-        this._buffer.sort((a, b) => a.timestampIso.localeCompare(b.timestampIso));
+        this._buffer.sort((a, b) =>
+          a.timestampIso < b.timestampIso ? -1 : a.timestampIso > b.timestampIso ? 1 : 0,
+        );
       }
     }
 
@@ -75,7 +79,9 @@ export class TelegramBufferService {
     const uniqueNewTelegrams = newTelegrams.filter((telegram) => !existingIds.has(telegram.id));
 
     // Sort new telegrams by timestamp to maintain chronological order
-    uniqueNewTelegrams.sort((a, b) => a.timestampIso.localeCompare(b.timestampIso));
+    uniqueNewTelegrams.sort((a, b) =>
+      a.timestampIso < b.timestampIso ? -1 : a.timestampIso > b.timestampIso ? 1 : 0,
+    );
 
     // Add new telegrams and get removed telegrams
     const removedTelegrams = this.add(uniqueNewTelegrams);
