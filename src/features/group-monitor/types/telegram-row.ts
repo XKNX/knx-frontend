@@ -7,8 +7,20 @@
  */
 
 import type { DataTableRowData } from "@ha/components/data-table/ha-data-table";
-import type { TelegramDict } from "./websocket";
-import { TelegramDictFormatter } from "../utils/format";
+import { slugify } from "@ha/common/string/slugify";
+import type { TelegramDict } from "../../../types/websocket";
+import { TelegramDictFormatter } from "../../../utils/format";
+
+/**
+ * Time offset in microseconds for relative timestamp calculations
+ * null indicates the first telegram in a series (no previous telegram to compare with)
+ */
+export type OffsetMicros = number | null;
+
+/**
+ * Precision level for time formatting
+ */
+export type TimePrecision = "milliseconds" | "microseconds";
 
 /**
  * Type for TelegramRow property keys
@@ -47,8 +59,10 @@ export class TelegramRow implements DataTableRowData {
 
   /**
    * Time offset for relative timestamp calculations
+   * null indicates the first telegram (no previous telegram for comparison)
+   * number represents microseconds elapsed since the previous telegram
    */
-  offset: Date = new Date(0);
+  offset: OffsetMicros = null;
 
   // ============================================================================
   // Source Address Information
@@ -58,12 +72,6 @@ export class TelegramRow implements DataTableRowData {
    * Raw source address string as received from KNX bus
    */
   sourceAddress: string;
-
-  /**
-   * Numeric representation of the source address
-   * Extracted by removing non-numeric characters for sorting/filtering
-   */
-  sourceAddressNumeric: number;
 
   /**
    * Human-readable name/description for the source address
@@ -85,12 +93,6 @@ export class TelegramRow implements DataTableRowData {
    * Raw destination address string as received from KNX bus
    */
   destinationAddress: string;
-
-  /**
-   * Numeric representation of the destination address
-   * Extracted by removing non-numeric characters for sorting/filtering
-   */
-  destinationAddressNumeric: number;
 
   /**
    * Human-readable name/description for the destination address
@@ -165,32 +167,6 @@ export class TelegramRow implements DataTableRowData {
    */
   constructor(telegram: TelegramDict) {
     // ============================================================================
-    // Input Sanitization Patterns
-    // ============================================================================
-
-    /** Regex pattern to remove all non-alphanumeric characters for ID generation */
-    const NON_ALPHANUMERIC = /[^a-zA-Z0-9]/g;
-
-    /** Regex pattern to extract only numeric characters for address conversion */
-    const NON_NUMERIC = /[^0-9]/g;
-
-    // ============================================================================
-    // Sanitization Helper Functions
-    // ============================================================================
-
-    /**
-     * Removes non-alphanumeric characters for safe DOM ID usage
-     * Ensures generated IDs are valid CSS selectors and HTML attributes
-     */
-    const sanitizeAlphanumeric = (value: string): string => value.replace(NON_ALPHANUMERIC, "");
-
-    /**
-     * Extracts only numeric characters for address conversion
-     * Enables proper numeric sorting and comparison of KNX addresses
-     */
-    const sanitizeNumeric = (value: string): string => value.replace(NON_NUMERIC, "");
-
-    // ============================================================================
     // Unique ID Generation
     // ============================================================================
 
@@ -199,11 +175,7 @@ export class TelegramRow implements DataTableRowData {
      * Combines multiple fields to minimize collision risk
      * Format: "timestamp_source_destination" (sanitized)
      */
-    this.id = [
-      sanitizeAlphanumeric(telegram.timestamp),
-      sanitizeAlphanumeric(telegram.source),
-      sanitizeAlphanumeric(telegram.destination),
-    ].join("_");
+    this.id = slugify(`${telegram.timestamp}_${telegram.source}_${telegram.destination}`);
 
     // ============================================================================
     // Timestamp Processing
@@ -221,7 +193,6 @@ export class TelegramRow implements DataTableRowData {
 
     this.sourceAddress = telegram.source;
     this.sourceText = telegram.source_name;
-    this.sourceAddressNumeric = parseInt(sanitizeNumeric(telegram.source), 10);
     this.sourceName = `${telegram.source}: ${telegram.source_name}`;
 
     // ============================================================================
@@ -230,7 +201,6 @@ export class TelegramRow implements DataTableRowData {
 
     this.destinationAddress = telegram.destination;
     this.destinationText = telegram.destination_name;
-    this.destinationAddressNumeric = parseInt(sanitizeNumeric(telegram.destination), 10);
     this.destinationName = `${telegram.destination}: ${telegram.destination_name}`;
 
     // ============================================================================

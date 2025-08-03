@@ -64,10 +64,7 @@ export class KnxRouter extends HassRouterPage {
       },
       group_monitor: {
         tag: "knx-group-monitor",
-        load: () => {
-          logger.debug("Importing knx-group-monitor");
-          return import("./views/group_monitor");
-        },
+        load: () => import("./features/group-monitor/views/group-monitor-view"),
       },
       project: {
         tag: "knx-project-view",

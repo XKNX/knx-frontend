@@ -8,7 +8,8 @@
  *
  * The component is designed for ha data tables where users need to quickly filter
  * content by clicking on cell values. It maintains the base cell layout while
- * adding an optional filter button.
+ * adding an optional filter button. On mobile touch devices, filtering can be
+ * disabled for better user experience by setting filterDisabled=true.
  */
 
 import { html, css, nothing } from "lit";
@@ -61,6 +62,12 @@ export class KnxTableCellFilterable extends KnxTableCell {
   @property({ attribute: false }) public filterActive = false;
 
   /**
+   * Whether filtering functionality should be disabled
+   * When true, no filter button will be shown
+   */
+  @property({ attribute: false }) public filterDisabled = false;
+
+  /**
    * Component-specific styles.
    */
   public static styles = [
@@ -102,8 +109,8 @@ export class KnxTableCellFilterable extends KnxTableCell {
           <slot name="primary"></slot>
           <slot name="secondary"></slot>
         </div>
-        <!-- Filter Button - conditionally rendered based on filterValue -->
-        ${this.filterValue
+        <!-- Filter Button - conditionally rendered based on filterValue and filterDisabled -->
+        ${this.filterValue && !this.filterDisabled
           ? html`
               <div class="filter-button ${this.filterActive ? "filter-active" : ""}">
                 <ha-icon-button

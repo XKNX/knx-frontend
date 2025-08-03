@@ -22,14 +22,15 @@ import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, query } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 import { guard } from "lit/directives/guard";
+import { ifDefined } from "lit/directives/if-defined";
 import { repeat } from "lit/directives/repeat";
 
 import {
   mdiFilterVariantRemove,
   mdiPin,
-  mdiSortAscending,
-  mdiSortDescending,
   mdiChevronUp,
+  mdiSortReverseVariant,
+  mdiSortVariant,
 } from "@mdi/js";
 
 import "@ha/components/ha-checkbox";
@@ -61,9 +62,9 @@ import type { KnxSeparator } from "../../knx-separator";
 
 /**
  * Available sort criteria corresponding to the four configurable fields
- * in data table components.
+ * in data table components, plus any custom fields defined in config.
  */
-export type SortCriterion = "idField" | "primaryField" | "secondaryField" | "badgeField";
+export type SortCriterion = "idField" | "primaryField" | "secondaryField" | "badgeField" | string;
 
 // ============================================================================
 // Configuration Interfaces
@@ -82,6 +83,8 @@ export interface Config<T = any> {
   secondaryField: FieldConfig<T>;
   /** Configuration for the badge/count field */
   badgeField: FieldConfig<T>;
+  /** Additional custom fields for filtering and sorting (not displayed in FilterOption) */
+  custom?: Record<string, FieldConfig<T>>;
 }
 
 /**
@@ -121,8 +124,9 @@ export interface FieldConfig<T = any> {
 /**
  * Standardized filter option structure with dynamic field mapping
  * All raw data items are transformed into this format for consistent processing
+ * Custom fields are added as direct properties for optimal performance
  */
-export interface FilterOption {
+export interface FilterOption extends Record<string, any> {
   /** Unique identifier extracted from the data item */
   idField: string;
   /** Primary display text extracted from the data item */
@@ -133,6 +137,8 @@ export interface FilterOption {
   badgeField?: string;
   /** Current selection state for this option */
   selected: boolean;
+  /** Custom fields are added as direct properties with their field names as keys */
+  [customFieldKey: string]: string | boolean | undefined;
 }
 
 // ============================================================================
@@ -235,6 +241,13 @@ export class KnxListFilter<T = any> extends LitElement {
    */
   @property({ attribute: "sort-direction" }) public sortDirection: SortDirection = "asc";
 
+  /**
+   * Whether this is a mobile device (mobile/tablet)
+   * Controls sort button behavior in mobile vs desktop interaction modes
+   */
+  @property({ type: Boolean, attribute: "is-mobile-device" })
+  public isMobileDevice = false;
+
   // ============================================================================
   // Separator State and Queries
   // ============================================================================
@@ -329,7 +342,7 @@ export class KnxListFilter<T = any> extends LitElement {
   private _computeFilteredOptions(): FilterOption[] {
     const {
       data,
-      config: { idField, primaryField, secondaryField, badgeField },
+      config: { idField, primaryField, secondaryField, badgeField, custom },
       selectedOptions = [],
     } = this;
 
@@ -342,13 +355,22 @@ export class KnxListFilter<T = any> extends LitElement {
         throw new Error("Missing id or primary field on item: " + JSON.stringify(item));
       }
 
-      return {
+      const option: FilterOption = {
         idField: id,
         primaryField: primary,
         secondaryField: secondaryField.mapper(item),
         badgeField: badgeField.mapper(item),
         selected: selectedOptions.includes(id),
-      } as FilterOption;
+      };
+
+      // Add custom fields as direct properties
+      if (custom) {
+        Object.entries(custom).forEach(([fieldName, fieldConfig]) => {
+          option[fieldName] = fieldConfig.mapper(item);
+        });
+      }
+
+      return option;
     });
 
     // Step 2: Apply search filtering across configured filterable fields
@@ -357,12 +379,136 @@ export class KnxListFilter<T = any> extends LitElement {
 
   /**
    * Gets the appropriate comparator for sorting based on current sort criterion
+   * Uses unified comparator generation with configurable field priority fallback
    *
    * @returns Comparator function for FilterOption sorting
    */
   private _getComparator(): Comparator<FilterOption> {
-    const { config, defaultComparators, sortCriterion } = this;
-    return config[sortCriterion]?.comparator ?? defaultComparators[sortCriterion];
+    // Try to get custom comparator from field config first
+    const fieldConfig = this._getFieldConfig(this.sortCriterion);
+    if (fieldConfig?.comparator) {
+      return fieldConfig.comparator;
+    }
+
+    // Generate unified comparator with field priority fallback
+    return this._generateComparator(this.sortCriterion);
+  }
+
+  /**
+   * Gets field configuration for any field type (standard or custom)
+   *
+   * @param fieldName - Name of the field to get config for
+   * @returns FieldConfig if found, undefined otherwise
+   */
+  private _getFieldConfig(fieldName: string): FieldConfig<T> | undefined {
+    const { config } = this;
+
+    // Check standard fields first
+    if (fieldName in config && fieldName !== "custom") {
+      return config[fieldName as keyof Omit<Config<T>, "custom">] as FieldConfig<T>;
+    }
+
+    // Check custom fields
+    return config.custom?.[fieldName];
+  }
+
+  /**
+   * Generates a unified comparator for any field with lazy fallback evaluation
+   * Only evaluates fallback fields when the primary comparison results in equality
+   *
+   * @param primaryFieldName - The primary field to sort by
+   * @returns Comparator function with lazy multi-level fallback
+   */
+  private _generateComparator(primaryFieldName: string): Comparator<FilterOption> {
+    return (a, b) => {
+      // Primary comparison - most important and most frequent case
+      const primaryComparison = this._compareByField(a, b, primaryFieldName);
+      if (primaryComparison !== 0) {
+        return primaryComparison;
+      }
+
+      // Lazy evaluation: only compute fallbacks if primary comparison is equal
+      // This dramatically reduces the number of comparisons for most sort operations
+      return this._lazyFallbackComparison(a, b, primaryFieldName);
+    };
+  }
+
+  /**
+   * Performs lazy fallback comparison only when needed
+   * Evaluates fallback fields one by one until a difference is found
+   *
+   * @param a - First option to compare
+   * @param b - Second option to compare
+   * @param primaryFieldName - The primary field that resulted in equality
+   * @returns Comparison result from first non-equal fallback field
+   */
+  private _lazyFallbackComparison(
+    a: FilterOption,
+    b: FilterOption,
+    primaryFieldName: string,
+  ): number {
+    // Get fallback hierarchy for this field type (excluding the primary field itself)
+    const fallbackFields = this._getFallbackFields(primaryFieldName);
+
+    // Compare each fallback field until we find a difference
+    for (const fieldName of fallbackFields) {
+      const comparison = this._compareByField(a, b, fieldName);
+      if (comparison !== 0) {
+        return comparison;
+      }
+    }
+
+    // Final fallback to ID for absolute consistency
+    return this._compareByField(a, b, "idField");
+  }
+
+  /**
+   * Gets the fallback field sequence for a given primary field
+   * Excludes the primary field itself to avoid redundant comparisons
+   *
+   * @param primaryField - The primary field being sorted
+   * @returns Array of fallback field names (excluding primary field)
+   */
+  private _getFallbackFields(primaryField: string): string[] {
+    // Define fallback sequences for each field type
+    const fallbackSequences: Record<string, string[]> = {
+      // ID field: no fallbacks needed (will use final ID fallback)
+      idField: [],
+
+      // Primary field: secondary, badge as fallbacks
+      primaryField: ["secondaryField", "badgeField"],
+
+      // Secondary field: primary, badge as fallbacks
+      secondaryField: ["primaryField", "badgeField"],
+
+      // Badge field: primary, secondary as fallbacks
+      badgeField: ["primaryField", "secondaryField"],
+    };
+
+    // For custom fields: minimal fallback to primary field only
+    // This ensures custom fields sort efficiently without unnecessary comparisons
+    return fallbackSequences[primaryField] || ["primaryField"];
+  }
+
+  /**
+   * Compares two FilterOption items by a specific field
+   * Handles both standard fields and custom fields as direct properties
+   *
+   * @param a - First option to compare
+   * @param b - Second option to compare
+   * @param fieldName - Name of the field to compare by
+   * @returns Comparison result (-1, 0, 1)
+   */
+  private _compareByField(a: FilterOption, b: FilterOption, fieldName: string): number {
+    // All fields (standard and custom) are now direct properties of FilterOption
+    const valueA = a[fieldName];
+    const valueB = b[fieldName];
+
+    // Convert to string for comparison
+    const stringA = typeof valueA === "string" ? valueA : (valueA?.toString() ?? "");
+    const stringB = typeof valueB === "string" ? valueB : (valueB?.toString() ?? "");
+
+    return KnxCollator.compare(stringA, stringB);
   }
 
   // ============================================================================
@@ -496,39 +642,6 @@ export class KnxListFilter<T = any> extends LitElement {
     }
   }
 
-  /**
-   * Default sorting comparators for each field type
-   *
-   * Each comparator includes intelligent tie-breaking by checking other fields
-   * in a logical order to ensure consistent and predictable sorting behavior.
-   * Uses KnxCollator for locale-aware string comparison.
-   */
-  defaultComparators: Record<SortCriterion, Comparator<FilterOption>> = {
-    /** Sort by ID field with fallback hierarchy */
-    idField: (a, b) => KnxCollator.compare(a.idField, b.idField),
-
-    /** Sort by primary field, fall back to secondary, badge, then ID */
-    primaryField: (a, b) =>
-      KnxCollator.compare(a.primaryField ?? "", b.primaryField ?? "") ||
-      KnxCollator.compare(a.secondaryField ?? "", b.secondaryField ?? "") ||
-      KnxCollator.compare(a.badgeField ?? "", b.badgeField ?? "") ||
-      KnxCollator.compare(a.idField, b.idField),
-
-    /** Sort by secondary field, fall back to primary, badge, then ID */
-    secondaryField: (a, b) =>
-      KnxCollator.compare(a.secondaryField ?? "", b.secondaryField ?? "") ||
-      KnxCollator.compare(a.primaryField ?? "", b.primaryField ?? "") ||
-      KnxCollator.compare(a.badgeField ?? "", b.badgeField ?? "") ||
-      KnxCollator.compare(a.idField, b.idField),
-
-    /** Sort by badge field, fall back to primary, secondary, then ID */
-    badgeField: (a, b) =>
-      KnxCollator.compare(a.badgeField ?? "", b.badgeField ?? "") ||
-      KnxCollator.compare(a.primaryField ?? "", b.primaryField ?? "") ||
-      KnxCollator.compare(a.secondaryField ?? "", b.secondaryField ?? "") ||
-      KnxCollator.compare(a.idField, b.idField),
-  };
-
   // ============================================================================
   // Filtering and Sorting Helpers
   // ============================================================================
@@ -536,8 +649,9 @@ export class KnxListFilter<T = any> extends LitElement {
   /**
    * Applies text-based filtering to the options array
    *
-   * Searches across all fields marked as filterable in the configuration.
-   * Performs case-insensitive substring matching on string values.
+   * Searches across all fields marked as filterable in the configuration,
+   * including custom fields. Performs case-insensitive substring matching on string values.
+   * Custom fields are now accessed as direct properties for optimal performance.
    *
    * @param options - Array of FilterOption items to filter
    * @returns Filtered array containing only matching items
@@ -548,7 +662,7 @@ export class KnxListFilter<T = any> extends LitElement {
     }
 
     const searchQuery = this.filterQuery.toLowerCase();
-    const { idField, primaryField, secondaryField, badgeField } = this.config;
+    const { idField, primaryField, secondaryField, badgeField, custom } = this.config;
 
     // Build list of field accessors for filterable fields only
     const accessors: ((opt: FilterOption) => string | undefined)[] = [];
@@ -556,6 +670,18 @@ export class KnxListFilter<T = any> extends LitElement {
     if (primaryField.filterable) accessors.push((opt) => opt.primaryField);
     if (secondaryField.filterable) accessors.push((opt) => opt.secondaryField);
     if (badgeField.filterable) accessors.push((opt) => opt.badgeField);
+
+    // Add custom field accessors for filterable custom fields
+    if (custom) {
+      Object.entries(custom).forEach(([fieldName, customField]) => {
+        if (customField.filterable) {
+          accessors.push((opt) => {
+            const value = opt[fieldName];
+            return typeof value === "string" ? value : value?.toString();
+          });
+        }
+      });
+    }
 
     return options.filter((option) =>
       accessors.some((getField) => {
@@ -621,7 +747,7 @@ export class KnxListFilter<T = any> extends LitElement {
    * @param ev - Custom event containing the new sort configuration
    */
   private _handleSortChanged(
-    ev: CustomEvent<{ criterion: SortCriterion; direction: SortDirection }>,
+    ev: CustomEvent<{ criterion: string; direction: SortDirection }>,
   ): void {
     this.sortCriterion = ev.detail.criterion;
     this.sortDirection = ev.detail.direction;
@@ -666,7 +792,7 @@ export class KnxListFilter<T = any> extends LitElement {
    * @returns The path to the sort icon (ascending or descending)
    */
   private _getSortIcon(): string {
-    return this.sortDirection === SORT_ASC ? mdiSortAscending : mdiSortDescending;
+    return this.sortDirection === SORT_ASC ? mdiSortReverseVariant : mdiSortVariant;
   }
 
   /**
@@ -676,7 +802,13 @@ export class KnxListFilter<T = any> extends LitElement {
   private _hasFilterableOrSortableFields(): boolean {
     if (!this.config) return false;
 
-    return Object.values(this.config).some((field) => field.filterable || field.sortable);
+    const standardFields = Object.values(this.config).filter(
+      (field): field is FieldConfig<T> =>
+        field && typeof field === "object" && "filterable" in field,
+    );
+    const customFields = this.config.custom ? Object.values(this.config.custom) : [];
+
+    return [...standardFields, ...customFields].some((field) => field.filterable || field.sortable);
   }
 
   /**
@@ -686,7 +818,13 @@ export class KnxListFilter<T = any> extends LitElement {
   private _hasFilterableFields(): boolean {
     if (!this.config) return false;
 
-    return Object.values(this.config).some((field) => field.filterable);
+    const standardFields = Object.values(this.config).filter(
+      (field): field is FieldConfig<T> =>
+        field && typeof field === "object" && "filterable" in field,
+    );
+    const customFields = this.config.custom ? Object.values(this.config.custom) : [];
+
+    return [...standardFields, ...customFields].some((field) => field.filterable);
   }
 
   /**
@@ -696,7 +834,12 @@ export class KnxListFilter<T = any> extends LitElement {
   private _hasSortableFields(): boolean {
     if (!this.config) return false;
 
-    return Object.values(this.config).some((field) => field.sortable);
+    const standardFields = Object.values(this.config).filter(
+      (field): field is FieldConfig<T> => field && typeof field === "object" && "sortable" in field,
+    );
+    const customFields = this.config.custom ? Object.values(this.config.custom) : [];
+
+    return [...standardFields, ...customFields].some((field) => field.sortable);
   }
 
   /**
@@ -770,8 +913,10 @@ export class KnxListFilter<T = any> extends LitElement {
                 ></ha-icon-button>
 
                 <knx-sort-menu
+                  .knx=${this.knx}
                   .sortCriterion=${this.sortCriterion}
                   .sortDirection=${this.sortDirection}
+                  .isMobileDevice=${this.isMobileDevice}
                   @sort-changed=${this._handleSortChanged}
                 >
                   <div slot="title">${this.knx.localize("knx_list_filter_sort_by")}</div>
@@ -788,21 +933,44 @@ export class KnxListFilter<T = any> extends LitElement {
                     </ha-icon-button-toggle>
                   </div>
                   <!-- Sort menu items generated from sortable fields -->
-                  ${Object.entries(this.config || {}).map(([key, field]) =>
-                    field.sortable
+                  ${Object.entries(this.config || {}).map(([key, field]) => {
+                    // Skip the custom object itself
+                    if (key === "custom") return nothing;
+
+                    const fieldConfig = field as FieldConfig<T>;
+                    return fieldConfig.sortable
                       ? html`
                           <knx-sort-menu-item
-                            criterion=${key as SortCriterion}
-                            display-name=${field.fieldName}
-                            default-direction=${field.sortDefaultDirection ?? "asc"}
-                            ascending-text=${field.sortAscendingText ??
+                            criterion=${key}
+                            display-name=${ifDefined(fieldConfig.fieldName)}
+                            default-direction=${fieldConfig.sortDefaultDirection ?? "asc"}
+                            ascending-text=${fieldConfig.sortAscendingText ??
                             this.knx.localize("knx_list_filter_sort_ascending")}
-                            descending-text=${field.sortDescendingText ??
+                            descending-text=${fieldConfig.sortDescendingText ??
                             this.knx.localize("knx_list_filter_sort_descending")}
                           ></knx-sort-menu-item>
                         `
-                      : nothing,
-                  )}
+                      : nothing;
+                  })}
+
+                  <!-- Custom field sort menu items -->
+                  ${this.config?.custom
+                    ? Object.entries(this.config.custom).map(([key, field]) =>
+                        field.sortable
+                          ? html`
+                              <knx-sort-menu-item
+                                criterion=${key}
+                                display-name=${ifDefined(field.fieldName)}
+                                default-direction=${field.sortDefaultDirection ?? "asc"}
+                                ascending-text=${field.sortAscendingText ??
+                                this.knx.localize("knx_list_filter_sort_ascending")}
+                                descending-text=${field.sortDescendingText ??
+                                this.knx.localize("knx_list_filter_sort_descending")}
+                              ></knx-sort-menu-item>
+                            `
+                          : nothing,
+                      )
+                    : nothing}
                 </knx-sort-menu>
               </div>
             `
