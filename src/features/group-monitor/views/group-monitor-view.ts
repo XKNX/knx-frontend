@@ -133,7 +133,7 @@ export class KNXGroupMonitor extends LitElement {
    * Detects if the current device is a mobile touch device
    * Used to disable quick filter buttons on mobile for better UX
    */
-  private get _isMobileTouchDevice(): boolean {
+  private get isMobileTouchDevice(): boolean {
     return isMobileClient && isTouch;
   }
 
@@ -568,7 +568,7 @@ export class KNXGroupMonitor extends LitElement {
             .filterActive=${(this.controller.filters.source || []).includes(
               row.sourceAddress as string,
             )}
-            .filterDisabled=${this._isMobileTouchDevice}
+            .filterDisabled=${this.isMobileTouchDevice}
             @toggle-filter=${this._handleSourceFilterToggle}
           >
             <div class="primary" slot="primary">${row.sourceAddress}</div>
@@ -617,7 +617,7 @@ export class KNXGroupMonitor extends LitElement {
             .filterActive=${(this.controller.filters.destination || []).includes(
               row.destinationAddress as string,
             )}
-            .filterDisabled=${this._isMobileTouchDevice}
+            .filterDisabled=${this.isMobileTouchDevice}
             @toggle-filter=${this._handleDestinationFilterToggle}
           >
             <div class="primary" slot="primary">${row.destinationAddress}</div>
@@ -668,7 +668,7 @@ export class KNXGroupMonitor extends LitElement {
             .filterActive=${(this.controller.filters.telegramtype || []).includes(
               row.type as string,
             )}
-            .filterDisabled=${this._isMobileTouchDevice}
+            .filterDisabled=${this.isMobileTouchDevice}
             @toggle-filter=${this._handleTelegramTypeFilterToggle}
           >
             <div class="primary" slot="primary" title=${row.type}>${row.type}</div>
@@ -931,7 +931,7 @@ export class KNXGroupMonitor extends LitElement {
           .selectedOptions=${this.controller.filters.source}
           .expanded=${this.controller.expandedFilter === "source"}
           .narrow=${this.narrow}
-          .isMobileDevice=${this._isMobileTouchDevice}
+          .isMobileDevice=${this.isMobileTouchDevice}
           .filterTitle=${this.knx.localize("group_monitor_source")}
           @selection-changed=${this._handleSourceFilterChange}
           @expanded-changed=${this._handleSourceFilterExpanded}
@@ -947,7 +947,7 @@ export class KNXGroupMonitor extends LitElement {
           .selectedOptions=${this.controller.filters.destination}
           .expanded=${this.controller.expandedFilter === "destination"}
           .narrow=${this.narrow}
-          .isMobileDevice=${this._isMobileTouchDevice}
+          .isMobileDevice=${this.isMobileTouchDevice}
           .filterTitle=${this.knx.localize("group_monitor_destination")}
           @selection-changed=${this._handleDestinationFilterChange}
           @expanded-changed=${this._handleDestinationFilterExpanded}
@@ -964,7 +964,7 @@ export class KNXGroupMonitor extends LitElement {
           .pinSelectedItems=${false}
           .expanded=${this.controller.expandedFilter === "direction"}
           .narrow=${this.narrow}
-          .isMobileDevice=${this._isMobileTouchDevice}
+          .isMobileDevice=${this.isMobileTouchDevice}
           .filterTitle=${this.knx.localize("group_monitor_direction")}
           @selection-changed=${this._handleDirectionFilterChange}
           @expanded-changed=${this._handleDirectionFilterExpanded}
@@ -981,7 +981,7 @@ export class KNXGroupMonitor extends LitElement {
           .pinSelectedItems=${false}
           .expanded=${this.controller.expandedFilter === "telegramtype"}
           .narrow=${this.narrow}
-          .isMobileDevice=${this._isMobileTouchDevice}
+          .isMobileDevice=${this.isMobileTouchDevice}
           .filterTitle=${this.knx.localize("group_monitor_type")}
           @selection-changed=${this._handleTelegramTypeFilterChange}
           @expanded-changed=${this._handleTelegramTypeFilterExpanded}
