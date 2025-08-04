@@ -188,4 +188,20 @@ export default tseslint.config(
       "no-use-before-define": "off",
     },
   },
+  // Special rules for test files
+  {
+    files: ["**/*.test.ts", "**/*.spec.ts", "**/test/**/*.ts", "**/tests/**/*.ts"],
+    rules: {
+      "import/no-extraneous-dependencies": [
+        "error",
+        {
+          devDependencies: true,
+          optionalDependencies: false,
+          peerDependencies: false,
+        },
+      ],
+      // Allow extending prototypes in tests for mocking
+      "no-extend-native": "off",
+    },
+  },
 );

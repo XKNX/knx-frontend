@@ -14,7 +14,7 @@
  * button visibility (hidden until hover or active).
  */
 
-import { css, html, LitElement } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import type { TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators";
 import { fireEvent } from "@ha/common/dom/fire_event";
@@ -26,7 +26,6 @@ import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-list-item";
 
 import type { SortDirection } from "../types/sorting";
-import type { SortCriterion } from "./data-table/filter/knx-list-filter";
 import { KnxSortMenu } from "./knx-sort-menu";
 import type { KNX } from "../types/knx";
 
@@ -56,7 +55,7 @@ export class KnxSortMenuItem extends LitElement {
    * The sort criterion identifier for this menu item
    * Corresponds to field names in the data configuration
    */
-  @property({ type: String }) public criterion: SortCriterion = "idField";
+  @property({ type: String }) public criterion = "idField";
 
   /**
    * Human-readable display name for this sort option
@@ -111,6 +110,13 @@ export class KnxSortMenuItem extends LitElement {
   @property({ type: String, attribute: "descending-icon" })
   public descendingIcon: string = KnxSortMenuItem.DEFAULT_DESC_ICON;
 
+  /**
+   * Whether this is a mobile device (mobile/tablet)
+   * Controls button visibility behavior: on mobile devices only show active button
+   */
+  @property({ type: Boolean, attribute: "is-mobile-device" })
+  public isMobileDevice = false;
+
   // ============================================================================
   // Computed Properties
   // ============================================================================
@@ -146,6 +152,8 @@ export class KnxSortMenuItem extends LitElement {
    * - List item container with click handling
    * - Display name for the sort criterion
    * - Direction buttons (ascending/descending) with conditional visibility
+   * - On mobile devices: only show active button that works as toggle
+   * - On desktop: show both buttons on hover, always show active button
    *
    * @returns Template result for the complete menu item
    */
@@ -157,23 +165,58 @@ export class KnxSortMenuItem extends LitElement {
             ${this.displayName}
           </div>
           <div class="sort-buttons">
-            <ha-icon-button
-              class=${this.active && this.direction === KnxSortMenu.DESC ? "active" : ""}
-              .path=${this.descendingIcon}
-              .label=${this._descendingText}
-              .title=${this._descendingText}
-              @click=${this._handleDescendingClick}
-            ></ha-icon-button>
-            <ha-icon-button
-              class=${this.active && this.direction === KnxSortMenu.ASC ? "active" : ""}
-              .path=${this.ascendingIcon}
-              .label=${this._ascendingText}
-              .title=${this._ascendingText}
-              @click=${this._handleAscendingClick}
-            ></ha-icon-button>
+            ${this.isMobileDevice ? this._renderMobileButtons() : this._renderDesktopButtons()}
           </div>
         </div>
       </ha-list-item>
+    `;
+  }
+
+  /**
+   * Renders buttons for mobile devices (mobile/tablet)
+   * Only shows the currently active direction button that acts as a toggle
+   *
+   * @returns Template result for mobile device buttons
+   */
+  private _renderMobileButtons(): TemplateResult | typeof nothing {
+    if (!this.active) {
+      return nothing;
+    }
+
+    const isDescending = this.direction === KnxSortMenu.DESC;
+    return html`
+      <ha-icon-button
+        class="active"
+        .path=${isDescending ? this.descendingIcon : this.ascendingIcon}
+        .label=${isDescending ? this._descendingText : this._ascendingText}
+        .title=${isDescending ? this._descendingText : this._ascendingText}
+        @click=${this._handleMobileButtonClick}
+      ></ha-icon-button>
+    `;
+  }
+
+  /**
+   * Renders buttons for desktop devices
+   * Shows both ascending and descending buttons with hover behavior
+   *
+   * @returns Template result for desktop buttons
+   */
+  private _renderDesktopButtons(): TemplateResult {
+    return html`
+      <ha-icon-button
+        class=${this.active && this.direction === KnxSortMenu.DESC ? "active" : ""}
+        .path=${this.descendingIcon}
+        .label=${this._descendingText}
+        .title=${this._descendingText}
+        @click=${this._handleDescendingClick}
+      ></ha-icon-button>
+      <ha-icon-button
+        class=${this.active && this.direction === KnxSortMenu.ASC ? "active" : ""}
+        .path=${this.ascendingIcon}
+        .label=${this._ascendingText}
+        .title=${this._ascendingText}
+        @click=${this._handleAscendingClick}
+      ></ha-icon-button>
     `;
   }
 
@@ -224,6 +267,21 @@ export class KnxSortMenuItem extends LitElement {
         : KnxSortMenu.ASC
       : this.defaultDirection;
 
+    fireEvent(this, "sort-option-selected", {
+      criterion: this.criterion,
+      direction: newDirection,
+    });
+  }
+
+  /**
+   * Handles clicks on the mobile device toggle button
+   * Toggles between ascending and descending directions
+   *
+   * @param e - Mouse event from the mobile button
+   */
+  private _handleMobileButtonClick(e: MouseEvent): void {
+    e.stopPropagation();
+    const newDirection = this.direction === KnxSortMenu.ASC ? KnxSortMenu.DESC : KnxSortMenu.ASC;
     fireEvent(this, "sort-option-selected", {
       criterion: this.criterion,
       direction: newDirection,
@@ -295,6 +353,12 @@ export class KnxSortMenuItem extends LitElement {
       display: flex;
       color: var(--primary-color);
     }
+
+    /* Mobile device specific styles */
+    .sort-buttons ha-icon-button.mobile-button {
+      display: flex;
+      color: var(--primary-color);
+    }
   `;
 }
 
@@ -305,7 +369,7 @@ declare global {
 
   interface HASSDomEvents {
     "sort-option-selected": {
-      criterion: SortCriterion;
+      criterion: string;
       direction: SortDirection;
     };
   }

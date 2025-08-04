@@ -1,5 +1,6 @@
 import { dump } from "js-yaml";
 import type { DPT, TelegramDict } from "../types/websocket";
+import type { TimePrecision } from "../features/group-monitor";
 
 export const TelegramDictFormatter = {
   payload: (telegram: TelegramDict): string => {
@@ -126,26 +127,81 @@ export const formatIsoTimestampWithMicroseconds = (timestampIso: string): string
   );
 };
 
+// Time conversion constants
+export const MICROSECONDS_PER_MILLISECOND = 1_000;
+export const MILLISECONDS_PER_SECOND = 1_000;
+export const SECONDS_PER_MINUTE = 60;
+export const MINUTES_PER_HOUR = 60;
+
+// Derived constants for milliseconds
+export const MILLISECONDS_PER_MINUTE = MILLISECONDS_PER_SECOND * SECONDS_PER_MINUTE;
+export const MILLISECONDS_PER_HOUR = MILLISECONDS_PER_MINUTE * MINUTES_PER_HOUR;
+
+// Derived constants for microseconds
+export const MICROSECONDS_PER_SECOND = MICROSECONDS_PER_MILLISECOND * MILLISECONDS_PER_SECOND;
+export const MICROSECONDS_PER_MINUTE = MICROSECONDS_PER_SECOND * SECONDS_PER_MINUTE;
+export const MICROSECONDS_PER_HOUR = MICROSECONDS_PER_MINUTE * MINUTES_PER_HOUR;
+
+// Padding constants
+const TIME_COMPONENT_PADDING = 2;
+const FRACTIONAL_COMPONENT_PADDING = 3;
+
 /**
- * Formats a time duration into a human-readable string format.
- * Returns MM:SS.mmm for durations under 1 hour, or HH:MM:SS.mmm for longer durations.
+ * Formats a time duration into a human-readable string with microsecond precision support.
  *
- * @param offset - Date object representing the duration (milliseconds since epoch)
- * @returns Formatted duration string (e.g., "15:30.250" or "02:15:30.250")
+ * Output formats:
+ * - Under 1 hour: MM:SS.mmm (or MM:SS.mmmuu with microsecond precision)
+ * - 1 hour or more: HH:MM:SS.mmm (or HH:MM:SS.mmmuu with microsecond precision)
+ * - Negative values: prefixed with "-"
+ * - Null input: "—" (em dash)
+ *
+ * @param offsetMicros - Duration in microseconds (null for no previous event)
+ * @param precision - "milliseconds" (default, rounds to 3 decimals) or "microseconds" (6 decimals)
+ * @returns Formatted time delta string or "—" for null input
+ *
+ * @example
+ * formatTimeDelta(150500000) // "02:30.500"
+ * formatTimeDelta(1123456, "microseconds") // "00:01.123456"
  */
-export const formatOffset = (offset: Date): string => {
-  const ms = offset.getTime();
+export function formatTimeDelta(
+  offsetMicros: number | null,
+  precision: TimePrecision = "milliseconds",
+): string {
+  if (offsetMicros == null) {
+    return "—";
+  }
 
-  // Extract time components using direct calculations
-  const hours = Math.floor(ms / 3_600_000);
-  const minutes = Math.floor(ms / 60_000) % 60;
-  const seconds = Math.floor(ms / 1_000) % 60;
-  const milliseconds = ms % 1_000;
+  const sign = offsetMicros < 0 ? "-" : "";
+  const micros = Math.abs(offsetMicros);
 
-  // Helper to format with zero-padding
-  const pad = (value: number, length: number) => value.toString().padStart(length, "0");
+  // Convert to total milliseconds (rounded or floored)
+  const totalMs =
+    precision === "milliseconds"
+      ? Math.round(micros / MICROSECONDS_PER_MILLISECOND)
+      : Math.floor(micros / MICROSECONDS_PER_MILLISECOND);
 
-  const timeStr = `${pad(minutes, 2)}:${pad(seconds, 2)}.${pad(milliseconds, 3)}`;
+  // Remaining microseconds for microsecond precision
+  const extraMicros = precision === "microseconds" ? micros % MICROSECONDS_PER_MILLISECOND : 0;
 
-  return hours > 0 ? `${pad(hours, 2)}:${timeStr}` : timeStr;
-};
+  // Break down into hours, minutes, seconds, milliseconds
+  const hours = Math.floor(totalMs / MILLISECONDS_PER_HOUR);
+  const minutes = Math.floor((totalMs % MILLISECONDS_PER_HOUR) / MILLISECONDS_PER_MINUTE);
+  const seconds = Math.floor((totalMs % MILLISECONDS_PER_MINUTE) / MILLISECONDS_PER_SECOND);
+  const milliseconds = totalMs % MILLISECONDS_PER_SECOND;
+
+  // Helpers for zero-padding
+  const padTime = (n: number) => n.toString().padStart(TIME_COMPONENT_PADDING, "0");
+  const padFractional = (n: number) => n.toString().padStart(FRACTIONAL_COMPONENT_PADDING, "0");
+
+  // Build fractional part
+  const fractional =
+    precision === "microseconds"
+      ? `.${padFractional(milliseconds)}${padFractional(extraMicros)}`
+      : `.${padFractional(milliseconds)}`;
+
+  // Assemble base time (MM:SS) and prefix hours if needed
+  const base = `${padTime(minutes)}:${padTime(seconds)}`;
+  const time = hours > 0 ? `${padTime(hours)}:${base}` : base;
+
+  return `${sign}${time}${fractional}`;
+}

@@ -67,6 +67,8 @@
   "telegram_filter_sort_by_secondaryText": "Description",
   "telegram_filter_sort_ascending": "Ascending",
   "telegram_filter_sort_descending": "Descending",
+  "telegram_filter_sort_by_total_count": "Total count",
+  "telegram_filter_sort_by_filtered_count": "Filtered count",
 
   "telegram_filter_source_sort_by_primaryText": "Source address",
   "telegram_filter_source_sort_by_badge": "Count",

@@ -5,11 +5,14 @@ import { haStyleDialog } from "@ha/resources/styles";
 import type { HomeAssistant } from "@ha/types";
 import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-button";
-import "../components/knx-dialog-header";
+import "../../../components/knx-dialog-header";
 import { mdiArrowLeft, mdiArrowRight, mdiClose } from "@mdi/js";
 
-import { formatDateTimeWithMilliseconds, formatIsoTimestampWithMicroseconds } from "utils/format";
-import type { KNX } from "../types/knx";
+import {
+  formatDateTimeWithMilliseconds,
+  formatIsoTimestampWithMicroseconds,
+} from "../../../utils/format";
+import type { KNX } from "../../../types/knx";
 import type { TelegramRow } from "../types/telegram-row";
 import "@ha/components/ha-relative-time";
 import "@ha/components/ha-icon-button";
@@ -18,11 +21,13 @@ import "@ha/components/ha-dialog";
 /**
  * Custom dialog to display detailed information about a single KNX telegram.
  */
-@customElement("knx-telegram-info-dialog")
-class TelegramInfoDialog extends LitElement {
+@customElement("knx-group-monitor-telegram-info-dialog")
+export class GroupMonitorTelegramInfoDialog extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
   @property({ attribute: false }) public knx!: KNX;
+
+  @property({ attribute: false }) public narrow = false;
 
   @property({ attribute: false }) public telegram?: TelegramRow;
 
@@ -90,7 +95,7 @@ class TelegramInfoDialog extends LitElement {
         <knx-dialog-header slot="heading" .showBorder=${true}>
           <ha-icon-button
             slot="navigationIcon"
-            .label=${this.hass.localize("ui.dialogs.generic.close")}
+            .label=${this.knx.localize("ui.dialogs.generic.close")}
             .path=${mdiClose}
             dialogAction="close"
             class="close-button"
@@ -102,12 +107,16 @@ class TelegramInfoDialog extends LitElement {
             <span title=${formatIsoTimestampWithMicroseconds(this.telegram.timestampIso)}>
               ${formatDateTimeWithMilliseconds(this.telegram.timestamp) + " "}
             </span>
-            (<ha-relative-time
-              .hass=${this.hass}
-              .datetime=${this.telegram.timestamp}
-              .capitalize=${false}
-            ></ha-relative-time
-            >)
+            ${!this.narrow
+              ? html`
+                  (<ha-relative-time
+                    .hass=${this.hass}
+                    .datetime=${this.telegram.timestamp}
+                    .capitalize=${false}
+                  ></ha-relative-time
+                  >)
+                `
+              : nothing}
           </div>
           <div slot="actionItems" class="direction-badge ${directionClass}">
             ${this.knx.localize(this.telegram.direction)}
@@ -176,20 +185,20 @@ class TelegramInfoDialog extends LitElement {
         </div>
 
         <!-- Navigation buttons: previous / next -->
-        <div slot="secondaryAction" style="margin: 0;">
+        <div slot="secondaryAction">
           <ha-button
-            class="nav-button"
+            appearance="plain"
             @click=${this._previousTelegram}
             .disabled=${this.disablePrevious}
           >
-            <ha-svg-icon .path=${mdiArrowLeft}></ha-svg-icon>
+            <ha-svg-icon .path=${mdiArrowLeft} slot="start"></ha-svg-icon>
             ${this.hass.localize("ui.common.previous")}
           </ha-button>
         </div>
-        <div slot="primaryAction">
-          <ha-button class="nav-button" @click=${this._nextTelegram} .disabled=${this.disableNext}>
+        <div slot="primaryAction" class="primaryAction">
+          <ha-button appearance="plain" @click=${this._nextTelegram} .disabled=${this.disableNext}>
             ${this.hass.localize("ui.common.next")}
-            <ha-svg-icon .path=${mdiArrowRight}></ha-svg-icon>
+            <ha-svg-icon .path=${mdiArrowRight} slot="end"></ha-svg-icon>
           </ha-button>
         </div>
       </ha-dialog>
@@ -260,6 +269,10 @@ class TelegramInfoDialog extends LitElement {
             --mdc-dialog-max-height: 100%;
             --dialog-content-padding: 16px 24px 16px 24px;
           }
+        }
+
+        ha-button {
+          --ha-button-radius: 8px; /* Default is --wa-border-radius-pill */
         }
 
         /* Custom heading styles */
@@ -436,17 +449,8 @@ class TelegramInfoDialog extends LitElement {
           margin-top: 4px;
         }
 
-        /* Navigation buttons */
-        .nav-button {
-          --mdc-theme-primary: var(--primary-color);
-          --mdc-button-disabled-ink-color: var(--disabled-text-color);
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          min-width: 100px;
-        }
-        .nav-button ha-svg-icon {
-          --mdc-icon-size: 18px;
+        .primaryAction {
+          margin-right: 8px;
         }
       `,
     ];
@@ -460,6 +464,6 @@ declare global {
   }
 
   interface HTMLElementTagNameMap {
-    "knx-telegram-info-dialog": TelegramInfoDialog;
+    "knx-group-monitor-telegram-info-dialog": GroupMonitorTelegramInfoDialog;
   }
 }

@@ -79,6 +79,13 @@ export class KnxSortMenu extends LitElement {
   @property({ type: String, attribute: "sort-direction" })
   public sortDirection: SortDirection = KnxSortMenu.DEFAULT_DIRECTION;
 
+  /**
+   * Whether this is a mobile device (mobile/tablet)
+   * Controls button visibility behavior in child menu items
+   */
+  @property({ type: Boolean, attribute: "is-mobile-device" })
+  public isMobileDevice = false;
+
   // ============================================================================
   // Internal References
   // ============================================================================
@@ -111,7 +118,11 @@ export class KnxSortMenu extends LitElement {
    */
   protected updated(changedProps: PropertyValues): void {
     super.updated(changedProps);
-    if (changedProps.has("sortCriterion") || changedProps.has("sortDirection")) {
+    if (
+      changedProps.has("sortCriterion") ||
+      changedProps.has("sortDirection") ||
+      changedProps.has("isMobileDevice")
+    ) {
       this._updateMenuItems();
     }
   }
@@ -122,7 +133,7 @@ export class KnxSortMenu extends LitElement {
 
   /**
    * Synchronizes sort state with all child menu items
-   * Updates active state, direction, and propagates KNX instance
+   * Updates active state, direction, and propagates KNX instance and mobile device state
    *
    * Called automatically when sort configuration changes
    */
@@ -134,6 +145,8 @@ export class KnxSortMenu extends LitElement {
         item.criterion === this.sortCriterion ? this.sortDirection : item.defaultDirection;
       // Propagate knx object to child items for localization
       item.knx = this.knx;
+      // Propagate mobile device state to child items
+      item.isMobileDevice = this.isMobileDevice;
     });
   }
 

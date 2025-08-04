@@ -7,9 +7,9 @@
   "scripts": {
     "develop": "./script/develop",
     "build": "./script/build",
-    "test": "vitest run --config test/vitest.config.ts",
-    "test:watch": "vitest --config test/vitest.config.ts",
-    "test:coverage": "vitest run --config test/vitest.config.ts --coverage",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts",
+    "test:coverage": "vitest run --config vitest.config.ts --coverage",
     "lint:eslint": "eslint --flag v10_config_lookup_from_file \"./src/**/*.{js,ts,html}\" --ignore-pattern .gitignore --max-warnings=0",
     "format:eslint": "eslint --flag v10_config_lookup_from_file \"./src/**/*.{js,ts,html}\" --fix --ignore-pattern .gitignore",
     "lint:prettier": "prettier \"./src/**/*.{js,ts,json,css,md}\" --check",

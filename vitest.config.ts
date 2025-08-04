@@ -10,7 +10,8 @@ export default defineConfig({
       TZ: "Etc/UTC",
       IS_TEST: "true",
     },
-    exclude: ["homeassistant-frontend/**/*", "**/node_modules/**", "build/**/*"],
+    include: ["**/*.test.ts", "**/*.spec.ts"], // Include tests in any directory
+    exclude: ["homeassistant-frontend/**/*", "**/node_modules/**", "knx-frontend/**/*", ".git/**"],
     bail: 0, // Don't stop after first failure, run all tests
     coverage: {
       include: ["src/**/*.ts"],
