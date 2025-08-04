@@ -175,6 +175,13 @@ export class KNXGroupMonitor extends LitElement {
   // ============================================================================
 
   /**
+   * Checks if any filters are currently active
+   */
+  private get hasActiveFilters(): boolean {
+    return Object.values(this.controller.filters).some((f) => Array.isArray(f) && f.length > 0);
+  }
+
+  /**
    * Configuration for source address filter
    */
   private get _sourceFilterConfig(): ListFilterConfig<DistinctValueInfo> {
@@ -206,7 +213,8 @@ export class KNXGroupMonitor extends LitElement {
         fieldName: this.knx.localize("telegram_filter_source_sort_by_badge"),
         filterable: false,
         sortable: false,
-        mapper: (item: DistinctValueInfo) => `${item.filteredCount}/${item.totalCount}`,
+        mapper: (item: DistinctValueInfo) =>
+          this.hasActiveFilters ? `${item.filteredCount}/${item.totalCount}` : `${item.totalCount}`,
       },
       custom: {
         totalCount: {
@@ -263,7 +271,8 @@ export class KNXGroupMonitor extends LitElement {
         fieldName: this.knx.localize("telegram_filter_destination_sort_by_badge"),
         filterable: false,
         sortable: false,
-        mapper: (item: DistinctValueInfo) => `${item.filteredCount}/${item.totalCount}`,
+        mapper: (item: DistinctValueInfo) =>
+          this.hasActiveFilters ? `${item.filteredCount}/${item.totalCount}` : `${item.totalCount}`,
       },
       custom: {
         totalCount: {
@@ -313,7 +322,8 @@ export class KNXGroupMonitor extends LitElement {
       badgeField: {
         filterable: false,
         sortable: false,
-        mapper: (item: DistinctValueInfo) => `${item.filteredCount}/${item.totalCount}`,
+        mapper: (item: DistinctValueInfo) =>
+          this.hasActiveFilters ? `${item.filteredCount}/${item.totalCount}` : `${item.totalCount}`,
       },
     };
   }
@@ -341,7 +351,8 @@ export class KNXGroupMonitor extends LitElement {
       badgeField: {
         filterable: false,
         sortable: false,
-        mapper: (item: DistinctValueInfo) => `${item.filteredCount}/${item.totalCount}`,
+        mapper: (item: DistinctValueInfo) =>
+          this.hasActiveFilters ? `${item.filteredCount}/${item.totalCount}` : `${item.totalCount}`,
       },
     };
   }
