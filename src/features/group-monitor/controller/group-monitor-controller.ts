@@ -11,6 +11,7 @@ import { ConnectionService } from "../services/connection-service";
 import { KNXLogger } from "../../../tools/knx-logger";
 import { TelegramRow, type OffsetMicros } from "../types/telegram-row";
 import type { TelegramDict } from "../../../types/websocket";
+import { extractMicrosecondsFromIso } from "../../../utils/format";
 
 const logger = new KNXLogger("group_monitor_controller");
 
@@ -483,28 +484,6 @@ export class GroupMonitorController implements ReactiveController {
   // ============================================================================
 
   /**
-   * Extracts microseconds from an ISO timestamp string
-   * @param timestampIso - ISO timestamp string with microsecond precision (e.g., "2023-12-25T10:30:15.123456Z")
-   * @returns Microseconds since epoch
-   */
-  private _extractMicroseconds(timestampIso: string): number {
-    // Parse the base timestamp to get UTC milliseconds
-    const date = new Date(timestampIso);
-    const milliseconds = date.getTime();
-
-    // Extract microseconds from the ISO string (format: YYYY-MM-DDTHH:MM:SS.ffffff)
-    // The microsecond part is always the same regardless of timezone
-    const microsecondMatch = timestampIso.match(/\.(\d{6})/);
-    const microsecondPart = microsecondMatch ? parseInt(microsecondMatch[1], 10) : 0;
-
-    // Convert milliseconds to microseconds and add the microsecond part
-    // Note: We only take the last 3 digits of microsecondPart since Date.getTime()
-    // already includes the first 3 digits (milliseconds)
-    const microsecondsFromMicrosecondPart = microsecondPart % 1000;
-    return milliseconds * 1000 + microsecondsFromMicrosecondPart;
-  }
-
-  /**
    * Calculates the relative time offset between two telegrams in microseconds
    * @param currentTelegram - The telegram to calculate offset for
    * @param previousTelegram - The previous telegram to calculate offset from (null for first telegram)
@@ -519,8 +498,8 @@ export class GroupMonitorController implements ReactiveController {
       return null;
     }
 
-    const currentMicros = this._extractMicroseconds(currentTelegram.timestampIso);
-    const previousMicros = this._extractMicroseconds(previousTelegram.timestampIso);
+    const currentMicros = extractMicrosecondsFromIso(currentTelegram.timestampIso);
+    const previousMicros = extractMicrosecondsFromIso(previousTelegram.timestampIso);
 
     // Always calculate the time difference to get positive values
     // For both sort directions, we now pass the chronologically earlier telegram as "previous"

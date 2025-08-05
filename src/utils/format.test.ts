@@ -6,6 +6,7 @@ import {
   formatTimeWithMilliseconds,
   formatDateTimeWithMilliseconds,
   formatIsoTimestampWithMicroseconds,
+  extractMicrosecondsFromIso,
 } from "./format";
 import type { TelegramDict, DPT } from "../types/websocket";
 
@@ -30,6 +31,149 @@ function createMockTelegram(overrides: Partial<TelegramDict> = {}): TelegramDict
     ...overrides,
   };
 }
+
+describe("extractMicrosecondsFromIso", () => {
+  it("should handle ISO timestamps without fractional seconds", () => {
+    const iso = "2023-12-25T20:24:22Z";
+    const result = extractMicrosecondsFromIso(iso);
+
+    // Should be equivalent to Date.parse * 1000
+    const expected = Date.parse(iso) * 1_000;
+    expect(result).toBe(expected);
+  });
+
+  it("should handle ISO timestamps with full 6-digit microsecond precision", () => {
+    const iso = "2023-12-25T20:24:22.614053Z";
+    const result = extractMicrosecondsFromIso(iso);
+
+    // Expected: base timestamp in ms * 1000 + microseconds
+    const baseMs = Date.parse("2023-12-25T20:24:22Z");
+    const expected = baseMs * 1_000 + 614053;
+    expect(result).toBe(expected);
+  });
+
+  it("should handle ISO timestamps with timezone offsets", () => {
+    const iso = "2023-12-25T20:24:22.614053+02:00";
+    const result = extractMicrosecondsFromIso(iso);
+
+    // Should correctly parse timezone and add microseconds
+    const baseMs = Date.parse("2023-12-25T20:24:22+02:00");
+    const expected = baseMs * 1_000 + 614053;
+    expect(result).toBe(expected);
+  });
+
+  it("should handle ISO timestamps with negative timezone offsets", () => {
+    const iso = "2023-12-25T20:24:22.614053-05:00";
+    const result = extractMicrosecondsFromIso(iso);
+
+    const baseMs = Date.parse("2023-12-25T20:24:22-05:00");
+    const expected = baseMs * 1_000 + 614053;
+    expect(result).toBe(expected);
+  });
+
+  it("should pad short fractional parts to 6 digits", () => {
+    const iso = "2023-12-25T20:24:22.27Z";
+    const result = extractMicrosecondsFromIso(iso);
+
+    // .27 should be treated as .270000 (270000 microseconds)
+    const baseMs = Date.parse("2023-12-25T20:24:22Z");
+    const expected = baseMs * 1_000 + 270000;
+    expect(result).toBe(expected);
+  });
+
+  it("should truncate long fractional parts to 6 digits", () => {
+    const iso = "2023-12-25T20:24:22.1234567890Z";
+    const result = extractMicrosecondsFromIso(iso);
+
+    // Should only use first 6 digits: 123456
+    const baseMs = Date.parse("2023-12-25T20:24:22Z");
+    const expected = baseMs * 1_000 + 123456;
+    expect(result).toBe(expected);
+  });
+
+  it("should handle ISO timestamps without explicit timezone", () => {
+    const iso = "2023-12-25T20:24:22.614053";
+    const result = extractMicrosecondsFromIso(iso);
+
+    const baseMs = Date.parse("2023-12-25T20:24:22");
+    const expected = baseMs * 1_000 + 614053;
+    expect(result).toBe(expected);
+  });
+
+  it("should calculate correct differences for real telegram data", () => {
+    // Real data from the bug report
+    const timestamp1 = "2023-12-25T20:24:22.614053Z";
+    const timestamp2 = "2023-12-25T20:24:20.604003Z";
+
+    const micros1 = extractMicrosecondsFromIso(timestamp1);
+    const micros2 = extractMicrosecondsFromIso(timestamp2);
+
+    const diff = micros1 - micros2;
+
+    // Should be 2.010050 seconds = 2,010,050 microseconds
+    expect(diff).toBe(2010050);
+  });
+
+  it("should handle edge case with exactly 3 fractional digits", () => {
+    const iso = "2023-12-25T20:24:22.123Z";
+    const result = extractMicrosecondsFromIso(iso);
+
+    // .123 should become 123000 microseconds
+    const baseMs = Date.parse("2023-12-25T20:24:22Z");
+    const expected = baseMs * 1_000 + 123000;
+    expect(result).toBe(expected);
+  });
+
+  it("should handle single fractional digit", () => {
+    const iso = "2023-12-25T20:24:22.5Z";
+    const result = extractMicrosecondsFromIso(iso);
+
+    // .5 should become 500000 microseconds
+    const baseMs = Date.parse("2023-12-25T20:24:22Z");
+    const expected = baseMs * 1_000 + 500000;
+    expect(result).toBe(expected);
+  });
+
+  it("should handle performance comparison with original implementation", () => {
+    // Compare with a simple implementation to ensure correctness
+    const iso = "2025-07-13T22:11:08.273496+02:00";
+    const result = extractMicrosecondsFromIso(iso);
+
+    // Manual calculation for verification
+    const baseMs = Date.parse("2025-07-13T22:11:08+02:00");
+    const expected = baseMs * 1_000 + 273496;
+    expect(result).toBe(expected);
+  });
+
+  it("should handle very large time differences without precision loss", () => {
+    // Test with timestamps spanning years to ensure no overflow or precision loss
+    const timestamp1 = "2025-12-31T23:59:59.999999Z"; // End of 2025
+    const timestamp2 = "2020-01-01T00:00:00.000001Z"; // Start of 2020
+
+    const micros1 = extractMicrosecondsFromIso(timestamp1);
+    const micros2 = extractMicrosecondsFromIso(timestamp2);
+
+    const diff = micros1 - micros2;
+
+    // Should be approximately 6 years in microseconds
+    // 6 years ≈ 6 * 365.25 * 24 * 60 * 60 * 1,000,000 microseconds
+    const expectedYears = 6;
+    const approximateYearInMicros = 365.25 * 24 * 60 * 60 * 1_000_000;
+    const expectedDiff = expectedYears * approximateYearInMicros;
+
+    // Check that we're in the right ballpark (within 1% of expected)
+    const tolerance = expectedDiff * 0.01;
+    expect(Math.abs(diff - expectedDiff)).toBeLessThan(tolerance);
+
+    // Verify microsecond precision is preserved
+    expect(micros1 % 1_000_000).toBe(999999); // .999999 seconds = 999999 microseconds
+    expect(micros2 % 1_000_000).toBe(1); // .000001 seconds = 1 microsecond
+
+    // Ensure no precision loss occurred (diff should include the microsecond precision)
+    const microsecondDiff = 999999 - 1; // 999998 microseconds from fractional part
+    expect(diff % 1_000_000).toBe(microsecondDiff);
+  });
+});
 
 describe("formatTimeDelta", () => {
   describe("Basic functionality", () => {
