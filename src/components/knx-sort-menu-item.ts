@@ -1,17 +1,7 @@
 /**
  * KNX Sort Menu Item Component
  *
- * Individual sort option component for the KNX sort menu system that provides
- * interactive sort direction selection (ascending/descending), visual feedback
- * for active sort state, customizable icons and text labels, accessibility
- * support with ARIA attributes, hover effects for better user experience,
- * and integration with the parent sort menu component.
- *
- * Includes default direction support for initial sort selection, custom icon
- * support for ascending/descending buttons, localized text labels with
- * fallback support, click handling for both item and individual direction
- * buttons, event propagation control for nested interactions, and responsive
- * button visibility (hidden until hover or active).
+ * Individual sort option for knx-sort-menu.
  */
 
 import { css, html, LitElement, nothing } from "lit";
@@ -117,6 +107,12 @@ export class KnxSortMenuItem extends LitElement {
   @property({ type: Boolean, attribute: "is-mobile-device" })
   public isMobileDevice = false;
 
+  /**
+   * Whether this sort menu item is disabled
+   * When disabled, the item and buttons cannot be clicked but the active state is still visible
+   */
+  @property({ type: Boolean }) public disabled = false;
+
   // ============================================================================
   // Computed Properties
   // ============================================================================
@@ -154,12 +150,16 @@ export class KnxSortMenuItem extends LitElement {
    * - Direction buttons (ascending/descending) with conditional visibility
    * - On mobile devices: only show active button that works as toggle
    * - On desktop: show both buttons on hover, always show active button
+   * - When disabled: prevent clicks but maintain visual state
    *
    * @returns Template result for the complete menu item
    */
   protected render(): TemplateResult {
     return html`
-      <ha-list-item class="sort-row ${this.active ? "active" : ""}" @click=${this._handleItemClick}>
+      <ha-list-item
+        class="sort-row ${this.active ? "active" : ""} ${this.disabled ? "disabled" : ""}"
+        @click=${this.disabled ? nothing : this._handleItemClick}
+      >
         <div class="container">
           <div class="sort-field-name" title=${this.displayName} aria-label=${this.displayName}>
             ${this.displayName}
@@ -190,7 +190,8 @@ export class KnxSortMenuItem extends LitElement {
         .path=${isDescending ? this.descendingIcon : this.ascendingIcon}
         .label=${isDescending ? this._descendingText : this._ascendingText}
         .title=${isDescending ? this._descendingText : this._ascendingText}
-        @click=${this._handleMobileButtonClick}
+        .disabled=${this.disabled}
+        @click=${this.disabled ? nothing : this._handleMobileButtonClick}
       ></ha-icon-button>
     `;
   }
@@ -208,14 +209,16 @@ export class KnxSortMenuItem extends LitElement {
         .path=${this.descendingIcon}
         .label=${this._descendingText}
         .title=${this._descendingText}
-        @click=${this._handleDescendingClick}
+        .disabled=${this.disabled}
+        @click=${this.disabled ? nothing : this._handleDescendingClick}
       ></ha-icon-button>
       <ha-icon-button
         class=${this.active && this.direction === KnxSortMenu.ASC ? "active" : ""}
         .path=${this.ascendingIcon}
         .label=${this._ascendingText}
         .title=${this._ascendingText}
-        @click=${this._handleAscendingClick}
+        .disabled=${this.disabled}
+        @click=${this.disabled ? nothing : this._handleAscendingClick}
       ></ha-icon-button>
     `;
   }
@@ -312,6 +315,19 @@ export class KnxSortMenuItem extends LitElement {
       font-weight: 500;
     }
 
+    .sort-row.disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      pointer-events: auto;
+    }
+
+    .sort-row.disabled.active {
+      --mdc-theme-text-primary-on-background: var(--primary-color);
+      background-color: var(--mdc-theme-surface-variant, rgba(var(--rgb-primary-color), 0.06));
+      font-weight: 500;
+      opacity: 0.6;
+    }
+
     .container {
       display: flex;
       justify-content: space-between;
@@ -349,9 +365,25 @@ export class KnxSortMenuItem extends LitElement {
       display: flex;
     }
 
+    /* Don't show hover buttons when disabled */
+    .sort-row.disabled:hover .sort-buttons ha-icon-button:not(.active) {
+      display: none;
+    }
+
     .sort-buttons ha-icon-button.active {
       display: flex;
       color: var(--primary-color);
+    }
+
+    /* Disabled buttons styling */
+    .sort-buttons ha-icon-button[disabled] {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .sort-buttons ha-icon-button.active[disabled] {
+      --icon-primary-color: var(--primary-color);
+      opacity: 0.6;
     }
 
     /* Mobile device specific styles */
