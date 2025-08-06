@@ -14,7 +14,6 @@ import type {
   SortingChangedEvent,
 } from "@ha/components/data-table/ha-data-table";
 import "@ha/components/ha-icon-button";
-import { haStyle } from "@ha/resources/styles";
 import type { HomeAssistant, Route } from "@ha/types";
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import { isMobileClient } from "@ha/util/is_mobile";
@@ -74,7 +73,6 @@ export class KNXGroupMonitor extends LitElement {
   // Static definitions
   static get styles(): CSSResultGroup {
     return [
-      haStyle,
       css`
         :host {
           --table-row-alternative-background-color: var(--primary-background-color);
