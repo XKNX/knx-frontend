@@ -147,6 +147,39 @@ const TIME_COMPONENT_PADDING = 2;
 const FRACTIONAL_COMPONENT_PADDING = 3;
 
 /**
+ * Converts any ISO-8601 timestamp to microseconds since Unix epoch.
+ *
+ * @param iso - ISO timestamp, e.g. "2025-07-13T22:11:08.273496+02:00"
+ * @returns Microseconds since 1970-01-01T00:00:00Z
+ */
+export function extractMicrosecondsFromIso(iso: string): number {
+  const dotPos = iso.indexOf(".");
+
+  // Fast path – no fractional part
+  if (dotPos === -1) return Date.parse(iso) * 1_000;
+
+  // Locate start of timezone designator (Z / + / -) after the dot
+  let tzPos = iso.indexOf("Z", dotPos);
+  if (tzPos === -1) {
+    tzPos = iso.indexOf("+", dotPos);
+    if (tzPos === -1) tzPos = iso.indexOf("-", dotPos);
+  }
+  if (tzPos === -1) tzPos = iso.length; // ISO without explicit TZ (rare but valid)
+
+  // -------- milliseconds part (safe, no rounding) ----------
+  const baseIso = iso.slice(0, dotPos) + iso.slice(tzPos); // strip fractional secs
+  const msSinceEpoch = Date.parse(baseIso); // single parse
+
+  // -------- microseconds part ------------------------------
+  let frac = iso.slice(dotPos + 1, tzPos); // digits after '.'
+  if (frac.length < 6)
+    frac = frac.padEnd(6, "0"); // e.g. ".27" -> "270000"
+  else if (frac.length > 6) frac = frac.slice(0, 6); // ignore >µs precision
+
+  return msSinceEpoch * 1_000 + Number(frac);
+}
+
+/**
  * Formats a time duration into a human-readable string with microsecond precision support.
  *
  * Output formats:
