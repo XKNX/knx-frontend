@@ -25,7 +25,7 @@ import "../../../components/data-table/cell/knx-table-cell-filterable";
 import "../dialogs/telegram-info-dialog";
 import "../../../components/data-table/filter/knx-list-filter";
 
-import { customElement, property } from "lit/decorators";
+import { customElement, property, query } from "lit/decorators";
 import { mdiDeleteSweep, mdiFastForward, mdiPause, mdiRefresh } from "@mdi/js";
 import { formatTimeWithMilliseconds, formatTimeDelta } from "../../../utils/format";
 import type { TelegramRow, TelegramRowKeys } from "../types/telegram-row";
@@ -38,6 +38,7 @@ import type {
   SelectionChangedEvent as ListFilterSelectionChangedEvent,
   ExpandedChangedEvent as ListFilterExpandedChangedEvent,
   Config as ListFilterConfig,
+  KnxListFilter,
 } from "../../../components/data-table/filter/knx-list-filter";
 
 /**
@@ -128,6 +129,12 @@ export class KNXGroupMonitor extends LitElement {
 
   /** GroupMonitor controller instance */
   private controller = new GroupMonitorController(this);
+
+  /** Reference to source filter component */
+  @query('knx-list-filter[data-filter="source"]') private sourceFilter?: KnxListFilter;
+
+  /** Reference to destination filter component */
+  @query('knx-list-filter[data-filter="destination"]') private destinationFilter?: KnxListFilter;
 
   /**
    * Detects if the current device is a mobile touch device
@@ -229,7 +236,8 @@ export class KNXGroupMonitor extends LitElement {
         filteredCount: {
           fieldName: this.knx.localize("telegram_filter_sort_by_filtered_count"),
           filterable: false,
-          sortable: true,
+          sortable: this.hasActiveFilters || this.sourceFilter?.sortCriterion === "filteredCount",
+          sortDisabled: !this.hasActiveFilters,
           sortAscendingText: this.knx.localize("telegram_filter_sort_ascending"),
           sortDescendingText: this.knx.localize("telegram_filter_sort_descending"),
           sortDefaultDirection: "desc",
@@ -288,7 +296,9 @@ export class KNXGroupMonitor extends LitElement {
         filteredCount: {
           fieldName: this.knx.localize("telegram_filter_sort_by_filtered_count"),
           filterable: false,
-          sortable: true,
+          sortable:
+            this.hasActiveFilters || this.destinationFilter?.sortCriterion === "filteredCount",
+          sortDisabled: !this.hasActiveFilters,
           sortAscendingText: this.knx.localize("telegram_filter_sort_ascending"),
           sortDescendingText: this.knx.localize("telegram_filter_sort_descending"),
           sortDefaultDirection: "desc",

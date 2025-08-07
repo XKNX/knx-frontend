@@ -98,6 +98,9 @@ export interface FieldConfig<T = any> {
   /** Whether this field should be available as a sort option */
   sortable: boolean;
 
+  /** Whether the sort option should be disabled (non-interactive but visible) */
+  sortDisabled?: boolean;
+
   /** The localized display name for this field in sort menus */
   fieldName?: string;
 
@@ -932,45 +935,34 @@ export class KnxListFilter<T = any> extends LitElement {
                     >
                     </ha-icon-button-toggle>
                   </div>
-                  <!-- Sort menu items generated from sortable fields -->
-                  ${Object.entries(this.config || {}).map(([key, field]) => {
-                    // Skip the custom object itself
-                    if (key === "custom") return nothing;
 
-                    const fieldConfig = field as FieldConfig<T>;
-                    return fieldConfig.sortable
-                      ? html`
-                          <knx-sort-menu-item
-                            criterion=${key}
-                            display-name=${ifDefined(fieldConfig.fieldName)}
-                            default-direction=${fieldConfig.sortDefaultDirection ?? "asc"}
-                            ascending-text=${fieldConfig.sortAscendingText ??
-                            this.knx.localize("knx_list_filter_sort_ascending")}
-                            descending-text=${fieldConfig.sortDescendingText ??
-                            this.knx.localize("knx_list_filter_sort_descending")}
-                          ></knx-sort-menu-item>
-                        `
-                      : nothing;
-                  })}
-
-                  <!-- Custom field sort menu items -->
-                  ${this.config?.custom
-                    ? Object.entries(this.config.custom).map(([key, field]) =>
-                        field.sortable
-                          ? html`
-                              <knx-sort-menu-item
-                                criterion=${key}
-                                display-name=${ifDefined(field.fieldName)}
-                                default-direction=${field.sortDefaultDirection ?? "asc"}
-                                ascending-text=${field.sortAscendingText ??
-                                this.knx.localize("knx_list_filter_sort_ascending")}
-                                descending-text=${field.sortDescendingText ??
-                                this.knx.localize("knx_list_filter_sort_descending")}
-                              ></knx-sort-menu-item>
-                            `
-                          : nothing,
-                      )
-                    : nothing}
+                  <!-- Sort menu items generated from all sortable fields -->
+                  ${[
+                    // Standard fields
+                    ...Object.entries(this.config || {})
+                      .filter(([key]) => key !== "custom")
+                      .map(([key, field]) => ({ key, config: field as FieldConfig<T> })),
+                    // Custom fields
+                    ...Object.entries(this.config?.custom || {}).map(([key, field]) => ({
+                      key,
+                      config: field,
+                    })),
+                  ]
+                    .filter(({ config }) => config.sortable)
+                    .map(
+                      ({ key, config }) => html`
+                        <knx-sort-menu-item
+                          criterion=${key}
+                          display-name=${ifDefined(config.fieldName)}
+                          default-direction=${config.sortDefaultDirection ?? "asc"}
+                          ascending-text=${config.sortAscendingText ??
+                          this.knx.localize("knx_list_filter_sort_ascending")}
+                          descending-text=${config.sortDescendingText ??
+                          this.knx.localize("knx_list_filter_sort_descending")}
+                          .disabled=${config.sortDisabled || false}
+                        ></knx-sort-menu-item>
+                      `,
+                    )}
                 </knx-sort-menu>
               </div>
             `
