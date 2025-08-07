@@ -1331,7 +1331,6 @@ export class KnxListFilter<T = any> extends LitElement {
           justify-content: space-between;
           align-items: center;
           width: 100%;
-          margin-bottom: 4px;
         }
 
         .option-label {
