@@ -317,7 +317,6 @@ export class KnxSortMenuItem extends LitElement {
 
     .sort-row.disabled {
       opacity: 0.6;
-      cursor: not-allowed;
       pointer-events: none;
     }
 
