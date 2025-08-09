@@ -43,7 +43,7 @@
   "group_monitor_project_not_loaded_title": "ETS project not loaded",
   "group_monitor_project_not_loaded_message": "For richer context like names and values, upload your ETS project on the Info tab.",
   "project_title": "Project",
-  "project_view_upload": "To use the project viewr please upload a KNX project on Info tab first!",
+  "project_view_upload": "To use the project viewer please upload a KNX project on Info tab first!",
   "project_view_version_l1": "The `XKNXProject` version used for parsing the ETS project was:",
   "project_view_version_l2": "minimum version required",
   "project_view_version_l3": "Please resubmit your ETS project file.",
