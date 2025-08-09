@@ -82,7 +82,8 @@ export class GroupMonitorController implements ReactiveController {
 
   private _isPaused = false;
 
-  private _isProjectLoaded = false;
+  // undefined until initial info is fetched; then true/false
+  private _isProjectLoaded: boolean | undefined = undefined;
 
   private _connectionError: string | null = null;
 
@@ -194,7 +195,7 @@ export class GroupMonitorController implements ReactiveController {
     return this._isPaused;
   }
 
-  public get isProjectLoaded(): boolean {
+  public get isProjectLoaded(): boolean | undefined {
     return this._isProjectLoaded;
   }
 
@@ -309,7 +310,7 @@ export class GroupMonitorController implements ReactiveController {
           // For timestamp sorting, we want to show the time difference since the chronologically previous telegram
           let previousTelegram: TelegramRow | null = null;
 
-          if (sortDirection === "desc") {
+          if (sortDirection === "desc" && sortColumn) {
             // In descending order (newest first): [10:30, 10:25, 10:20]
             // The chronologically previous telegram is at i+1 (older timestamp)
             previousTelegram = i < filteredTelegrams.length - 1 ? filteredTelegrams[i + 1] : null;

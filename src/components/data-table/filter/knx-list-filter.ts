@@ -754,6 +754,12 @@ export class KnxListFilter<T = any> extends LitElement {
   ): void {
     this.sortCriterion = ev.detail.criterion;
     this.sortDirection = ev.detail.direction;
+
+    // Notify parent so it can react immediately (e.g., recompute memoized configs)
+    fireEvent(this, "sort-changed", {
+      criterion: this.sortCriterion,
+      direction: this.sortDirection,
+    });
   }
 
   /**
