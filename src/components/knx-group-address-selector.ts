@@ -17,10 +17,11 @@ import type { DragDropContext } from "../utils/drag-drop-context";
 import { dragDropContext } from "../utils/drag-drop-context";
 import { isValidDPT } from "../utils/dpt";
 import { getValidationError } from "../utils/validation";
-import type { GASelectorOptions, DPTOption } from "../utils/schema";
-import type { KNX } from "../types/knx";
-import type { DPT, GroupAddress } from "../types/websocket";
+import { dptToString } from "../utils/format";
 import type { ErrorDescription, GASchema } from "../types/entity_data";
+import type { KNX } from "../types/knx";
+import type { GASelectorOptions, DPTOption } from "../types/schema";
+import type { DPT, GroupAddress } from "../types/websocket";
 
 const getAddressOptions = (
   validGroupAddresses: GroupAddress[],
@@ -48,6 +49,10 @@ export class GroupAddressSelector extends LitElement {
 
   @property({ attribute: false }) public validationErrors?: ErrorDescription[];
 
+  @property({ attribute: false }) public localizeFunction: (value: string) => string = (
+    key: string,
+  ) => key;
+
   @state() private _showPassive = false;
 
   private _selectedDPTValue?: string;
@@ -67,6 +72,9 @@ export class GroupAddressSelector extends LitElement {
   @query(".passive") private _passiveContainer!: HTMLDivElement;
 
   @queryAll("ha-selector-select") private _gaSelectors!: NodeListOf<HTMLElement>;
+
+  private _baseTranslation = (key: string) =>
+    this.hass.localize(`component.knx.config_panel.entities.create._.knx.knx_group_address.${key}`);
 
   getValidGroupAddresses(validDPTs: DPT[]): GroupAddress[] {
     return this.knx.project?.project_loaded
@@ -165,7 +173,8 @@ export class GroupAddressSelector extends LitElement {
                   "invalid-drop-zone": invalidGADropTargetClass,
                 })}
                 .hass=${this.hass}
-                .label=${"Send address" + (this.label ? ` - ${this.label}` : "")}
+                .label=${this._baseTranslation("send_address") +
+                (this.label ? ` - ${this.label}` : "")}
                 .required=${this.options.write.required}
                 .selector=${{
                   select: { multiple: false, custom_value: true, options: this.addressOptions },
@@ -184,7 +193,8 @@ export class GroupAddressSelector extends LitElement {
                   "invalid-drop-zone": invalidGADropTargetClass,
                 })}
                 .hass=${this.hass}
-                .label=${"State address" + (this.label ? ` - ${this.label}` : "")}
+                .label=${this._baseTranslation("state_address") +
+                (this.label ? ` - ${this.label}` : "")}
                 .required=${this.options.state.required}
                 .selector=${{
                   select: { multiple: false, custom_value: true, options: this.addressOptions },
@@ -218,7 +228,8 @@ export class GroupAddressSelector extends LitElement {
             "invalid-drop-zone": invalidGADropTargetClass,
           })}
           .hass=${this.hass}
-          .label=${"Passive addresses" + (this.label ? ` - ${this.label}` : "")}
+          .label=${this._baseTranslation("passive_addresses") +
+          (this.label ? ` - ${this.label}` : "")}
           .required=${false}
           .selector=${{
             select: { multiple: true, custom_value: true, options: this.addressOptions },
@@ -230,6 +241,12 @@ export class GroupAddressSelector extends LitElement {
           @drop=${this._dropHandler}
         ></ha-selector-select>
       </div>
+      ${this.options.validDPTs
+        ? html`<p class="valid-dpts">
+            ${this._baseTranslation("valid_dpts")}:
+            ${this.options.validDPTs.map((dpt) => dptToString(dpt)).join(", ")}
+          </p>`
+        : nothing}
       ${this.options.dptSelect ? this._renderDptSelector() : nothing}
     `;
   }
@@ -238,12 +255,14 @@ export class GroupAddressSelector extends LitElement {
     const invalid = getValidationError(this.validationErrors, "dpt");
     return html`<knx-dpt-selector
       .key=${"dpt"}
-      .label=${"Datapoint type"}
+      .label=${this._baseTranslation("dpt")}
       .options=${this.options.dptSelect}
       .value=${this._selectedDPTValue}
       .disabled=${this.dptSelectorDisabled}
       .invalid=${!!invalid}
       .invalidMessage=${invalid?.error_message}
+      .localizeValue=${this.localizeFunction}
+      .translation_key=${this.key}
       @value-changed=${this._updateConfig}
     >
     </knx-dpt-selector>`;
@@ -404,6 +423,15 @@ export class GroupAddressSelector extends LitElement {
 
     .passive.expanded {
       height: auto;
+    }
+
+    .valid-dpts {
+      margin-top: 0;
+      margin-left: 16px;
+      margin-right: 64px;
+      color: var(--secondary-text-color);
+      font-size: var(--ha-font-size-s);
+      font-weight: var(--ha-font-weight-medium);
     }
 
     ha-selector-select {
