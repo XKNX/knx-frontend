@@ -2287,6 +2287,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@lit/task@npm:1.0.2":
+  version: 1.0.2
+  resolution: "@lit/task@npm:1.0.2"
+  dependencies:
+    "@lit/reactive-element": "npm:^1.0.0 || ^2.0.0"
+  checksum: 10/cf834761ee5b51b76cd175eb631e2fbbe054e072ccb46b4e09de33c56fb416d87ad3565b80ba9828a196eabb96ff093b91d6642d92887adfc26c49d01c392e89
+  languageName: node
+  linkType: hard
+
 "@lokalise/node-api@npm:15.0.0":
   version: 15.0.0
   resolution: "@lokalise/node-api@npm:15.0.0"
@@ -10686,6 +10695,7 @@ __metadata:
     "@lit-labs/virtualizer": "npm:2.1.1"
     "@lit/context": "npm:1.1.6"
     "@lit/reactive-element": "npm:2.1.1"
+    "@lit/task": "npm:1.0.2"
     "@lokalise/node-api": "npm:15.0.0"
     "@material/chips": "npm:=14.0.0-canary.53b3cad2f.0"
     "@material/data-table": "npm:=14.0.0-canary.53b3cad2f.0"

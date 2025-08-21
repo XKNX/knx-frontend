@@ -5,7 +5,7 @@ import "@ha/components/ha-formfield";
 import "@ha/components/ha-radio";
 import { fireEvent } from "@ha/common/dom/fire_event";
 
-import type { DPTOption } from "../utils/schema";
+import type { DPTOption } from "../types/schema";
 
 @customElement("knx-dpt-selector")
 class KnxDptSelector extends LitElement {
@@ -21,6 +21,11 @@ class KnxDptSelector extends LitElement {
 
   @property({ attribute: false }) public invalidMessage?: string;
 
+  @property({ attribute: false }) public localizeValue: (value: string) => string = (key: string) =>
+    key;
+
+  @property({ type: String }) public translation_key?: string;
+
   render() {
     return html`
       <div>
@@ -35,8 +40,10 @@ class KnxDptSelector extends LitElement {
                 @change=${this._valueChanged}
               ></ha-radio>
               <label .value=${item.value} @click=${this._valueChanged}>
-                <p>${item.label}</p>
-                ${item.description ? html`<p class="secondary">${item.description}</p>` : nothing}
+                <p>
+                  ${this.localizeValue(this.translation_key + ".options." + item.translation_key)}
+                </p>
+                <p class="secondary">DPT ${item.value}</p>
               </label>
             </div>
           `,
