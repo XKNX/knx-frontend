@@ -9,15 +9,15 @@ import type {
 } from "../types/entity_data";
 import type { SelectorSchema } from "../types/schema";
 import type {
-  KNXInfoData,
   TelegramDict,
   GroupMonitorInfoData,
   KNXProjectResponse,
+  KNXBaseData,
 } from "../types/websocket";
 
-export const getKnxInfoData = (hass: HomeAssistant): Promise<KNXInfoData> =>
+export const getKnxBaseData = (hass: HomeAssistant): Promise<KNXBaseData> =>
   hass.callWS({
-    type: "knx/info",
+    type: "knx/get_base_data",
   });
 
 export const processProjectFile = (

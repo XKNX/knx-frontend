@@ -34,7 +34,7 @@ import type {
   SupportedPlatform,
 } from "types/entity_data";
 
-import { platformConstants, SUPPORTED_PLATFORMS } from "../utils/common";
+import { getPlatformStyle } from "../utils/common";
 import { validDPTsForSchema } from "../utils/dpt";
 import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
 import { KNXLogger } from "../tools/knx-logger";
@@ -144,7 +144,7 @@ export class KNXCreateEntity extends LitElement {
     if (!this.entityPlatform) {
       return this._renderTypeSelection();
     }
-    if (!SUPPORTED_PLATFORMS.includes(this.entityPlatform)) {
+    if (!this.knx.supportedPlatforms.includes(this.entityPlatform)) {
       logger.error("Unknown platform", this.entityPlatform);
       return this._renderTypeSelection();
     }
@@ -173,7 +173,7 @@ export class KNXCreateEntity extends LitElement {
             new Error("Entity platform unknown"),
           );
         }
-        if (!SUPPORTED_PLATFORMS.includes(this.entityPlatform)) {
+        if (!this.knx.supportedPlatforms.includes(this.entityPlatform)) {
           return this._renderError(
             "Unsupported platform",
             "Unsupported platform: " + this.entityPlatform,
@@ -237,13 +237,16 @@ export class KNXCreateEntity extends LitElement {
             <ha-navigation-list
               .hass=${this.hass}
               .narrow=${this.narrow}
-              .pages=${Object.entries(platformConstants).map(([platform, platformInfo]) => ({
-                name: `${this.hass.localize(`component.${platform}.title`)}`,
-                description: `${this.hass.localize(`component.knx.config_panel.entities.create.${platform}.description`)}`,
-                iconPath: platformInfo.iconPath,
-                iconColor: platformInfo.color,
-                path: `/knx/entities/create/${platform}`,
-              }))}
+              .pages=${this.knx.supportedPlatforms.map((platform) => {
+                const platformStyle = getPlatformStyle(platform);
+                return {
+                  name: `${this.hass.localize(`component.${platform}.title`)}`,
+                  description: `${this.hass.localize(`component.knx.config_panel.entities.create.${platform}.description`)}`,
+                  iconPath: platformStyle.iconPath,
+                  iconColor: platformStyle.color,
+                  path: `/knx/entities/create/${platform}`,
+                };
+              })}
               has-secondary
               .label=${this.hass.localize(
                 "component.knx.config_panel.entities.create.type_selection.title",

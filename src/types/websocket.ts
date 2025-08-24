@@ -1,3 +1,11 @@
+import type { SupportedPlatform } from "./entity_data";
+
+export interface KNXBaseData {
+  info: KNXInfoData; // TODO: rename to connection?
+  supported_platforms: SupportedPlatform[];
+  // TODO: move `project` key from KNXInfoData to here - remove `project_loaded` from KNXProjectResponse and use directly (also GroupMonitorInfoData)
+}
+
 export interface KNXInfoData {
   version: string;
   connected: boolean;
