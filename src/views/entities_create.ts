@@ -69,6 +69,15 @@ export class KNXCreateEntity extends LitElement {
 
   private entityId?: string; // only used for "edit" intent
 
+  private _projectLoadTask = new Task(this, {
+    args: () => [],
+    task: async () => {
+      if (!this.knx.projectInfo) return; // no project
+      if (this.knx.projectData) return; // already loaded
+      await this.knx.loadProject();
+    },
+  });
+
   private _schemaLoadTask = new Task(this, {
     args: () => [this.entityPlatform] as const,
     task: async ([entityPlatform]) => {
@@ -93,14 +102,6 @@ export class KNXCreateEntity extends LitElement {
       this._dragDropContextProvider.updateObservers();
     }),
   });
-
-  protected firstUpdated() {
-    if (!this.knx.project) {
-      this.knx.loadProject().then(() => {
-        this.requestUpdate();
-      });
-    }
-  }
 
   protected willUpdate(changedProperties: PropertyValues<this>) {
     if (changedProperties.has("route")) {
@@ -131,13 +132,24 @@ export class KNXCreateEntity extends LitElement {
   }
 
   protected render(): TemplateResult {
-    if (!this.hass || !this.knx.project || !this._intent) {
+    if (!this.hass || !this._intent) {
       return html` <hass-loading-screen></hass-loading-screen> `;
     }
-    if (this._intent === "edit") {
-      return this._renderEdit();
-    }
-    return this._renderCreate();
+    return this._projectLoadTask.render({
+      initial: () => html`
+        <hass-loading-screen .message=${"Waiting to fetch project data."}></hass-loading-screen>
+      `,
+      pending: () => html`
+        <hass-loading-screen .message=${"Loading KNX project data."}></hass-loading-screen>
+      `,
+      error: (err) => this._renderError("Error loading KNX project", err),
+      complete: () => {
+        if (this._intent === "edit") {
+          return this._renderEdit();
+        }
+        return this._renderCreate();
+      },
+    });
   }
 
   private _renderCreate(): TemplateResult {
@@ -307,10 +319,10 @@ export class KNXCreateEntity extends LitElement {
             <ha-svg-icon slot="icon" .path=${create ? mdiPlus : mdiFloppy}></ha-svg-icon>
           </ha-fab>
         </div>
-        ${this.knx.project?.project_loaded
+        ${this.knx.projectData
           ? html` <div class="panel">
               <knx-project-device-tree
-                .data=${this.knx.project.knxproject}
+                .data=${this.knx.projectData}
                 .validDPTs=${validDPTsForSchema(schema)}
               ></knx-project-device-tree>
             </div>`

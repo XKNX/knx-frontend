@@ -25,9 +25,10 @@ export class KnxElement extends ProvideHassLitMixin(LitElement) {
         config_entry: knxConfigEntries[0], // single instance allowed for knx config
         localize: (string, replace) => localize(this.hass, string, replace),
         log: new KNXLogger(),
-        info: knxBase.info,
+        connectionInfo: knxBase.connection_info,
+        projectInfo: knxBase.project_info, // can  be used to check if project is available
         supportedPlatforms: knxBase.supported_platforms,
-        project: null,
+        projectData: null,
         loadProject: () => this._loadProjectPromise(),
         schema: {},
         loadSchema: (platform: string) => this._loadSchema(platform),
@@ -39,10 +40,10 @@ export class KnxElement extends ProvideHassLitMixin(LitElement) {
 
   private _loadProjectPromise(): Promise<void> {
     // load project only when needed since it can be quite big
-    // check this.knx.project if it is available in using component
+    // check if this.knx.projectData is available before using in component
     return getKnxProject(this.hass)
-      .then((knxProjectResp) => {
-        this.knx.project = knxProjectResp;
+      .then((knxProject) => {
+        this.knx.projectData = knxProject;
       })
       .catch((err) => {
         this.knx.log.error("getKnxProject", err);
