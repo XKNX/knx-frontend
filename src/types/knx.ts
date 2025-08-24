@@ -9,6 +9,7 @@ export interface KNX {
   localize(string: string, replace?: Record<string, any>): string;
   log: any;
   info: KNXInfoData;
+  supportedPlatforms: SupportedPlatform[];
   project: KNXProjectResponse | null;
   loadProject(): Promise<void>;
   schema: Partial<Record<SupportedPlatform, SelectorSchema[]>>;

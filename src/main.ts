@@ -14,7 +14,6 @@ import type { HomeAssistant, Route } from "@ha/types";
 
 import { KnxElement } from "./knx";
 import "./knx-router";
-import { SUPPORTED_PLATFORMS } from "./utils/common";
 import type { KNX } from "./types/knx";
 import type { LocationChangedEvent } from "./types/navigation";
 
@@ -43,7 +42,7 @@ class KnxFrontend extends KnxElement {
       await this._initKnx();
     }
     await this.hass.loadBackendTranslation("config_panel", "knx", false);
-    await this.hass.loadBackendTranslation("title", Array.from(SUPPORTED_PLATFORMS), false);
+    await this.hass.loadBackendTranslation("title", this.knx.supportedPlatforms, false);
     await this.hass.loadFragmentTranslation("config");
     this.addEventListener("knx-location-changed", (e) => this._setRoute(e as LocationChangedEvent));
 

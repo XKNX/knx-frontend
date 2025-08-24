@@ -43,11 +43,11 @@ export class KNXConfigureEntity extends LitElement {
 
   @property({ attribute: false }) public knx!: KNX;
 
-  @property({ type: String }) public platform!: SupportedPlatform;
+  @property({ attribute: false }) public platform!: SupportedPlatform;
 
-  @property({ type: Object }) public config?: EntityData;
+  @property({ attribute: false }) public config?: EntityData;
 
-  @property({ type: Array }) public schema!: SelectorSchema[];
+  @property({ attribute: false }) public schema!: SelectorSchema[];
 
   @property({ attribute: false }) public validationErrors?: ErrorDescription[];
 

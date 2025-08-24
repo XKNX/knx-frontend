@@ -10,8 +10,6 @@ import {
 import { FALLBACK_DOMAIN_ICONS } from "@ha/data/icons";
 import type { SupportedPlatform } from "../types/entity_data";
 
-export const SUPPORTED_PLATFORMS = ["switch", "light", "binary_sensor", "cover"] as const;
-
 export interface PlatformStyle {
   iconPath: string;
   color: string;
