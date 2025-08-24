@@ -112,7 +112,7 @@ export class KnxRouter extends HassRouterPage {
     el.knx = this.knx;
     el.route = this.routeTail;
     el.narrow = this.narrow;
-    el.tabs = knxMainTabs(!!this.knx.info.project);
+    el.tabs = knxMainTabs(!!this.knx.projectInfo);
   }
 }
 

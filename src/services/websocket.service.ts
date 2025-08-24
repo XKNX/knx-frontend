@@ -10,8 +10,8 @@ import type {
 import type { SelectorSchema } from "../types/schema";
 import type {
   TelegramDict,
+  KNXProject,
   GroupMonitorInfoData,
-  KNXProjectResponse,
   KNXBaseData,
 } from "../types/websocket";
 
@@ -54,7 +54,7 @@ export const subscribeKnxTelegrams = (
     type: "knx/subscribe_telegrams",
   });
 
-export const getKnxProject = (hass: HomeAssistant): Promise<KNXProjectResponse> =>
+export const getKnxProject = (hass: HomeAssistant): Promise<KNXProject | null> =>
   hass.callWS({
     type: "knx/get_knx_project",
   });

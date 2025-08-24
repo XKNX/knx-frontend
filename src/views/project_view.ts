@@ -2,6 +2,7 @@ import { mdiFilterVariant, mdiPlus, mdiMathLog } from "@mdi/js";
 import type { TemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
+import { Task } from "@lit/task";
 
 import memoize from "memoize-one";
 
@@ -10,6 +11,7 @@ import { navigate } from "@ha/common/navigate";
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-tabs-subpage";
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
+import "@ha/components/ha-alert";
 import "@ha/components/ha-card";
 import "@ha/components/ha-icon-button";
 import "@ha/components/ha-icon-overflow-menu";
@@ -57,6 +59,16 @@ export class KNXProjectView extends LitElement {
 
   @state() private _lastTelegrams: Record<string, TelegramDict> = {};
 
+  private _projectLoadTask = new Task(this, {
+    args: () => [],
+    task: async () => {
+      if (!!this.knx.projectInfo && !this.knx.projectData) {
+        await this.knx.loadProject();
+      }
+      this._isGroupRangeAvailable();
+    },
+  });
+
   public disconnectedCallback() {
     super.disconnectedCallback();
     if (this._subscribed) {
@@ -66,16 +78,6 @@ export class KNXProjectView extends LitElement {
   }
 
   protected async firstUpdated() {
-    if (!this.knx.project) {
-      this.knx.loadProject().then(() => {
-        this._isGroupRangeAvailable();
-        this.requestUpdate();
-      });
-    } else {
-      // project was already loaded
-      this._isGroupRangeAvailable();
-    }
-
     getGroupTelegrams(this.hass)
       .then((groupTelegrams) => {
         this._lastTelegrams = groupTelegrams;
@@ -90,7 +92,7 @@ export class KNXProjectView extends LitElement {
   }
 
   private _isGroupRangeAvailable() {
-    const projectVersion = this.knx.project?.knxproject.info.xknxproject_version ?? "0.0.0";
+    const projectVersion = this.knx.projectData?.info.xknxproject_version ?? "0.0.0";
     logger.debug("project version: " + projectVersion);
     this._groupRangeAvailable = compare(projectVersion, MIN_XKNXPROJECT_VERSION, ">=");
   }
@@ -202,9 +204,9 @@ export class KNXProjectView extends LitElement {
   private _getRows(visibleGroupAddresses: string[]): GroupAddress[] {
     if (!visibleGroupAddresses.length)
       // if none is set, default to show all
-      return Object.values(this.knx.project!.knxproject.group_addresses);
+      return Object.values(this.knx.projectData!.group_addresses);
 
-    return Object.entries(this.knx.project!.knxproject.group_addresses).reduce(
+    return Object.entries(this.knx.projectData!.group_addresses).reduce(
       (result, [key, groupAddress]) => {
         if (visibleGroupAddresses.includes(key)) {
           result.push(groupAddress);
@@ -220,55 +222,68 @@ export class KNXProjectView extends LitElement {
   }
 
   protected render(): TemplateResult {
-    if (!this.hass || !this.knx.project) {
+    if (!this.hass) {
       return html` <hass-loading-screen></hass-loading-screen> `;
     }
+    return html` <hass-tabs-subpage
+      .hass=${this.hass}
+      .narrow=${this.narrow!}
+      .route=${this.route!}
+      .tabs=${this.tabs}
+      .localizeFunc=${this.knx.localize}
+    >
+      ${this._projectLoadTask.render({
+        initial: () => html`
+          <hass-loading-screen .message=${"Waiting to fetch project data."}></hass-loading-screen>
+        `,
+        pending: () => html`
+          <hass-loading-screen .message=${"Loading KNX project data."}></hass-loading-screen>
+        `,
+        error: (err) => {
+          logger.error("Error loading KNX project", err);
+          return html`<ha-alert alert-type="error">"Error loading KNX project"</ha-alert>`;
+        },
+        complete: () => this.renderMain(),
+      })}
+    </hass-tabs-subpage>`;
+  }
 
+  protected renderMain(): TemplateResult {
     const filtered = this._getRows(this._visibleGroupAddresses);
 
-    return html`
-      <hass-tabs-subpage
-        .hass=${this.hass}
-        .narrow=${this.narrow!}
-        .route=${this.route!}
-        .tabs=${this.tabs}
-        .localizeFunc=${this.knx.localize}
-      >
-        ${this.knx.project.project_loaded
-          ? html`${this.narrow && this._groupRangeAvailable
-                ? html`<ha-icon-button
-                    slot="toolbar-icon"
-                    .label=${this.hass.localize("ui.components.related-filter-menu.filter")}
-                    .path=${mdiFilterVariant}
-                    @click=${this._toggleRangeSelector}
-                  ></ha-icon-button>`
-                : nothing}
-              <div class="sections">
-                ${this._groupRangeAvailable
-                  ? html`
-                      <knx-project-tree-view
-                        .data=${this.knx.project.knxproject}
-                        @knx-group-range-selection-changed=${this._visibleAddressesChanged}
-                      ></knx-project-tree-view>
-                    `
-                  : nothing}
-                <ha-data-table
-                  class="ga-table"
-                  .hass=${this.hass}
-                  .columns=${this._columns(this.narrow, this.hass.language)}
-                  .data=${filtered}
-                  .hasFab=${false}
-                  .searchLabel=${this.hass.localize("ui.components.data-table.search")}
-                  .clickable=${false}
-                ></ha-data-table>
-              </div>`
-          : html` <ha-card .header=${this.knx.localize("attention")}>
-              <div class="card-content">
-                <p>${this.knx.localize("project_view_upload")}</p>
-              </div>
-            </ha-card>`}
-      </hass-tabs-subpage>
-    `;
+    return this.knx.projectData
+      ? html`${this.narrow && this._groupRangeAvailable
+            ? html`<ha-icon-button
+                slot="toolbar-icon"
+                .label=${this.hass.localize("ui.components.related-filter-menu.filter")}
+                .path=${mdiFilterVariant}
+                @click=${this._toggleRangeSelector}
+              ></ha-icon-button>`
+            : nothing}
+          <div class="sections">
+            ${this._groupRangeAvailable
+              ? html`
+                  <knx-project-tree-view
+                    .data=${this.knx.projectData}
+                    @knx-group-range-selection-changed=${this._visibleAddressesChanged}
+                  ></knx-project-tree-view>
+                `
+              : nothing}
+            <ha-data-table
+              class="ga-table"
+              .hass=${this.hass}
+              .columns=${this._columns(this.narrow, this.hass.language)}
+              .data=${filtered}
+              .hasFab=${false}
+              .searchLabel=${this.hass.localize("ui.components.data-table.search")}
+              .clickable=${false}
+            ></ha-data-table>
+          </div>`
+      : html` <ha-card .header=${this.knx.localize("attention")}>
+          <div class="card-content">
+            <p>${this.knx.localize("project_view_upload")}</p>
+          </div>
+        </ha-card>`;
   }
 
   private _toggleRangeSelector() {

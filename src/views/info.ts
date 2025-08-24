@@ -53,7 +53,7 @@ export class KNXInfo extends LitElement {
       >
         <div class="columns">
           ${this._renderInfoCard()}
-          ${this.knx.info.project ? this._renderProjectDataCard(this.knx.info.project) : nothing}
+          ${this.knx.projectInfo ? this._renderProjectDataCard(this.knx.projectInfo) : nothing}
           ${this._renderProjectUploadCard()}
         </div>
       </hass-tabs-subpage>
@@ -67,7 +67,7 @@ export class KNXInfo extends LitElement {
 
         <div class="knx-content-row">
           <div>XKNX Version</div>
-          <div>${this.knx.info.version}</div>
+          <div>${this.knx.connectionInfo.version}</div>
         </div>
 
         <div class="knx-content-row">
@@ -78,13 +78,15 @@ export class KNXInfo extends LitElement {
         <div class="knx-content-row">
           <div>${this.knx.localize("info_connected_to_bus")}</div>
           <div>
-            ${this.hass.localize(this.knx.info.connected ? "ui.common.yes" : "ui.common.no")}
+            ${this.hass.localize(
+              this.knx.connectionInfo.connected ? "ui.common.yes" : "ui.common.no",
+            )}
           </div>
         </div>
 
         <div class="knx-content-row">
           <div>${this.knx.localize("info_individual_address")}</div>
-          <div>${this.knx.info.current_address}</div>
+          <div>${this.knx.connectionInfo.current_address}</div>
         </div>
 
         <div class="knx-bug-report">
@@ -127,7 +129,7 @@ export class KNXInfo extends LitElement {
               <ha-button
                 class="knx-warning push-right"
                 @click=${this._removeProject}
-                .disabled=${this._uploading || !this.knx.info.project}
+                .disabled=${this._uploading || !this.knx.projectInfo}
                 >
                 ${this.knx.localize("info_project_delete")}
               </ha-button>

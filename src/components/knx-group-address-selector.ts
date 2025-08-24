@@ -77,8 +77,8 @@ export class GroupAddressSelector extends LitElement {
     this.hass.localize(`component.knx.config_panel.entities.create._.knx.knx_group_address.${key}`);
 
   getValidGroupAddresses(validDPTs: DPT[]): GroupAddress[] {
-    return this.knx.project?.project_loaded
-      ? Object.values(this.knx.project.knxproject.group_addresses).filter((groupAddress) =>
+    return this.knx.projectData
+      ? Object.values(this.knx.projectData.group_addresses).filter((groupAddress) =>
           groupAddress.dpt ? isValidDPT(groupAddress.dpt, validDPTs) : false,
         )
       : [];
@@ -115,7 +115,7 @@ export class GroupAddressSelector extends LitElement {
       const selectedDPT = this.getDptOptionByValue(this._selectedDPTValue)?.dpt;
       this.setFilteredGroupAddresses(selectedDPT);
 
-      if (selectedDPT && this.knx.project?.project_loaded) {
+      if (selectedDPT && this.knx.projectData) {
         const allDpts = [
           this.config.write,
           this.config.state,
@@ -124,7 +124,7 @@ export class GroupAddressSelector extends LitElement {
         this.dptSelectorDisabled =
           allDpts.length > 0 &&
           allDpts.every((ga) => {
-            const _dpt = this.knx.project?.knxproject.group_addresses[ga!]?.dpt;
+            const _dpt = this.knx.projectData!.group_addresses[ga!]?.dpt;
             return _dpt ? isValidDPT(_dpt, [selectedDPT]) : false;
           });
       } else {
@@ -299,7 +299,7 @@ export class GroupAddressSelector extends LitElement {
     }
 
     // below only applies to loaded projects as it inferes DPT from selected group address
-    if (!this.knx.project?.project_loaded) return;
+    if (!this.knx.projectData) return;
 
     const newGa = this._getAddedGroupAddress(targetKey, newConfig);
     if (!newGa || this._selectedDPTValue !== undefined) return;
