@@ -1,16 +1,15 @@
 import type { SupportedPlatform } from "./entity_data";
 
 export interface KNXBaseData {
-  info: KNXInfoData; // TODO: rename to connection?
+  connection_info: KNXInfoData;
+  project_info: KNXProjectInfo | null;
   supported_platforms: SupportedPlatform[];
-  // TODO: move `project` key from KNXInfoData to here - remove `project_loaded` from KNXProjectResponse and use directly (also GroupMonitorInfoData)
 }
 
 export interface KNXInfoData {
   version: string;
   connected: boolean;
   current_address: string;
-  project: KNXProjectInfo | null;
 }
 
 export interface KNXProjectInfo {
@@ -40,11 +39,6 @@ export interface TelegramDict {
   timestamp: string; // ISO 8601 eg. "2023-06-21T22:28:45.446257+02:00" from `dt_util.as_local(dt_util.utcnow())`
   unit: string | null;
   value: string | number | boolean | null;
-}
-
-export interface KNXProjectResponse {
-  project_loaded: boolean;
-  knxproject: KNXProject;
 }
 
 export interface KNXProject {
