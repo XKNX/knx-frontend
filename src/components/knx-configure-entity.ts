@@ -25,7 +25,8 @@ import { setNestedValue, getNestedValue } from "../utils/config-helper";
 import { extractValidationErrors, getValidationError } from "../utils/validation";
 import type { EntityData, ErrorDescription, SupportedPlatform } from "../types/entity_data";
 import type { KNX } from "../types/knx";
-import { platformConstants } from "../utils/common";
+import { getPlatformStyle } from "../utils/common";
+import type { PlatformStyle } from "../utils/common";
 import type {
   Section,
   SelectorSchema,
@@ -52,12 +53,15 @@ export class KNXConfigureEntity extends LitElement {
 
   @state() private _selectedGroupSelectOptions: Record<string, number> = {};
 
+  platformStyle!: PlatformStyle;
+
   private _backendLocalize = (path: string) =>
     this.hass.localize(`component.knx.config_panel.entities.create.${this.platform}.${path}`) ||
     this.hass.localize(`component.knx.config_panel.entities.create._.${path}`);
 
   connectedCallback(): void {
     super.connectedCallback();
+    this.platformStyle = getPlatformStyle(this.platform);
     if (!this.config) {
       // set base keys to get better validation error messages
       this.config = { entity: {}, knx: {} };
@@ -79,14 +83,13 @@ export class KNXConfigureEntity extends LitElement {
     const errors = extractValidationErrors(this.validationErrors, "data"); // "data" is root key in our python schema
     const knxErrors = extractValidationErrors(errors, "knx");
     const knxBaseError = getValidationError(knxErrors);
-    const platformInfo = platformConstants[this.platform];
 
     return html`
       <div class="header">
         <h1>
           <ha-svg-icon
-            .path=${platformInfo.iconPath}
-            style=${styleMap({ "background-color": platformInfo.color })}
+            .path=${this.platformStyle.iconPath}
+            style=${styleMap({ "background-color": this.platformStyle.color })}
           ></ha-svg-icon>
           ${this.hass.localize(`component.${this.platform}.title`) || this.platform}
         </h1>

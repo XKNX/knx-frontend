@@ -34,7 +34,7 @@ import type {
   SupportedPlatform,
 } from "types/entity_data";
 
-import { platformConstants, SUPPORTED_PLATFORMS } from "../utils/common";
+import { platformConstants, getPlatformStyle, SUPPORTED_PLATFORMS } from "../utils/common";
 import { validDPTsForSchema } from "../utils/dpt";
 import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
 import { KNXLogger } from "../tools/knx-logger";
@@ -237,13 +237,19 @@ export class KNXCreateEntity extends LitElement {
             <ha-navigation-list
               .hass=${this.hass}
               .narrow=${this.narrow}
-              .pages=${Object.entries(platformConstants).map(([platform, platformInfo]) => ({
-                name: `${this.hass.localize(`component.${platform}.title`)}`,
-                description: `${this.hass.localize(`component.knx.config_panel.entities.create.${platform}.description`)}`,
-                iconPath: platformInfo.iconPath,
-                iconColor: platformInfo.color,
-                path: `/knx/entities/create/${platform}`,
-              }))}
+              .pages=${
+                // TODO: use supported platforms, not all platforms (platformConstants)
+                Object.keys(platformConstants).map((platform) => {
+                  const platformStyle = getPlatformStyle(platform);
+                  return {
+                    name: `${this.hass.localize(`component.${platform}.title`)}`,
+                    description: `${this.hass.localize(`component.knx.config_panel.entities.create.${platform}.description`)}`,
+                    iconPath: platformStyle.iconPath,
+                    iconColor: platformStyle.color,
+                    path: `/knx/entities/create/${platform}`,
+                  };
+                })
+              }
               has-secondary
               .label=${this.hass.localize(
                 "component.knx.config_panel.entities.create.type_selection.title",
