@@ -39,9 +39,6 @@ export class KnxSelectorRow extends LitElement {
 
   protected willUpdate(_changedProperties: PropertyValues): void {
     if (_changedProperties.has("selector") || _changedProperties.has("key")) {
-      // don't use connectedCallback as element might be reused when changing
-      // GroupSelect option and thus not connect again - leaving wrong values
-
       this._disabled = !this.selector.required && this.value === undefined;
       // apply default value if available or no value is set yet
       this._haSelectorValue = this.value ?? this.selector.default ?? null;

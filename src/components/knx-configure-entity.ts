@@ -1,6 +1,7 @@
 import type { TemplateResult } from "lit";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
+import { keyed } from "lit/directives/keyed";
 import { styleMap } from "lit/directives/style-map";
 
 import "@ha/components/ha-alert";
@@ -173,7 +174,12 @@ export class KNXConfigureEntity extends LitElement {
               )}
             </p>
             <div class="group-selection">
-              ${this._generateItems(currentOption.schema, path, errors)}
+              ${keyed(
+                // force recreation when selection changes to ensure proper
+                // defaults for sub-elements internal states
+                optionIndex,
+                this._generateItems(currentOption.schema, path, errors),
+              )}
             </div>`
         : nothing}
     </ha-expansion-panel>`;
