@@ -1,5 +1,5 @@
 import { LitElement, html, css, nothing } from "lit";
-import type { TemplateResult } from "lit";
+import type { PropertyValues, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 
@@ -37,20 +37,21 @@ export class KnxSelectorRow extends LitElement {
 
   private _optionalBooleanSelector = false;
 
-  public connectedCallback() {
-    super.connectedCallback();
-    this._disabled = !this.selector.required && this.value === undefined;
-    // apply default value if available or no value is set yet
-    this._haSelectorValue = this.value ?? this.selector.default ?? null;
+  protected willUpdate(_changedProperties: PropertyValues): void {
+    if (_changedProperties.has("selector") || _changedProperties.has("key")) {
+      this._disabled = !this.selector.required && this.value === undefined;
+      // apply default value if available or no value is set yet
+      this._haSelectorValue = this.value ?? this.selector.default ?? null;
 
-    const booleanSelector = "boolean" in this.selector.selector;
-    const possibleInlineSelector = booleanSelector || "number" in this.selector.selector;
-    this._inlineSelector = !!this.selector.required && possibleInlineSelector;
-    // optional boolean should not show as 2 switches (one for optional and one for value)
-    this._optionalBooleanSelector = !this.selector.required && booleanSelector;
-    if (this._optionalBooleanSelector) {
-      // either true or the key will be unset (via this._disabled)
-      this._haSelectorValue = true;
+      const booleanSelector = "boolean" in this.selector.selector;
+      const possibleInlineSelector = booleanSelector || "number" in this.selector.selector;
+      this._inlineSelector = !!this.selector.required && possibleInlineSelector;
+      // optional boolean should not show as 2 switches (one for optional and one for value)
+      this._optionalBooleanSelector = !this.selector.required && booleanSelector;
+      if (this._optionalBooleanSelector) {
+        // either true or the key will be unset (via this._disabled)
+        this._haSelectorValue = true;
+      }
     }
   }
 

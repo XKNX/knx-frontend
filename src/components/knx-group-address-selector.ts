@@ -95,21 +95,21 @@ export class GroupAddressSelector extends LitElement {
     this.addressOptions = getAddressOptions(this.filteredGroupAddresses);
   });
 
-  connectedCallback() {
-    super.connectedCallback();
-    this.validGroupAddresses = this.getValidGroupAddresses(
-      this.options.validDPTs ?? this.options.dptSelect?.map((dptOption) => dptOption.dpt) ?? [],
-    );
-    this.filteredGroupAddresses = this.validGroupAddresses;
-    this.addressOptions = getAddressOptions(this.filteredGroupAddresses);
-  }
-
   protected shouldUpdate(changedProps: PropertyValues<this>) {
     // ignore hass updates to avoid scrolling reset of open dropdowns (when input filter is set)
     return !(changedProps.size === 1 && changedProps.has("hass"));
   }
 
   protected willUpdate(changedProps: PropertyValues<this>) {
+    if (changedProps.has("options")) {
+      // initialize
+      this.validGroupAddresses = this.getValidGroupAddresses(
+        this.options.validDPTs ?? this.options.dptSelect?.map((dptOption) => dptOption.dpt) ?? [],
+      );
+      this.filteredGroupAddresses = this.validGroupAddresses;
+      this.addressOptions = getAddressOptions(this.filteredGroupAddresses);
+    }
+
     if (changedProps.has("config")) {
       this._selectedDPTValue = this.config.dpt ?? this._selectedDPTValue;
       const selectedDPT = this.getDptOptionByValue(this._selectedDPTValue)?.dpt;
