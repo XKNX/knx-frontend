@@ -65,6 +65,7 @@ export class KnxSelectorRow extends LitElement {
           .selector=${this.selector.selector}
           .disabled=${this._disabled}
           .value=${this._haSelectorValue}
+          .localizeValue=${this.hass.localize}
           @value-changed=${this._valueChange}
         ></ha-selector>`;
 
