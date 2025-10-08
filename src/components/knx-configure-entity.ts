@@ -161,7 +161,7 @@ export class KNXConfigureEntity extends LitElement {
       .secondary=${this._backendLocalize(`${path}.description`)}
       .expanded=${!selector.collapsible || this._groupHasGroupAddressInConfig(selector, path)}
       .noCollapse=${!selector.collapsible}
-      .outlined=${!!selector.collapsible}
+      outlined
     >
       ${sectionBaseError
         ? html` <ha-alert .alertType=${"error"} .title=${"Validation error"}>
