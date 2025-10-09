@@ -158,6 +158,8 @@ export class GroupAddressSelector extends LitElement {
     const gaDescription = this.localizeFunction(this.key + ".description");
 
     return html`
+      <p class="title">${this.label}</p>
+      ${gaDescription ? html`<p class="description">${gaDescription}</p>` : nothing}
       ${generalValidationError
         ? html`<p class="error">
             <ha-svg-icon .path=${mdiAlertCircleOutline}></ha-svg-icon>
@@ -242,7 +244,6 @@ export class GroupAddressSelector extends LitElement {
           @drop=${this._dropHandler}
         ></ha-selector-select>
       </div>
-      ${gaDescription ? html`<p class="description">${gaDescription}</p>` : nothing}
       ${this.options.validDPTs
         ? html`<p class="valid-dpts">
             ${this._baseTranslation("valid_dpts")}:
@@ -427,7 +428,16 @@ export class GroupAddressSelector extends LitElement {
       height: auto;
     }
 
-    .description,
+    .title {
+      margin-bottom: 12px;
+    }
+    .description {
+      margin-top: -10px;
+      margin-bottom: 12px;
+      color: var(--secondary-text-color);
+      font-size: var(--ha-font-size-s);
+    }
+
     .valid-dpts {
       margin-top: -8px;
       margin-bottom: 12px;
