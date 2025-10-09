@@ -43,6 +43,7 @@ class KnxFrontend extends KnxElement {
     }
     await this.hass.loadBackendTranslation("config_panel", "knx", false);
     await this.hass.loadBackendTranslation("title", this.knx.supportedPlatforms, false);
+    await this.hass.loadBackendTranslation("selector", this.knx.supportedPlatforms, false);
     await this.hass.loadFragmentTranslation("config");
     this.addEventListener("knx-location-changed", (e) => this._setRoute(e as LocationChangedEvent));
 
