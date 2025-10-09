@@ -137,6 +137,8 @@ export class KNXConfigureEntity extends LitElement {
   }
 
   private _generateGroupSelect(selector: GroupSelect, path: string, errors?: ErrorDescription[]) {
+    const sectionBaseError = getValidationError(errors);
+
     if (!(path in this._selectedGroupSelectOptions)) {
       // if not set, get index of first option that has all required keys in config
       // this is used to keep the selected option when editing
@@ -159,8 +161,13 @@ export class KNXConfigureEntity extends LitElement {
       .secondary=${this._backendLocalize(`${path}.description`)}
       .expanded=${!selector.collapsible || this._groupHasGroupAddressInConfig(selector, path)}
       .noCollapse=${!selector.collapsible}
-      .outlined=${!!selector.collapsible}
+      outlined
     >
+      ${sectionBaseError
+        ? html` <ha-alert .alertType=${"error"} .title=${"Validation error"}>
+            ${sectionBaseError.error_message}
+          </ha-alert>`
+        : nothing}
       <ha-control-select
         .options=${controlSelectOptions}
         .value=${optionIndex.toString()}
