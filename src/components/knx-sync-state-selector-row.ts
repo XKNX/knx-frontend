@@ -21,27 +21,39 @@ export class KnxSyncStateSelectorRow extends LitElement {
     key: string,
   ) => key;
 
-  private _strategy: boolean | "init" | "expire" | "every" = true;
+  // Note: Strategy values are strings to maintain compatibility with ha-selector-select.
+  // Backend API expects booleans for true/false, conversion happens in _handleChange().
+  private _strategy: "true" | "false" | "init" | "expire" | "every" = "true";
 
   private _minutes = 60;
 
-  private get _options(): (boolean | "init" | "expire" | "every")[] {
+  private get _options(): readonly string[] {
     return this.allowFalse
-      ? [true, "init", "expire", "every", false]
-      : [true, "init", "expire", "every"];
+      ? ["true", "init", "expire", "every", "false"]
+      : ["true", "init", "expire", "every"];
   }
 
-  protected _hasMinutes(strategy: boolean | string): boolean {
+  protected _hasMinutes(strategy: string): boolean {
     return strategy === "expire" || strategy === "every";
   }
 
   protected willUpdate() {
+    // Convert incoming boolean values from backend to string representation
     if (typeof this.value === "boolean") {
-      this._strategy = this.value;
+      this._strategy = this.value ? "true" : "false";
       return;
     }
     const [strategy, minutes] = this.value.split(" ");
-    this._strategy = strategy;
+
+    // Validate strategy value before assignment
+    const validStrategies = ["true", "false", "init", "expire", "every"] as const;
+    if (validStrategies.includes(strategy as any)) {
+      this._strategy = strategy as typeof this._strategy;
+    } else {
+      // Fallback to default for invalid values
+      this._strategy = "true";
+    }
+
     if (+minutes) {
       this._minutes = +minutes;
     }
@@ -58,7 +70,7 @@ export class KnxSyncStateSelectorRow extends LitElement {
             translation_key: this.key,
             multiple: false,
             custom_value: false,
-            mode: "dropdown",
+            mode: "dropdown" as const,
             options: this._options,
           },
         }}
@@ -88,7 +100,7 @@ export class KnxSyncStateSelectorRow extends LitElement {
 
   private _handleChange(ev: CustomEvent): void {
     ev.stopPropagation();
-    let strategy: boolean | string;
+    let strategy: string;
     let minutes: number;
     if (ev.target.key === "strategy") {
       strategy = ev.detail.value;
@@ -97,7 +109,19 @@ export class KnxSyncStateSelectorRow extends LitElement {
       strategy = this._strategy;
       minutes = ev.detail.value;
     }
-    const value = this._hasMinutes(strategy) ? `${strategy} ${minutes}` : strategy;
+
+    // Convert string "true"/"false" back to boolean for backend API compatibility
+    let value: string | boolean;
+    if (this._hasMinutes(strategy)) {
+      value = `${strategy} ${minutes}`;
+    } else if (strategy === "true") {
+      value = true;
+    } else if (strategy === "false") {
+      value = false;
+    } else {
+      value = strategy;
+    }
+
     fireEvent(this, "value-changed", { value });
   }
 
