@@ -86,7 +86,7 @@ export class KnxSyncStateSelectorRow extends LitElement {
     </div>`;
   }
 
-  private _handleChange(ev) {
+  private _handleChange(ev: CustomEvent): void {
     ev.stopPropagation();
     let strategy: boolean | string;
     let minutes: number;
