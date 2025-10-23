@@ -883,6 +883,7 @@ export class KNXGroupMonitor extends LitElement {
         .narrow=${this.narrow!}
         .route=${this.route!}
         .tabs=${this.tabs}
+        main-page
         .columns=${this._columns(
           this.narrow,
           this.controller.isProjectLoaded === true,

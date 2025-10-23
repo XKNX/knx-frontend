@@ -275,6 +275,7 @@ export class KNXEntitiesView extends LitElement {
         .route=${this.route!}
         .tabs=${this.tabs}
         .localizeFunc=${this.knx.localize}
+        main-page
         .columns=${this._columns(this.hass.language)}
         .data=${this.knx_entities}
         .hasFab=${true}

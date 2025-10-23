@@ -231,6 +231,7 @@ export class KNXProjectView extends LitElement {
       .route=${this.route!}
       .tabs=${this.tabs}
       .localizeFunc=${this.knx.localize}
+      main-page
     >
       ${this._projectLoadTask.render({
         initial: () => html`
