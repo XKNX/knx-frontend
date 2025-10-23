@@ -27,7 +27,7 @@ export class KnxSyncStateSelectorRow extends LitElement {
 
   private _minutes = 60;
 
-  private get _options(): ("true" | "false" | "init" | "expire" | "every")[] {
+  private get _options(): readonly string[] {
     return this.allowFalse
       ? ["true", "init", "expire", "every", "false"]
       : ["true", "init", "expire", "every"];
@@ -44,7 +44,16 @@ export class KnxSyncStateSelectorRow extends LitElement {
       return;
     }
     const [strategy, minutes] = this.value.split(" ");
-    this._strategy = strategy as "true" | "false" | "init" | "expire" | "every";
+
+    // Validate strategy value before assignment
+    const validStrategies = ["true", "false", "init", "expire", "every"] as const;
+    if (validStrategies.includes(strategy as any)) {
+      this._strategy = strategy as typeof this._strategy;
+    } else {
+      // Fallback to default for invalid values
+      this._strategy = "true";
+    }
+
     if (+minutes) {
       this._minutes = +minutes;
     }
@@ -62,7 +71,7 @@ export class KnxSyncStateSelectorRow extends LitElement {
             multiple: false,
             custom_value: false,
             mode: "dropdown" as const,
-            options: this._options as readonly string[],
+            options: this._options,
           },
         }}
         .key=${"strategy"}
