@@ -201,21 +201,23 @@ export class KNXProjectView extends LitElement {
     `;
   }
 
-  private _getRows(visibleGroupAddresses: string[]): GroupAddress[] {
-    if (!visibleGroupAddresses.length)
-      // if none is set, default to show all
-      return Object.values(this.knx.projectData!.group_addresses);
+  private _getRows = memoize(
+    (
+      visibleGroupAddresses: string[],
+      groupAddresses: Record<string, GroupAddress>,
+    ): GroupAddress[] => {
+      if (!visibleGroupAddresses.length)
+        // if none is set, default to show all
+        return Object.values(groupAddresses);
 
-    return Object.entries(this.knx.projectData!.group_addresses).reduce(
-      (result, [key, groupAddress]) => {
+      return Object.entries(groupAddresses).reduce((result, [key, groupAddress]) => {
         if (visibleGroupAddresses.includes(key)) {
           result.push(groupAddress);
         }
         return result;
-      },
-      [] as GroupAddress[],
-    );
-  }
+      }, [] as GroupAddress[]);
+    },
+  );
 
   private _visibleAddressesChanged(ev: HASSDomEvent<GroupRangeSelectionChangedEvent>) {
     this._visibleGroupAddresses = ev.detail.groupAddresses;
@@ -249,7 +251,10 @@ export class KNXProjectView extends LitElement {
   }
 
   protected renderMain(): TemplateResult {
-    const filtered = this._getRows(this._visibleGroupAddresses);
+    const filtered = this._getRows(
+      this._visibleGroupAddresses,
+      this.knx.projectData!.group_addresses,
+    );
 
     return this.knx.projectData
       ? html`${this.narrow && this._groupRangeAvailable
