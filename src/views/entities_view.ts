@@ -70,10 +70,6 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
     ];
   }
 
-  protected firstUpdated() {
-    this._fetchEntities();
-  }
-
   protected willUpdate() {
     const urlParams = new URLSearchParams(mainWindow.location.search);
     this.filterDevice = urlParams.get("device_id");
