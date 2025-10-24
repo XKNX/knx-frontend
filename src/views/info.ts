@@ -50,6 +50,7 @@ export class KNXInfo extends LitElement {
         .route=${this.route!}
         .tabs=${this.tabs}
         .localizeFunc=${this.knx.localize}
+        main-page
       >
         <div class="columns">
           ${this._renderInfoCard()}
