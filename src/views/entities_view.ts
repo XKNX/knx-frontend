@@ -10,7 +10,7 @@ import type { TemplateResult } from "lit";
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
-import type { HassEntity } from "home-assistant-js-websocket";
+import type { HassEntity, UnsubscribeFunc } from "home-assistant-js-websocket";
 import memoize from "memoize-one";
 
 import "@ha/layouts/hass-loading-screen";
@@ -25,8 +25,10 @@ import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import type { DataTableColumnContainer } from "@ha/components/data-table/ha-data-table";
 import type { ExtEntityRegistryEntry } from "@ha/data/entity_registry";
+import { subscribeEntityRegistry } from "@ha/data/entity_registry";
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
+import { SubscribeMixin } from "@ha/mixins/subscribe-mixin";
 import type { HomeAssistant, Route } from "@ha/types";
 
 import { getEntityEntries, deleteEntity, getEntityConfig } from "../services/websocket.service";
@@ -44,7 +46,7 @@ export interface EntityRow extends ExtEntityRegistryEntry {
 }
 
 @customElement("knx-entities-view")
-export class KNXEntitiesView extends LitElement {
+export class KNXEntitiesView extends SubscribeMixin(LitElement) {
   @property({ type: Object }) public hass!: HomeAssistant;
 
   @property({ attribute: false }) public knx!: KNX;
@@ -59,8 +61,14 @@ export class KNXEntitiesView extends LitElement {
 
   @state() private filterDevice: string | null = null;
 
-  protected firstUpdated() {
-    this._fetchEntities();
+  public hassSubscribe(): UnsubscribeFunc[] {
+    return [
+      subscribeEntityRegistry(this.hass.connection!, (_entries) => {
+        // When entity registry changes, refresh our entity list.
+        // This is also called on initial subscription - when loading the page.
+        this._fetchEntities();
+      }),
+    ];
   }
 
   protected willUpdate() {
