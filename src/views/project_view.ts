@@ -116,6 +116,7 @@ export class KNXProjectView extends LitElement {
         title: this.knx.localize("project_view_table_address"),
         flex: 1,
         minWidth: addressWidth,
+        direction: "asc",
       },
       name: {
         filterable: true,
@@ -210,12 +211,10 @@ export class KNXProjectView extends LitElement {
         // if none is set, default to show all
         return Object.values(groupAddresses);
 
-      return Object.entries(groupAddresses).reduce((result, [key, groupAddress]) => {
-        if (visibleGroupAddresses.includes(key)) {
-          result.push(groupAddress);
-        }
-        return result;
-      }, [] as GroupAddress[]);
+      return visibleGroupAddresses
+        .map((key) => groupAddresses[key])
+        .filter((ga): ga is GroupAddress => !!ga)
+        .sort((a, b) => a.raw_address - b.raw_address);
     },
   );
 
