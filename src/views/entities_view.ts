@@ -70,7 +70,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
     ];
   }
 
-  firstUpdated() {
+  protected firstUpdated() {
     // Initial fetch - when navigating here and already subscribed (coming from a different HA subpage).
     this._fetchEntities();
   }
