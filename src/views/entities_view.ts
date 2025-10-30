@@ -65,10 +65,14 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
     return [
       subscribeEntityRegistry(this.hass.connection!, (_entries) => {
         // When entity registry changes, refresh our entity list.
-        // This is also called on initial subscription - when loading the page.
         this._fetchEntities();
       }),
     ];
+  }
+
+  firstUpdated() {
+    // Initial fetch - when navigating here and already subscribed (coming from a different HA subpage).
+    this._fetchEntities();
   }
 
   protected willUpdate() {
