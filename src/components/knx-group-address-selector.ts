@@ -210,40 +210,44 @@ export class GroupAddressSelector extends LitElement {
               ></ha-selector-select>`
             : nothing}
         </div>
-        <div class="options">
-          <ha-icon-button
-            .disabled=${!!alwaysShowPassive}
-            .path=${this._showPassive ? mdiChevronUp : mdiChevronDown}
-            .label=${"Toggle passive address visibility"}
-            @click=${this._togglePassiveVisibility}
-          ></ha-icon-button>
-        </div>
+        ${this.options.passive
+          ? html`<div class="options">
+              <ha-icon-button
+                .disabled=${!!alwaysShowPassive}
+                .path=${this._showPassive ? mdiChevronUp : mdiChevronDown}
+                .label=${"Toggle passive address visibility"}
+                @click=${this._togglePassiveVisibility}
+              ></ha-icon-button>
+            </div>`
+          : nothing}
       </div>
-      <div
-        class="passive ${classMap({
-          expanded: alwaysShowPassive || this._showPassive,
-        })}"
-        @transitionend=${this._handleTransitionEnd}
-      >
-        <ha-selector-select
-          class=${classMap({
-            "valid-drop-zone": validGADropTargetClass,
-            "invalid-drop-zone": invalidGADropTargetClass,
-          })}
-          .hass=${this.hass}
-          .label=${this._baseTranslation("passive_addresses") +
-          (this.label ? ` - ${this.label}` : "")}
-          .required=${false}
-          .selector=${{
-            select: { multiple: true, custom_value: true, options: this.addressOptions },
-          }}
-          .key=${"passive"}
-          .value=${this.config.passive}
-          @value-changed=${this._updateConfig}
-          @dragover=${this._dragOverHandler}
-          @drop=${this._dropHandler}
-        ></ha-selector-select>
-      </div>
+      ${this.options.passive
+        ? html`<div
+            class="passive ${classMap({
+              expanded: alwaysShowPassive || this._showPassive,
+            })}"
+            @transitionend=${this._handleTransitionEnd}
+          >
+            <ha-selector-select
+              class=${classMap({
+                "valid-drop-zone": validGADropTargetClass,
+                "invalid-drop-zone": invalidGADropTargetClass,
+              })}
+              .hass=${this.hass}
+              .label=${this._baseTranslation("passive_addresses") +
+              (this.label ? ` - ${this.label}` : "")}
+              .required=${false}
+              .selector=${{
+                select: { multiple: true, custom_value: true, options: this.addressOptions },
+              }}
+              .key=${"passive"}
+              .value=${this.config.passive}
+              @value-changed=${this._updateConfig}
+              @dragover=${this._dragOverHandler}
+              @drop=${this._dropHandler}
+            ></ha-selector-select>
+          </div>`
+        : nothing}
       ${this.options.validDPTs
         ? html`<p class="valid-dpts">
             ${this._baseTranslation("valid_dpts")}:
