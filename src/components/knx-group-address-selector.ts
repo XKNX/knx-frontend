@@ -69,7 +69,7 @@ export class GroupAddressSelector extends LitElement {
 
   private _dragOverTimeout: Record<string, NodeJS.Timeout> = {};
 
-  @query(".passive") private _passiveContainer!: HTMLDivElement;
+  @query(".passive") private _passiveContainer!: HTMLDivElement | null;
 
   @queryAll("ha-selector-select") private _gaSelectors!: NodeListOf<HTMLElement>;
 
@@ -337,6 +337,9 @@ export class GroupAddressSelector extends LitElement {
   private _togglePassiveVisibility(ev: CustomEvent) {
     ev.stopPropagation();
     ev.preventDefault();
+    if (!this._passiveContainer) {
+      return;
+    }
     const newExpanded = !this._showPassive;
     this._passiveContainer.style.overflow = "hidden";
 
@@ -345,15 +348,19 @@ export class GroupAddressSelector extends LitElement {
 
     if (!newExpanded) {
       setTimeout(() => {
-        this._passiveContainer.style.height = "0px";
+        if (this._passiveContainer) {
+          this._passiveContainer.style.height = "0px";
+        }
       }, 0);
     }
     this._showPassive = newExpanded;
   }
 
   private _handleTransitionEnd() {
-    this._passiveContainer.style.removeProperty("height");
-    this._passiveContainer.style.overflow = this._showPassive ? "initial" : "hidden";
+    if (this._passiveContainer) {
+      this._passiveContainer.style.removeProperty("height");
+      this._passiveContainer.style.overflow = this._showPassive ? "initial" : "hidden";
+    }
   }
 
   private _dragOverHandler(ev: DragEvent) {
