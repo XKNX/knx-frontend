@@ -11,11 +11,13 @@ vi.mock("../../../services/websocket.service", () => ({
 
 // Mock the KNXLogger
 vi.mock("../../../tools/knx-logger", () => ({
-  KNXLogger: vi.fn().mockImplementation(() => ({
-    debug: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  })),
+  KNXLogger: class {
+    debug = vi.fn();
+
+    warn = vi.fn();
+
+    error = vi.fn();
+  },
 }));
 
 /**
