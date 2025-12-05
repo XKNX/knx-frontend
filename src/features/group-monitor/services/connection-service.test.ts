@@ -10,15 +10,15 @@ vi.mock("../../../services/websocket.service", () => ({
 }));
 
 // Mock the KNXLogger
-vi.mock("../../../tools/knx-logger", () => {
-  return {
-    KNXLogger: class {
-      debug = vi.fn();
-      warn = vi.fn();
-      error = vi.fn();
-    },
-  };
-});
+vi.mock("../../../tools/knx-logger", () => ({
+  KNXLogger: class {
+    debug = vi.fn();
+
+    warn = vi.fn();
+
+    error = vi.fn();
+  },
+}));
 
 /**
  * Helper function to create mock HomeAssistant object
