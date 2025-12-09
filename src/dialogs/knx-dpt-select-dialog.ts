@@ -193,7 +193,7 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
         ></search-input>
 
         ${Object.keys(this.dpts).length
-          ? html`<div style="max-height:48vh; overflow:auto; margin-top:8px;">
+          ? html`<div class="dpt-list-container">
               ${this._groupDpts().map(
                 (group) => html`
                   ${group.title
@@ -206,11 +206,10 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
                         interactive
                         type="button"
                         value=${dpt}
-                        class=${this._selected === dpt ? "selected" : ""}
                         @click=${this._onSelect}
                         @keydown=${this._itemKeydown}
                       >
-                        <div class="dpt-row" slot="headline">
+                        <div slot="headline">
                           <div class="dpt-number">${dpt}</div>
                           <div class="dpt-name">${info.label}</div>
                           <div class="dpt-unit">${info.unit ?? ""}</div>
@@ -245,15 +244,15 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
           }
         }
 
-        /* Make the search-input full width inside the dialog */
         search-input {
           display: block;
           width: 100%;
         }
 
-        ha-md-list-item.selected {
-          background: var(--ha-color-fill-accent, rgba(0, 0, 0, 0.04));
-          outline: 2px solid rgba(var(--rgb-accent-color, 0, 123, 255), 0.12);
+        .dpt-list-container {
+          max-height: 48vh;
+          overflow: auto;
+          margin-top: var(--ha-space-2, 8px);
         }
 
         .dpt-row {
