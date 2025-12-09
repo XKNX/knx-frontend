@@ -1,8 +1,6 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 
-import "@ha/components/ha-formfield";
-import "@ha/components/ha-radio";
 import "@ha/components/ha-icon-button";
 import { mdiClose, mdiMenuOpen } from "@mdi/js";
 import { fireEvent } from "@ha/common/dom/fire_event";
@@ -15,6 +13,8 @@ class KnxDptDialogSelector extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
   @property({ attribute: false }) public knx!: KNX;
+
+  @property({ type: String }) public key!: string;
 
   @property({ attribute: false, type: Array }) public validDPTs?: string[];
 
@@ -78,8 +78,6 @@ class KnxDptDialogSelector extends LitElement {
       dialogImport: () => import("../dialogs/knx-dpt-select-dialog"),
       dialogParams: (() => {
         const filtered = (() => {
-          // If caller provided explicit valid DPT keys, use them to filter metadata.
-          if (!this.knx?.dptMetadata) return {} as Record<string, any>;
           if (this.validDPTs && this.validDPTs.length) {
             const set = new Set(this.validDPTs);
             return Object.fromEntries(
@@ -92,7 +90,6 @@ class KnxDptDialogSelector extends LitElement {
 
         return {
           title: this.hass.localize ? this.hass.localize("ui.common.select") : "Select DPT",
-          // `dpts` must be a Record<string, DPTMetadata> — pass filtered mapping (may be empty)
           dpts: filtered,
           initialSelection: this.value,
           onClose: (dpt: string | undefined) => {
@@ -148,8 +145,6 @@ class KnxDptDialogSelector extends LitElement {
         padding: 4px 8px;
       }
 
-      /* Removed unused selectors: .formfield, label, .secondary, .menu-label */
-
       .clear-button {
         margin-left: 8px;
       }
@@ -158,6 +153,7 @@ class KnxDptDialogSelector extends LitElement {
         font-family:
           ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
         color: var(--secondary-text-color);
+        white-space: nowrap;
       }
 
       .dpt-name {
@@ -167,10 +163,6 @@ class KnxDptDialogSelector extends LitElement {
         white-space: nowrap;
         /* allow the grid to shrink this column correctly */
         min-width: 0;
-      }
-
-      .dpt-number {
-        white-space: nowrap;
       }
 
       .dpt-unit {
