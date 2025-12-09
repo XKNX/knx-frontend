@@ -1,0 +1,289 @@
+import { LitElement, html, css, nothing } from "lit";
+import { customElement, property, state } from "lit/decorators";
+
+import "@ha/components/ha-wa-dialog";
+import "@ha/components/ha-button";
+import "@ha/components/ha-dialog-footer";
+import "@ha/components/search-input";
+import "@ha/components/ha-md-list";
+import "@ha/components/ha-md-list-item";
+import "@ha/components/ha-section-title";
+
+import { fireEvent } from "@ha/common/dom/fire_event";
+import { haStyleDialog } from "@ha/resources/styles";
+import type { HomeAssistant } from "@ha/types";
+import type { HassDialog } from "@ha/dialogs/make-dialog-manager";
+
+import type { DPTMetadata } from "../types/websocket";
+
+export interface KnxDptSelectDialogParams {
+  dpts: Record<string, DPTMetadata>;
+  title?: string;
+  width?: "small" | "medium" | "large" | "full";
+
+  /** Optional initial selection to preselect in the dialog */
+  initialSelection?: string;
+
+  /** Optional callback invoked when the dialog closes. Receives the selected DPT or undefined. */
+  onClose?: (dpt: string | undefined) => void;
+}
+
+@customElement("knx-dpt-select-dialog")
+export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptSelectDialogParams> {
+  @property({ attribute: false }) public hass!: HomeAssistant;
+
+  @state() private _open = false;
+
+  @state() private _params?: KnxDptSelectDialogParams;
+
+  @state() private dpts: Record<string, DPTMetadata> = {};
+
+  /** Currently selected DPT */
+  @state() private _selected?: string;
+
+  /** Filter string for the DPT list */
+  @state() private _filter = "";
+
+  public async showDialog(params: KnxDptSelectDialogParams): Promise<void> {
+    this._params = params;
+    this.dpts = params.dpts ?? {};
+    this._selected = params.initialSelection ?? this._selected;
+    this._open = true;
+  }
+
+  public closeDialog(_historyState?: any): boolean {
+    this._dialogClosed();
+    return true;
+  }
+
+  private _cancel(): void {
+    this._selected = undefined;
+    // Inform caller via callback that dialog was closed without a selection
+    if (this._params?.onClose) {
+      this._params.onClose(undefined);
+    }
+    this._dialogClosed();
+  }
+
+  private _confirm(): void {
+    // If a callback was provided by the caller, call it with the selected value.
+    if (this._params?.onClose) {
+      this._params.onClose(this._selected);
+    }
+    this._dialogClosed();
+  }
+
+  private _onSelect(ev: Event): void {
+    const target = ev.currentTarget as HTMLElement;
+    const value = target.getAttribute("value") ?? (target.dataset && target.dataset.value);
+    this._selected = value ?? undefined;
+  }
+
+  private _onFilterChanged(ev: CustomEvent<{ value: string }>): void {
+    this._filter = ev.detail?.value ?? "";
+  }
+
+  private _groupDpts(): { title: string; items: string[] }[] {
+    const map = new Map<string, string[]>();
+
+    const filterLower = this._filter.trim().toLowerCase();
+
+    for (const dpt of Object.keys(this.dpts)) {
+      const info = this._getDptInfo(dpt);
+      // If a filter is provided, match against number, label or unit
+      if (filterLower) {
+        const matchesNumber = dpt.toLowerCase().includes(filterLower);
+        const matchesLabel = info.label?.toLowerCase().includes(filterLower);
+        const matchesUnit = info.unit ? info.unit.toLowerCase().includes(filterLower) : false;
+        if (!matchesNumber && !matchesLabel && !matchesUnit) {
+          continue;
+        }
+      }
+
+      const major = String(dpt).split(".", 1)[0] || dpt;
+      const key = `${major}`;
+      if (!map.has(key)) {
+        map.set(key, []);
+      }
+      map.get(key)!.push(dpt);
+    }
+
+    // Sort groups by numeric major value if possible; within each group sort by minor number
+    const groups = Array.from(map.entries())
+      .sort((a, b) => {
+        const na = Number(a[0]);
+        const nb = Number(b[0]);
+        if (!Number.isNaN(na) && !Number.isNaN(nb)) {
+          return na - nb;
+        }
+        return a[0].localeCompare(b[0]);
+      })
+      .map(([key, items]) => ({
+        title: `${key}.*`,
+        items: items.sort((x, y) => {
+          const px = this._parseDpt(x);
+          const py = this._parseDpt(y);
+          if (px.major !== py.major) return px.major - py.major;
+          return px.minor - py.minor;
+        }),
+      }));
+
+    return groups;
+  }
+
+  private _parseDpt(dpt: string): { major: number; minor: number } {
+    // parse formats like 5.001 into numeric major/minor
+    const parts = String(dpt).split(".");
+    const major = Number(parts[0]) || 0;
+    let minor = 0;
+    if (parts.length > 1) {
+      // handle padded numbers like 001
+      minor = Number(parts[1]) || 0;
+    }
+    return { major, minor };
+  }
+
+  private _getDptInfo(dpt: string): { label: string; unit?: string } {
+    // If backend provided DPT metadata, derive a human-readable label and unit
+    const meta = this.dpts && this.dpts[dpt] ? this.dpts[dpt] : undefined;
+    if (meta) {
+      return { label: meta.name ?? "Unknown", unit: meta.unit ?? undefined };
+    }
+    return { label: "Unknown", unit: undefined };
+  }
+
+  private _itemKeydown(ev: KeyboardEvent): void {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      const target = ev.currentTarget as HTMLElement;
+      const value = target.getAttribute("value") ?? (target.dataset && target.dataset.value);
+      this._selected = value ?? undefined;
+      this._confirm();
+    }
+  }
+
+  private _dialogClosed(): void {
+    this._open = false;
+    this._params = undefined;
+    this._filter = "";
+    this._selected = undefined;
+    fireEvent(this, "dialog-closed", { dialog: this.localName });
+  }
+
+  protected render() {
+    if (!this._params || !this.hass) {
+      return nothing;
+    }
+
+    const width = this._params.width ?? "medium";
+    return html` <ha-wa-dialog
+      .hass=${this.hass}
+      .open=${this._open}
+      width=${width}
+      header-title=${this._params.title ?? "Select DPT"}
+      @closed=${this._dialogClosed}
+    >
+      <div>
+        <search-input
+          ?autofocus=${true}
+          .hass=${this.hass}
+          .filter=${this._filter}
+          @value-changed=${this._onFilterChanged}
+          .label=${this.hass.localize ? this.hass.localize("ui.common.search") : "Search"}
+        ></search-input>
+
+        ${Object.keys(this.dpts).length
+          ? html`<div style="max-height:48vh; overflow:auto; margin-top:8px;">
+              ${this._groupDpts().map(
+                (group) => html`
+                  ${group.title
+                    ? html`<ha-section-title>${group.title}</ha-section-title>`
+                    : nothing}
+                  <ha-md-list>
+                    ${group.items.map((dpt) => {
+                      const info = this._getDptInfo(dpt);
+                      return html`<ha-md-list-item
+                        interactive
+                        type="button"
+                        value=${dpt}
+                        class=${this._selected === dpt ? "selected" : ""}
+                        @click=${this._onSelect}
+                        @keydown=${this._itemKeydown}
+                      >
+                        <div class="dpt-row" slot="headline">
+                          <div class="dpt-number">${dpt}</div>
+                          <div class="dpt-name">${info.label}</div>
+                          <div class="dpt-unit">${info.unit ?? ""}</div>
+                        </div>
+                      </ha-md-list-item>`;
+                    })}
+                  </ha-md-list>
+                `,
+              )}
+            </div>`
+          : html`<div>No options</div>`}
+      </div>
+
+      <ha-dialog-footer slot="footer">
+        <ha-button slot="secondaryAction" appearance="plain" @click=${this._cancel}>
+          ${this.hass.localize ? this.hass.localize("ui.common.cancel") : "Cancel"}
+        </ha-button>
+        <ha-button slot="primaryAction" @click=${this._confirm} .disabled=${!this._selected}>
+          ${this.hass.localize ? this.hass.localize("ui.common.ok") : "OK"}
+        </ha-button>
+      </ha-dialog-footer>
+    </ha-wa-dialog>`;
+  }
+
+  static get styles() {
+    return [
+      haStyleDialog,
+      css`
+        @media all and (min-width: 600px) {
+          ha-wa-dialog {
+            --mdc-dialog-min-width: 360px;
+          }
+        }
+
+        /* Make the search-input full width inside the dialog */
+        search-input {
+          display: block;
+          width: 100%;
+        }
+
+        ha-md-list-item.selected {
+          background: var(--ha-color-fill-accent, rgba(0, 0, 0, 0.04));
+          outline: 2px solid rgba(var(--rgb-accent-color, 0, 123, 255), 0.12);
+        }
+
+        .dpt-row {
+          display: grid;
+          grid-template-columns: 96px 1fr 64px;
+          align-items: center;
+          gap: var(--ha-space-2, 8px);
+        }
+
+        .dpt-number {
+          font-family:
+            ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+          color: var(--secondary-text-color);
+        }
+
+        .dpt-name {
+          font-weight: 500;
+        }
+
+        .dpt-unit {
+          text-align: right;
+          color: var(--secondary-text-color);
+        }
+      `,
+    ];
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "knx-dpt-select-dialog": KnxDptSelectDialog;
+  }
+}

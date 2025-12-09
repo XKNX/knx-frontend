@@ -12,7 +12,8 @@ import "@ha/components/ha-icon-button";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import type { HomeAssistant } from "@ha/types";
 
-import "./knx-dpt-selector";
+import "./knx-dpt-option-selector";
+import "./knx-dpt-dialog-selector";
 import type { DragDropContext } from "../utils/drag-drop-context";
 import { dragDropContext } from "../utils/drag-drop-context";
 import { isValidDPT } from "../utils/dpt";
@@ -20,7 +21,7 @@ import { getValidationError } from "../utils/validation";
 import { dptToString } from "../utils/format";
 import type { ErrorDescription, GASchema } from "../types/entity_data";
 import type { KNX } from "../types/knx";
-import type { GASelectorOptions, DPTOption } from "../types/schema";
+import type { GASelectorOptions } from "../types/schema";
 import type { DPT, GroupAddress } from "../types/websocket";
 
 const getAddressOptions = (
@@ -84,8 +85,16 @@ export class GroupAddressSelector extends LitElement {
       : [];
   }
 
-  getDptOptionByValue(value: string | undefined): DPTOption | undefined {
-    return value ? this.options.dptSelect?.find((dpt) => dpt.value === value) : undefined;
+  getDptByValue(value: string | undefined): DPT | undefined {
+    if (!value) return undefined;
+    if (this.options.dptSelect) {
+      return this.options.dptSelect?.find((dpt) => dpt.value === value)?.dpt;
+    }
+    if (this.options.dptClasses) {
+      const parts = value.split(".");
+      return { main: Number(parts[0]), sub: parts[1] ? Number(parts[1]) : null };
+    }
+    return undefined;
   }
 
   setFilteredGroupAddresses = memoize((dpt: DPT | undefined) => {
@@ -100,11 +109,29 @@ export class GroupAddressSelector extends LitElement {
     return !(changedProps.size === 1 && changedProps.has("hass"));
   }
 
+  private _getDPTsFromClasses(dptClasses?: string[]): DPT[] {
+    if (!dptClasses?.length || !this.knx?.dptMetadata) return [];
+    const classes = new Set(dptClasses);
+    return Object.values(this.knx.dptMetadata)
+      .filter((meta) => classes.has(meta.dpt_class))
+      .map((meta) => ({ main: meta.main, sub: meta.sub }));
+  }
+
+  private _getDptStringsFromClasses(dptClasses?: string[]): string[] {
+    if (!dptClasses?.length) return [];
+    const classes = new Set(dptClasses);
+    return Object.entries(this.knx.dptMetadata)
+      .filter(([, meta]) => classes.has(meta.dpt_class))
+      .map(([key]) => key);
+  }
+
   protected willUpdate(changedProps: PropertyValues<this>) {
     if (changedProps.has("options")) {
       // initialize
+      const acceptedDPTs =
+        this.options.validDPTs ?? this._getDPTsFromClasses(this.options.dptClasses);
       this.validGroupAddresses = this.getValidGroupAddresses(
-        this.options.validDPTs ?? this.options.dptSelect?.map((dptOption) => dptOption.dpt) ?? [],
+        acceptedDPTs ?? this.options.dptSelect?.map((dptOption) => dptOption.dpt) ?? [],
       );
       this.filteredGroupAddresses = this.validGroupAddresses;
       this.addressOptions = getAddressOptions(this.filteredGroupAddresses);
@@ -112,7 +139,7 @@ export class GroupAddressSelector extends LitElement {
 
     if (changedProps.has("config")) {
       this._selectedDPTValue = this.config.dpt ?? this._selectedDPTValue;
-      const selectedDPT = this.getDptOptionByValue(this._selectedDPTValue)?.dpt;
+      const selectedDPT = this.getDptByValue(this._selectedDPTValue);
       this.setFilteredGroupAddresses(selectedDPT);
 
       if (selectedDPT && this.knx.projectData) {
@@ -254,16 +281,17 @@ export class GroupAddressSelector extends LitElement {
             ${this.options.validDPTs.map((dpt) => dptToString(dpt)).join(", ")}
           </p>`
         : nothing}
-      ${this.options.dptSelect ? this._renderDptSelector() : nothing}
+      ${this.options.dptSelect ? this._renderDptOptionSelector() : nothing}
+      ${this.options.dptClasses ? this._renderDptDialogSelector() : nothing}
     `;
   }
 
-  private _renderDptSelector() {
+  private _renderDptOptionSelector() {
     const invalid = getValidationError(this.validationErrors, "dpt");
-    return html`<knx-dpt-selector
+    return html`<knx-dpt-option-selector
       .key=${"dpt"}
       .label=${this._baseTranslation("dpt")}
-      .options=${this.options.dptSelect}
+      .options=${this.options.dptSelect!}
       .value=${this._selectedDPTValue}
       .disabled=${this.dptSelectorDisabled}
       .invalid=${!!invalid}
@@ -272,7 +300,26 @@ export class GroupAddressSelector extends LitElement {
       .translation_key=${this.key}
       @value-changed=${this._updateConfig}
     >
-    </knx-dpt-selector>`;
+    </knx-dpt-option-selector>`;
+  }
+
+  private _renderDptDialogSelector() {
+    const invalid = getValidationError(this.validationErrors, "dpt");
+    return html`<knx-dpt-dialog-selector
+      .key=${"dpt"}
+      .label=${this._baseTranslation("dpt")}
+      .hass=${this.hass}
+      .knx=${this.knx}
+      .validDPTs=${this._getDptStringsFromClasses(this.options.dptClasses)}
+      .value=${this._selectedDPTValue}
+      .disabled=${this.dptSelectorDisabled}
+      .invalid=${!!invalid}
+      .invalidMessage=${invalid?.error_message}
+      .localizeValue=${this.localizeFunction}
+      .translation_key=${this.key}
+      @value-changed=${this._updateConfig}
+    >
+    </knx-dpt-dialog-selector>`;
   }
 
   private _updateConfig(ev: CustomEvent) {
@@ -292,7 +339,7 @@ export class GroupAddressSelector extends LitElement {
 
   private _updateDptSelector(targetKey: string, newConfig: GASchema, hasGroupAddresses: boolean) {
     // updates newConfig in place
-    if (!this.options.dptSelect) return;
+    if (!this.options.dptSelect && !this.options.dptClasses) return;
 
     if (targetKey === "dpt") {
       this._selectedDPTValue = newConfig.dpt;
@@ -314,13 +361,19 @@ export class GroupAddressSelector extends LitElement {
     const newDpt = this.validGroupAddresses.find((ga) => ga.address === newGa)?.dpt;
     if (!newDpt) return;
 
-    const exactDptMatch = this.options.dptSelect.find(
-      (dptOption) => dptOption.dpt.main === newDpt.main && dptOption.dpt.sub === newDpt.sub,
-    );
-    newConfig.dpt = exactDptMatch
-      ? exactDptMatch.value
-      : // fallback to first valid DPT if allowed in options; otherwise undefined
-        this.options.dptSelect.find((dptOption) => isValidDPT(newDpt, [dptOption.dpt]))?.value;
+    if (this.options.dptSelect) {
+      const exactDptMatch = this.options.dptSelect.find(
+        (dptOption) => dptOption.dpt.main === newDpt.main && dptOption.dpt.sub === newDpt.sub,
+      );
+      newConfig.dpt = exactDptMatch
+        ? exactDptMatch.value
+        : // fallback to first valid DPT if allowed in options; otherwise undefined
+          this.options.dptSelect.find((dptOption) => isValidDPT(newDpt, [dptOption.dpt]))?.value;
+    } else if (this.options.dptClasses) {
+      const stringDpt = dptToString(newDpt);
+      const validDPTsFromClasses = this._getDptStringsFromClasses(this.options.dptClasses);
+      newConfig.dpt = validDPTsFromClasses.includes(stringDpt) ? stringDpt : undefined;
+    }
   }
 
   private _getAddedGroupAddress(targetKey: string, newConfig: GASchema): string | undefined {
@@ -402,7 +455,7 @@ export class GroupAddressSelector extends LitElement {
     } else {
       newConfig[target.key] = ga;
     }
-    this._updateDptSelector(target.key, newConfig);
+    this._updateDptSelector(target.key, newConfig, true);
     fireEvent(this, "value-changed", { value: newConfig });
     // reset invalid state of textfield if set before drag
     setTimeout(() => target.comboBox._inputElement.blur());
