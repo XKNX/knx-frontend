@@ -16,9 +16,8 @@ import "./knx-dpt-option-selector";
 import "./knx-dpt-dialog-selector";
 import type { DragDropContext } from "../utils/drag-drop-context";
 import { dragDropContext } from "../utils/drag-drop-context";
-import { isValidDPT } from "../utils/dpt";
+import { isValidDPT, dptToString, stringToDpt } from "../utils/dpt";
 import { getValidationError } from "../utils/validation";
-import { dptToString } from "../utils/format";
 import type { ErrorDescription, GASchema } from "../types/entity_data";
 import type { KNX } from "../types/knx";
 import type { GASelectorOptions } from "../types/schema";
@@ -91,8 +90,7 @@ export class GroupAddressSelector extends LitElement {
       return this.options.dptSelect?.find((dpt) => dpt.value === value)?.dpt;
     }
     if (this.options.dptClasses) {
-      const parts = value.split(".");
-      return { main: Number(parts[0]), sub: parts[1] ? Number(parts[1]) : null };
+      return stringToDpt(value) ?? undefined;
     }
     return undefined;
   }

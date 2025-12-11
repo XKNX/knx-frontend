@@ -14,6 +14,7 @@ import { haStyleDialog } from "@ha/resources/styles";
 import type { HomeAssistant } from "@ha/types";
 import type { HassDialog } from "@ha/dialogs/make-dialog-manager";
 
+import { stringToDpt, compareDpt } from "../utils/dpt";
 import type { DPTMetadata } from "../types/websocket";
 
 export interface KnxDptSelectDialogParams {
@@ -131,35 +132,30 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
       .map(([key, items]) => ({
         title: `${key}.*`,
         items: items.sort((x, y) => {
-          const px = this._parseDpt(x);
-          const py = this._parseDpt(y);
-          if (px.major !== py.major) return px.major - py.major;
-          return px.minor - py.minor;
+          const parsedX = stringToDpt(x);
+          const parsedY = stringToDpt(y);
+          if (parsedX && parsedY) {
+            return compareDpt(parsedX, parsedY);
+          }
+          if (parsedX) {
+            return -1;
+          }
+          if (parsedY) {
+            return 1;
+          }
+          return x.localeCompare(y);
         }),
       }));
 
     return groups;
   }
 
-  private _parseDpt(dpt: string): { major: number; minor: number } {
-    // parse formats like 5.001 into numeric major/minor
-    const parts = String(dpt).split(".");
-    const major = Number(parts[0]) || 0;
-    let minor = 0;
-    if (parts.length > 1) {
-      // handle padded numbers like 001
-      minor = Number(parts[1]) || 0;
-    }
-    return { major, minor };
-  }
-
-  private _getDptInfo(dpt: string): { label: string; unit?: string } {
-    // If backend provided DPT metadata, derive a human-readable label and unit
-    const meta = this.dpts && this.dpts[dpt] ? this.dpts[dpt] : undefined;
-    if (meta) {
-      return { label: meta.name ?? "Unknown", unit: meta.unit ?? undefined };
-    }
-    return { label: "Unknown", unit: undefined };
+  private _getDptInfo(dpt: string): { label: string; unit: string } {
+    const meta = this.dpts[dpt];
+    return {
+      label: meta?.name ?? this.hass.localize("state.default.unknown"),
+      unit: meta?.unit ?? "",
+    };
   }
 
   private _itemKeydown(ev: KeyboardEvent): void {
@@ -224,7 +220,7 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
                         <div class="dpt-row ${isSelected ? "selected" : ""}" slot="headline">
                           <div class="dpt-number">${dpt}</div>
                           <div class="dpt-name">${info.label}</div>
-                          <div class="dpt-unit">${info.unit ?? ""}</div>
+                          <div class="dpt-unit">${info.unit}</div>
                         </div>
                       </ha-md-list-item>`;
                     })}

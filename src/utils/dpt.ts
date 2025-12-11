@@ -88,3 +88,37 @@ export const validDPTsForSchema = memoize(
   (schema: SelectorSchema[], dptMetadata: Record<string, DPTMetadata>): DPT[] =>
     filterDuplicateDPTs(_validDPTsForSchema(schema, dptMetadata)),
 );
+
+export const dptToString = (dpt: DPT | null): string => {
+  if (dpt == null) return "";
+  return dpt.main + (dpt.sub != null ? "." + dpt.sub.toString().padStart(3, "0") : "");
+};
+
+export const stringToDpt = (raw: string): DPT | null => {
+  if (!raw) return null;
+  const parts = raw.trim().split(".");
+  if (parts.length === 0 || parts.length > 2) {
+    return null;
+  }
+  const main = Number.parseInt(parts[0], 10);
+  if (Number.isNaN(main)) {
+    return null;
+  }
+  if (parts.length === 1) {
+    return { main, sub: null };
+  }
+  const sub = Number.parseInt(parts[1], 10);
+  if (Number.isNaN(sub)) {
+    return null;
+  }
+  return { main, sub };
+};
+
+export const compareDpt = (left: DPT, right: DPT): number => {
+  if (left.main !== right.main) {
+    return left.main - right.main;
+  }
+  const leftSub = left.sub ?? -1;
+  const rightSub = right.sub ?? -1;
+  return leftSub - rightSub;
+};
