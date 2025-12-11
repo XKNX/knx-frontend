@@ -42,7 +42,7 @@ class KnxDptDialogSelector extends LitElement {
             class="menu-button"
             .path=${mdiMenuOpen}
             @click=${this._openDialog}
-            label="Select DPT"
+            .label=${this.hass.localize("component.knx.selector.dpt.fields.label")}
           ></ha-icon-button>
 
           ${this.value
@@ -57,7 +57,10 @@ class KnxDptDialogSelector extends LitElement {
                   .label=${this.hass.localize ? this.hass.localize("ui.common.clear") : "Clear"}
                   @click=${this._clearSelection}
                 ></ha-icon-button>`
-            : html`<div>Select DPT</div>`}
+            : html`<div>
+                ${this.hass.localize("component.knx.selector.dpt.fields.no_selection") ??
+                "No selection"}
+              </div>`}
         </div>
         ${this.invalidMessage
           ? html`<p class="invalid-message">${this.invalidMessage}</p>`
@@ -89,7 +92,7 @@ class KnxDptDialogSelector extends LitElement {
         })();
 
         return {
-          title: this.hass.localize ? this.hass.localize("ui.common.select") : "Select DPT",
+          title: this.hass.localize("component.knx.selector.dpt.fields.label"),
           dpts: filtered,
           initialSelection: this.value,
           onClose: (dpt: string | undefined) => {
