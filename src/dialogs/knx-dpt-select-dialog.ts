@@ -73,6 +73,16 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
     this._dialogClosed();
   }
 
+  private _onDoubleClick(ev: Event): void {
+    const target = ev.currentTarget as HTMLElement;
+    const value = target.getAttribute("value") ?? (target.dataset && target.dataset.value);
+    this._selected = value ?? undefined;
+
+    if (this._selected) {
+      this._confirm();
+    }
+  }
+
   private _onSelect(ev: Event): void {
     const target = ev.currentTarget as HTMLElement;
     const value = target.getAttribute("value") ?? (target.dataset && target.dataset.value);
@@ -183,7 +193,7 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
       header-title=${this._params.title ?? "Select DPT"}
       @closed=${this._dialogClosed}
     >
-      <div>
+      <div class="dialog-body">
         <search-input
           ?autofocus=${true}
           .hass=${this.hass}
@@ -202,14 +212,16 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
                   <ha-md-list>
                     ${group.items.map((dpt) => {
                       const info = this._getDptInfo(dpt);
+                      const isSelected = this._selected === dpt;
                       return html`<ha-md-list-item
                         interactive
                         type="button"
                         value=${dpt}
                         @click=${this._onSelect}
+                        @dblclick=${this._onDoubleClick}
                         @keydown=${this._itemKeydown}
                       >
-                        <div slot="headline">
+                        <div class="dpt-row ${isSelected ? 'selected' : ''}" slot="headline">
                           <div class="dpt-number">${dpt}</div>
                           <div class="dpt-name">${info.label}</div>
                           <div class="dpt-unit">${info.unit ?? ""}</div>
@@ -244,37 +256,61 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
           }
         }
 
+        .dialog-body {
+          display: flex;
+          flex-direction: column;
+          gap: var(--ha-space-2, 8px);
+          height: 100%;
+          min-height: 0;
+        }
+
         search-input {
           display: block;
           width: 100%;
         }
 
         .dpt-list-container {
-          max-height: 48vh;
+          flex: 1 1 auto;
+          min-height: 0;
           overflow: auto;
-          margin-top: var(--ha-space-2, 8px);
+          border: 1px solid var(--divider-color);
+          border-radius: 4px;
         }
 
         .dpt-row {
           display: grid;
-          grid-template-columns: 96px 1fr 64px;
+          grid-template-columns: 8ch minmax(0, 1fr) auto;
           align-items: center;
           gap: var(--ha-space-2, 8px);
+          padding: 6px 8px;
+          border-radius: 4px;
+        }
+
+        .dpt-row.selected {
+          background-color: rgba(var(--rgb-primary-color), 0.08);
+          outline: 2px solid rgba(var(--rgb-accent-color), 0.12);
         }
 
         .dpt-number {
           font-family:
             ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+          width: 100%;
           color: var(--secondary-text-color);
+          white-space: nowrap;
         }
 
         .dpt-name {
           font-weight: 500;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          min-width: 0;
         }
 
         .dpt-unit {
           text-align: right;
           color: var(--secondary-text-color);
+          white-space: nowrap;
         }
       `,
     ];
