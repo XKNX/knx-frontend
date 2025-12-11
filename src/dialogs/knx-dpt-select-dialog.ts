@@ -221,7 +221,7 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
                         @dblclick=${this._onDoubleClick}
                         @keydown=${this._itemKeydown}
                       >
-                        <div class="dpt-row ${isSelected ? 'selected' : ''}" slot="headline">
+                        <div class="dpt-row ${isSelected ? "selected" : ""}" slot="headline">
                           <div class="dpt-number">${dpt}</div>
                           <div class="dpt-name">${info.label}</div>
                           <div class="dpt-unit">${info.unit ?? ""}</div>
