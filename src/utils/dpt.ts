@@ -122,3 +122,16 @@ export const compareDpt = (left: DPT, right: DPT): number => {
   const rightSub = right.sub ?? -1;
   return leftSub - rightSub;
 };
+
+export const dptInClasses = (
+  dpt: DPT,
+  dptClasses: string[],
+  dptMetadata: Record<string, DPTMetadata>,
+): boolean => {
+  const key = dptToString(dpt);
+  const metadata = dptMetadata[key];
+  if (!metadata) {
+    return false;
+  }
+  return dptClasses.includes(metadata.dpt_class);
+};

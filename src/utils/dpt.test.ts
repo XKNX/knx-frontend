@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { compareDpt, dptToString, stringToDpt } from "./dpt";
-import type { DPT } from "../types/websocket";
+import { compareDpt, dptToString, stringToDpt, dptInClasses } from "./dpt";
+import type { DPT, DPTMetadata } from "../types/websocket";
 
 describe("dptToString", () => {
   it("should return empty string for null DPT", () => {
@@ -90,5 +90,55 @@ describe("compareDpt", () => {
     const a = { main: 7, sub: 1 };
     const b = { main: 7, sub: 1 };
     expect(compareDpt(a, b)).toBe(0);
+  });
+});
+
+describe("dptInClasses", () => {
+  const mockMetadata: Record<string, DPTMetadata> = {
+    "1.001": { main: 1, sub: 1, name: "Switch", unit: "", dpt_class: "enum" },
+    "5": { main: 5, sub: null, name: "Unsigned", unit: "", dpt_class: "numeric" },
+    "5.001": { main: 5, sub: 1, name: "Percentage", unit: "%", dpt_class: "numeric" },
+    "9.001": { main: 9, sub: 1, name: "Temperature", unit: "°C", dpt_class: "numeric" },
+    "16.001": { main: 16, sub: 1, name: "String", unit: "", dpt_class: "string" },
+  };
+
+  it("should return true when DPT is in specified class", () => {
+    const dpt: DPT = { main: 1, sub: 1 };
+    expect(dptInClasses(dpt, ["enum"], mockMetadata)).toBe(true);
+  });
+
+  it("should return true when DPT is in one of multiple classes", () => {
+    const dpt: DPT = { main: 9, sub: 1 };
+    expect(dptInClasses(dpt, ["numeric", "string"], mockMetadata)).toBe(true);
+  });
+
+  it("should return false when DPT is not in any specified class", () => {
+    const dpt: DPT = { main: 1, sub: 1 };
+    expect(dptInClasses(dpt, ["numeric", "string"], mockMetadata)).toBe(false);
+  });
+
+  it("should return false when DPT is not in any specified class", () => {
+    const dpt: DPT = { main: 16, sub: 1 };
+    expect(dptInClasses(dpt, ["numeric"], mockMetadata)).toBe(false);
+  });
+
+  it("should return false when DPT is not in metadata", () => {
+    const dpt: DPT = { main: 99, sub: 99 };
+    expect(dptInClasses(dpt, ["numeric"], mockMetadata)).toBe(false);
+  });
+
+  it("should return false for main-only DPT when only full DPT exists in metadata", () => {
+    const dpt: DPT = { main: 9, sub: null };
+    expect(dptInClasses(dpt, ["numeric"], mockMetadata)).toBe(false);
+  });
+
+  it("should return true for main-only DPT when it exists in metadata", () => {
+    const dpt: DPT = { main: 5, sub: null };
+    expect(dptInClasses(dpt, ["numeric"], mockMetadata)).toBe(true);
+  });
+
+  it("should handle empty class list", () => {
+    const dpt: DPT = { main: 1, sub: 1 };
+    expect(dptInClasses(dpt, [], mockMetadata)).toBe(false);
   });
 });
