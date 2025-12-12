@@ -199,7 +199,7 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
           .hass=${this.hass}
           .filter=${this._filter}
           @value-changed=${this._onFilterChanged}
-          .label=${this.hass.localize ? this.hass.localize("ui.common.search") : "Search"}
+          .label=${this.hass.localize("ui.common.search") ?? "Search"}
         ></search-input>
 
         ${Object.keys(this.dpts).length
@@ -237,10 +237,10 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
 
       <ha-dialog-footer slot="footer">
         <ha-button slot="secondaryAction" appearance="plain" @click=${this._cancel}>
-          ${this.hass.localize ? this.hass.localize("ui.common.cancel") : "Cancel"}
+          ${this.hass.localize("ui.common.cancel") ?? "Cancel"}
         </ha-button>
         <ha-button slot="primaryAction" @click=${this._confirm} .disabled=${!this._selected}>
-          ${this.hass.localize ? this.hass.localize("ui.common.ok") : "OK"}
+          ${this.hass.localize("ui.common.ok") ?? "OK"}
         </ha-button>
       </ha-dialog-footer>
     </ha-wa-dialog>`;

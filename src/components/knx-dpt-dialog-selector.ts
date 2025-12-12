@@ -54,7 +54,7 @@ class KnxDptDialogSelector extends LitElement {
                 <ha-icon-button
                   class="clear-button"
                   .path=${mdiClose}
-                  .label=${this.hass.localize ? this.hass.localize("ui.common.clear") : "Clear"}
+                  .label=${this.hass.localize("ui.common.clear") ?? "Clear"}
                   @click=${this._clearSelection}
                 ></ha-icon-button>`
             : html`<div>
