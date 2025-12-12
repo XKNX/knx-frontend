@@ -2,6 +2,7 @@ import type { SupportedPlatform } from "./entity_data";
 
 export interface KNXBaseData {
   connection_info: KNXInfoData;
+  dpt_metadata: Record<string, DPTMetadata>;
   project_info: KNXProjectInfo | null;
   supported_platforms: SupportedPlatform[];
 }
@@ -10,6 +11,16 @@ export interface KNXInfoData {
   version: string;
   connected: boolean;
   current_address: string;
+}
+
+export interface DPTMetadata {
+  dpt_class: "numeric" | "enum" | "complex" | "string";
+  main: number;
+  sub: number | null;
+  name: string | null; // TODO: remove in favour of translation?
+  unit: string | null;
+  sensor_device_class: string | null;
+  sensor_state_class: string | null;
 }
 
 export interface KNXProjectInfo {

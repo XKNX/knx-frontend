@@ -17,8 +17,7 @@ import type {
 } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
 import { dragDropContext, type DragDropContext } from "../utils/drag-drop-context";
-import { filterValidComObjects } from "../utils/dpt";
-import { dptToString } from "../utils/format";
+import { filterValidComObjects, dptToString } from "../utils/dpt";
 
 const logger = new KNXLogger("knx-project-device-tree");
 

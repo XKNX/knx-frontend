@@ -55,6 +55,7 @@
   "project_view_table_updated": "Aktualisiert",
   "project_view_menu_view_telegrams": "Telegramme anzeigen",
   "project_view_menu_create_binary_sensor": "Binärsensor erstellen",
+  "project_view_menu_create_sensor": "Sensor erstellen",
   "entities_view_monitor_telegrams": "Telegramme überwachen",
   "Incoming": "Eingehend",
   "Outgoing": "Ausgehend",

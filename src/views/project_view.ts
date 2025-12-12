@@ -25,6 +25,7 @@ import "../components/knx-project-tree-view";
 import { compare } from "compare-versions";
 
 import type { HomeAssistant, Route } from "@ha/types";
+import { dptInClasses } from "utils/dpt";
 import type { KNX } from "../types/knx";
 import type { GroupRangeSelectionChangedEvent } from "../components/knx-project-tree-view";
 import { subscribeKnxTelegrams, getGroupTelegrams } from "../services/websocket.service";
@@ -185,18 +186,33 @@ export class KNXProjectView extends LitElement {
       },
     });
 
-    if (groupAddress.dpt?.main === 1) {
-      items.push({
-        path: mdiPlus,
-        label: this.knx.localize("project_view_menu_create_binary_sensor"),
-        action: () => {
-          navigate(
-            "/knx/entities/create/binary_sensor?knx.ga_sensor.state=" + groupAddress.address,
-          );
-        },
-      });
+    if (groupAddress.dpt) {
+      if (groupAddress.dpt.main === 1) {
+        items.push({
+          path: mdiPlus,
+          label: this.knx.localize("project_view_menu_create_binary_sensor"),
+          action: () => {
+            navigate(
+              "/knx/entities/create/binary_sensor?knx.ga_sensor.state=" + groupAddress.address,
+            );
+          },
+        });
+      } else if (dptInClasses(groupAddress.dpt, ["numeric", "string"], this.knx.dptMetadata)) {
+        items.push({
+          path: mdiPlus,
+          label: this.knx.localize("project_view_menu_create_sensor") ?? "Create Sensor",
+          action: () => {
+            const dptString = groupAddress.dpt
+              ? `${groupAddress.dpt.main}${groupAddress.dpt.sub !== null ? "." + groupAddress.dpt.sub.toString().padStart(3, "0") : ""}`
+              : "";
+            navigate(
+              `/knx/entities/create/sensor?knx.ga_sensor.state=${groupAddress.address}` +
+                `${dptString ? `&knx.ga_sensor.dpt=${dptString}` : ""}`,
+            );
+          },
+        });
+      }
     }
-
     return html`
       <ha-icon-overflow-menu .hass=${this.hass} narrow .items=${items}> </ha-icon-overflow-menu>
     `;

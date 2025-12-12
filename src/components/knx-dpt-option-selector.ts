@@ -7,8 +7,8 @@ import { fireEvent } from "@ha/common/dom/fire_event";
 
 import type { DPTOption } from "../types/schema";
 
-@customElement("knx-dpt-selector")
-class KnxDptSelector extends LitElement {
+@customElement("knx-dpt-option-selector")
+class KnxDptOptionSelector extends LitElement {
   @property({ type: Array }) public options!: DPTOption[];
 
   @property() public value?: string;
@@ -109,6 +109,6 @@ class KnxDptSelector extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    "knx-dpt-selector": KnxDptSelector;
+    "knx-dpt-option-selector": KnxDptOptionSelector;
   }
 }

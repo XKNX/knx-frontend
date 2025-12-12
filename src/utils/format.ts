@@ -1,5 +1,5 @@
 import { dump } from "js-yaml";
-import type { DPT, TelegramDict } from "../types/websocket";
+import type { TelegramDict } from "../types/websocket";
 import type { TimePrecision } from "../features/group-monitor";
 
 export const TelegramDictFormatter = {
@@ -58,11 +58,6 @@ export const TelegramDictFormatter = {
     if (telegram.dpt_name == null) return `DPT ${dptNumber}`;
     return dptNumber ? `DPT ${dptNumber} ${telegram.dpt_name}` : telegram.dpt_name;
   },
-};
-
-export const dptToString = (dpt: DPT | null): string => {
-  if (dpt == null) return "";
-  return dpt.main + (dpt.sub ? "." + dpt.sub.toString().padStart(3, "0") : "");
 };
 
 /**

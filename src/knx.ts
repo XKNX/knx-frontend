@@ -26,6 +26,7 @@ export class KnxElement extends ProvideHassLitMixin(LitElement) {
         localize: (string, replace) => localize(this.hass, string, replace),
         log: new KNXLogger(),
         connectionInfo: knxBase.connection_info,
+        dptMetadata: knxBase.dpt_metadata,
         projectInfo: knxBase.project_info, // can  be used to check if project is available
         supportedPlatforms: knxBase.supported_platforms,
         projectData: null,
