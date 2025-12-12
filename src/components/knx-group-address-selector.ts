@@ -107,21 +107,17 @@ export class GroupAddressSelector extends LitElement {
     return !(changedProps.size === 1 && changedProps.has("hass"));
   }
 
-  private _getDPTsFromClasses(dptClasses?: string[]): DPT[] {
-    if (!dptClasses?.length || !this.knx?.dptMetadata) return [];
+  private _getDPTsFromClasses = memoize((dptClasses?: string[]): DPT[] => {
+    if (!dptClasses?.length || !this.knx.dptMetadata) return [];
     const classes = new Set(dptClasses);
     return Object.values(this.knx.dptMetadata)
       .filter((meta) => classes.has(meta.dpt_class))
       .map((meta) => ({ main: meta.main, sub: meta.sub }));
-  }
+  });
 
-  private _getDptStringsFromClasses(dptClasses?: string[]): string[] {
-    if (!dptClasses?.length) return [];
-    const classes = new Set(dptClasses);
-    return Object.entries(this.knx.dptMetadata)
-      .filter(([, meta]) => classes.has(meta.dpt_class))
-      .map(([key]) => key);
-  }
+  private _getDptStringsFromClasses = memoize((dptClasses?: string[]): string[] =>
+    this._getDPTsFromClasses(dptClasses).map(dptToString),
+  );
 
   protected willUpdate(changedProps: PropertyValues<this>) {
     if (changedProps.has("options")) {

@@ -1,3 +1,4 @@
+import memoize from "memoize-one";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
@@ -94,61 +95,63 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
     this._filter = ev.detail?.value ?? "";
   }
 
-  private _groupDpts(): { title: string; items: string[] }[] {
-    const map = new Map<string, string[]>();
+  private _groupDpts = memoize(
+    (filter: string, dpts: Record<string, DPTMetadata>): { title: string; items: string[] }[] => {
+      const map = new Map<string, string[]>();
 
-    const filterLower = this._filter.trim().toLowerCase();
+      const filterLower = filter.trim().toLowerCase();
 
-    for (const dpt of Object.keys(this.dpts)) {
-      const info = this._getDptInfo(dpt);
-      // If a filter is provided, match against number, label or unit
-      if (filterLower) {
-        const matchesNumber = dpt.toLowerCase().includes(filterLower);
-        const matchesLabel = info.label?.toLowerCase().includes(filterLower);
-        const matchesUnit = info.unit ? info.unit.toLowerCase().includes(filterLower) : false;
-        if (!matchesNumber && !matchesLabel && !matchesUnit) {
-          continue;
+      for (const dpt of Object.keys(dpts)) {
+        const info = this._getDptInfo(dpt);
+        // If a filter is provided, match against number, label or unit
+        if (filterLower) {
+          const matchesNumber = dpt.toLowerCase().includes(filterLower);
+          const matchesLabel = info.label?.toLowerCase().includes(filterLower);
+          const matchesUnit = info.unit ? info.unit.toLowerCase().includes(filterLower) : false;
+          if (!matchesNumber && !matchesLabel && !matchesUnit) {
+            continue;
+          }
         }
+
+        const major = String(dpt).split(".", 1)[0] || dpt;
+        const key = `${major}`;
+        if (!map.has(key)) {
+          map.set(key, []);
+        }
+        map.get(key)!.push(dpt);
       }
 
-      const major = String(dpt).split(".", 1)[0] || dpt;
-      const key = `${major}`;
-      if (!map.has(key)) {
-        map.set(key, []);
-      }
-      map.get(key)!.push(dpt);
-    }
+      // Sort groups by numeric major value if possible; within each group sort by minor number
+      const groups = Array.from(map.entries())
+        .sort((a, b) => {
+          const na = Number(a[0]);
+          const nb = Number(b[0]);
+          if (!Number.isNaN(na) && !Number.isNaN(nb)) {
+            return na - nb;
+          }
+          return a[0].localeCompare(b[0]);
+        })
+        .map(([key, items]) => ({
+          title: `${key}.*`,
+          items: items.sort((x, y) => {
+            const parsedX = stringToDpt(x);
+            const parsedY = stringToDpt(y);
+            if (parsedX && parsedY) {
+              return compareDpt(parsedX, parsedY);
+            }
+            if (parsedX) {
+              return -1;
+            }
+            if (parsedY) {
+              return 1;
+            }
+            return x.localeCompare(y);
+          }),
+        }));
 
-    // Sort groups by numeric major value if possible; within each group sort by minor number
-    const groups = Array.from(map.entries())
-      .sort((a, b) => {
-        const na = Number(a[0]);
-        const nb = Number(b[0]);
-        if (!Number.isNaN(na) && !Number.isNaN(nb)) {
-          return na - nb;
-        }
-        return a[0].localeCompare(b[0]);
-      })
-      .map(([key, items]) => ({
-        title: `${key}.*`,
-        items: items.sort((x, y) => {
-          const parsedX = stringToDpt(x);
-          const parsedY = stringToDpt(y);
-          if (parsedX && parsedY) {
-            return compareDpt(parsedX, parsedY);
-          }
-          if (parsedX) {
-            return -1;
-          }
-          if (parsedY) {
-            return 1;
-          }
-          return x.localeCompare(y);
-        }),
-      }));
-
-    return groups;
-  }
+      return groups;
+    },
+  );
 
   private _getDptInfo(dpt: string): { label: string; unit: string } {
     const meta = this.dpts[dpt];
@@ -201,7 +204,7 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
 
         ${Object.keys(this.dpts).length
           ? html`<div class="dpt-list-container">
-              ${this._groupDpts().map(
+              ${this._groupDpts(this._filter, this.dpts).map(
                 (group) => html`
                   ${group.title
                     ? html`<ha-section-title>${group.title}</ha-section-title>`
