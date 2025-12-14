@@ -48,7 +48,11 @@ class KnxDptDialogSelector extends LitElement {
           ${this.value
             ? html`<div class="selected">
                   <div class="dpt-number">${this.value}</div>
-                  <div class="dpt-name">${this.knx.dptMetadata[this.value]?.name}</div>
+                  <div class="dpt-name">
+                    ${this.hass.localize(
+                      `component.knx.selector.dpt.options.${this.value.replace(".", "_")}`,
+                    ) ?? this.knx.dptMetadata[this.value]?.name}
+                  </div>
                   <div class="dpt-unit">${this.knx.dptMetadata[this.value]?.unit ?? ""}</div>
                 </div>
                 <ha-icon-button

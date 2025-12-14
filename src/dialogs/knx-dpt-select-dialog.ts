@@ -156,7 +156,10 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
   private _getDptInfo(dpt: string): { label: string; unit: string } {
     const meta = this.dpts[dpt];
     return {
-      label: meta?.name ?? this.hass.localize("state.default.unknown"),
+      label:
+        this.hass.localize(`component.knx.selector.dpt.options.${dpt.replace(".", "_")}`) ??
+        meta?.name ??
+        this.hass.localize("state.default.unknown"),
       unit: meta?.unit ?? "",
     };
   }
