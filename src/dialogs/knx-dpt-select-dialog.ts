@@ -157,7 +157,7 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
     const meta = this.dpts[dpt];
     return {
       label:
-        this.hass.localize(`component.knx.selector.dpt.options.${dpt.replace(".", "_")}`) ??
+        this.hass.localize(`component.knx.config_panel.dpt.options.${dpt.replace(".", "_")}`) ??
         meta?.name ??
         this.hass.localize("state.default.unknown"),
       unit: meta?.unit ?? "",
@@ -193,7 +193,7 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
       .open=${this._open}
       width=${width}
       .headerTitle=${this._params.title ??
-      this.hass.localize("component.knx.selector.dpt.fields.label")}
+      this.hass.localize("component.knx.config_panel.dpt.selector.label")}
       @closed=${this._dialogClosed}
     >
       <div class="dialog-body">

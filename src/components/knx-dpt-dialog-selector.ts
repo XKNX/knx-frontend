@@ -42,7 +42,7 @@ class KnxDptDialogSelector extends LitElement {
             class="menu-button"
             .path=${mdiMenuOpen}
             @click=${this._openDialog}
-            .label=${this.hass.localize("component.knx.selector.dpt.fields.label")}
+            .label=${this.hass.localize("component.knx.config_panel.dpt.selector.label")}
           ></ha-icon-button>
 
           ${this.value
@@ -50,7 +50,7 @@ class KnxDptDialogSelector extends LitElement {
                   <div class="dpt-number">${this.value}</div>
                   <div class="dpt-name">
                     ${this.hass.localize(
-                      `component.knx.selector.dpt.options.${this.value.replace(".", "_")}`,
+                      `component.knx.config_panel.dpt.options.${this.value.replace(".", "_")}`,
                     ) ?? this.knx.dptMetadata[this.value]?.name}
                   </div>
                   <div class="dpt-unit">${this.knx.dptMetadata[this.value]?.unit ?? ""}</div>
@@ -62,7 +62,7 @@ class KnxDptDialogSelector extends LitElement {
                   @click=${this._clearSelection}
                 ></ha-icon-button>`
             : html`<div>
-                ${this.hass.localize("component.knx.selector.dpt.fields.no_selection") ??
+                ${this.hass.localize("component.knx.config_panel.dpt.selector.no_selection") ??
                 "No selection"}
               </div>`}
         </div>
@@ -96,7 +96,7 @@ class KnxDptDialogSelector extends LitElement {
         })();
 
         return {
-          title: this.hass.localize("component.knx.selector.dpt.fields.label"),
+          title: this.hass.localize("component.knx.config_panel.dpt.selector.label"),
           dpts: filtered,
           initialSelection: this.value,
           onClose: (dpt: string | undefined) => {
