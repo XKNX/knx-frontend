@@ -26,6 +26,7 @@ export interface SectionFlat extends BaseSection {
 export interface GroupSelect extends BaseSection {
   type: "knx_group_select";
   schema: GroupSelectOption[];
+  required?: boolean;
 }
 
 export interface GroupSelectOption {
