@@ -268,6 +268,7 @@ export class KNXConfigureEntity extends LitElement {
             .hass=${this.hass}
             .knx=${this.knx}
             .key=${selectorPath}
+            .required=${selector.required}
             .label=${this._backendLocalize(`${selectorPath}.label`)}
             .config=${getNestedValue(this.config!, selectorPath) ?? {}}
             .options=${selector.options}

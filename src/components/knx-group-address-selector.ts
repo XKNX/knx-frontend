@@ -47,6 +47,8 @@ export class GroupAddressSelector extends LitElement {
 
   @property({ reflect: true }) public key!: string;
 
+  @property({ attribute: false }) public required?: boolean;
+
   @property({ attribute: false }) public validationErrors?: ErrorDescription[];
 
   @property({ attribute: false }) public localizeFunction: (value: string) => string = (
@@ -177,9 +179,13 @@ export class GroupAddressSelector extends LitElement {
 
     const generalValidationError = getValidationError(this.validationErrors);
     const gaDescription = this.localizeFunction(this.key + ".description");
+    const requiredLabel = this.required
+      ? this.hass.localize("ui.common.error_required")
+      : undefined;
 
     return html`
       <p class="title">${this.label}</p>
+      ${requiredLabel ? html`<p class="description">${requiredLabel}</p>` : nothing}
       ${gaDescription ? html`<p class="description">${gaDescription}</p>` : nothing}
       ${generalValidationError
         ? html`<p class="error">
