@@ -51,6 +51,8 @@ export default tseslint.config(
       sourceType: "module",
 
       parserOptions: {
+        project: "./tsconfig.json",
+        tsconfigRootDir: _dirname,
         ecmaFeatures: {
           modules: true,
         },

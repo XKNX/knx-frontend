@@ -61,8 +61,9 @@ export interface GASelectorOptions {
   write?: { required: boolean };
   state?: { required: boolean };
   passive?: boolean;
-  validDPTs?: DPT[]; // one of validDPTs or dptSelect shall be set
+  validDPTs?: DPT[]; // one of validDPTs, dptSelect or dptClasses shall be set
   dptSelect?: DPTOption[];
+  dptClasses?: string[];
 }
 
 export interface DPTOption {

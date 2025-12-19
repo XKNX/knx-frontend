@@ -42,6 +42,7 @@ class KnxFrontend extends KnxElement {
       await this._initKnx();
     }
     await this.hass.loadBackendTranslation("config_panel", "knx", false);
+    await this.hass.loadBackendTranslation("selector", "knx", false);
     await this.hass.loadBackendTranslation("title", this.knx.supportedPlatforms, false);
     await this.hass.loadBackendTranslation("selector", this.knx.supportedPlatforms, false);
     await this.hass.loadFragmentTranslation("config");

@@ -323,7 +323,7 @@ export class KNXCreateEntity extends LitElement {
           ? html` <div class="panel">
               <knx-project-device-tree
                 .data=${this.knx.projectData}
-                .validDPTs=${validDPTsForSchema(schema)}
+                .validDPTs=${validDPTsForSchema(schema, this.knx.dptMetadata)}
               ></knx-project-device-tree>
             </div>`
           : nothing}

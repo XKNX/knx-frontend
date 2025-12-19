@@ -2,13 +2,12 @@ import { describe, it, expect } from "vitest";
 import {
   formatTimeDelta,
   TelegramDictFormatter,
-  dptToString,
   formatTimeWithMilliseconds,
   formatDateTimeWithMilliseconds,
   formatIsoTimestampWithMicroseconds,
   extractMicrosecondsFromIso,
 } from "./format";
-import type { TelegramDict, DPT } from "../types/websocket";
+import type { TelegramDict } from "../types/websocket";
 
 /**
  * Helper to create mock telegram data for testing
@@ -471,26 +470,5 @@ describe("TelegramDictFormatter", () => {
       const telegram = createMockTelegram({ dpt_main: null, dpt_name: null });
       expect(TelegramDictFormatter.dptNameNumber(telegram)).toBe("DPT ");
     });
-  });
-});
-
-describe("dptToString", () => {
-  it("should return empty string for null DPT", () => {
-    expect(dptToString(null)).toBe("");
-  });
-
-  it("should format main DPT only", () => {
-    const dpt: DPT = { main: 1, sub: null };
-    expect(dptToString(dpt)).toBe("1");
-  });
-
-  it("should format main and sub DPT with padding", () => {
-    const dpt: DPT = { main: 1, sub: 1 };
-    expect(dptToString(dpt)).toBe("1.001");
-  });
-
-  it("should handle large DPT numbers", () => {
-    const dpt: DPT = { main: 20, sub: 102 };
-    expect(dptToString(dpt)).toBe("20.102");
   });
 });

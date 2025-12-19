@@ -1,5 +1,11 @@
 import memoize from "memoize-one";
-import type { DPT, KNXProject, CommunicationObject, GroupAddress } from "../types/websocket";
+import type {
+  DPT,
+  KNXProject,
+  CommunicationObject,
+  GroupAddress,
+  DPTMetadata,
+} from "../types/websocket";
 import type { SelectorSchema, GroupSelectOption } from "../types/schema";
 
 export const equalDPT = (dpt1: DPT, dpt2: DPT): boolean =>
@@ -50,7 +56,10 @@ export const filterDuplicateDPTs = (dpts: DPT[]): DPT[] =>
     [] as DPT[],
   );
 
-function _validDPTsForSchema(schema: (SelectorSchema | GroupSelectOption)[]): DPT[] {
+function _validDPTsForSchema(
+  schema: (SelectorSchema | GroupSelectOption)[],
+  dptMetadata: Record<string, DPTMetadata>,
+): DPT[] {
   const result: DPT[] = [];
   schema.forEach((item) => {
     if (item.type === "knx_group_address") {
@@ -58,17 +67,71 @@ function _validDPTsForSchema(schema: (SelectorSchema | GroupSelectOption)[]): DP
         result.push(...item.options.validDPTs);
       } else if (item.options.dptSelect) {
         result.push(...item.options.dptSelect.map((dptOption) => dptOption.dpt));
+      } else if (item.options.dptClasses) {
+        result.push(
+          ...Object.values(dptMetadata)
+            .filter((dptMeta) => item.options.dptClasses!.includes(dptMeta.dpt_class))
+            .map((dptMeta) => ({ main: dptMeta.main, sub: dptMeta.sub })),
+        );
       }
       return;
     }
     if ("schema" in item) {
       // Section or GroupSelect
-      result.push(..._validDPTsForSchema(item.schema));
+      result.push(..._validDPTsForSchema(item.schema, dptMetadata));
     }
   });
   return result;
 }
 
-export const validDPTsForSchema = memoize((schema: SelectorSchema[]): DPT[] =>
-  filterDuplicateDPTs(_validDPTsForSchema(schema)),
+export const validDPTsForSchema = memoize(
+  (schema: SelectorSchema[], dptMetadata: Record<string, DPTMetadata>): DPT[] =>
+    filterDuplicateDPTs(_validDPTsForSchema(schema, dptMetadata)),
 );
+
+export const dptToString = (dpt: DPT | null): string => {
+  if (dpt == null) return "";
+  return dpt.main + (dpt.sub != null ? "." + dpt.sub.toString().padStart(3, "0") : "");
+};
+
+export const stringToDpt = (raw: string): DPT | null => {
+  if (!raw) return null;
+  const parts = raw.trim().split(".");
+  if (parts.length === 0 || parts.length > 2) {
+    return null;
+  }
+  const main = Number.parseInt(parts[0], 10);
+  if (Number.isNaN(main)) {
+    return null;
+  }
+  if (parts.length === 1) {
+    return { main, sub: null };
+  }
+  const sub = Number.parseInt(parts[1], 10);
+  if (Number.isNaN(sub)) {
+    return null;
+  }
+  return { main, sub };
+};
+
+export const compareDpt = (left: DPT, right: DPT): number => {
+  if (left.main !== right.main) {
+    return left.main - right.main;
+  }
+  const leftSub = left.sub ?? -1;
+  const rightSub = right.sub ?? -1;
+  return leftSub - rightSub;
+};
+
+export const dptInClasses = (
+  dpt: DPT,
+  dptClasses: string[],
+  dptMetadata: Record<string, DPTMetadata>,
+): boolean => {
+  const key = dptToString(dpt);
+  const metadata = dptMetadata[key];
+  if (!metadata) {
+    return false;
+  }
+  return dptClasses.includes(metadata.dpt_class);
+};
