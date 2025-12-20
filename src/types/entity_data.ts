@@ -3,9 +3,9 @@ export type EntityCategory = "config" | "diagnostic";
 export type SupportedPlatform = string;
 
 export interface GASchema {
-  write?: string;
-  state?: string;
-  passive?: string[];
+  write?: string | null; // may be null from backend if optional as it defaults to None
+  state?: string | null; // may be null from backend if optional as it defaults to None
+  passive?: string[]; // should never be null as it is removed if empty
   dpt?: string;
 }
 
