@@ -210,7 +210,7 @@ export class GroupAddressSelector extends LitElement {
                   select: { multiple: false, custom_value: true, options: this.addressOptions },
                 }}
                 .key=${"write"}
-                .value=${this.config.write}
+                .value=${this.config.write ?? undefined}
                 @value-changed=${this._updateConfig}
                 @dragover=${this._dragOverHandler}
                 @drop=${this._dropHandler}
@@ -230,7 +230,7 @@ export class GroupAddressSelector extends LitElement {
                   select: { multiple: false, custom_value: true, options: this.addressOptions },
                 }}
                 .key=${"state"}
-                .value=${this.config.state}
+                .value=${this.config.state ?? undefined}
                 @value-changed=${this._updateConfig}
                 @dragover=${this._dragOverHandler}
                 @drop=${this._dropHandler}
