@@ -1,4 +1,4 @@
-import type { TemplateResult } from "lit";
+import type { TemplateResult, HTMLTemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators";
 import "@ha/components/ha-icon-button";
@@ -29,6 +29,8 @@ export class KnxSingleAddressSelector extends LitElement {
 
   @property() public label?: string;
 
+  @property({ attribute: false }) public parentLabel?: string;
+
   @property({ type: Boolean }) public disabled = false;
 
   @property({ type: Boolean, reflect: true }) public invalid = false;
@@ -40,6 +42,15 @@ export class KnxSingleAddressSelector extends LitElement {
   @state() private _currentName?: string;
 
   @query("ha-textfield") private _textField?: HTMLElement;
+
+  private _baseTranslation = (
+    key: string,
+    values?: Record<string, string | number | HTMLTemplateResult | null | undefined>,
+  ) =>
+    this.hass.localize(
+      `component.knx.config_panel.entities.create._.knx.knx_group_address.${key}`,
+      values,
+    );
 
   protected willUpdate(changed: Map<string, unknown>) {
     if (changed.has("invalidMessage")) {
@@ -73,7 +84,8 @@ export class KnxSingleAddressSelector extends LitElement {
 
   protected render(): TemplateResult {
     const nameKnown = !!this._currentName;
-    const displayName = this._currentName ?? (this.value ? "Unknown group address" : "");
+    const displayName =
+      this._currentName ?? (this.value ? this._baseTranslation("group_address_unknown") : "");
     return html`
       <div class="container">
         ${this.knx?.projectData
@@ -81,9 +93,7 @@ export class KnxSingleAddressSelector extends LitElement {
               class="menu-button"
               .disabled=${this.disabled}
               .path=${mdiTextSearchVariant}
-              .label=${this.hass?.localize(
-                "component.knx.config_panel.entities.group_address.selector.label",
-              ) ?? "Select group address"}
+              .label=${this._baseTranslation("group_address_search")}
               @click=${this._openDialog}
             ></ha-icon-button>`
           : nothing}
@@ -122,9 +132,7 @@ export class KnxSingleAddressSelector extends LitElement {
       dialogTag: "knx-ga-select-dialog",
       dialogImport: () => import("../dialogs/knx-ga-select-dialog"),
       dialogParams: {
-        title:
-          this.hass?.localize("component.knx.config_panel.entities.group_address.selector.label") ??
-          "Select group address",
+        title: `${this.parentLabel ? this.parentLabel + ": " : ""}${this.label ?? ""}`,
         groupAddresses: this.groupAddresses ?? [],
         initialSelection: this.value,
         onClose: (address?: string) => {

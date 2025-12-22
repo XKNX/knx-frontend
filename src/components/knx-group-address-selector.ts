@@ -1,5 +1,5 @@
 import { mdiAlertCircleOutline, mdiClose } from "@mdi/js";
-import type { TemplateResult, PropertyValues } from "lit";
+import type { TemplateResult, PropertyValues, HTMLTemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
@@ -62,8 +62,15 @@ export class GroupAddressSelector extends LitElement {
 
   private _dragOverTimeout: Record<string, NodeJS.Timeout> = {};
 
-  private _baseTranslation = (key: string) =>
-    this.hass.localize(`component.knx.config_panel.entities.create._.knx.knx_group_address.${key}`);
+  // also used in knx-single-address-selector and knx-dpt-dialog-selector
+  private _baseTranslation = (
+    key: string,
+    values?: Record<string, string | number | HTMLTemplateResult | null | undefined>,
+  ) =>
+    this.hass.localize(
+      `component.knx.config_panel.entities.create._.knx.knx_group_address.${key}`,
+      values,
+    );
 
   private _getAcceptedDPTs(): DPT[] {
     // we have multiple ways to specify accepted DPTs - only one is used at a time
@@ -183,6 +190,7 @@ export class GroupAddressSelector extends LitElement {
                 .hass=${this.hass}
                 .knx=${this.knx}
                 .label=${this._baseTranslation("send_address")}
+                .parentLabel=${this.label}
                 .required=${this.options.write.required}
                 .groupAddresses=${this.filteredGroupAddresses}
                 .key=${"write"}
@@ -205,6 +213,7 @@ export class GroupAddressSelector extends LitElement {
                 .hass=${this.hass}
                 .knx=${this.knx}
                 .label=${this._baseTranslation("state_address")}
+                .parentLabel=${this.label}
                 .required=${this.options.state.required}
                 .groupAddresses=${this.filteredGroupAddresses}
                 .key=${"state"}
@@ -235,7 +244,8 @@ export class GroupAddressSelector extends LitElement {
                   })}
                   .hass=${this.hass}
                   .knx=${this.knx}
-                  .label=${this._baseTranslation("passive_addresses")}
+                  .label=${this._baseTranslation("passive_address")}
+                  .parentLabel=${this.label}
                   .required=${false}
                   .groupAddresses=${this.filteredGroupAddresses}
                   .key=${"passive"}
@@ -252,7 +262,7 @@ export class GroupAddressSelector extends LitElement {
                 <ha-icon-button
                   class="remove-passive"
                   .path=${mdiClose}
-                  .label=${this.hass.localize("ui.common.remove") ?? "Remove"}
+                  .label=${this.hass.localize("ui.common.remove")}
                   data-index=${index}
                   @click=${this._onRemovePassiveClick}
                 ></ha-icon-button>
@@ -275,7 +285,7 @@ export class GroupAddressSelector extends LitElement {
                   class="add-passive-link"
                   ?disabled=${this._showEmptyPassiveField}
                 >
-                  + Add passive address
+                  ${this._baseTranslation("add_passive_address")}
                 </a>`
               : nothing}
           </div>`
@@ -306,15 +316,14 @@ export class GroupAddressSelector extends LitElement {
     const invalid = getValidationError(this.validationErrors, "dpt");
     return html`<knx-dpt-dialog-selector
       .key=${"dpt"}
-      .label=${this._baseTranslation("dpt")}
       .hass=${this.hass}
       .knx=${this.knx}
+      .parentLabel=${this.label}
       .validDPTs=${this._getDptStringsFromClasses(this.options.dptClasses)}
       .value=${this._selectedDPTValue}
       .disabled=${this.dptSelectorDisabled}
       .invalid=${!!invalid}
       .invalidMessage=${invalid?.error_message}
-      .localizeValue=${this.localizeFunction}
       .translation_key=${this.key}
       @value-changed=${this._valueChanged}
     >
@@ -402,8 +411,7 @@ export class GroupAddressSelector extends LitElement {
   private _dptMismatchMessage(ga?: string | null): string | undefined {
     if (!ga || !this.knx.projectData) return undefined;
     const dpt = dptToString(this.knx.projectData.group_addresses[ga]?.dpt) ?? "?";
-    // TODO translation
-    return `DPT ${dpt} is incompatible with this field's expected DPTs.`;
+    return this._baseTranslation("dpt_incompatible", { dpt });
   }
 
   private _addPassiveSelector = (ev?: Event) => {
