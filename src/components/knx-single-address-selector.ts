@@ -84,14 +84,22 @@ export class KnxSingleAddressSelector extends LitElement {
 
   protected render(): TemplateResult {
     const nameKnown = !!this._currentName;
-    const displayName =
-      this._currentName ?? (this.value ? this._baseTranslation("group_address_unknown") : "");
+    const noAddressKnown = !this.value && this.groupAddresses.length === 0;
+    const displayName = this.knx?.projectData
+      ? (this._currentName ??
+        (this.value
+          ? this._baseTranslation("group_address_unknown")
+          : noAddressKnown
+            ? this._baseTranslation("group_address_none_for_dpt")
+            : ""))
+      : undefined;
+
     return html`
       <div class="container">
         ${this.knx?.projectData
           ? html`<ha-icon-button
               class="menu-button"
-              .disabled=${this.disabled}
+              .disabled=${this.disabled || this.groupAddresses.length === 0}
               .path=${mdiTextSearchVariant}
               .label=${this._baseTranslation("group_address_search")}
               @click=${this._openDialog}
@@ -107,8 +115,12 @@ export class KnxSingleAddressSelector extends LitElement {
               .label=${this.label ?? ""}
               @input=${this._onInput}
             ></ha-textfield>
-            ${this.knx?.projectData && displayName
-              ? html`<div class="ga-name" ?unknown-ga=${!nameKnown} title=${displayName}>
+            ${displayName
+              ? html`<div
+                  class="ga-name"
+                  ?unknown-ga=${!nameKnown || noAddressKnown}
+                  title=${displayName}
+                >
                   ${displayName}
                 </div>`
               : nothing}

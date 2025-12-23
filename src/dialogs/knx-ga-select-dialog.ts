@@ -139,9 +139,7 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
       .hass=${this.hass}
       .open=${this._open}
       width=${width}
-      .headerTitle=${this._params.title ??
-      this.hass.localize("component.knx.config_panel.entities.group_address.selector.label") ??
-      "Select group address"}
+      .headerTitle=${this._params.title}
       @closed=${this._dialogClosed}
     >
       <div class="dialog-body">
@@ -150,7 +148,7 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
           .hass=${this.hass}
           .filter=${this._filter}
           @value-changed=${this._onFilterChanged}
-          .label=${this.hass.localize("ui.common.search") ?? "Search"}
+          .label=${this.hass.localize("ui.common.search")}
         ></search-input>
 
         ${this._groupAddresses && this._groupAddresses.length
@@ -185,10 +183,10 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
 
       <ha-dialog-footer slot="footer">
         <ha-button slot="secondaryAction" appearance="plain" @click=${this._cancel}>
-          ${this.hass.localize("ui.common.cancel") ?? "Cancel"}
+          ${this.hass.localize("ui.common.cancel")}
         </ha-button>
         <ha-button slot="primaryAction" @click=${this._confirm} .disabled=${!this._selected}>
-          ${this.hass.localize("ui.common.ok") ?? "OK"}
+          ${this.hass.localize("ui.common.ok")}
         </ha-button>
       </ha-dialog-footer>
     </ha-wa-dialog>`;
