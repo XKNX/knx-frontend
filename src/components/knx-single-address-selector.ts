@@ -144,7 +144,7 @@ export class KnxSingleAddressSelector extends LitElement {
       dialogTag: "knx-ga-select-dialog",
       dialogImport: () => import("../dialogs/knx-ga-select-dialog"),
       dialogParams: {
-        title: `${this.parentLabel ? this.parentLabel + ": " : ""}${this.label ?? ""}`,
+        title: `${this.parentLabel ? this.parentLabel + " - " : ""}${this.label ?? ""}`,
         groupAddresses: this.groupAddresses ?? [],
         initialSelection: this.value,
         knx: this.knx,

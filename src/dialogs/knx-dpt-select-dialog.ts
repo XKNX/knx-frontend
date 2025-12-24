@@ -75,9 +75,19 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
     this._dialogClosed();
   }
 
+  private _itemKeydown(ev: KeyboardEvent): void {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      const target = ev.currentTarget as HTMLElement;
+      const value = target.getAttribute("value");
+      this._selected = value ?? undefined;
+      this._confirm();
+    }
+  }
+
   private _onDoubleClick(ev: Event): void {
     const target = ev.currentTarget as HTMLElement;
-    const value = target.getAttribute("value") ?? (target.dataset && target.dataset.value);
+    const value = target.getAttribute("value");
     this._selected = value ?? undefined;
 
     if (this._selected) {
@@ -87,7 +97,7 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
 
   private _onSelect(ev: Event): void {
     const target = ev.currentTarget as HTMLElement;
-    const value = target.getAttribute("value") ?? (target.dataset && target.dataset.value);
+    const value = target.getAttribute("value");
     this._selected = value ?? undefined;
   }
 
@@ -162,16 +172,6 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
         this.hass.localize("state.default.unknown"),
       unit: meta?.unit ?? "",
     };
-  }
-
-  private _itemKeydown(ev: KeyboardEvent): void {
-    if (ev.key === "Enter") {
-      ev.preventDefault();
-      const target = ev.currentTarget as HTMLElement;
-      const value = target.getAttribute("value") ?? (target.dataset && target.dataset.value);
-      this._selected = value ?? undefined;
-      this._confirm();
-    }
   }
 
   private _dialogClosed(): void {

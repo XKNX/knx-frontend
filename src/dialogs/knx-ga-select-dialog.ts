@@ -77,9 +77,21 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
     this._dialogClosed();
   }
 
+  private _itemKeydown(ev: KeyboardEvent): void {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      const target = ev.currentTarget as HTMLElement;
+      const value = target.getAttribute("value");
+      if (value) {
+        this._selected = value;
+        this._confirm();
+      }
+    }
+  }
+
   private _onDoubleClick(ev: Event): void {
     const target = ev.currentTarget as HTMLElement;
-    const value = target.getAttribute("value") ?? (target.dataset && target.dataset.value);
+    const value = target.getAttribute("value");
     this._selected = value ?? undefined;
     if (this._selected) {
       this._confirm();
@@ -88,7 +100,7 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
 
   private _onSelect(ev: Event): void {
     const target = ev.currentTarget as HTMLElement;
-    const value = target.getAttribute("value") ?? (target.dataset && target.dataset.value);
+    const value = target.getAttribute("value");
     this._selected = value ?? undefined;
   }
 
@@ -162,6 +174,7 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
                   value=${ga.address}
                   @click=${this._onSelect}
                   @dblclick=${this._onDoubleClick}
+                  @keydown=${this._itemKeydown}
                 >
                   <div class=${classMap({ "ga-row": true, selected: isSelected })} slot="headline">
                     <div class="ga-address">${ga.address}</div>
