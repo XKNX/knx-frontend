@@ -1,4 +1,5 @@
 import { LitElement, html, css, nothing } from "lit";
+import type { HTMLTemplateResult } from "lit";
 import { customElement, property } from "lit/decorators";
 
 import "@ha/components/ha-icon-button";
@@ -16,11 +17,11 @@ class KnxDptDialogSelector extends LitElement {
 
   @property({ type: String }) public key!: string;
 
+  @property({ attribute: false }) public parentLabel?: string;
+
   @property({ attribute: false, type: Array }) public validDPTs?: string[];
 
   @property() public value?: string;
-
-  @property() public label?: string;
 
   @property({ type: Boolean }) public disabled = false;
 
@@ -28,48 +29,49 @@ class KnxDptDialogSelector extends LitElement {
 
   @property({ attribute: false }) public invalidMessage?: string;
 
-  @property({ attribute: false }) public localizeValue: (value: string) => string = (key: string) =>
-    key;
-
   @property({ type: String }) public translation_key?: string;
+
+  private _baseTranslation = (
+    key: string,
+    values?: Record<string, string | number | HTMLTemplateResult | null | undefined>,
+  ) =>
+    this.hass.localize(
+      `component.knx.config_panel.entities.create._.knx.knx_group_address.${key}`,
+      values,
+    );
 
   render() {
     return html`
-      <div>
-        ${this.label ?? nothing}
-        <div class="knx-dpt-selector">
-          <ha-icon-button
-            class="menu-button"
-            .path=${mdiMenuOpen}
-            @click=${this._openDialog}
-            .label=${this.hass.localize("component.knx.config_panel.dpt.selector.label")}
-          ></ha-icon-button>
+      <div class="title">${this._baseTranslation("dpt")}</div>
+      <div class="knx-dpt-selector">
+        <ha-icon-button
+          class="menu-button"
+          .path=${mdiMenuOpen}
+          @click=${this._openDialog}
+          .label=${this._baseTranslation("dpt_select")}
+        ></ha-icon-button>
 
-          ${this.value
-            ? html`<div class="selected">
-                  <div class="dpt-number">${this.value}</div>
-                  <div class="dpt-name">
-                    ${this.hass.localize(
-                      `component.knx.config_panel.dpt.options.${this.value.replace(".", "_")}`,
-                    ) ?? this.knx.dptMetadata[this.value]?.name}
-                  </div>
-                  <div class="dpt-unit">${this.knx.dptMetadata[this.value]?.unit ?? ""}</div>
+        ${this.value
+          ? html`<div class="selection">
+                <div class="dpt-number">${this.value}</div>
+                <div class="dpt-name">
+                  ${this.hass.localize(
+                    `component.knx.config_panel.dpt.options.${this.value.replace(".", "_")}`,
+                  ) || this.knx.dptMetadata[this.value]?.name}
                 </div>
-                <ha-icon-button
-                  class="clear-button"
-                  .path=${mdiClose}
-                  .label=${this.hass.localize("ui.common.clear") ?? "Clear"}
-                  @click=${this._clearSelection}
-                ></ha-icon-button>`
-            : html`<div>
-                ${this.hass.localize("component.knx.config_panel.dpt.selector.no_selection") ??
-                "No selection"}
-              </div>`}
-        </div>
-        ${this.invalidMessage
-          ? html`<p class="invalid-message">${this.invalidMessage}</p>`
-          : nothing}
+                <div class="dpt-unit">${this.knx.dptMetadata[this.value]?.unit ?? ""}</div>
+              </div>
+              <ha-icon-button
+                class="clear-button"
+                .path=${mdiClose}
+                .label=${this.hass.localize("ui.common.clear")}
+                @click=${this._clearSelection}
+              ></ha-icon-button>`
+          : html`<div no-selection class="selection">
+              ${this._baseTranslation("dpt_no_selection")}
+            </div>`}
       </div>
+      ${this.invalidMessage ? html`<p class="invalid-message">${this.invalidMessage}</p>` : nothing}
     `;
   }
 
@@ -96,7 +98,7 @@ class KnxDptDialogSelector extends LitElement {
         })();
 
         return {
-          title: this.hass.localize("component.knx.config_panel.dpt.selector.label"),
+          title: `${this.parentLabel ? this.parentLabel + " - " : ""}${this._baseTranslation("dpt_select")}`,
           dpts: filtered,
           initialSelection: this.value,
           onClose: (dpt: string | undefined) => {
@@ -112,8 +114,12 @@ class KnxDptDialogSelector extends LitElement {
 
   static styles = [
     css`
-      :host([invalid]) div {
+      :host([invalid]) {
         color: var(--error-color);
+      }
+
+      .title {
+        padding-left: 12px;
       }
 
       p {
@@ -134,7 +140,7 @@ class KnxDptDialogSelector extends LitElement {
         gap: 8px;
       }
 
-      .knx-dpt-selector .selected {
+      .knx-dpt-selector .selection {
         display: grid;
         /* first column adapts to content, middle column gets remaining space (shrinkable)
            last column adapts to content as well (auto) — only the middle column truncates */
@@ -145,11 +151,16 @@ class KnxDptDialogSelector extends LitElement {
         min-width: 160px;
       }
 
+      .selection[no-selection] {
+        color: var(--secondary-text-color);
+        font-style: italic;
+      }
+
       .menu-button {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 4px 8px;
+        padding: 4px 0;
       }
 
       .clear-button {

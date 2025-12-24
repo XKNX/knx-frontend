@@ -28,30 +28,26 @@ class KnxDptOptionSelector extends LitElement {
 
   render() {
     return html`
-      <div>
-        ${this.label ?? nothing}
-        ${this.options.map(
-          (item: DPTOption) => html`
-            <div class="formfield">
-              <ha-radio
-                .checked=${item.value === this.value}
-                .value=${item.value}
-                .disabled=${this.disabled}
-                @change=${this._valueChanged}
-              ></ha-radio>
-              <label .value=${item.value} @click=${this._valueChanged}>
-                <p>
-                  ${this.localizeValue(this.translation_key + ".options." + item.translation_key)}
-                </p>
-                <p class="secondary">DPT ${item.value}</p>
-              </label>
-            </div>
-          `,
-        )}
-        ${this.invalidMessage
-          ? html`<p class="invalid-message">${this.invalidMessage}</p>`
-          : nothing}
-      </div>
+      ${this.label ? html`<div class="title">${this.label}</div>` : nothing}
+      ${this.options.map(
+        (item: DPTOption) => html`
+          <div class="formfield">
+            <ha-radio
+              .checked=${item.value === this.value}
+              .value=${item.value}
+              .disabled=${this.disabled}
+              @change=${this._valueChanged}
+            ></ha-radio>
+            <label .value=${item.value} @click=${this._valueChanged}>
+              <p>
+                ${this.localizeValue(this.translation_key + ".options." + item.translation_key)}
+              </p>
+              <p class="secondary">DPT ${item.value}</p>
+            </label>
+          </div>
+        `,
+      )}
+      ${this.invalidMessage ? html`<p class="invalid-message">${this.invalidMessage}</p>` : nothing}
     `;
   }
 
@@ -66,8 +62,12 @@ class KnxDptOptionSelector extends LitElement {
 
   static styles = [
     css`
-      :host([invalid]) div {
+      :host([invalid]) {
         color: var(--error-color);
+      }
+
+      .title {
+        padding-left: 12px;
       }
 
       .formfield {

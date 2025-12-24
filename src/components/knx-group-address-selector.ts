@@ -1,35 +1,26 @@
-import { mdiChevronDown, mdiChevronUp, mdiAlertCircleOutline } from "@mdi/js";
-import type { PropertyValues } from "lit";
+import { mdiAlertCircleOutline, mdiClose } from "@mdi/js";
+import type { TemplateResult, PropertyValues, HTMLTemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
-import { customElement, property, state, query, queryAll } from "lit/decorators";
+import { customElement, property, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 import { consume } from "@lit/context";
 import memoize from "memoize-one";
 
-import "@ha/components/ha-list-item";
-import "@ha/components/ha-selector/ha-selector-select";
 import "@ha/components/ha-icon-button";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import type { HomeAssistant } from "@ha/types";
 
 import "./knx-dpt-option-selector";
 import "./knx-dpt-dialog-selector";
+import "./knx-single-address-selector";
 import type { DragDropContext } from "../utils/drag-drop-context";
 import { dragDropContext } from "../utils/drag-drop-context";
 import { isValidDPT, dptToString, stringToDpt } from "../utils/dpt";
-import { getValidationError } from "../utils/validation";
+import { getValidationError, extractValidationErrors } from "../utils/validation";
 import type { ErrorDescription, GASchema } from "../types/entity_data";
 import type { KNX } from "../types/knx";
 import type { GASelectorOptions } from "../types/schema";
 import type { DPT, GroupAddress } from "../types/websocket";
-
-const getAddressOptions = (
-  validGroupAddresses: GroupAddress[],
-): { value: string; label: string }[] =>
-  validGroupAddresses.map((groupAddress) => ({
-    value: groupAddress.address,
-    label: `${groupAddress.address} - ${groupAddress.name}`,
-  }));
 
 @customElement("knx-group-address-selector")
 export class GroupAddressSelector extends LitElement {
@@ -55,15 +46,15 @@ export class GroupAddressSelector extends LitElement {
     key: string,
   ) => key;
 
-  @state() private _showPassive = false;
+  @state() private _showEmptyPassiveField = false;
 
   private _selectedDPTValue?: string;
 
+  // all group addresses that are valid according to the accepted DPTs
   validGroupAddresses: GroupAddress[] = [];
 
+  // group addresses filtered by selected DPT
   filteredGroupAddresses: GroupAddress[] = [];
-
-  addressOptions: { value: string; label: string }[] = [];
 
   dptSelectorDisabled = false;
 
@@ -71,12 +62,25 @@ export class GroupAddressSelector extends LitElement {
 
   private _dragOverTimeout: Record<string, NodeJS.Timeout> = {};
 
-  @query(".passive") private _passiveContainer!: HTMLDivElement | null;
+  // also used in knx-single-address-selector and knx-dpt-dialog-selector
+  private _baseTranslation = (
+    key: string,
+    values?: Record<string, string | number | HTMLTemplateResult | null | undefined>,
+  ) =>
+    this.hass.localize(
+      `component.knx.config_panel.entities.create._.knx.knx_group_address.${key}`,
+      values,
+    );
 
-  @queryAll("ha-selector-select") private _gaSelectors!: NodeListOf<HTMLElement>;
-
-  private _baseTranslation = (key: string) =>
-    this.hass.localize(`component.knx.config_panel.entities.create._.knx.knx_group_address.${key}`);
+  private _getAcceptedDPTs(): DPT[] {
+    // we have multiple ways to specify accepted DPTs - only one is used at a time
+    const fromValid = this.options.validDPTs;
+    const fromClasses = this.options.dptClasses
+      ? this._getDPTsFromClasses(this.options.dptClasses)
+      : undefined;
+    const fromSelect = this.options.dptSelect?.map((o) => o.dpt);
+    return fromValid ?? fromClasses ?? fromSelect ?? [];
+  }
 
   getValidGroupAddresses(validDPTs: DPT[]): GroupAddress[] {
     return this.knx.projectData
@@ -101,11 +105,10 @@ export class GroupAddressSelector extends LitElement {
     this.filteredGroupAddresses = dpt
       ? this.getValidGroupAddresses([dpt])
       : this.validGroupAddresses;
-    this.addressOptions = getAddressOptions(this.filteredGroupAddresses);
   });
 
   protected shouldUpdate(changedProps: PropertyValues<this>) {
-    // ignore hass updates to avoid scrolling reset of open dropdowns (when input filter is set)
+    // ignore hass updates - we shouldn't need to re-render on those
     return !(changedProps.size === 1 && changedProps.has("hass"));
   }
 
@@ -124,13 +127,8 @@ export class GroupAddressSelector extends LitElement {
   protected willUpdate(changedProps: PropertyValues<this>) {
     if (changedProps.has("options")) {
       // initialize
-      const acceptedDPTs =
-        this.options.validDPTs ?? this._getDPTsFromClasses(this.options.dptClasses);
-      this.validGroupAddresses = this.getValidGroupAddresses(
-        acceptedDPTs ?? this.options.dptSelect?.map((dptOption) => dptOption.dpt) ?? [],
-      );
+      this.validGroupAddresses = this.getValidGroupAddresses(this._getAcceptedDPTs());
       this.filteredGroupAddresses = this.validGroupAddresses;
-      this.addressOptions = getAddressOptions(this.filteredGroupAddresses);
     }
 
     if (changedProps.has("config")) {
@@ -143,7 +141,7 @@ export class GroupAddressSelector extends LitElement {
           this.config.write,
           this.config.state,
           ...(this.config.passive ?? []),
-        ].filter((ga) => ga != null);
+        ].filter((ga) => !!ga);
         this.dptSelectorDisabled =
           allDpts.length > 0 &&
           allDpts.every((ga) => {
@@ -160,20 +158,7 @@ export class GroupAddressSelector extends LitElement {
       : undefined;
   }
 
-  protected updated(changedProps: PropertyValues) {
-    if (!changedProps.has("validationErrors")) return;
-    this._gaSelectors.forEach(async (selector) => {
-      await selector.updateComplete;
-      const firstError = getValidationError(this.validationErrors, selector.key);
-      // only ha-selector-select with custom_value or multiple have comboBox
-      selector.comboBox.errorMessage = firstError?.error_message;
-      selector.comboBox.invalid = !!firstError;
-    });
-  }
-
-  render() {
-    const alwaysShowPassive = this.config.passive && this.config.passive.length > 0;
-
+  protected render(): TemplateResult {
     const validGADropTargetClass = this._validGADropTarget === true;
     const invalidGADropTargetClass = this._validGADropTarget === false;
 
@@ -197,89 +182,113 @@ export class GroupAddressSelector extends LitElement {
       <div class="main">
         <div class="selectors">
           ${this.options.write
-            ? html`<ha-selector-select
+            ? html`<knx-single-address-selector
                 class=${classMap({
                   "valid-drop-zone": validGADropTargetClass,
                   "invalid-drop-zone": invalidGADropTargetClass,
                 })}
                 .hass=${this.hass}
-                .label=${this._baseTranslation("send_address") +
-                (this.label ? ` - ${this.label}` : "")}
+                .knx=${this.knx}
+                .label=${this._baseTranslation("send_address")}
+                .parentLabel=${this.label}
                 .required=${this.options.write.required}
-                .selector=${{
-                  select: { multiple: false, custom_value: true, options: this.addressOptions },
-                }}
+                .groupAddresses=${this.filteredGroupAddresses}
                 .key=${"write"}
                 .value=${this.config.write ?? undefined}
-                @value-changed=${this._updateConfig}
+                .invalidMessage=${getValidationError(this.validationErrors, "write")?.error_message}
+                .hintMessage=${this._isGaDptMismatch(this.config.write)
+                  ? this._dptMismatchMessage(this.config.write)
+                  : undefined}
+                @value-changed=${this._valueChanged}
                 @dragover=${this._dragOverHandler}
                 @drop=${this._dropHandler}
-              ></ha-selector-select>`
+              ></knx-single-address-selector>`
             : nothing}
           ${this.options.state
-            ? html`<ha-selector-select
+            ? html`<knx-single-address-selector
                 class=${classMap({
                   "valid-drop-zone": validGADropTargetClass,
                   "invalid-drop-zone": invalidGADropTargetClass,
                 })}
                 .hass=${this.hass}
-                .label=${this._baseTranslation("state_address") +
-                (this.label ? ` - ${this.label}` : "")}
+                .knx=${this.knx}
+                .label=${this._baseTranslation("state_address")}
+                .parentLabel=${this.label}
                 .required=${this.options.state.required}
-                .selector=${{
-                  select: { multiple: false, custom_value: true, options: this.addressOptions },
-                }}
+                .groupAddresses=${this.filteredGroupAddresses}
                 .key=${"state"}
                 .value=${this.config.state ?? undefined}
-                @value-changed=${this._updateConfig}
+                .invalidMessage=${getValidationError(this.validationErrors, "state")?.error_message}
+                .hintMessage=${this._isGaDptMismatch(this.config.state)
+                  ? this._dptMismatchMessage(this.config.state)
+                  : undefined}
+                @value-changed=${this._valueChanged}
                 @dragover=${this._dragOverHandler}
                 @drop=${this._dropHandler}
-              ></ha-selector-select>`
+              ></knx-single-address-selector>`
             : nothing}
         </div>
-        ${this.options.passive
-          ? html`<div class="options">
-              <ha-icon-button
-                .disabled=${!!alwaysShowPassive}
-                .path=${this._showPassive ? mdiChevronUp : mdiChevronDown}
-                .label=${"Toggle passive address visibility"}
-                @click=${this._togglePassiveVisibility}
-              ></ha-icon-button>
-            </div>`
-          : nothing}
       </div>
       ${this.options.passive
-        ? html`<div
-            class="passive ${classMap({
-              expanded: alwaysShowPassive || this._showPassive,
-            })}"
-            @transitionend=${this._handleTransitionEnd}
-          >
-            <ha-selector-select
-              class=${classMap({
-                "valid-drop-zone": validGADropTargetClass,
-                "invalid-drop-zone": invalidGADropTargetClass,
-              })}
-              .hass=${this.hass}
-              .label=${this._baseTranslation("passive_addresses") +
-              (this.label ? ` - ${this.label}` : "")}
-              .required=${false}
-              .selector=${{
-                select: { multiple: true, custom_value: true, options: this.addressOptions },
-              }}
-              .key=${"passive"}
-              .value=${this.config.passive}
-              @value-changed=${this._updateConfig}
-              @dragover=${this._dragOverHandler}
-              @drop=${this._dropHandler}
-            ></ha-selector-select>
+        ? html`<div class="passive-list">
+            ${[
+              ...(this.config.passive ?? []),
+              ...(this._showEmptyPassiveField ? [undefined] : []),
+            ].map((ga, index) => {
+              const passiveErr = this._getPassiveValidationForIndex(index);
+              return html`<div class="passive-row">
+                <knx-single-address-selector
+                  class=${classMap({
+                    "valid-drop-zone": validGADropTargetClass,
+                    "invalid-drop-zone": invalidGADropTargetClass,
+                  })}
+                  .hass=${this.hass}
+                  .knx=${this.knx}
+                  .label=${this._baseTranslation("passive_address")}
+                  .parentLabel=${this.label}
+                  .required=${false}
+                  .groupAddresses=${this.filteredGroupAddresses}
+                  .key=${"passive"}
+                  .index=${index}
+                  .value=${ga ?? undefined}
+                  .invalidMessage=${passiveErr?.error_message}
+                  .hintMessage=${this._isGaDptMismatch(ga)
+                    ? this._dptMismatchMessage(ga)
+                    : undefined}
+                  @value-changed=${this._valueChangedPassive}
+                  @dragover=${this._dragOverHandler}
+                  @drop=${this._dropHandler}
+                ></knx-single-address-selector>
+                <ha-icon-button
+                  class="remove-passive"
+                  .path=${mdiClose}
+                  .label=${this.hass.localize("ui.common.remove")}
+                  data-index=${index}
+                  @click=${this._onRemovePassiveClick}
+                ></ha-icon-button>
+              </div>`;
+            })}
           </div>`
         : nothing}
-      ${this.options.validDPTs
-        ? html`<p class="valid-dpts">
-            ${this._baseTranslation("valid_dpts")}:
-            ${this.options.validDPTs.map((dpt) => dptToString(dpt)).join(", ")}
-          </p>`
+      ${this.options.validDPTs || this.options.passive
+        ? html`<div class="footer-row">
+            ${this.options.validDPTs
+              ? html`<p class="valid-dpts">
+                  ${this._baseTranslation("valid_dpts")}:
+                  ${this.options.validDPTs.map((dpt) => dptToString(dpt)).join(", ")}
+                </p>`
+              : nothing}
+            ${this.options.passive
+              ? html`<a
+                  href="#"
+                  @click=${this._addPassiveSelector}
+                  class="add-passive-link"
+                  ?disabled=${this._showEmptyPassiveField}
+                >
+                  ${this._baseTranslation("add_passive_address")}
+                </a>`
+              : nothing}
+          </div>`
         : nothing}
       ${this.options.dptSelect ? this._renderDptOptionSelector() : nothing}
       ${this.options.dptClasses ? this._renderDptDialogSelector() : nothing}
@@ -298,7 +307,7 @@ export class GroupAddressSelector extends LitElement {
       .invalidMessage=${invalid?.error_message}
       .localizeValue=${this.localizeFunction}
       .translation_key=${this.key}
-      @value-changed=${this._updateConfig}
+      @value-changed=${this._valueChanged}
     >
     </knx-dpt-option-selector>`;
   }
@@ -307,29 +316,33 @@ export class GroupAddressSelector extends LitElement {
     const invalid = getValidationError(this.validationErrors, "dpt");
     return html`<knx-dpt-dialog-selector
       .key=${"dpt"}
-      .label=${this._baseTranslation("dpt")}
       .hass=${this.hass}
       .knx=${this.knx}
+      .parentLabel=${this.label}
       .validDPTs=${this._getDptStringsFromClasses(this.options.dptClasses)}
       .value=${this._selectedDPTValue}
       .disabled=${this.dptSelectorDisabled}
       .invalid=${!!invalid}
       .invalidMessage=${invalid?.error_message}
-      .localizeValue=${this.localizeFunction}
       .translation_key=${this.key}
-      @value-changed=${this._updateConfig}
+      @value-changed=${this._valueChanged}
     >
     </knx-dpt-dialog-selector>`;
   }
 
-  private _updateConfig(ev: CustomEvent) {
+  private _valueChanged(ev: CustomEvent) {
     ev.stopPropagation();
     const target = ev.target as any;
     const value = ev.detail.value;
     const newConfig = { ...this.config, [target.key]: value };
-    const hasGroupAddresses = !!(newConfig.write || newConfig.state || newConfig.passive?.length);
+    this._updateConfig(newConfig, target.key);
+  }
 
-    this._updateDptSelector(target.key, newConfig, hasGroupAddresses);
+  private _updateConfig(newConfig: GASchema, changedKey: string) {
+    const hasGroupAddresses = [newConfig.write, newConfig.state, ...(newConfig.passive ?? [])].some(
+      (ga) => !!ga,
+    );
+    this._updateDptSelector(changedKey, newConfig, hasGroupAddresses);
     this.config = newConfig;
 
     const newValue = hasGroupAddresses ? newConfig : undefined;
@@ -376,45 +389,107 @@ export class GroupAddressSelector extends LitElement {
     }
   }
 
-  private _getAddedGroupAddress(targetKey: string, newConfig: GASchema): string | undefined {
+  private _getAddedGroupAddress(targetKey: string, newConfig: GASchema): string | null | undefined {
     if (targetKey === "write" || targetKey === "state") {
       return newConfig[targetKey];
     }
     if (targetKey === "passive") {
       // for passive ignore removals, only use additions
-      return newConfig.passive?.find((ga) => !this.config.passive?.includes(ga));
+      return newConfig.passive?.find((ga) => !!ga && !this.config.passive?.includes(ga));
     }
     return undefined;
   }
 
-  private _togglePassiveVisibility(ev: CustomEvent) {
-    ev.stopPropagation();
-    ev.preventDefault();
-    if (!this._passiveContainer) {
+  private _isGaDptMismatch(ga?: string | null): boolean {
+    if (!ga || !this.knx.projectData) return false;
+
+    const selectedGA = this.knx.projectData.group_addresses[ga];
+    if (!selectedGA) return false; // unknown GA
+    return !this.filteredGroupAddresses.find((groupAddress) => groupAddress === selectedGA);
+  }
+
+  private _dptMismatchMessage(ga?: string | null): string | undefined {
+    if (!ga || !this.knx.projectData) return undefined;
+    const dpt = dptToString(this.knx.projectData.group_addresses[ga]?.dpt) ?? "?";
+    return this._baseTranslation("dpt_incompatible", { dpt });
+  }
+
+  private _addPassiveSelector = (ev?: Event) => {
+    if (ev) ev.preventDefault();
+    // Only allow adding if no empty field is currently shown
+    if (this._showEmptyPassiveField) {
       return;
     }
-    const newExpanded = !this._showPassive;
-    this._passiveContainer.style.overflow = "hidden";
+    this._showEmptyPassiveField = true;
+    this.requestUpdate();
+  };
 
-    const scrollHeight = this._passiveContainer.scrollHeight;
-    this._passiveContainer.style.height = `${scrollHeight}px`;
-
-    if (!newExpanded) {
-      setTimeout(() => {
-        if (this._passiveContainer) {
-          this._passiveContainer.style.height = "0px";
-        }
-      }, 0);
+  private _onRemovePassiveClick = (ev: Event) => {
+    const index = parseInt(
+      (ev.currentTarget as HTMLElement).getAttribute("data-index") || "-1",
+      10,
+    );
+    if (index >= 0) {
+      this._removePassiveSelector(index);
     }
-    this._showPassive = newExpanded;
-  }
+  };
 
-  private _handleTransitionEnd() {
-    if (this._passiveContainer) {
-      this._passiveContainer.style.removeProperty("height");
-      this._passiveContainer.style.overflow = this._showPassive ? "initial" : "hidden";
+  private _removePassiveSelector = (index: number) => {
+    const committedLen = this.config.passive?.length ?? 0;
+
+    if (index < committedLen) {
+      // Remove from committed entries
+      const newConfig = { ...this.config };
+      const newPassive = [...(newConfig.passive ?? [])];
+      newPassive.splice(index, 1);
+      if (newPassive.length === 0) {
+        delete newConfig.passive;
+      } else {
+        newConfig.passive = newPassive;
+      }
+      this._updateConfig(newConfig, "passive");
+    } else {
+      // This is the empty field - just hide it
+      this._showEmptyPassiveField = false;
+      this.requestUpdate();
     }
-  }
+  };
+
+  private _valueChangedPassive = (ev: CustomEvent) => {
+    ev.stopPropagation();
+    const target = ev.target as any;
+    const index = target.index as number;
+    const value = ev.detail.value as string | undefined;
+    this._updatePassiveAtIndex(index, value);
+  };
+
+  private _updatePassiveAtIndex = (index: number, value: string | undefined) => {
+    const committedLen = this.config.passive?.length ?? 0;
+
+    const newConfig = { ...this.config };
+    if (index < committedLen) {
+      // Update existing committed entry
+      const newPassive = [...(newConfig.passive ?? [])];
+      newPassive[index] = value;
+      newConfig.passive = newPassive.filter((ga) => !!ga);
+      if (newConfig.passive.length === 0) {
+        delete newConfig.passive;
+      }
+      if (index === committedLen - 1 && !value) {
+        // if last committed entry was cleared, show empty field
+        this._showEmptyPassiveField = true;
+      }
+    } else if (value) {
+      // This is the empty field - commit value
+      newConfig.passive = [...(newConfig.passive ?? []), value];
+      // it's not empty anymore - prevent spawning a new empty field
+      this._showEmptyPassiveField = false;
+    } else {
+      // empty value on empty field - do nothing
+      return;
+    }
+    this._updateConfig(newConfig, "passive");
+  };
 
   private _dragOverHandler(ev: DragEvent) {
     // dragEnter is immediately followed by dragLeave for unknown reason
@@ -440,25 +515,30 @@ export class GroupAddressSelector extends LitElement {
     }, 100);
   }
 
+  private _getPassiveValidationForIndex(index: number): ErrorDescription | undefined {
+    const errors = extractValidationErrors(this.validationErrors, "passive");
+    if (!errors) return undefined;
+    // Prefer index-specific error if provided (path like ["index"]) otherwise general passive error
+    const indexStr = String(index);
+    const specific = errors.find((e) => Array.isArray(e.path) && e.path[0] === indexStr);
+    return specific ?? getValidationError(errors);
+  }
+
   private _dropHandler(ev: DragEvent) {
+    ev.stopPropagation();
+    ev.preventDefault();
     const ga = ev.dataTransfer.getData("text/group-address");
     if (!ga) {
       return;
     }
-    ev.stopPropagation();
-    ev.preventDefault();
     const target = ev.target as any;
-    const newConfig = { ...this.config };
-    if (target.selector.select.multiple) {
-      const newValues = [...(this.config[target.key] ?? []), ga];
-      newConfig[target.key] = newValues;
-    } else {
-      newConfig[target.key] = ga;
+    if (target.key === "passive" && typeof target.index === "number") {
+      this._updatePassiveAtIndex(target.index, ga);
+      return;
     }
-    this._updateDptSelector(target.key, newConfig, true);
-    fireEvent(this, "value-changed", { value: newConfig });
-    // reset invalid state of textfield if set before drag
-    setTimeout(() => target.comboBox._inputElement.blur());
+    const newConfig = { ...this.config };
+    newConfig[target.key] = ga;
+    this._updateConfig(newConfig, target.key);
   }
 
   static styles = css`
@@ -469,7 +549,6 @@ export class GroupAddressSelector extends LitElement {
 
     .selectors {
       flex: 1;
-      padding-right: 16px;
     }
 
     .options {
@@ -492,6 +571,16 @@ export class GroupAddressSelector extends LitElement {
       height: auto;
     }
 
+    .passive-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .passive-row knx-single-address-selector {
+      flex: 1 1 auto;
+    }
+
     .title {
       margin-bottom: 12px;
     }
@@ -502,16 +591,54 @@ export class GroupAddressSelector extends LitElement {
       font-size: var(--ha-font-size-s);
     }
 
-    .valid-dpts {
+    .footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
       margin-top: -8px;
       margin-bottom: 12px;
       margin-left: 16px;
-      margin-right: 64px;
-      color: var(--secondary-text-color);
-      font-size: var(--ha-font-size-s);
+      margin-right: 0;
     }
 
-    ha-selector-select {
+    .valid-dpts {
+      margin: 0;
+      color: var(--secondary-text-color);
+      font-size: var(--ha-font-size-s);
+      flex: 1 1 auto;
+    }
+
+    .add-passive-link {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-size: var(--ha-font-size-s);
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background-color 200ms;
+      margin-left: auto;
+    }
+
+    .add-passive-link:not([disabled]):hover {
+      background-color: rgba(var(--rgb-primary-color), 0.1);
+      text-decoration: underline;
+    }
+
+    .add-passive-link[disabled] {
+      color: var(--disabled-text-color);
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    knx-dpt-dialog-selector,
+    knx-dpt-option-selector {
+      display: block;
+      margin-top: -12px; /* move towards footer-row when validDPTs isn't shown */
+    }
+
+    knx-single-address-selector {
       display: block;
       margin-bottom: 16px;
       transition:
