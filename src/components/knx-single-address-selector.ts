@@ -147,6 +147,7 @@ export class KnxSingleAddressSelector extends LitElement {
         title: `${this.parentLabel ? this.parentLabel + ": " : ""}${this.label ?? ""}`,
         groupAddresses: this.groupAddresses ?? [],
         initialSelection: this.value,
+        knx: this.knx,
         onClose: (address?: string) => {
           if (address && address !== this.value) {
             this.value = address;

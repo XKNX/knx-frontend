@@ -1,23 +1,31 @@
 import memoize from "memoize-one";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
-
+import { classMap } from "lit/directives/class-map";
 import "@ha/components/ha-wa-dialog";
 import "@ha/components/ha-button";
 import "@ha/components/ha-dialog-footer";
 import "@ha/components/search-input";
 import "@ha/components/ha-md-list";
 import "@ha/components/ha-md-list-item";
-import "@ha/components/ha-section-title";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
 import { haStyleDialog } from "@ha/resources/styles";
 import type { HomeAssistant } from "@ha/types";
 import type { HassDialog } from "@ha/dialogs/make-dialog-manager";
 
-import type { GroupAddress } from "../types/websocket";
+import type { GroupAddress, GroupRange, KNXProject } from "../types/websocket";
+import type { KNX } from "../types/knx";
+
+interface GroupNode {
+  title: string;
+  items: GroupAddress[];
+  depth: number;
+  childGroups: GroupNode[];
+}
 
 export interface KnxGaSelectDialogParams {
+  knx: KNX;
   groupAddresses: GroupAddress[];
   title?: string;
   width?: "small" | "medium" | "large" | "full";
@@ -28,6 +36,8 @@ export interface KnxGaSelectDialogParams {
 @customElement("knx-ga-select-dialog")
 export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSelectDialogParams> {
   @property({ attribute: false }) public hass!: HomeAssistant;
+
+  @property({ attribute: false }) public knx!: KNX;
 
   @state() private _open = false;
 
@@ -42,6 +52,7 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
   public async showDialog(params: KnxGaSelectDialogParams): Promise<void> {
     this._params = params;
     this._groupAddresses = params.groupAddresses ?? [];
+    this.knx = params.knx;
     this._selected = params.initialSelection ?? this._selected;
     this._open = true;
   }
@@ -86,38 +97,46 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
   }
 
   private _groupItems = memoize(
-    (filter: string, addrs: GroupAddress[]): { title: string; items: GroupAddress[] }[] => {
-      const map = new Map<string, GroupAddress[]>();
+    (filter: string, addrs: GroupAddress[], projectData: KNXProject | null): GroupNode[] => {
       const f = filter.trim().toLowerCase();
 
-      for (const ga of addrs) {
-        const address = ga.address ?? "";
-        const name = ga.name ?? "";
-        if (f) {
-          const matches = address.toLowerCase().includes(f) || name.toLowerCase().includes(f);
-          if (!matches) continue;
-        }
-        const main = address.split("/", 1)[0] ?? address;
-        const key = `${main}`;
-        if (!map.has(key)) map.set(key, []);
-        map.get(key)!.push(ga);
+      // Abort when no project data is available
+      if (!projectData || !projectData.group_ranges) {
+        return [];
       }
 
-      const groups = Array.from(map.entries())
-        .sort((a, b) => {
-          const na = Number(a[0]);
-          const nb = Number(b[0]);
-          if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
-          return a[0].localeCompare(b[0]);
-        })
-        .map(([key, items]) => ({
-          title: `${key}/*`,
-          items: items.sort((x, y) =>
-            x.address.localeCompare(y.address, undefined, { numeric: true }),
-          ),
-        }));
+      // Filter addresses by search term first
+      const filtered = addrs.filter((ga) => {
+        if (!f) return true;
+        const address = ga.address ?? "";
+        const name = ga.name ?? "";
+        return address.toLowerCase().includes(f) || name.toLowerCase().includes(f);
+      });
 
-      return groups;
+      const buildHierarchy = (ranges: Record<string, GroupRange>, depth = 0): GroupNode[] => {
+        const nodes: GroupNode[] = [];
+
+        Object.entries(ranges).forEach(([key, range]) => {
+          const groupAddresses = (range.group_addresses ?? []) as string[];
+          const gaFilteredInRange = filtered.filter((ga) => groupAddresses.includes(ga.address));
+          const childGroups = range.group_ranges
+            ? buildHierarchy(range.group_ranges, depth + 1)
+            : [];
+          const includeNode = gaFilteredInRange.length > 0 || childGroups.length > 0;
+          if (includeNode) {
+            nodes.push({
+              title: `${key} ${range.name}`.trim(),
+              items: gaFilteredInRange.sort((x, y) => x.raw_address - y.raw_address),
+              depth,
+              childGroups,
+            });
+          }
+        });
+
+        return nodes;
+      };
+
+      return buildHierarchy(projectData.group_ranges);
     },
   );
 
@@ -129,16 +148,46 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
     fireEvent(this, "dialog-closed", { dialog: this.localName });
   }
 
+  private _renderGroup(group: GroupNode) {
+    return html`
+      <div class="group-section">
+        <div class="group-title" style="--group-depth: ${group.depth}">${group.title}</div>
+        ${group.items.length > 0
+          ? html`<ha-md-list>
+              ${group.items.map((ga) => {
+                const isSelected = this._selected === ga.address;
+                return html`<ha-md-list-item
+                  interactive
+                  type="button"
+                  value=${ga.address}
+                  @click=${this._onSelect}
+                  @dblclick=${this._onDoubleClick}
+                >
+                  <div class=${classMap({ "ga-row": true, selected: isSelected })} slot="headline">
+                    <div class="ga-address">${ga.address}</div>
+                    <div class="ga-name">${ga.name ?? ""}</div>
+                  </div>
+                </ha-md-list-item>`;
+              })}
+            </ha-md-list>`
+          : nothing}
+        ${group.childGroups.map((child) => this._renderGroup(child))}
+      </div>
+    `;
+  }
+
   protected render() {
     if (!this._params || !this.hass) {
       return nothing;
     }
 
-    const width = this._params.width ?? "medium";
+    const noProjectData = !this.knx.projectData?.group_ranges;
+    const hasAddresses = this._groupAddresses?.length > 0;
+
     return html`<ha-wa-dialog
       .hass=${this.hass}
       .open=${this._open}
-      width=${width}
+      width=${this._params.width ?? "medium"}
       .headerTitle=${this._params.title}
       @closed=${this._dialogClosed}
     >
@@ -151,34 +200,17 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
           .label=${this.hass.localize("ui.common.search")}
         ></search-input>
 
-        ${this._groupAddresses && this._groupAddresses.length
-          ? html`<div class="ga-list-container">
-              ${this._groupItems(this._filter, this._groupAddresses).map(
-                (group) => html`
-                  ${group.title
-                    ? html`<ha-section-title>${group.title}</ha-section-title>`
-                    : nothing}
-                  <ha-md-list>
-                    ${group.items.map((ga) => {
-                      const isSelected = this._selected === ga.address;
-                      return html`<ha-md-list-item
-                        interactive
-                        type="button"
-                        value=${ga.address}
-                        @click=${this._onSelect}
-                        @dblclick=${this._onDoubleClick}
-                      >
-                        <div class="ga-row ${isSelected ? "selected" : ""}" slot="headline">
-                          <div class="ga-address">${ga.address}</div>
-                          <div class="ga-name">${ga.name ?? ""}</div>
-                        </div>
-                      </ha-md-list-item>`;
-                    })}
-                  </ha-md-list>
-                `,
+        <div class="ga-list-container">
+          ${noProjectData || !hasAddresses
+            ? html`<div class="empty-state">
+                ${this.hass.localize(
+                  "component.knx.config_panel.entities.create._.knx.knx_group_address.group_address_none_for_filter",
+                )}
+              </div>`
+            : this._groupItems(this._filter, this._groupAddresses, this.knx.projectData).map(
+                (group) => this._renderGroup(group),
               )}
-            </div>`
-          : html`<div>No options</div>`}
+        </div>
       </div>
 
       <ha-dialog-footer slot="footer">
@@ -215,12 +247,39 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
           width: 100%;
         }
 
+        ha-md-list {
+          padding: 0;
+        }
+
         .ga-list-container {
           flex: 1 1 auto;
           min-height: 0;
           overflow: auto;
           border: 1px solid var(--divider-color);
           border-radius: 4px;
+          padding: 0;
+        }
+
+        .group-title {
+          position: sticky;
+          top: calc(var(--group-title-height, 40px) * min(1, var(--group-depth, 0)));
+          z-index: calc(10 - var(--group-depth, 0));
+          height: var(--group-title-height, 40px);
+          box-sizing: border-box;
+          display: flex;
+          align-items: center;
+          font-weight: 600;
+          padding: 6px 8px;
+          padding-left: calc(8px + var(--group-depth, 0) * 8px);
+          color: var(--primary-text-color);
+          background: var(--primary-background-color);
+          border-bottom: 1px solid var(--divider-color);
+        }
+
+        .empty-state {
+          padding: 12px;
+          color: var(--secondary-text-color);
+          font-style: italic;
         }
 
         .ga-row {

@@ -192,8 +192,7 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
       .hass=${this.hass}
       .open=${this._open}
       width=${width}
-      .headerTitle=${this._params.title ??
-      this.hass.localize("component.knx.config_panel.dpt.selector.label")}
+      .headerTitle=${this._params.title}
       @closed=${this._dialogClosed}
     >
       <div class="dialog-body">
