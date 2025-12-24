@@ -43,6 +43,7 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
 
   @state() private _params?: KnxGaSelectDialogParams;
 
+  // all valid group addresses to select from
   @state() private _groupAddresses: GroupAddress[] = [];
 
   @state() private _selected?: string;
@@ -196,6 +197,10 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
 
     const noProjectData = !this.knx.projectData?.group_ranges;
     const hasAddresses = this._groupAddresses?.length > 0;
+    const groupItems = hasAddresses
+      ? this._groupItems(this._filter, this._groupAddresses, this.knx.projectData)
+      : [];
+    const hasFilteredItems = groupItems.length > 0;
 
     return html`<ha-wa-dialog
       .hass=${this.hass}
@@ -217,12 +222,16 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
           ${noProjectData || !hasAddresses
             ? html`<div class="empty-state">
                 ${this.hass.localize(
-                  "component.knx.config_panel.entities.create._.knx.knx_group_address.group_address_none_for_filter",
+                  "component.knx.config_panel.entities.create._.knx.knx_group_address.group_address_none_for_dpt",
                 )}
               </div>`
-            : this._groupItems(this._filter, this._groupAddresses, this.knx.projectData).map(
-                (group) => this._renderGroup(group),
-              )}
+            : !hasFilteredItems
+              ? html`<div class="empty-state">
+                  ${this.hass.localize(
+                    "component.knx.config_panel.entities.create._.knx.knx_group_address.group_address_none_for_filter",
+                  )}
+                </div>`
+              : groupItems.map((group) => this._renderGroup(group))}
         </div>
       </div>
 
