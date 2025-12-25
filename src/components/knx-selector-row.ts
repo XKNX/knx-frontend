@@ -29,7 +29,7 @@ export class KnxSelectorRow extends LitElement {
     key: string,
   ) => key;
 
-  @state() private _disabled = false;
+  @state() private _enabled = true;
 
   private _haSelectorValue: any = null;
 
@@ -39,18 +39,29 @@ export class KnxSelectorRow extends LitElement {
 
   protected willUpdate(_changedProperties: PropertyValues): void {
     if (_changedProperties.has("selector") || _changedProperties.has("key")) {
-      this._disabled = !this.selector.required && this.value === undefined;
-      // apply default value if available or no value is set yet
-      this._haSelectorValue = this.value ?? this.selector.default ?? null;
+      const isRequired = !!this.selector.required;
+      const isBoolean = "boolean" in this.selector.selector;
+      const isNumber = "number" in this.selector.selector;
 
-      const booleanSelector = "boolean" in this.selector.selector;
-      const possibleInlineSelector = booleanSelector || "number" in this.selector.selector;
-      this._inlineSelector = !!this.selector.required && possibleInlineSelector;
-      // optional boolean should not show as 2 switches (one for optional and one for value)
-      this._optionalBooleanSelector = !this.selector.required && booleanSelector;
+      // Inline selector only for required boolean/number
+      this._inlineSelector = isRequired && (isBoolean || isNumber);
+
+      // Optional boolean uses a single switch not 2 (enable and value switch)
+      this._optionalBooleanSelector = !isRequired && isBoolean;
+
       if (this._optionalBooleanSelector) {
-        // either true or the key will be unset (via this._disabled)
-        this._haSelectorValue = true;
+        // no explicit default (undefined) -> default to false
+        const defaultBool = !!this.selector.default;
+        // Only write the non-default value, otherwise undefined
+        this._haSelectorValue = !defaultBool;
+        // switch should represent the actually used value (written or default)
+        this._enabled = this.value ?? defaultBool;
+      } else {
+        // For required or non-boolean selectors: enabled unless optional and unset
+        this._enabled = isRequired || this.value !== undefined;
+        // apply default value if available or no value is set yet
+        // TODO: consider also using suggested_value ?
+        this._haSelectorValue = this.value ?? this.selector.default ?? null;
       }
     }
   }
@@ -63,7 +74,7 @@ export class KnxSelectorRow extends LitElement {
           class=${classMap({ "newline-selector": !this._inlineSelector })}
           .hass=${this.hass}
           .selector=${this.selector.selector}
-          .disabled=${this._disabled}
+          .disabled=${!this._enabled}
           .value=${this._haSelectorValue}
           .localizeValue=${this.hass.localize}
           @value-changed=${this._valueChange}
@@ -81,8 +92,8 @@ export class KnxSelectorRow extends LitElement {
           ? html`<ha-selector
               class="optional-switch"
               .selector=${{ boolean: {} }}
-              .value=${!this._disabled}
-              @value-changed=${this._toggleDisabled}
+              .value=${this._enabled}
+              @value-changed=${this._toggleEnabled}
             ></ha-selector>`
           : nothing}
         ${
@@ -95,20 +106,27 @@ export class KnxSelectorRow extends LitElement {
     `;
   }
 
-  private _toggleDisabled(ev: Event) {
+  private _toggleEnabled(ev: Event) {
     ev.stopPropagation();
-    this._disabled = !this._disabled;
+    this._enabled = !this._enabled;
     this._propagateValue();
   }
 
-  private _valueChange(ev: Event) {
+  private _valueChange(ev: CustomEvent<{ value: any }>) {
     ev.stopPropagation();
     this._haSelectorValue = ev.detail.value;
     this._propagateValue();
   }
 
   private _propagateValue() {
-    fireEvent(this, "value-changed", { value: this._disabled ? undefined : this._haSelectorValue });
+    if (this._optionalBooleanSelector) {
+      // For optional boolean, write the non-default value or remove the key (undefined)
+      fireEvent(this, "value-changed", {
+        value: this._enabled === this._haSelectorValue ? this._haSelectorValue : undefined,
+      });
+      return;
+    }
+    fireEvent(this, "value-changed", { value: this._enabled ? this._haSelectorValue : undefined });
   }
 
   static styles = css`
