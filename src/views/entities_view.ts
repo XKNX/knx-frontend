@@ -27,12 +27,12 @@ import type { DataTableColumnContainer } from "@ha/components/data-table/ha-data
 import type { ExtEntityRegistryEntry } from "@ha/data/entity_registry";
 import { subscribeEntityRegistry } from "@ha/data/entity_registry";
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
-import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import { SubscribeMixin } from "@ha/mixins/subscribe-mixin";
 import type { HomeAssistant, Route } from "@ha/types";
 
 import { getEntityEntries, deleteEntity, getEntityConfig } from "../services/websocket.service";
 import type { KNX } from "../types/knx";
+import { BASE_URL, entitiesTab } from "../knx-router";
 import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("knx-entities-view");
@@ -54,8 +54,6 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
 
   @property({ type: Object }) public route?: Route;
-
-  @property({ type: Array, reflect: false }) public tabs!: PageNavigation[];
 
   @state() private knx_entities: EntityRow[] = [];
 
@@ -284,10 +282,10 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
       <hass-tabs-subpage-data-table
         .hass=${this.hass}
         .narrow=${this.narrow}
+        back-path=${BASE_URL}
         .route=${this.route!}
-        .tabs=${this.tabs}
+        .tabs=${[entitiesTab]}
         .localizeFunc=${this.knx.localize}
-        main-page
         .columns=${this._columns(this.hass.language)}
         .data=${this.knx_entities}
         .hasFab=${true}

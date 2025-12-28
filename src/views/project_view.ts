@@ -10,7 +10,6 @@ import type { HASSDomEvent } from "@ha/common/dom/fire_event";
 import { navigate } from "@ha/common/navigate";
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-tabs-subpage";
-import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import "@ha/components/ha-alert";
 import "@ha/components/ha-card";
 import "@ha/components/ha-icon-button";
@@ -27,6 +26,7 @@ import { compare } from "compare-versions";
 import type { HomeAssistant, Route } from "@ha/types";
 import { dptInClasses } from "utils/dpt";
 import type { KNX } from "../types/knx";
+import { BASE_URL, projectTab } from "../knx-router";
 import type { GroupRangeSelectionChangedEvent } from "../components/knx-project-tree-view";
 import { subscribeKnxTelegrams, getGroupTelegrams } from "../services/websocket.service";
 import type { GroupAddress, TelegramDict } from "../types/websocket";
@@ -46,8 +46,6 @@ export class KNXProjectView extends LitElement {
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
 
   @property({ type: Object }) public route?: Route;
-
-  @property({ type: Array, reflect: false }) public tabs!: PageNavigation[];
 
   @property({ type: Boolean, reflect: true, attribute: "range-selector-hidden" })
   public rangeSelectorHidden = true;
@@ -245,10 +243,10 @@ export class KNXProjectView extends LitElement {
     return html` <hass-tabs-subpage
       .hass=${this.hass}
       .narrow=${this.narrow!}
+      back-path=${BASE_URL}
       .route=${this.route!}
-      .tabs=${this.tabs}
+      .tabs=${[projectTab]}
       .localizeFunc=${this.knx.localize}
-      main-page
     >
       ${this._projectLoadTask.render({
         initial: () => html`

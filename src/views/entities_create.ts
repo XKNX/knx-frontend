@@ -234,9 +234,7 @@ export class KNXCreateEntity extends LitElement {
         .hass=${this.hass}
         .narrow=${this.narrow!}
         .back-path=${this.backPath}
-        .header=${this.hass.localize(
-          "component.knx.config_panel.entities.create.type_selection.title",
-        )}
+        .header=${this.hass.localize("component.knx.config_panel.entities.create.title")}
       >
         <div class="type-selection">
           <ha-card
@@ -261,7 +259,7 @@ export class KNXCreateEntity extends LitElement {
               })}
               has-secondary
               .label=${this.hass.localize(
-                "component.knx.config_panel.entities.create.type_selection.title",
+                "component.knx.config_panel.entities.create.type_selection.header",
               )}
             ></ha-navigation-list>
           </ha-card>
@@ -279,7 +277,7 @@ export class KNXCreateEntity extends LitElement {
       .narrow=${this.narrow!}
       .back-path=${this.backPath}
       .header=${create
-        ? this.hass.localize("component.knx.config_panel.entities.create.header")
+        ? this.hass.localize("component.knx.config_panel.entities.create.title")
         : `${this.hass.localize("ui.common.edit")}: ${this.entityId}`}
     >
       <div class="content">
@@ -435,6 +433,10 @@ export class KNXCreateEntity extends LitElement {
     .type-selection {
       margin: 20px auto 80px;
       max-width: 720px;
+    }
+
+    ha-card {
+      overflow: hidden; /* don't cover rounded corner border by content */
     }
 
     @media screen and (max-width: 600px) {

@@ -5,8 +5,7 @@ import { customElement, property, state } from "lit/decorators";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
 import "@ha/components/ha-card";
-import "@ha/layouts/hass-tabs-subpage";
-import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
+import "@ha/layouts/hass-subpage";
 import "@ha/components/ha-button";
 import "@ha/components/ha-file-upload";
 import "@ha/components/ha-selector/ha-selector-text";
@@ -21,6 +20,7 @@ import type { KNX } from "../types/knx";
 import type { KNXProjectInfo } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
 import { VERSION } from "../version";
+import { BASE_URL, infoTab } from "../knx-router";
 
 const logger = new KNXLogger("info");
 
@@ -34,8 +34,6 @@ export class KNXInfo extends LitElement {
 
   @property({ type: Object }) public route?: Route;
 
-  @property({ type: Array, reflect: false }) public tabs!: PageNavigation[];
-
   @state() private _projectPassword?: string;
 
   @state() private _uploading = false;
@@ -44,20 +42,18 @@ export class KNXInfo extends LitElement {
 
   protected render(): TemplateResult {
     return html`
-      <hass-tabs-subpage
+      <hass-subpage
         .hass=${this.hass}
         .narrow=${this.narrow!}
-        .route=${this.route!}
-        .tabs=${this.tabs}
-        .localizeFunc=${this.knx.localize}
-        main-page
+        back-path=${BASE_URL}
+        .header=${this.knx.localize(infoTab.translationKey)}
       >
         <div class="columns">
           ${this._renderInfoCard()}
           ${this.knx.projectInfo ? this._renderProjectDataCard(this.knx.projectInfo) : nothing}
           ${this._renderProjectUploadCard()}
         </div>
-      </hass-tabs-subpage>
+      </hass-subpage>
     `;
   }
 
