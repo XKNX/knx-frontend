@@ -3,42 +3,66 @@ import { customElement, property } from "lit/decorators";
 
 import type { RouterOptions } from "@ha/layouts/hass-router-page";
 import { HassRouterPage } from "@ha/layouts/hass-router-page";
-import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import type { HomeAssistant, Route } from "@ha/types";
-
+import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import type { KNX } from "./types/knx";
 import { KNXLogger } from "./tools/knx-logger";
+import type { KnxPageNavigation } from "./types/navigation";
 
 const logger = new KNXLogger("router");
 
 export const BASE_URL = "/knx";
 
-const knxMainTabs = (hasProject: boolean): PageNavigation[] => [
-  {
-    translationKey: "info_title",
-    path: `${BASE_URL}/info`,
-    iconPath: mdiFolderMultipleOutline,
-  },
-  {
-    translationKey: "group_monitor_title",
-    path: `${BASE_URL}/group_monitor`,
-    iconPath: mdiNetwork,
-  },
-  ...(hasProject
-    ? [
-        {
-          translationKey: "project_title",
-          path: `${BASE_URL}/project`,
-          iconPath: mdiFileTreeOutline,
-        },
-      ]
-    : []),
-  {
-    translationKey: "entities_view_title",
-    path: `${BASE_URL}/entities`,
-    iconPath: mdiFileTreeOutline,
-  },
+/**
+ * KNX navigation entry with shared translation roots.
+ * `translationKey` is consumed directly by HA components as title, so we derive it from
+ * `baseTranslationKey` alongside `descriptionTranslationKey` to keep title and
+ * description keys in sync.
+ */
+function _knxPageNavigationFactory(
+  pageNavigation: PageNavigation & { baseTranslationKey: string },
+): KnxPageNavigation {
+  return {
+    ...pageNavigation,
+    translationKey: `${pageNavigation.baseTranslationKey}.title`,
+    descriptionTranslationKey: `${pageNavigation.baseTranslationKey}.description`,
+  };
+}
+
+// tabs are used for page titles in hass-tabs-subpage when wide
+// when no tabs are used - single item array
+
+export const infoTab = _knxPageNavigationFactory({
+  baseTranslationKey: "component.knx.config_panel.info",
+  path: `${BASE_URL}/info`,
+  iconPath: mdiFolderMultipleOutline,
+  iconColor: "var(--blue-grey-color)",
+});
+export const groupMonitorTab = _knxPageNavigationFactory({
+  baseTranslationKey: "component.knx.config_panel.group_monitor",
+  path: `${BASE_URL}/group_monitor`,
+  iconPath: mdiNetwork,
+  iconColor: "var(--green-color)",
+});
+export const projectTab = _knxPageNavigationFactory({
+  baseTranslationKey: "component.knx.config_panel.project",
+  path: `${BASE_URL}/project`,
+  iconPath: mdiFileTreeOutline,
+  iconColor: "var(--deep-purple-color)",
+});
+export const entitiesTab = _knxPageNavigationFactory({
+  baseTranslationKey: "component.knx.config_panel.entities",
+  path: `${BASE_URL}/entities`,
+  iconPath: mdiFileTreeOutline,
+  iconColor: "var(--blue-color)",
+});
+
+export const knxMainTabs = (hasProject: boolean): KnxPageNavigation[] => [
+  entitiesTab,
+  ...(hasProject ? [projectTab] : []),
+  groupMonitorTab,
+  infoTab,
 ];
 
 @customElement("knx-router")
@@ -52,9 +76,16 @@ export class KnxRouter extends HassRouterPage {
   @property({ type: Boolean }) public narrow!: boolean;
 
   protected routerOptions: RouterOptions = {
-    defaultPage: "info",
+    defaultPage: "dashboard",
     beforeRender: (page: string) => (page === "" ? this.routerOptions.defaultPage : undefined),
     routes: {
+      dashboard: {
+        tag: "knx-dashboard",
+        load: () => {
+          logger.debug("Importing knx-dashboard");
+          return import("./views/dashboard");
+        },
+      },
       info: {
         tag: "knx-info",
         load: () => {
@@ -94,25 +125,21 @@ export class KnxRouter extends HassRouterPage {
     // skip title setting when sub-router is called - it will set the title itself when calling this method
     // changedProps is undefined when the element was just loaded
     if (!(el instanceof KnxRouter) && changedProps === undefined) {
-      // look for translation of "prefix_currentPage_title" and set it as title
-      let pathSlug: string[] = [];
-      if (this.route.prefix.startsWith("/knx/")) {
-        pathSlug = this.route.prefix.substring(5).split("/");
-      }
-      pathSlug.push(this._currentPage, "title");
-      const title_translation_key = pathSlug.join("_");
-      const title = this.knx.localize(title_translation_key);
-      mainWindow.document.title =
-        title === title_translation_key
+      const pageNavigation = knxMainTabs(true).find((page) => page.path === this.routeTail.prefix);
+      // sub-routers will not have a matching pageNavigation
+      // but the parent router will and title will stay at the set value of parent router
+      if (pageNavigation) {
+        const title = this.hass.localize(pageNavigation.translationKey);
+        mainWindow.document.title = !title
           ? "KNX - Home Assistant"
           : `${title} - KNX - Home Assistant`;
+      }
     }
 
     el.hass = this.hass;
     el.knx = this.knx;
     el.route = this.routeTail;
     el.narrow = this.narrow;
-    el.tabs = knxMainTabs(!!this.knx.projectInfo);
   }
 }
 
