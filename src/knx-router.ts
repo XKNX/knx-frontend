@@ -1,4 +1,4 @@
-import { mdiNetwork, mdiFolderMultipleOutline, mdiFileTreeOutline } from "@mdi/js";
+import { mdiInformationOutline, mdiLan, mdiFileDocumentOutline, mdiViewList } from "@mdi/js";
 import { customElement, property } from "lit/decorators";
 
 import type { RouterOptions } from "@ha/layouts/hass-router-page";
@@ -36,25 +36,25 @@ function _knxPageNavigationFactory(
 export const infoTab = _knxPageNavigationFactory({
   baseTranslationKey: "component.knx.config_panel.info",
   path: `${BASE_URL}/info`,
-  iconPath: mdiFolderMultipleOutline,
+  iconPath: mdiInformationOutline,
   iconColor: "var(--blue-grey-color)",
 });
 export const groupMonitorTab = _knxPageNavigationFactory({
   baseTranslationKey: "component.knx.config_panel.group_monitor",
   path: `${BASE_URL}/group_monitor`,
-  iconPath: mdiNetwork,
+  iconPath: mdiLan,
   iconColor: "var(--green-color)",
 });
 export const projectTab = _knxPageNavigationFactory({
   baseTranslationKey: "component.knx.config_panel.project",
   path: `${BASE_URL}/project`,
-  iconPath: mdiFileTreeOutline,
+  iconPath: mdiFileDocumentOutline,
   iconColor: "var(--deep-purple-color)",
 });
 export const entitiesTab = _knxPageNavigationFactory({
   baseTranslationKey: "component.knx.config_panel.entities",
   path: `${BASE_URL}/entities`,
-  iconPath: mdiFileTreeOutline,
+  iconPath: mdiViewList,
   iconColor: "var(--blue-color)",
 });
 
