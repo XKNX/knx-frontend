@@ -162,6 +162,7 @@ const createRspackConfig = ({
         "lit/directives/repeat$": "lit/directives/repeat.js",
         "lit/directives/live$": "lit/directives/live.js",
         "lit/directives/keyed$": "lit/directives/keyed.js",
+        "lit/directives/map$": "lit/directives/map.js",
         "lit/polyfill-support$": "lit/polyfill-support.js",
         "@lit-labs/virtualizer/layouts/grid": "@lit-labs/virtualizer/layouts/grid.js",
         "@lit-labs/virtualizer/polyfills/resize-observer-polyfill/ResizeObserver":

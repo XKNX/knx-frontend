@@ -1,10 +1,15 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property } from "lit/decorators";
+import { map } from "lit/directives/map";
+import { mdiCogOutline } from "@mdi/js";
 
 import "@ha/components/ha-card";
+import "@ha/components/ha-md-list";
+import "@ha/components/ha-md-list-item";
 import "@ha/components/ha-navigation-list";
 import "@ha/layouts/hass-subpage";
 import "@ha/panels/config/ha-config-section";
+import { showOptionsFlowDialog } from "@ha/dialogs/config-flow/show-dialog-options-flow";
 import type { HomeAssistant } from "@ha/types";
 import type { KnxPageNavigation } from "../types/navigation";
 
@@ -29,6 +34,19 @@ export class KnxDashboard extends LitElement {
     }));
   }
 
+  private _buttonItems = [
+    {
+      translationKey: "component.knx.config_panel.dashboard.options_flow",
+      iconPath: mdiCogOutline,
+      iconColor: "var(--indigo-color)",
+      click: this._openOptionFlow,
+    },
+  ];
+
+  private async _openOptionFlow() {
+    showOptionsFlowDialog(this, this.knx.config_entry);
+  }
+
   protected render() {
     // main page for narrow layout to show menu icon instead of back button
     return html`
@@ -47,6 +65,29 @@ export class KnxDashboard extends LitElement {
               has-secondary
             ></ha-navigation-list>
           </ha-card>
+          <ha-card outlined>
+            <ha-md-list .hass=${this.hass} .narrow=${this.narrow} has-secondary>
+              ${map(
+                this._buttonItems,
+                (item) =>
+                  html` <ha-md-list-item type="button" @click=${item.click}>
+                    <div
+                      slot="start"
+                      class="icon-background"
+                      .style=${`background-color: ${item.iconColor}`}
+                    >
+                      <ha-svg-icon .path=${item.iconPath}></ha-svg-icon>
+                    </div>
+                    <span slot="headline"
+                      >${this.hass.localize(`${item.translationKey}.title`)}</span
+                    >
+                    <span slot="supporting-text"
+                      >${this.hass.localize(`${item.translationKey}.description`)}</span
+                    >
+                  </ha-md-list-item>`,
+              )}
+            </ha-md-list>
+          </ha-card>
         </ha-config-section>
       </hass-subpage>
     `;
@@ -55,6 +96,19 @@ export class KnxDashboard extends LitElement {
   static styles = css`
     ha-card {
       overflow: hidden;
+    }
+    ha-svg-icon {
+      color: var(--secondary-text-color);
+      height: 24px;
+      width: 24px;
+      display: block;
+      padding: 8px;
+    }
+    .icon-background {
+      border-radius: var(--ha-border-radius-circle);
+    }
+    .icon-background ha-svg-icon {
+      color: #fff;
     }
   `;
 }
