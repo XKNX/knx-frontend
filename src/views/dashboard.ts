@@ -2,10 +2,9 @@ import { LitElement, html, css } from "lit";
 import { customElement, property } from "lit/decorators";
 
 import "@ha/components/ha-card";
-import "@ha/components/ha-menu-button";
 import "@ha/components/ha-navigation-list";
+import "@ha/layouts/hass-subpage";
 import "@ha/panels/config/ha-config-section";
-import "@ha/components/ha-top-app-bar-fixed";
 import type { HomeAssistant } from "@ha/types";
 import type { KnxPageNavigation } from "../types/navigation";
 
@@ -31,14 +30,14 @@ export class KnxDashboard extends LitElement {
   }
 
   protected render() {
+    // main page for narrow layout to show menu icon instead of back button
     return html`
-      <ha-top-app-bar-fixed .narrow=${this.narrow}>
-        <ha-menu-button
-          slot="navigationIcon"
-          .hass=${this.hass}
-          .narrow=${this.narrow}
-        ></ha-menu-button>
-        <div slot="title">KNX</div>
+      <hass-subpage
+        .narrow=${this.narrow}
+        .hass=${this.hass}
+        header="KNX"
+        ?main-page=${this.narrow}
+      >
         <ha-config-section .narrow=${this.narrow} .isWide=${this.isWide}>
           <ha-card outlined>
             <ha-navigation-list
@@ -49,14 +48,11 @@ export class KnxDashboard extends LitElement {
             ></ha-navigation-list>
           </ha-card>
         </ha-config-section>
-      </ha-top-app-bar-fixed>
+      </hass-subpage>
     `;
   }
 
   static styles = css`
-    :host {
-      display: block;
-    }
     ha-card {
       overflow: hidden;
     }
