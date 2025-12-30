@@ -2,6 +2,8 @@
 
 You are an assistant helping with development of the Home Assistant KNX Frontend Panel. This is a TypeScript/Lit web application that provides KNX integration management within Home Assistant.
 
+Always follow the general Home Assistant frontend guidance in [homeassistant-frontend/AGENTS.md](homeassistant-frontend/AGENTS.md) for shared patterns (dialogs, forms, view transitions, accessibility, etc.). This file only adds KNX-specific context and repo-local conventions; avoid duplicating upstream rules.
+
 ## KNX Stack Architecture
 
 ### Projects & Repositories
@@ -98,7 +100,7 @@ class KnxGroupMonitor extends LitElement {
   @state() private _telegrams: Telegram[] = [];
 
   render() {
-    return html`<ha-dialog>...</ha-dialog>`;
+    return html`<ha-subpage>...</ha-subpage>`;
   }
 }
 ```
@@ -122,14 +124,6 @@ import "../components/knx-configure-entity";
 import { KNXLogger } from "../tools/knx-logger";
 ```
 
-### UI Components
-
-- **Dialogs**: Use `<ha-dialog>` with `HassDialog` interface
-- **Forms**: Prefer `<ha-form>` with schemas or `<ha-selector>` components
-- **Selectors**: Use `<ha-selector>` for form inputs (entity, device, area, text, number, boolean, etc.)
-- **Tables**: Use `<ha-data-table>` or semantic HTML with virtualization for large datasets
-- **Feedback**: Show loading states, success/error alerts with `<ha-alert>`
-
 ## Project Structure
 
 - `/src`: Source code for AI agents to analyze and modify
@@ -148,7 +142,6 @@ import { KNXLogger } from "../tools/knx-logger";
   - `upgrade-frontend`: Update Home Assistant frontend submodule
 - `/homeassistant-frontend`: Submodule (AI agents should not modify directly)
 - `/test`: Test files that AI agents should maintain and extend
-
 
 ## Testing
 
@@ -218,15 +211,6 @@ import { KNXLogger } from "../tools/knx-logger";
 - **Code Explanation**: Use KNX terminology and relate to HA patterns
 - **Refactoring**: Outline plan first, implement incrementally
 - **New Features**: Leverage existing patterns, include tests and translations
-
-## Dialog Patterns
-
-- **Use Fire Event Pattern**: `fireEvent(this, "show-dialog", { dialogTag, dialogImport, dialogParams })`
-- **Implement HassDialog**: All dialogs must implement `HassDialog<T>` interface
-- **Standard Headers**: Use `createCloseHeading()` for consistent dialog headers
-- **Dialog Styling**: Import `haStyleDialog` for consistent appearance
-- **Accessibility**: Use `dialogInitialFocus` for proper focus management
-- **Loading States**: Return `nothing` when dialog params are not ready
 
 ## Common Review Issues
 
