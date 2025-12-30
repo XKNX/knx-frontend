@@ -18,8 +18,13 @@ import type { HomeAssistant } from "@ha/types";
 
 import { processProjectFile } from "../services/websocket.service";
 
+export interface KnxProjectUploadDialogParams {}
+
 @customElement("knx-project-upload-dialog")
-export class KnxProjectUploadDialog extends LitElement implements HassDialog {
+export class KnxProjectUploadDialog
+  extends LitElement
+  implements HassDialog<KnxProjectUploadDialogParams>
+{
   @property({ attribute: false }) public hass!: HomeAssistant;
 
   @state() private _opened = false;
