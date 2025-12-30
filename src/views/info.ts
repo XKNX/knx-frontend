@@ -1,20 +1,16 @@
-import { mdiFileUpload } from "@mdi/js";
 import type { TemplateResult } from "lit";
 import { css, nothing, html, LitElement } from "lit";
-import { customElement, property, state } from "lit/decorators";
+import { customElement, property } from "lit/decorators";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
 import "@ha/components/ha-card";
 import "@ha/layouts/hass-subpage";
 import "@ha/components/ha-button";
-import "@ha/components/ha-file-upload";
-import "@ha/components/ha-selector/ha-selector-text";
-import { uploadFile } from "@ha/data/file_upload";
 import { extractApiErrorMessage } from "@ha/data/hassio/common";
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 import type { HomeAssistant, Route } from "@ha/types";
 
-import { processProjectFile, removeProjectFile } from "../services/websocket.service";
+import { removeProjectFile } from "../services/websocket.service";
 
 import type { KNX } from "../types/knx";
 import type { KNXProjectInfo } from "../types/websocket";
@@ -34,12 +30,6 @@ export class KNXInfo extends LitElement {
 
   @property({ type: Object }) public route?: Route;
 
-  @state() private _projectPassword?: string;
-
-  @state() private _uploading = false;
-
-  @state() private _projectFile?: File;
-
   protected render(): TemplateResult {
     return html`
       <hass-subpage
@@ -51,7 +41,6 @@ export class KNXInfo extends LitElement {
         <div class="columns">
           ${this._renderInfoCard()}
           ${this.knx.projectInfo ? this._renderProjectDataCard(this.knx.projectInfo) : nothing}
-          ${this._renderProjectUploadCard()}
         </div>
       </hass-subpage>
     `;
@@ -126,7 +115,6 @@ export class KNXInfo extends LitElement {
               <ha-button
                 class="knx-warning push-right"
                 @click=${this._removeProject}
-                .disabled=${this._uploading || !this.knx.projectInfo}
                 >
                 ${this.knx.localize("info_project_delete")}
               </ha-button>
@@ -135,80 +123,6 @@ export class KNXInfo extends LitElement {
         </div>
       </ha-card>
     `;
-  }
-
-  private _renderProjectUploadCard() {
-    return html` <ha-card class="knx-info">
-      <div class="card-content knx-content">
-        <div class="knx-content-row header">${this.knx.localize("info_project_file_header")}</div>
-        <div class="knx-content-row">${this.knx.localize("info_project_upload_description")}</div>
-        <div class="knx-content-row">
-          <ha-file-upload
-            .hass=${this.hass}
-            accept=".knxproj, .knxprojarchive"
-            .icon=${mdiFileUpload}
-            .label=${this.knx.localize("info_project_file")}
-            .value=${this._projectFile?.name}
-            .uploading=${this._uploading}
-            @file-picked=${this._filePicked}
-          ></ha-file-upload>
-        </div>
-        <div class="knx-content-row">
-          <ha-selector-text
-            .hass=${this.hass}
-            .value=${this._projectPassword || ""}
-            .label=${this.hass.localize("ui.login-form.password")}
-            .selector=${{ text: { multiline: false, type: "password" } }}
-            .required=${false}
-            @value-changed=${this._passwordChanged}
-          >
-          </ha-selector-text>
-        </div>
-        <div class="knx-button-row">
-          <ha-button
-            class="push-right"
-            @click=${this._uploadFile}
-            .disabled=${this._uploading || !this._projectFile}
-            >${this.hass.localize("ui.common.submit")}</ha-button
-          >
-        </div>
-      </div>
-    </ha-card>`;
-  }
-
-  private _filePicked(ev) {
-    this._projectFile = ev.detail.files[0];
-  }
-
-  private _passwordChanged(ev) {
-    this._projectPassword = ev.detail.value;
-  }
-
-  private async _uploadFile(_ev) {
-    const file = this._projectFile;
-    if (typeof file === "undefined") {
-      return;
-    }
-
-    let error: Error | undefined;
-    this._uploading = true;
-    try {
-      const project_file_id = await uploadFile(this.hass, file);
-      await processProjectFile(this.hass, project_file_id, this._projectPassword || "");
-    } catch (err: any) {
-      error = err;
-      showAlertDialog(this, {
-        title: "Upload failed",
-        text: extractApiErrorMessage(err),
-      });
-    } finally {
-      if (!error) {
-        this._projectFile = undefined;
-        this._projectPassword = undefined;
-      }
-      this._uploading = false;
-      fireEvent(this, "knx-reload");
-    }
   }
 
   private async _removeProject(_ev) {
@@ -287,6 +201,7 @@ export class KNXInfo extends LitElement {
     .knx-button-row {
       display: flex;
       flex-direction: row;
+      gap: 8px;
       vertical-align: bottom;
       padding-top: 16px;
     }
@@ -301,11 +216,6 @@ export class KNXInfo extends LitElement {
 
     .knx-warning {
       --mdc-theme-primary: var(--error-color);
-    }
-
-    .knx-project-description {
-      margin-top: -8px;
-      padding: 0px 16px 16px;
     }
 
     .knx-delete-project-button {
@@ -333,12 +243,6 @@ export class KNXInfo extends LitElement {
       margin-block-start: 0px;
       margin-block-end: 4px;
       font-weight: normal;
-    }
-
-    ha-file-upload,
-    ha-selector-text {
-      width: 100%;
-      margin-top: 8px;
     }
   `;
 }

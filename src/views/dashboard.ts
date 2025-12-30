@@ -1,7 +1,7 @@
+import { mdiCogOutline, mdiLanConnect, mdiFileImportOutline } from "@mdi/js";
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { map } from "lit/directives/map";
-import { mdiCogOutline, mdiLanConnect } from "@mdi/js";
 import { SubscribeMixin } from "@ha/mixins/subscribe-mixin";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
@@ -18,8 +18,8 @@ import { subscribeConfigEntries } from "@ha/data/config_entries";
 import type { HomeAssistant } from "@ha/types";
 import type { UnsubscribeFunc } from "home-assistant-js-websocket";
 
+import { showKnxProjectUploadDialog } from "../dialogs/show-knx-project-upload-dialog";
 import type { KnxPageNavigation } from "../types/navigation";
-
 import type { KNX } from "../types/knx";
 import { knxMainTabs } from "../knx-router";
 import { KNXLogger } from "../tools/knx-logger";
@@ -78,6 +78,13 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
       validConfigEntryStates: new Set(["loaded"]),
     },
     {
+      translationKey: "component.knx.config_panel.dashboard.project_upload",
+      click: this._openProjectUploadDialog,
+      iconPath: mdiFileImportOutline,
+      iconColor: "var(--orange-color)",
+      validConfigEntryStates: new Set(["loaded"]),
+    },
+    {
       translationKey: "component.knx.config_panel.dashboard.connection_flow",
       iconPath: mdiLanConnect,
       iconColor: "var(--cyan-color)",
@@ -88,6 +95,10 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
 
   private async _openOptionFlow() {
     showOptionsFlowDialog(this, this.knx.config_entry);
+  }
+
+  private _openProjectUploadDialog() {
+    showKnxProjectUploadDialog(this);
   }
 
   private async _openReconfigureFlow() {
