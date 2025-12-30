@@ -46,6 +46,7 @@
       "lit/directives/repeat": ["./node_modules/lit/directives/repeat.js"],
       "lit/directives/live": ["./node_modules/lit/directives/live.js"],
       "lit/directives/keyed": ["./node_modules/lit/directives/keyed.js"],
+      "lit/directives/map": ["./node_modules/lit/directives/map.js"],
       "lit/polyfill-support": ["./node_modules/lit/polyfill-support.js"],
       "@lit-labs/virtualizer/layouts/grid": [
         "./node_modules/@lit-labs/virtualizer/layouts/grid.js"
