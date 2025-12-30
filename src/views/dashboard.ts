@@ -1,23 +1,33 @@
 import { LitElement, html, css } from "lit";
-import { customElement, property } from "lit/decorators";
+import { customElement, property, state } from "lit/decorators";
 import { map } from "lit/directives/map";
-import { mdiCogOutline } from "@mdi/js";
+import { mdiCogOutline, mdiLanConnect } from "@mdi/js";
+import { SubscribeMixin } from "@ha/mixins/subscribe-mixin";
 
+import { fireEvent } from "@ha/common/dom/fire_event";
 import "@ha/components/ha-card";
 import "@ha/components/ha-md-list";
 import "@ha/components/ha-md-list-item";
 import "@ha/components/ha-navigation-list";
+import { fetchIntegrationManifest } from "@ha/data/integration";
 import "@ha/layouts/hass-subpage";
 import "@ha/panels/config/ha-config-section";
+import { showConfigFlowDialog } from "@ha/dialogs/config-flow/show-dialog-config-flow";
 import { showOptionsFlowDialog } from "@ha/dialogs/config-flow/show-dialog-options-flow";
+import { subscribeConfigEntries } from "@ha/data/config_entries";
 import type { HomeAssistant } from "@ha/types";
+import type { UnsubscribeFunc } from "home-assistant-js-websocket";
+
 import type { KnxPageNavigation } from "../types/navigation";
 
 import type { KNX } from "../types/knx";
 import { knxMainTabs } from "../knx-router";
+import { KNXLogger } from "../tools/knx-logger";
+
+const logger = new KNXLogger("knx-dashboard");
 
 @customElement("knx-dashboard")
-export class KnxDashboard extends LitElement {
+export class KnxDashboard extends SubscribeMixin(LitElement) {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
   @property({ attribute: false }) public knx!: KNX;
@@ -25,6 +35,31 @@ export class KnxDashboard extends LitElement {
   @property({ type: Boolean }) public narrow = false;
 
   @property({ attribute: "is-wide", type: Boolean }) public isWide = false;
+
+  @state() private _configEntryState = "unknown";
+
+  protected hassSubscribe(): UnsubscribeFunc[] {
+    return [this._unsubscribeConfigEntries()];
+  }
+
+  private _unsubscribeConfigEntries() {
+    // SubscribeMixin checks `instanceof Promise` when unsubscribing, but that doesn't
+    // work always work properly across realm boundaries, so we wrap the async unsubscribe
+    const _async_unsub = subscribeConfigEntries(
+      this.hass,
+      async (updates) => {
+        const newState = updates.find((update) => update.entry.domain === "knx")?.entry.state;
+        if (newState && newState !== this._configEntryState) {
+          logger.debug("KNX dashboard config entry state update", newState);
+          this._configEntryState = newState;
+        }
+      },
+      { domain: "knx" },
+    );
+    return () => {
+      _async_unsub.then((unsub) => unsub());
+    };
+  }
 
   private _getPages(): KnxPageNavigation[] {
     return knxMainTabs(!!this.knx.projectInfo).map((page) => ({
@@ -40,11 +75,33 @@ export class KnxDashboard extends LitElement {
       iconPath: mdiCogOutline,
       iconColor: "var(--indigo-color)",
       click: this._openOptionFlow,
+      validConfigEntryStates: new Set(["loaded"]),
+    },
+    {
+      translationKey: "component.knx.config_panel.dashboard.connection_flow",
+      iconPath: mdiLanConnect,
+      iconColor: "var(--cyan-color)",
+      click: this._openReconfigureFlow,
+      validConfigEntryStates: new Set(["loaded", "not_loaded"]),
     },
   ];
 
   private async _openOptionFlow() {
     showOptionsFlowDialog(this, this.knx.config_entry);
+  }
+
+  private async _openReconfigureFlow() {
+    showConfigFlowDialog(this, {
+      startFlowHandler: this.knx.config_entry.domain,
+      showAdvanced: this.hass.userData?.showAdvanced,
+      manifest: await fetchIntegrationManifest(this.hass, this.knx.config_entry.domain),
+      entryId: this.knx.config_entry.entry_id,
+      dialogClosedCallback: (params) => {
+        if (params?.flowFinished) {
+          fireEvent(this, "knx-reload");
+        }
+      },
+    });
   }
 
   protected render() {
@@ -66,11 +123,15 @@ export class KnxDashboard extends LitElement {
             ></ha-navigation-list>
           </ha-card>
           <ha-card outlined>
-            <ha-md-list .hass=${this.hass} .narrow=${this.narrow} has-secondary>
+            <ha-md-list has-secondary>
               ${map(
                 this._buttonItems,
                 (item) =>
-                  html` <ha-md-list-item type="button" @click=${item.click}>
+                  html` <ha-md-list-item
+                    type="button"
+                    @click=${item.click}
+                    ?disabled=${!item.validConfigEntryStates.has(this._configEntryState)}
+                  >
                     <div
                       slot="start"
                       class="icon-background"
