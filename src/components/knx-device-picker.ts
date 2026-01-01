@@ -3,47 +3,44 @@
  * Unlike the ha-device-picker or selector, its value is the device identifier
  * (second tuple item), not the device id.
  * */
-import type { ComboBoxLitRenderer } from "@vaadin/combo-box/lit";
+import type { RenderItemFunction } from "@lit-labs/virtualizer/virtualize";
 import type { PropertyValues, TemplateResult } from "lit";
 import { LitElement, html, nothing } from "lit";
 import { customElement, query, property, state } from "lit/decorators";
-import { classMap } from "lit/directives/class-map";
-
 import memoizeOne from "memoize-one";
 
-import "@ha/components/ha-combo-box";
+import "@ha/components/ha-generic-picker";
+import type { HaGenericPicker } from "@ha/components/ha-generic-picker";
 import "@ha/components/ha-list-item";
 
 import "../dialogs/knx-device-create-dialog";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
 import type { ScorableTextItem } from "@ha/common/string/filter/sequence-matching";
-import { fuzzyFilterSort } from "@ha/common/string/filter/sequence-matching";
 import { stringCompare } from "@ha/common/string/compare";
 
 import type { HomeAssistant, ValueChangedEvent } from "@ha/types";
 import type { AreaRegistryEntry } from "@ha/data/area_registry";
-import type { DeviceRegistryEntry } from "@ha/data/device_registry";
-import type { HaComboBox } from "@ha/components/ha-combo-box";
+import type { DeviceRegistryEntry } from "@ha/data/device/device_registry";
 
+import type { PickerComboBoxItem } from "@ha/components/ha-picker-combo-box";
 import { knxDevices, getKnxDeviceIdentifier } from "../utils/device";
 
-interface Device {
-  name: string;
-  area: string;
-  id: string;
+const SEARCH_KEYS = [
+  { name: "primary", weight: 2 },
+  { name: "secondary", weight: 1 },
+];
+
+interface Device extends PickerComboBoxItem {
   identifier?: string;
 }
 
 type ScorableDevice = ScorableTextItem & Device;
 
-const rowRenderer: ComboBoxLitRenderer<Device> = (item) =>
-  html`<ha-list-item
-    class=${classMap({ "add-new": item.id === "add_new" })}
-    .twoline=${!!item.area}
-  >
-    <span>${item.name}</span>
-    <span slot="secondary">${item.area}</span>
+const rowRenderer: RenderItemFunction<Device> = (item) =>
+  html`<ha-list-item .twoline=${!!item.secondary} style="width: 100%">
+    <span>${item.primary}</span>
+    <span slot="secondary">${item.secondary}</span>
   </ha-list-item>`;
 
 @customElement("knx-device-picker")
@@ -58,7 +55,7 @@ class KnxDevicePicker extends LitElement {
 
   @state() private _opened?: boolean;
 
-  @query("ha-combo-box", true) public comboBox!: HaComboBox;
+  @query("ha-generic-picker", true) public picker!: HaGenericPicker;
 
   @state() private _showCreateDeviceDialog = false;
 
@@ -69,110 +66,108 @@ class KnxDevicePicker extends LitElement {
 
   private _init = false;
 
+  private _allDevices: ScorableDevice[] = [];
+
   private _getDevices = memoizeOne(
     (
       devices: DeviceRegistryEntry[],
       areas: Record<string, AreaRegistryEntry>,
     ): ScorableDevice[] => {
       const outputDevices = devices.map((device) => {
-        const name = device.name_by_user ?? device.name ?? "";
+        const name =
+          device.name_by_user ??
+          device.name ??
+          this.hass.localize("ui.components.device-picker.unnamed_device");
+        const areaName =
+          device.area_id && areas[device.area_id]
+            ? areas[device.area_id].name
+            : this.hass.localize("ui.components.device-picker.no_area");
         return {
           id: device.id,
           identifier: getKnxDeviceIdentifier(device),
-          name: name,
-          area:
-            device.area_id && areas[device.area_id]
-              ? areas[device.area_id].name
-              : this.hass.localize("ui.components.device-picker.no_area"),
-          strings: [name || ""],
+          primary: name,
+          secondary: areaName,
+          strings: [name, areaName],
         };
       });
+
+      const sortedDevices = outputDevices.sort((a, b) =>
+        stringCompare(a.primary || "", b.primary || "", this.hass.locale.language),
+      );
+
       return [
         {
           id: "add_new",
-          name: "Add new device…",
-          area: "",
+          primary: "Add new device…",
+          secondary: "",
           strings: [],
         },
-        ...outputDevices.sort((a, b) =>
-          stringCompare(a.name || "", b.name || "", this.hass.locale.language),
-        ),
+        ...sortedDevices,
       ];
     },
   );
 
   private async _addDevice(device: DeviceRegistryEntry) {
-    const deviceEntries = [...knxDevices(this.hass), device];
-    const devices = this._getDevices(deviceEntries, this.hass.areas);
-    this.comboBox.items = devices;
-    this.comboBox.filteredItems = devices;
+    const knxDevicesList = knxDevices(this.hass);
+    const deviceEntries = [...knxDevicesList, device];
+    this._allDevices = this._getDevices(deviceEntries, this.hass.areas);
     await this.updateComplete;
-    await this.comboBox.updateComplete;
+    await this.picker.updateComplete;
   }
 
   public async open() {
     await this.updateComplete;
-    await this.comboBox?.open();
+    await this.picker?.open();
   }
 
   public async focus() {
     await this.updateComplete;
-    await this.comboBox?.focus();
+    await this.picker?.focus();
   }
 
   protected updated(changedProps: PropertyValues) {
     if ((!this._init && this.hass) || (this._init && changedProps.has("_opened") && this._opened)) {
       this._init = true;
-      const devices = this._getDevices(knxDevices(this.hass), this.hass.areas);
+      this._allDevices = this._getDevices(knxDevices(this.hass), this.hass.areas);
       const deviceId = this.value
-        ? devices.find((d) => d.identifier === this.value)?.id
+        ? this._allDevices.find((d) => d.identifier === this.value)?.id
         : undefined;
-      this.comboBox.value = deviceId;
+      this.picker.value = deviceId;
       this._deviceId = deviceId;
-      this.comboBox.items = devices;
-      this.comboBox.filteredItems = devices;
     }
   }
 
   render(): TemplateResult {
     return html`
-      <ha-combo-box
+      <ha-generic-picker
         .hass=${this.hass}
         .label=${this.label === undefined && this.hass
           ? this.hass.localize("ui.components.device-picker.device")
           : this.label}
+        .emptyLabel=${this.hass.localize("ui.components.device-picker.no_devices")}
+        .notFoundLabel=${this._notFoundLabel}
         .helper=${this.helper}
         .value=${this._deviceId}
-        .renderer=${rowRenderer}
-        item-id-path="id"
-        item-value-path="id"
-        item-label-path="name"
-        @filter-changed=${this._filterChanged}
+        .rowRenderer=${rowRenderer}
+        .valueRenderer=${this._valueRenderer}
+        .getItems=${this._getPickerItems}
+        .searchKeys=${SEARCH_KEYS}
         @opened-changed=${this._openedChanged}
         @value-changed=${this._deviceChanged}
-      ></ha-combo-box>
+      ></ha-generic-picker>
       ${this._showCreateDeviceDialog ? this._renderCreateDeviceDialog() : nothing}
     `;
   }
 
-  private _filterChanged(ev: CustomEvent): void {
-    const target = ev.target as HaComboBox;
-    const filterString = ev.detail.value;
-    if (!filterString) {
-      this.comboBox.filteredItems = this.comboBox.items;
-      return;
-    }
+  private _notFoundLabel = (term: string) =>
+    this.hass.localize("ui.components.device-picker.no_match", { term });
 
-    const filteredItems = fuzzyFilterSort<ScorableDevice>(filterString, target.items || []);
-    this._suggestion = filterString;
-    this.comboBox.filteredItems = [
-      ...filteredItems,
-      {
-        id: "add_new_suggestion",
-        name: `Add new device '${this._suggestion}'`,
-      },
-    ];
-  }
+  private _getPickerItems = () => this._allDevices;
+
+  private _valueRenderer = (deviceId: string) => {
+    const device = this._allDevices.find((d) => d.id === deviceId);
+    return html`${device?.primary || this.hass.localize("ui.components.device-picker.unknown")}`;
+  };
 
   private _openedChanged(ev: ValueChangedEvent<boolean>) {
     this._opened = ev.detail.value;
@@ -180,31 +175,27 @@ class KnxDevicePicker extends LitElement {
 
   private _deviceChanged(ev: ValueChangedEvent<string>) {
     ev.stopPropagation();
-    let newValue = ev.detail.value;
+    const newValue = ev.detail.value;
 
-    if (newValue === "no_devices") {
-      newValue = "";
-    }
-
-    if (!["add_new_suggestion", "add_new"].includes(newValue)) {
+    if (newValue !== "add_new") {
       if (newValue !== this._deviceId) {
         this._setValue(newValue);
       }
       return;
     }
 
-    (ev.target as any).value = this._deviceId;
+    this.picker.value = this._deviceId;
     this._openCreateDeviceDialog();
   }
 
   private _setValue(deviceId: string | undefined) {
-    const device: Device | undefined = this.comboBox.items!.find((d) => d.id === deviceId);
+    const device = this._allDevices.find((d) => d.id === deviceId);
     const identifier = device?.identifier;
     this.value = identifier;
     this._deviceId = device?.id;
     setTimeout(() => {
       fireEvent(this, "value-changed", { value: identifier });
-      fireEvent(this, "change");
+      // fireEvent(this, "change");
     }, 0);
   }
 
@@ -226,10 +217,8 @@ class KnxDevicePicker extends LitElement {
     const newDevice: DeviceRegistryEntry | undefined = ev.detail.newDevice;
     if (newDevice) {
       await this._addDevice(newDevice);
-    } else {
-      this.comboBox.setInputValue("");
+      this._setValue(newDevice.id);
     }
-    this._setValue(newDevice?.id);
     this._suggestion = undefined;
     this._showCreateDeviceDialog = false;
   }
