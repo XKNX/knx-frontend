@@ -62,8 +62,6 @@ class KnxDevicePicker extends LitElement {
   // value is the knx identifier (device_info), not the device id
   private _deviceId?: string;
 
-  private _suggestion?: string;
-
   private _init = false;
 
   private _allDevices: ScorableDevice[] = [];
@@ -193,10 +191,7 @@ class KnxDevicePicker extends LitElement {
     const identifier = device?.identifier;
     this.value = identifier;
     this._deviceId = device?.id;
-    setTimeout(() => {
-      fireEvent(this, "value-changed", { value: identifier });
-      // fireEvent(this, "change");
-    }, 0);
+    fireEvent(this, "value-changed", { value: identifier });
   }
 
   private _renderCreateDeviceDialog() {
@@ -204,7 +199,6 @@ class KnxDevicePicker extends LitElement {
       <knx-device-create-dialog
         .hass=${this.hass}
         @create-device-dialog-closed=${this._closeCreateDeviceDialog}
-        .deviceName=${this._suggestion}
       ></knx-device-create-dialog>
     `;
   }
@@ -219,7 +213,6 @@ class KnxDevicePicker extends LitElement {
       await this._addDevice(newDevice);
       this._setValue(newDevice.id);
     }
-    this._suggestion = undefined;
     this._showCreateDeviceDialog = false;
   }
 }
