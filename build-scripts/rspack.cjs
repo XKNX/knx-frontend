@@ -131,10 +131,16 @@ const createRspackConfig = ({
           return ignorePackages.some((toIgnorePath) => fullPath.startsWith(toIgnorePath));
         },
       }),
-      new rspack.NormalModuleReplacementPlugin(
-        new RegExp(bundle.emptyPackages({ isHassioBuild }).join("|")),
-        path.resolve(paths.root_dir, "homeassistant-frontend/src/util/empty.js"),
-      ),
+      bundle.emptyPackages({ isHassioBuild }).length
+        ? new rspack.NormalModuleReplacementPlugin(
+            new RegExp(
+              bundle
+                .emptyPackages({ isHassioBuild })
+                .join("|")
+            ),
+            path.resolve(paths.root_dir, "src/util/empty.js")
+          )
+        : false,
       !isProdBuild && new LogStartCompilePlugin(),
       isProdBuild &&
         isStatsBuild &&
@@ -167,7 +173,42 @@ const createRspackConfig = ({
         "@lit-labs/virtualizer/layouts/grid": "@lit-labs/virtualizer/layouts/grid.js",
         "@lit-labs/virtualizer/polyfills/resize-observer-polyfill/ResizeObserver":
           "@lit-labs/virtualizer/polyfills/resize-observer-polyfill/ResizeObserver.js",
-        "@lit-labs/observers/resize-controller": "@lit-labs/observers/resize-controller.js",
+        "@lit-labs/observers/resize-controller": "@lit-labs/observers/resize-controller.js",        "@formatjs/intl-durationformat/should-polyfill$":
+          "@formatjs/intl-durationformat/should-polyfill.js",
+        "@formatjs/intl-durationformat/polyfill-force$":
+          "@formatjs/intl-durationformat/polyfill-force.js",
+        "@formatjs/intl-datetimeformat/should-polyfill":
+          "@formatjs/intl-datetimeformat/should-polyfill.js",
+        "@formatjs/intl-datetimeformat/polyfill-force":
+          "@formatjs/intl-datetimeformat/polyfill-force.js",
+        "@formatjs/intl-displaynames/should-polyfill":
+          "@formatjs/intl-displaynames/should-polyfill.js",
+        "@formatjs/intl-displaynames/polyfill-force":
+          "@formatjs/intl-displaynames/polyfill-force.js",
+        "@formatjs/intl-getcanonicallocales/should-polyfill":
+          "@formatjs/intl-getcanonicallocales/should-polyfill.js",
+        "@formatjs/intl-getcanonicallocales/polyfill-force":
+          "@formatjs/intl-getcanonicallocales/polyfill-force.js",
+        "@formatjs/intl-listformat/should-polyfill":
+          "@formatjs/intl-listformat/should-polyfill.js",
+        "@formatjs/intl-listformat/polyfill-force":
+          "@formatjs/intl-listformat/polyfill-force.js",
+        "@formatjs/intl-locale/should-polyfill":
+          "@formatjs/intl-locale/should-polyfill.js",
+        "@formatjs/intl-locale/polyfill-force":
+          "@formatjs/intl-locale/polyfill-force.js",
+        "@formatjs/intl-numberformat/should-polyfill":
+          "@formatjs/intl-numberformat/should-polyfill.js",
+        "@formatjs/intl-numberformat/polyfill-force":
+          "@formatjs/intl-numberformat/polyfill-force.js",
+        "@formatjs/intl-pluralrules/should-polyfill":
+          "@formatjs/intl-pluralrules/should-polyfill.js",
+        "@formatjs/intl-pluralrules/polyfill-force":
+          "@formatjs/intl-pluralrules/polyfill-force.js",
+        "@formatjs/intl-relativetimeformat/should-polyfill":
+          "@formatjs/intl-relativetimeformat/should-polyfill.js",
+        "@formatjs/intl-relativetimeformat/polyfill-force":
+          "@formatjs/intl-relativetimeformat/polyfill-force.js",
       },
       tsConfig: path.resolve(paths.root_dir, "tsconfig.json"),
     },

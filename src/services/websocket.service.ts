@@ -1,6 +1,6 @@
 import type { HomeAssistant } from "@ha/types";
-import type { ExtEntityRegistryEntry } from "@ha/data/entity_registry";
-import type { DeviceRegistryEntry } from "@ha/data/device_registry";
+import type { ExtEntityRegistryEntry } from "@ha/data/entity/entity_registry";
+import type { DeviceRegistryEntry } from "@ha/data/device/device_registry";
 import type {
   CreateEntityData,
   CreateEntityResult,
@@ -71,7 +71,8 @@ export const getSchema = (hass: HomeAssistant, platform: string): Promise<Select
 export const validateEntity = (
   hass: HomeAssistant,
   entityData: CreateEntityData | UpdateEntityData,
-): Promise<CreateEntityResult> => // CreateEntityResult.entity_id will be null when only validating
+): Promise<CreateEntityResult> =>
+  // CreateEntityResult.entity_id will be null when only validating
   hass.callWS({
     type: "knx/validate_entity",
     ...entityData,
@@ -89,7 +90,8 @@ export const createEntity = (
 export const updateEntity = (
   hass: HomeAssistant,
   entityData: UpdateEntityData,
-): Promise<CreateEntityResult> => // CreateEntityResult.entity_id will be null when updating
+): Promise<CreateEntityResult> =>
+  // CreateEntityResult.entity_id will be null when updating
   hass.callWS({
     type: "knx/update_entity",
     ...entityData,
