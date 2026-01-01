@@ -1,10 +1,12 @@
 import type { SupportedPlatform } from "./entity_data";
+import type { ExposeType } from "./expose_data";
 
 export interface KNXBaseData {
   connection_info: KNXInfoData;
   dpt_metadata: Record<string, DPTMetadata>;
   project_info: KNXProjectInfo | null;
   supported_platforms: SupportedPlatform[];
+  supported_expose_types: ExposeType[];
 }
 
 export interface KNXInfoData {

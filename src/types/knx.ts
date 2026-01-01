@@ -2,6 +2,7 @@ import type { ConfigEntry } from "@ha/data/config_entries";
 import type { SupportedPlatform } from "./entity_data";
 import type { SelectorSchema } from "./schema";
 import type { DPTMetadata, KNXInfoData, KNXProjectInfo, KNXProject } from "./websocket";
+import type { ExposeType } from "./expose_data";
 
 export interface KNX {
   language: string;
@@ -17,6 +18,7 @@ export interface KNX {
    */
   projectInfo: KNXProjectInfo | null;
   supportedPlatforms: SupportedPlatform[];
+  supportedExposeTypes: ExposeType[];
   /**
    * Fully parsed KNX project content (group addresses, devices, etc.).
    * Initially null; populated only after calling `loadProject()`.
@@ -41,4 +43,16 @@ export interface KNX {
    * Since schemas are provided by the backend, they can't change once loaded.
    */
   loadSchema(platform: string): Promise<void>;
+  /**
+   * Cache for expose type schemas (selector definitions).
+   * Once an `ExposeType` schema has been loaded, it is stored here
+   * and can be used as a lookup without loading it again.
+   */
+  exposeSchema: Partial<Record<ExposeType, SelectorSchema[]>>;
+  /**
+   * Loads the schema for the given expose type only if it is not
+   * already present in the `exposeSchema` cache. Cached schemas are not reloaded.
+   * Since schemas are provided by the backend, they can't change once loaded.
+   */
+  loadExposeSchema(type: ExposeType): Promise<void>;
 }

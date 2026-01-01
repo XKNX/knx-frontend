@@ -7,7 +7,8 @@ export type SelectorSchema =
   | GroupSelect
   | GASelector
   | SyncStateSelector
-  | KnxHaSelector;
+  | KnxHaSelector
+  | Constant;
 
 interface BaseSection {
   name: string;
@@ -71,4 +72,11 @@ export interface DPTOption {
   value: string;
   translation_key: string;
   dpt: DPT;
+}
+
+export interface Constant {
+  type: "constant";
+  value: string;
+  name: string;
+  required?: boolean;
 }
