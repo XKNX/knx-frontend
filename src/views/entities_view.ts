@@ -92,7 +92,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
             entityState,
             friendly_name:
               entityState?.attributes.friendly_name ?? entry.name ?? entry.original_name ?? "",
-            device_name: device?.name ?? "",
+            device_name: device?.name_by_user ?? device?.name ?? "",
             area_name: area?.name ?? "",
             disabled: !!entry.disabled_by,
           };
