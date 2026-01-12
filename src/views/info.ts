@@ -16,7 +16,7 @@ import type { KNX } from "../types/knx";
 import type { KNXProjectInfo } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
 import { VERSION } from "../version";
-import { BASE_URL, infoTab } from "../knx-router";
+import { infoTab } from "../knx-router";
 
 const logger = new KNXLogger("info");
 
@@ -35,7 +35,6 @@ export class KNXInfo extends LitElement {
       <hass-subpage
         .hass=${this.hass}
         .narrow=${this.narrow!}
-        back-path=${BASE_URL}
         .header=${this.knx.localize(infoTab.translationKey)}
       >
         <div class="columns">

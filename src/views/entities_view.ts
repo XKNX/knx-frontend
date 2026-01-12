@@ -32,7 +32,7 @@ import type { HomeAssistant, Route } from "@ha/types";
 
 import { getEntityEntries, deleteEntity, getEntityConfig } from "../services/websocket.service";
 import type { KNX } from "../types/knx";
-import { BASE_URL, entitiesTab } from "../knx-router";
+import { entitiesTab } from "../knx-router";
 import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("knx-entities-view");
@@ -282,7 +282,6 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
       <hass-tabs-subpage-data-table
         .hass=${this.hass}
         .narrow=${this.narrow}
-        back-path=${BASE_URL}
         .route=${this.route!}
         .tabs=${[entitiesTab]}
         .localizeFunc=${this.knx.localize}

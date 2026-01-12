@@ -31,7 +31,7 @@ import type { TelegramRow, TelegramRowKeys } from "../types/telegram-row";
 import type { ToggleFilterEvent } from "../../../components/data-table/cell/knx-table-cell-filterable";
 import { GroupMonitorController } from "../controller/group-monitor-controller";
 import type { DistinctValueInfo } from "../controller/group-monitor-controller";
-import { BASE_URL, groupMonitorTab } from "../../../knx-router";
+import { groupMonitorTab } from "../../../knx-router";
 
 import type { KNX } from "../../../types/knx";
 import type {
@@ -882,7 +882,6 @@ export class KNXGroupMonitor extends LitElement {
       <hass-tabs-subpage-data-table
         .hass=${this.hass}
         .narrow=${this.narrow!}
-        back-path=${BASE_URL}
         .tabs=${[groupMonitorTab]}
         .route=${this.route!}
         .columns=${this._columns(
