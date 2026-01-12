@@ -20,11 +20,10 @@ import type { ControlSelectOption } from "@ha/components/ha-control-select";
 import "./knx-group-address-selector";
 import "./knx-selector-row";
 import "./knx-sync-state-selector-row";
-import { renderConfigureEntityCard } from "./knx-configure-entity-options";
 import { KNXLogger } from "../tools/knx-logger";
 import { setNestedValue, getNestedValue } from "../utils/config-helper";
 import { extractValidationErrors, getValidationError } from "../utils/validation";
-import type { EntityData, ErrorDescription, SupportedPlatform } from "../types/entity_data";
+import type { ExposeData, ErrorDescription, ExposeType } from "../types/expose_data";
 import type { KNX } from "../types/knx";
 import { getPlatformStyle } from "../utils/common";
 import type { PlatformStyle } from "../utils/common";
@@ -36,17 +35,17 @@ import type {
   GASelector,
 } from "../types/schema";
 
-const logger = new KNXLogger("knx-configure-entity");
+const logger = new KNXLogger("knx-configure-expose");
 
-@customElement("knx-configure-entity")
-export class KNXConfigureEntity extends LitElement {
+@customElement("knx-configure-expose")
+export class KNXConfigureExpose extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
   @property({ attribute: false }) public knx!: KNX;
 
-  @property({ attribute: false }) public platform!: SupportedPlatform;
+  @property({ attribute: false }) public type!: ExposeType;
 
-  @property({ attribute: false }) public config?: EntityData;
+  @property({ attribute: false }) public config?: ExposeData;
 
   @property({ attribute: false }) public schema!: SelectorSchema[];
 
@@ -57,33 +56,31 @@ export class KNXConfigureEntity extends LitElement {
   platformStyle!: PlatformStyle;
 
   private _backendLocalize = (path: string) =>
-    this.hass.localize(`component.knx.config_panel.entities.create.${this.platform}.${path}`) ||
-    this.hass.localize(`component.knx.config_panel.entities.create._.${path}`);
+    this.hass.localize(`component.knx.config_panel.expose.create.${this.type}.${path}`) ||
+    this.hass.localize(`component.knx.config_panel.expose.create._.${path}`);
 
   connectedCallback(): void {
     super.connectedCallback();
-    this.platformStyle = getPlatformStyle(this.platform);
+    this.platformStyle = getPlatformStyle(this.type);
     if (!this.config) {
       // set base keys to get better validation error messages
-      this.config = { entity: {}, knx: {} };
+      this.config = { type: this.type, address: "" };
 
       // url params are extracted to config.
-      // /knx/entities/create/binary_sensor?knx.ga_sensor.state=0/1/4
-      // would set this.conifg.knx.ga_sensor.state to "0/1/4"
+      // /knx/expose/create/binary_sensor?knx.ga_sensor.state=0/1/4
+      // would set this.config.knx.ga_sensor.state to "0/1/4"
       // TODO: this is not checked against any schema
       const urlParams = new URLSearchParams(mainWindow.location.search);
       const url_suggestions = Object.fromEntries(urlParams.entries());
       for (const [path, value] of Object.entries(url_suggestions)) {
         setNestedValue(this.config!, path, value, logger);
-        fireEvent(this, "knx-entity-configuration-changed", this.config);
+        fireEvent(this, "knx-expose-configuration-changed", this.config);
       }
     }
   }
 
   protected render(): TemplateResult {
-    const errors = extractValidationErrors(this.validationErrors, "data"); // "data" is root key in our python schema
-    const knxErrors = extractValidationErrors(errors, "knx");
-    const knxBaseError = getValidationError(knxErrors);
+    const baseError = getValidationError(this.validationErrors);
 
     return html`
       <div class="header">
@@ -92,37 +89,30 @@ export class KNXConfigureEntity extends LitElement {
             .path=${this.platformStyle.iconPath}
             style=${styleMap({ "background-color": this.platformStyle.color })}
           ></ha-svg-icon>
-          ${this.hass.localize(`component.${this.platform}.title`) || this.platform}
+          ${this.hass.localize(`component.${this.type}.title`) || this.type}
         </h1>
         <p>${this._backendLocalize("description")}</p>
       </div>
       <slot name="knx-validation-error"></slot>
       <ha-card outlined>
         <h1 class="card-header">${this._backendLocalize("knx.title")}</h1>
-        ${knxBaseError
-          ? html`<ha-alert .alertType=${"error"} .title=${knxBaseError.error_message}></ha-alert>`
+        ${baseError
+          ? html`<ha-alert .alertType=${"error"} .title=${baseError.error_message}></ha-alert>`
           : nothing}
-        ${this.generateRootGroups(this.schema, knxErrors)}
+        ${this.generateRootGroups(this.schema, this.validationErrors)}
       </ha-card>
-      ${renderConfigureEntityCard(
-        this.hass,
-        this.config!.entity ?? {},
-        this._updateConfig,
-        extractValidationErrors(errors, "entity"),
-        this._backendLocalize,
-      )}
     `;
   }
 
   generateRootGroups(schema: SelectorSchema[], errors?: ErrorDescription[]) {
-    return this._generateItems(schema, "knx", errors);
+    return this._generateItems(schema, null, errors);
   }
 
-  private _generateSection(section: Section, path: string, errors?: ErrorDescription[]) {
+  private _generateSection(section: Section, path: string | null, errors?: ErrorDescription[]) {
     const sectionBaseError = getValidationError(errors);
     return html` <ha-expansion-panel
-      .header=${this._backendLocalize(`${path}.title`)}
-      .secondary=${this._backendLocalize(`${path}.description`)}
+      .header=${this._backendLocalize(path ? `${path}.title` : "title")}
+      .secondary=${this._backendLocalize(path ? `${path}.description` : "description")}
       .expanded=${!section.collapsible || this._groupHasGroupAddressInConfig(section, path)}
       .noCollapse=${!section.collapsible}
       .outlined=${!!section.collapsible}
@@ -192,7 +182,11 @@ export class KNXConfigureEntity extends LitElement {
     </ha-expansion-panel>`;
   }
 
-  private _generateItems(schema: SelectorSchema[], path: string, errors?: ErrorDescription[]) {
+  private _generateItems(
+    schema: SelectorSchema[],
+    path: string | null,
+    errors?: ErrorDescription[],
+  ) {
     // wrap items into a `knx_section_flat` or forward to _generateItem - schema is flat, not nested
 
     const result: TemplateResult[] = [];
@@ -201,7 +195,7 @@ export class KNXConfigureEntity extends LitElement {
 
     const writeFlatSection = () => {
       if (flatSectionSelectors.length === 0 || flatSection === undefined) return; // no content to write
-      const flatSectionPath = path + "." + flatSection.name;
+      const flatSectionPath = path ? path + "." + flatSection.name : flatSection.name;
       const expanded =
         !flatSection.collapsible ||
         flatSectionSelectors.some((selector) => {
@@ -251,10 +245,10 @@ export class KNXConfigureEntity extends LitElement {
 
   private _generateItem(
     selector: Exclude<SelectorSchema, SectionFlat>,
-    path: string,
+    path: string | null,
     errors?: ErrorDescription[],
   ) {
-    const selectorPath = path + "." + selector.name;
+    const selectorPath = path ? path + "." + selector.name : selector.name;
     const selectorErrors = extractValidationErrors(errors, selector.name);
 
     switch (selector.type) {
@@ -268,7 +262,6 @@ export class KNXConfigureEntity extends LitElement {
             .hass=${this.hass}
             .knx=${this.knx}
             .key=${selectorPath}
-            .required=${selector.required}
             .label=${this._backendLocalize(`${selectorPath}.label`)}
             .config=${getNestedValue(this.config!, selectorPath) ?? {}}
             .options=${selector.options}
@@ -314,13 +307,13 @@ export class KNXConfigureEntity extends LitElement {
     }
   }
 
-  private _groupHasGroupAddressInConfig(group: Section | GroupSelect, path: string) {
+  private _groupHasGroupAddressInConfig(group: Section | GroupSelect, path: string | null) {
     if (this.config === undefined) {
       return false;
     }
     if (group.type === "knx_group_select") {
       // check if group select base path is in config
-      return !!getNestedValue(this.config!, path);
+      return !!getNestedValue(this.config!, path ?? "");
     }
     return group.schema.some((selector) => {
       if (selector.type === "knx_group_address") {
@@ -328,15 +321,18 @@ export class KNXConfigureEntity extends LitElement {
       }
       if (selector.type === "knx_section" || selector.type === "knx_group_select") {
         // nested section or group select
-        const groupPath = path + "." + selector.name;
+        const groupPath = path ? path + "." + selector.name : selector.name;
         return this._groupHasGroupAddressInConfig(selector, groupPath);
       }
       return false;
     });
   }
 
-  private _hasGroupAddressInConfig(ga_selector: GASelector, path: string) {
-    const gaData = getNestedValue(this.config!, path + "." + ga_selector.name);
+  private _hasGroupAddressInConfig(ga_selector: GASelector, path: string | null) {
+    const gaData = getNestedValue(
+      this.config!,
+      path ? path + "." + ga_selector.name : ga_selector.name,
+    );
     if (!gaData) return false;
     if (gaData.write !== undefined) return true;
     if (gaData.state !== undefined) return true;
@@ -389,26 +385,26 @@ export class KNXConfigureEntity extends LitElement {
     return optionIndex;
   }
 
-  private _updateGroupSelectOption(ev: ValueChangedEvent<any>) {
-    ev.stopPropagation();
-    const key = ev.target.key;
-    const selectedIndex = parseInt(ev.detail.value, 10);
+  private _updateGroupSelectOption(event: ValueChangedEvent<any>) {
+    event.stopPropagation();
+    const key = event.target.key;
+    const selectedIndex = parseInt(event.detail.value, 10);
     // clear data of key when changing option
     setNestedValue(this.config!, key, undefined, logger);
     // keep index in state
     // TODO: Optional: while editing, keep config data of non-active option in map (FE only)
     //       to be able to peek other options and go back without loosing config
     this._selectedGroupSelectOptions[key] = selectedIndex;
-    fireEvent(this, "knx-entity-configuration-changed", this.config);
+    fireEvent(this, "knx-expose-configuration-changed", this.config);
     this.requestUpdate();
   }
 
-  private _updateConfig(ev: ValueChangedEvent<any>) {
-    ev.stopPropagation();
-    const key = ev.target.key;
-    const value = ev.detail.value;
+  private _updateConfig(event: ValueChangedEvent<any>) {
+    event.stopPropagation();
+    const key = event.target.key;
+    const value = event.detail.value;
     setNestedValue(this.config!, key, value, logger);
-    fireEvent(this, "knx-entity-configuration-changed", this.config);
+    fireEvent(this, "knx-expose-configuration-changed", this.config);
     this.requestUpdate();
   }
 
@@ -525,13 +521,13 @@ export class KNXConfigureEntity extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    "knx-configure-entity": KNXConfigureEntity;
+    "knx-configure-expose": KNXConfigureExpose;
   }
 }
 
 declare global {
   // for fire event
   interface HASSDomEvents {
-    "knx-entity-configuration-changed": EntityData;
+    "knx-expose-configuration-changed": ExposeData;
   }
 }
