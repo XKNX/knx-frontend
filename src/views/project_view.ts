@@ -26,7 +26,7 @@ import { compare } from "compare-versions";
 import type { HomeAssistant, Route } from "@ha/types";
 import { dptInClasses } from "utils/dpt";
 import type { KNX } from "../types/knx";
-import { BASE_URL, projectTab } from "../knx-router";
+import { projectTab } from "../knx-router";
 import type { GroupRangeSelectionChangedEvent } from "../components/knx-project-tree-view";
 import { subscribeKnxTelegrams, getGroupTelegrams } from "../services/websocket.service";
 import type { GroupAddress, TelegramDict } from "../types/websocket";
@@ -243,7 +243,6 @@ export class KNXProjectView extends LitElement {
     return html` <hass-tabs-subpage
       .hass=${this.hass}
       .narrow=${this.narrow!}
-      back-path=${BASE_URL}
       .route=${this.route!}
       .tabs=${[projectTab]}
       .localizeFunc=${this.knx.localize}
