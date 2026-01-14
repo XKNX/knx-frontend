@@ -54,6 +54,8 @@ export class KNXConfigureEntity extends LitElement {
 
   @state() private _selectedGroupSelectOptions: Record<string, number> = {};
 
+  private _groupSelectOptionCache: Record<string, Record<number, unknown>> = {};
+
   platformStyle!: PlatformStyle;
 
   private _backendLocalize = (path: string) =>
@@ -153,13 +155,21 @@ export class KNXConfigureEntity extends LitElement {
 
     const controlSelectOptions: ControlSelectOption[] = selector.schema.map((option, index) => ({
       value: index.toString(),
-      label: this._backendLocalize(`${path}.options.${option.translation_key}.label`),
+      label:
+        this._backendLocalize(`${path}.options.${option.translation_key}.label`) +
+        (index !== optionIndex && this._groupSelectOptionCache[path]?.[index] !== undefined
+          ? " 💭"
+          : ""),
     }));
 
     return html` <ha-expansion-panel
       .header=${this._backendLocalize(`${path}.title`)}
       .secondary=${this._backendLocalize(`${path}.description`)}
-      .expanded=${!selector.collapsible || this._groupHasGroupAddressInConfig(selector, path)}
+      .expanded=${!selector.collapsible ||
+      // don't collapse if selection was cleared by user and option changed
+      // cache is `{}` then which is truthy
+      !!this._groupSelectOptionCache[path] ||
+      this._groupHasGroupAddressInConfig(selector, path)}
       .noCollapse=${!selector.collapsible}
       outlined
     >
@@ -391,14 +401,36 @@ export class KNXConfigureEntity extends LitElement {
     ev.stopPropagation();
     const key = ev.target.key;
     const selectedIndex = parseInt(ev.detail.value, 10);
-    // clear data of key when changing option
-    setNestedValue(this.config!, key, undefined, logger);
-    // keep index in state
-    // TODO: Optional: while editing, keep config data of non-active option in map (FE only)
-    //       to be able to peek other options and go back without loosing config
+    const previousIndex = this._selectedGroupSelectOptions[key];
+
+    // Cache current option config so it can be restored later to be able to peek into other options
+    if (previousIndex !== undefined) {
+      this._cacheOptionConfig(key, previousIndex);
+    }
+
     this._selectedGroupSelectOptions[key] = selectedIndex;
+    const cachedConfig = this._groupSelectOptionCache[key]?.[selectedIndex];
+    setNestedValue(
+      this.config!,
+      key,
+      cachedConfig === undefined ? undefined : structuredClone(cachedConfig),
+      logger,
+    );
+
     fireEvent(this, "knx-entity-configuration-changed", this.config);
     this.requestUpdate();
+  }
+
+  private _cacheOptionConfig(path: string, optionIndex: number) {
+    const currentValue = getNestedValue(this.config!, path);
+    if (!this._groupSelectOptionCache[path]) {
+      this._groupSelectOptionCache[path] = {};
+    }
+    if (currentValue === undefined) {
+      delete this._groupSelectOptionCache[path][optionIndex];
+      return;
+    }
+    this._groupSelectOptionCache[path][optionIndex] = structuredClone(currentValue);
   }
 
   private _updateConfig(ev: ValueChangedEvent<any>) {
