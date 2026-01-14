@@ -155,7 +155,11 @@ export class KNXConfigureEntity extends LitElement {
 
     const controlSelectOptions: ControlSelectOption[] = selector.schema.map((option, index) => ({
       value: index.toString(),
-      label: this._backendLocalize(`${path}.options.${option.translation_key}.label`),
+      label:
+        this._backendLocalize(`${path}.options.${option.translation_key}.label`) +
+        (index !== optionIndex && this._groupSelectOptionCache[path]?.[index] !== undefined
+          ? " 💭"
+          : ""),
     }));
 
     return html` <ha-expansion-panel
