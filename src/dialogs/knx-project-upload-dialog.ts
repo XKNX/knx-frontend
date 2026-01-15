@@ -147,9 +147,12 @@ export class KnxProjectUploadDialog
       margin-bottom: 8px;
     }
 
-    ha-file-upload,
     ha-selector-text {
       width: 100%;
+    }
+
+    ha-markdown {
+      color: var(--secondary-text-color);
     }
   `;
 }
