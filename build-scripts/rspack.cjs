@@ -59,7 +59,7 @@ const createRspackConfig = ({
             {
               loader: "babel-loader",
               options: {
-                ...bundle.babelOptions({ latestBuild, sw: info.issuerLayer === "sw" }),
+                ...bundle.babelOptions({ latestBuild, isProdBuild, sw: info.issuerLayer === "sw" }),
                 cacheDirectory: !isProdBuild,
                 cacheCompression: false,
               },

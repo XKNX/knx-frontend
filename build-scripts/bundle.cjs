@@ -41,6 +41,18 @@ module.exports.definedVars = ({ isProdBuild, latestBuild, defineOverlay }) => ({
   ...defineOverlay,
 });
 
+module.exports.htmlMinifierOptions = {
+  caseSensitive: true,
+  collapseWhitespace: true,
+  conservativeCollapse: true,
+  decodeEntities: true,
+  removeComments: true,
+  removeRedundantAttributes: true,
+  minifyCSS: {
+    compatibility: "*,-properties.zeroUnits",
+  },
+};
+
 module.exports.terserOptions = ({ latestBuild, isTestBuild }) => ({
   safari10: !latestBuild,
   ecma: latestBuild ? 2015 : 5,
@@ -62,7 +74,7 @@ module.exports.swcOptions = () => ({
   },
 });
 
-module.exports.babelOptions = ({ latestBuild }) => ({
+module.exports.babelOptions = ({ latestBuild, isProdBuild }) => ({
   babelrc: false,
   compact: false,
   assumptions: {
@@ -90,8 +102,27 @@ module.exports.babelOptions = ({ latestBuild }) => ({
         ignoreModuleNotFound: true,
       },
     ],
-    // TODO: KNX minify template literals for production builds ? "template-html-minifier"
-
+    isProdBuild && [
+      "template-html-minifier",
+      {
+        modules: {
+          ...Object.fromEntries(
+            ["lit", "lit-element", "lit-html"].map((m) => [
+              m,
+              [
+                "html",
+                { name: "svg", encapsulation: "svg" },
+                { name: "css", encapsulation: "style" },
+              ],
+            ])
+          ),
+          "@polymer/polymer/lib/utils/html-tag.js": ["html"],
+        },
+        strictCSS: true,
+        htmlMinifier: module.exports.htmlMinifierOptions,
+        failOnError: false, // we can turn this off in case of false positives
+      },
+    ],
     // Import helpers and regenerator from runtime package
     ["@babel/plugin-transform-runtime", { version: dependencies["@babel/runtime"] }],
     "@babel/plugin-transform-class-properties",
@@ -101,8 +132,7 @@ module.exports.babelOptions = ({ latestBuild }) => ({
     // \\ for Windows, / for Mac OS and Linux
     /node_modules[\\/]core-js/,
   ],
-  // TODO: KNX: sourceMaps: !isTestBuild, // what is this?
-  sourceMaps: true,
+  // TODO: KNX: sourceMaps: !isTestBuild,
   overrides: [
     {
       // Add plugin to inject various polyfills, excluding the polyfills
