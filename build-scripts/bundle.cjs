@@ -3,6 +3,8 @@ const env = require("./env.cjs");
 const paths = require("./paths.cjs");
 const { dependencies } = require("../package.json");
 
+const BABEL_PLUGINS = path.join(paths.root_dir, "homeassistant-frontend/build-scripts/babel-plugins");
+
 // Files from NPM Packages that should not be imported
 module.exports.ignorePackages = () => [];
 
@@ -73,8 +75,8 @@ module.exports.babelOptions = ({ latestBuild }) => ({
     [
       "@babel/preset-env",
       {
-        useBuiltIns: latestBuild ? false : "usage",
-        corejs: latestBuild ? false : dependencies["core-js"],
+        useBuiltIns: "usage",
+        corejs: dependencies["core-js"],
         bugfixes: true,
         shippedProposals: true,
       },
@@ -82,22 +84,14 @@ module.exports.babelOptions = ({ latestBuild }) => ({
   ],
   plugins: [
     [
-      path.resolve(
-        paths.root_dir,
-        "homeassistant-frontend/build-scripts/babel-plugins/inline-constants-plugin.cjs",
-      ),
+      path.join(BABEL_PLUGINS, "inline-constants-plugin.cjs"),
       {
         modules: ["@mdi/js"],
         ignoreModuleNotFound: true,
       },
     ],
-    [
-      path.resolve(
-        paths.root_dir,
-        "homeassistant-frontend/build-scripts/babel-plugins/custom-polyfill-plugin.js",
-      ),
-      { method: "usage-global" },
-    ],
+    // TODO: KNX minify template literals for production builds ? "template-html-minifier"
+
     // Import helpers and regenerator from runtime package
     ["@babel/plugin-transform-runtime", { version: dependencies["@babel/runtime"] }],
     "@babel/plugin-transform-class-properties",
@@ -106,9 +100,31 @@ module.exports.babelOptions = ({ latestBuild }) => ({
   exclude: [
     // \\ for Windows, / for Mac OS and Linux
     /node_modules[\\/]core-js/,
-    /node_modules[\\/]webpack[\\/]buildin/,
   ],
+  // TODO: KNX: sourceMaps: !isTestBuild, // what is this?
+  sourceMaps: true,
   overrides: [
+    {
+      // Add plugin to inject various polyfills, excluding the polyfills
+      // themselves to prevent self-injection.
+      plugins: [
+        [
+          path.join(BABEL_PLUGINS, "custom-polyfill-plugin.js"),
+          { method: "usage-global" },
+        ],
+      ],
+      exclude: [
+        path.join(paths.root_dir, "homeassistant-frontend/src/resources/polyfills"),
+        ...[
+          "@formatjs/(?:ecma402-abstract|intl-\\w+)",
+          "@lit-labs/virtualizer/polyfills",
+          "@webcomponents/scoped-custom-element-registry",
+          "element-internals-polyfill",
+          "proxy-polyfill",
+          "unfetch",
+        ].map((p) => new RegExp(`/node_modules/${p}/`)),
+      ],
+    },
     {
       // Use unambiguous for dependencies so that require() is correctly injected into CommonJS files
       // Exclusions are needed in some cases where ES modules have no static imports or exports, such as polyfills
@@ -116,7 +132,6 @@ module.exports.babelOptions = ({ latestBuild }) => ({
       include: /\/node_modules\//,
       exclude: [
         "element-internals-polyfill",
-        "@shoelace-style",
         "@?lit(?:-labs|-element|-html)?",
       ].map((p) => new RegExp(`/node_modules/${p}/`)),
     },
