@@ -7,13 +7,15 @@ import {
   mdiMathLog,
 } from "@mdi/js";
 import type { TemplateResult } from "lit";
-import { LitElement, html, css } from "lit";
+import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
+import { storage } from "@ha/common/decorators/storage";
 
 import type { HassEntity, UnsubscribeFunc } from "home-assistant-js-websocket";
 import memoize from "memoize-one";
 
 import "@ha/layouts/hass-loading-screen";
+import "@ha/components/data-table/ha-data-table-labels";
 import "@ha/layouts/hass-tabs-subpage-data-table";
 import "@ha/components/ha-fab";
 import "@ha/components/ha-icon";
@@ -23,9 +25,15 @@ import "@ha/components/ha-svg-icon";
 import { navigate } from "@ha/common/navigate";
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
-import type { DataTableColumnContainer } from "@ha/components/data-table/ha-data-table";
+import { computeDomain } from "@ha/common/entity/compute_domain";
+import type {
+  DataTableColumnContainer,
+  SortingChangedEvent,
+} from "@ha/components/data-table/ha-data-table";
 import type { ExtEntityRegistryEntry } from "@ha/data/entity/entity_registry";
 import { subscribeEntityRegistry } from "@ha/data/entity/entity_registry";
+import type { LabelRegistryEntry } from "@ha/data/label/label_registry";
+import { subscribeLabelRegistry } from "@ha/data/label/label_registry";
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 import { SubscribeMixin } from "@ha/mixins/subscribe-mixin";
 import type { HomeAssistant, Route } from "@ha/types";
@@ -43,6 +51,8 @@ export interface EntityRow extends ExtEntityRegistryEntry {
   device_name: string;
   area_name: string;
   disabled: boolean;
+  label_entries: LabelRegistryEntry[];
+  domain: string;
 }
 
 @customElement("knx-entities-view")
@@ -59,11 +69,22 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
 
   @state() private filterDevice: string | null = null;
 
+  @state() private _labels: LabelRegistryEntry[] = [];
+
+  @storage({ key: "knx-entities-table-grouping", state: false, subscribe: false })
+  private _activeGrouping = "domain"; // default grouping by domain
+
+  @storage({ key: "knx-entities-table-sort", state: false, subscribe: false })
+  private _activeSorting?: SortingChangedEvent;
+
   public hassSubscribe(): UnsubscribeFunc[] {
     return [
       subscribeEntityRegistry(this.hass.connection!, (_entries) => {
         // When entity registry changes, refresh our entity list.
         this._fetchEntities();
+      }),
+      subscribeLabelRegistry(this.hass.connection!, (labels) => {
+        this._labels = labels;
       }),
     ];
   }
@@ -87,6 +108,11 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
           const device = entry.device_id ? this.hass.devices[entry.device_id] : undefined;
           const areaId = entry.area_id ?? device?.area_id;
           const area = areaId ? this.hass.areas[areaId] : undefined;
+          const labelsEntries = entry.labels.map(
+            (labelId) => this._labels.find((label) => label?.label_id === labelId)!,
+          );
+          const platform = computeDomain(entry.entity_id);
+          const platformName = this.hass.localize(`component.${platform}.title`) ?? platform;
           return {
             ...entry,
             entityState,
@@ -95,6 +121,8 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
             device_name: device?.name_by_user ?? device?.name ?? "",
             area_name: area?.name ?? "",
             disabled: !!entry.disabled_by,
+            label_entries: labelsEntries,
+            domain: platformName,
           };
         });
       })
@@ -111,8 +139,12 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
     return {
       icon: {
         title: "",
+        label: this.hass.localize("ui.panel.config.entities.picker.headers.state_icon"),
         minWidth: iconWidth,
         maxWidth: iconWidth,
+        filterable: false,
+        sortable: false,
+        groupable: false,
         type: "icon",
         template: (entry) =>
           entry.disabled
@@ -134,20 +166,24 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
         showNarrow: true,
         filterable: true,
         sortable: true,
-        title: "Friendly Name",
+        direction: "asc",
+        title: this.hass.localize("ui.panel.config.entities.picker.headers.entity"),
         flex: 2,
-        // sorting didn't work properly with templates
+        extraTemplate: (entry) =>
+          entry.label_entries.length
+            ? html` <ha-data-table-labels .labels=${entry.label_entries}></ha-data-table-labels> `
+            : nothing,
       },
       entity_id: {
         filterable: true,
         sortable: true,
-        title: "Entity ID",
+        title: this.hass.localize("ui.panel.config.entities.picker.headers.entity_id"),
         flex: 1,
       },
       device_name: {
         filterable: true,
         sortable: true,
-        title: "Device",
+        title: this.hass.localize("ui.panel.config.entities.picker.headers.device"),
         flex: 1,
       },
       device_id: {
@@ -157,14 +193,23 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
         template: (entry) => entry.device_id ?? "",
       },
       area_name: {
-        title: "Area",
+        title: this.hass.localize("ui.panel.config.entities.picker.headers.area"),
         sortable: true,
         filterable: true,
+        groupable: true,
         flex: 1,
+      },
+      domain: {
+        title: this.hass.localize("ui.panel.config.entities.picker.headers.domain"),
+        sortable: false,
+        hidden: true,
+        filterable: true,
+        groupable: true,
       },
       actions: {
         showNarrow: true,
         title: "",
+        label: this.hass.localize("ui.panel.config.generic.headers.actions"),
         minWidth: actionWidth,
         maxWidth: actionWidth,
         type: "icon-button",
@@ -194,6 +239,12 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
             @click=${this._entityDelete}
           ></ha-icon-button>
         `,
+      },
+      labels: {
+        title: "",
+        hidden: true,
+        filterable: true,
+        template: (entry) => entry.label_entries.map((lbl) => lbl.name).join(" "),
       },
     };
   });
@@ -274,7 +325,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
   };
 
   protected render(): TemplateResult {
-    if (!this.hass || !this.knx_entities) {
+    if (!this.hass || !this.knx) {
       return html` <hass-loading-screen></hass-loading-screen> `;
     }
 
@@ -291,6 +342,10 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
         .searchLabel=${this.hass.localize("ui.components.data-table.search")}
         .clickable=${false}
         .filter=${this.filterDevice}
+        .initialGroupColumn=${this._activeGrouping}
+        .initialSorting=${this._activeSorting}
+        @grouping-changed=${this._handleGroupingChanged}
+        @sorting-changed=${this._handleSortingChanged}
       >
         <ha-fab
           slot="fab"
@@ -306,6 +361,14 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
 
   private _entityCreate() {
     navigate("/knx/entities/create");
+  }
+
+  private _handleGroupingChanged = (ev: CustomEvent) => {
+    this._activeGrouping = ev.detail.value;
+  };
+
+  private _handleSortingChanged(ev: CustomEvent) {
+    this._activeSorting = ev.detail;
   }
 
   static styles = css`

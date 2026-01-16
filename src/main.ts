@@ -38,6 +38,8 @@ class KnxFrontend extends KnxElement {
     if (!this.hass) {
       return;
     }
+    await this.hass.loadFragmentTranslation("config");
+
     if (!this.knx) {
       await this._initKnx();
     }
@@ -45,7 +47,6 @@ class KnxFrontend extends KnxElement {
     await this.hass.loadBackendTranslation("selector", "knx", false);
     await this.hass.loadBackendTranslation("title", this.knx.supportedPlatforms, false);
     await this.hass.loadBackendTranslation("selector", this.knx.supportedPlatforms, false);
-    await this.hass.loadFragmentTranslation("config");
     this.addEventListener("knx-location-changed", (e) => this._setRoute(e as LocationChangedEvent));
 
     this.addEventListener("knx-reload", async (_) => {
