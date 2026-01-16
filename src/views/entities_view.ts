@@ -71,6 +71,8 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
 
   @state() private _labels: LabelRegistryEntry[] = [];
 
+  @state() private _labelsLoaded = false;
+
   @storage({ key: "knx-entities-table-grouping", state: false, subscribe: false })
   private _activeGrouping = "domain"; // default grouping by domain
 
@@ -79,12 +81,19 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
 
   public hassSubscribe(): UnsubscribeFunc[] {
     return [
-      subscribeEntityRegistry(this.hass.connection!, (_entries) => {
-        // When entity registry changes, refresh our entity list.
-        this._fetchEntities();
-      }),
       subscribeLabelRegistry(this.hass.connection!, (labels) => {
         this._labels = labels;
+        if (!this._labelsLoaded) {
+          // only once if loaded after entities were fetched, else rely on entity registry subscription
+          this._fetchEntities();
+        }
+        this._labelsLoaded = true;
+      }),
+      subscribeEntityRegistry(this.hass.connection!, (_entries) => {
+        // When entity registry changes, refresh our entity list if labels are loaded
+        if (this._labelsLoaded) {
+          this._fetchEntities();
+        }
       }),
     ];
   }
@@ -363,9 +372,9 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
     navigate("/knx/entities/create");
   }
 
-  private _handleGroupingChanged = (ev: CustomEvent) => {
+  private _handleGroupingChanged(ev: CustomEvent) {
     this._activeGrouping = ev.detail.value;
-  };
+  }
 
   private _handleSortingChanged(ev: CustomEvent) {
     this._activeSorting = ev.detail;
