@@ -30,7 +30,7 @@ import type {
   DataTableColumnContainer,
   SortingChangedEvent,
 } from "@ha/components/data-table/ha-data-table";
-import type { ExtEntityRegistryEntry } from "@ha/data/entity/entity_registry";
+import type { ExtEntityRegistryEntry, EntityRegistryEntry } from "@ha/data/entity/entity_registry";
 import { subscribeEntityRegistry } from "@ha/data/entity/entity_registry";
 import type { LabelRegistryEntry } from "@ha/data/label/label_registry";
 import { subscribeLabelRegistry } from "@ha/data/label/label_registry";
@@ -77,14 +77,18 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
   @storage({ key: "knx-entities-table-sort", state: false, subscribe: false })
   private _activeSorting?: SortingChangedEvent;
 
+  private _lastKnxRegistryUpdate = -1; // timestamp may be 0 so use -1 as initial value
+
   public hassSubscribe(): UnsubscribeFunc[] {
     return [
       subscribeLabelRegistry(this.hass.connection!, (labels) => {
         this._labels = labels;
       }),
-      subscribeEntityRegistry(this.hass.connection!, (_entries) => {
-        // When entity registry changes, refresh our entity list
-        this._fetchEntities();
+      subscribeEntityRegistry(this.hass.connection!, (entries) => {
+        // Refresh entities only if KNX entries changed since last fetch
+        if (this._hasNewKnxEntityUpdateTimestamp(entries)) {
+          this._fetchEntities();
+        }
       }),
     ];
   }
@@ -99,11 +103,24 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
     this.filterDevice = urlParams.get("device_id");
   }
 
+  private _hasNewKnxEntityUpdateTimestamp(entries: EntityRegistryEntry[]): boolean {
+    const lastUpdate = entries.reduce((acc, entry) => {
+      if (entry.platform !== "knx") return acc;
+      return Math.max(acc, entry.modified_at);
+    }, 0);
+    if (lastUpdate > this._lastKnxRegistryUpdate) {
+      this._lastKnxRegistryUpdate = lastUpdate;
+      return true;
+    }
+    return false;
+  }
+
   private async _fetchEntities() {
     getEntityEntries(this.hass)
       .then((entries) => {
         logger.debug(`Fetched ${entries.length} entity entries.`);
         this.knx_entities = entries;
+        this._hasNewKnxEntityUpdateTimestamp(entries);
       })
       .catch((err) => {
         logger.error("getEntityEntries", err);
