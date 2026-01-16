@@ -65,13 +65,11 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
 
   @property({ type: Object }) public route?: Route;
 
-  @state() private knx_entities: EntityRow[] = [];
+  @state() private knx_entities: ExtEntityRegistryEntry[] = [];
 
   @state() private filterDevice: string | null = null;
 
   @state() private _labels: LabelRegistryEntry[] = [];
-
-  @state() private _labelsLoaded = false;
 
   @storage({ key: "knx-entities-table-grouping", state: false, subscribe: false })
   private _activeGrouping = "domain"; // default grouping by domain
@@ -83,17 +81,10 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
     return [
       subscribeLabelRegistry(this.hass.connection!, (labels) => {
         this._labels = labels;
-        if (!this._labelsLoaded) {
-          // only once if loaded after entities were fetched, else rely on entity registry subscription
-          this._fetchEntities();
-        }
-        this._labelsLoaded = true;
       }),
       subscribeEntityRegistry(this.hass.connection!, (_entries) => {
-        // When entity registry changes, refresh our entity list if labels are loaded
-        if (this._labelsLoaded) {
-          this._fetchEntities();
-        }
+        // When entity registry changes, refresh our entity list
+        this._fetchEntities();
       }),
     ];
   }
@@ -112,34 +103,39 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
     getEntityEntries(this.hass)
       .then((entries) => {
         logger.debug(`Fetched ${entries.length} entity entries.`);
-        this.knx_entities = entries.map((entry) => {
-          const entityState: HassEntity | undefined = this.hass.states[entry.entity_id]; // undefined for disabled entities
-          const device = entry.device_id ? this.hass.devices[entry.device_id] : undefined;
-          const areaId = entry.area_id ?? device?.area_id;
-          const area = areaId ? this.hass.areas[areaId] : undefined;
-          const labelsEntries = entry.labels.map(
-            (labelId) => this._labels.find((label) => label?.label_id === labelId)!,
-          );
-          const platform = computeDomain(entry.entity_id);
-          const platformName = this.hass.localize(`component.${platform}.title`) ?? platform;
-          return {
-            ...entry,
-            entityState,
-            friendly_name:
-              entityState?.attributes.friendly_name ?? entry.name ?? entry.original_name ?? "",
-            device_name: device?.name_by_user ?? device?.name ?? "",
-            area_name: area?.name ?? "",
-            disabled: !!entry.disabled_by,
-            label_entries: labelsEntries,
-            domain: platformName,
-          };
-        });
+        this.knx_entities = entries;
       })
       .catch((err) => {
         logger.error("getEntityEntries", err);
         navigate("/knx/error", { replace: true, data: err });
       });
   }
+
+  private _computeRows = memoize(
+    (entries: ExtEntityRegistryEntry[], labels: LabelRegistryEntry[]): EntityRow[] =>
+      entries.map((entry) => {
+        const entityState: HassEntity | undefined = this.hass.states[entry.entity_id]; // undefined for disabled entities
+        const device = entry.device_id ? this.hass.devices[entry.device_id] : undefined;
+        const areaId = entry.area_id ?? device?.area_id;
+        const area = areaId ? this.hass.areas[areaId] : undefined;
+        const labelsEntries = entry.labels.map(
+          (labelId) => labels.find((label) => label?.label_id === labelId)!,
+        );
+        const platform = computeDomain(entry.entity_id);
+        const platformName = this.hass.localize(`component.${platform}.title`) || platform;
+        return {
+          ...entry,
+          entityState,
+          friendly_name:
+            entityState?.attributes.friendly_name ?? entry.name ?? entry.original_name ?? "",
+          device_name: device?.name_by_user ?? device?.name ?? "",
+          area_name: area?.name ?? "",
+          disabled: !!entry.disabled_by,
+          label_entries: labelsEntries,
+          domain: platformName,
+        };
+      }),
+  );
 
   private _columns = memoize((_language): DataTableColumnContainer<EntityRow> => {
     const iconWidth = "56px";
@@ -338,6 +334,8 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
       return html` <hass-loading-screen></hass-loading-screen> `;
     }
 
+    const filteredEntities = this._computeRows(this.knx_entities, this._labels);
+
     return html`
       <hass-tabs-subpage-data-table
         .hass=${this.hass}
@@ -346,11 +344,13 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
         .tabs=${[entitiesTab]}
         .localizeFunc=${this.knx.localize}
         .columns=${this._columns(this.hass.language)}
-        .data=${this.knx_entities}
+        .data=${filteredEntities}
         .hasFab=${true}
-        .searchLabel=${this.hass.localize("ui.components.data-table.search")}
+        .searchLabel=${this.hass.localize("ui.panel.config.entities.picker.search", {
+          number: this.knx_entities.length,
+        })}
         .clickable=${false}
-        .filter=${this.filterDevice}
+        .filter=${this.filterDevice ?? ""}
         .initialGroupColumn=${this._activeGrouping}
         .initialSorting=${this._activeSorting}
         @grouping-changed=${this._handleGroupingChanged}
