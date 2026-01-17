@@ -102,7 +102,7 @@ class KnxFrontend extends KnxElement {
     // Make sure translations are loaded before rendering subviews. Otherwise
     // eg. data table headers might be loaded before translations are available
     if (!this.hass || !this.knx || !this._translationsLoaded) {
-      return html` <hass-loading-screen message="Loading KNX..."></hass-loading-screen> `;
+      return html` <hass-loading-screen .message=${"Loading KNX..."}></hass-loading-screen> `;
     }
 
     return html`
