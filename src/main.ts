@@ -1,6 +1,6 @@
 import type { LitElement } from "lit";
 import { css, html } from "lit";
-import { customElement, property } from "lit/decorators";
+import { customElement, property, state } from "lit/decorators";
 
 import { applyThemesOnElement } from "@ha/common/dom/apply_themes_on_element";
 import { fireEvent } from "@ha/common/dom/fire_event";
@@ -9,7 +9,9 @@ import { listenMediaQuery } from "@ha/common/dom/media_query";
 import { computeRTL, computeDirectionStyles } from "@ha/common/util/compute_rtl";
 import { navigate } from "@ha/common/navigate";
 import { makeDialogManager } from "@ha/dialogs/make-dialog-manager";
+import "@ha/layouts/hass-loading-screen";
 import "@ha/resources/append-ha-style";
+
 import type { HomeAssistant, Route } from "@ha/types";
 
 import { KnxElement } from "./knx";
@@ -34,19 +36,20 @@ class KnxFrontend extends KnxElement {
 
   @property({ attribute: false }) public route!: Route;
 
+  @state() private _translationsLoaded = false;
+
   protected async firstUpdated(_changedProps) {
     if (!this.hass) {
       return;
     }
-    await this.hass.loadFragmentTranslation("config");
-
     if (!this.knx) {
       await this._initKnx();
     }
-    await this.hass.loadBackendTranslation("config_panel", "knx", false);
-    await this.hass.loadBackendTranslation("selector", "knx", false);
-    await this.hass.loadBackendTranslation("title", this.knx.supportedPlatforms, false);
-    await this.hass.loadBackendTranslation("selector", this.knx.supportedPlatforms, false);
+    // knx object must be initialized before loading translations
+    if (this.knx && !this._translationsLoaded) {
+      await this._loadTranslations();
+    }
+
     this.addEventListener("knx-location-changed", (e) => this._setRoute(e as LocationChangedEvent));
 
     this.addEventListener("knx-reload", async (_) => {
@@ -76,9 +79,30 @@ class KnxFrontend extends KnxElement {
     makeDialogManager(this, this.shadowRoot!);
   }
 
+  private async _loadTranslations() {
+    const results = await Promise.allSettled([
+      // FE translation fragment
+      this.hass.loadFragmentTranslation("config"),
+      // BE translations
+      this.hass.loadBackendTranslation("config_panel", "knx", false),
+      this.hass.loadBackendTranslation("selector", "knx", false),
+      this.hass.loadBackendTranslation("title", this.knx.supportedPlatforms, false),
+      this.hass.loadBackendTranslation("selector", this.knx.supportedPlatforms, false),
+    ]);
+    results.forEach((result, index) => {
+      if (result.status === "rejected") {
+        this.knx.log.error(`Failed to load translation (index ${index}):`, result.reason);
+        // try loading the page even if one of the translation loads fails
+      }
+    });
+    this._translationsLoaded = true;
+  }
+
   protected render() {
-    if (!this.hass || !this.knx) {
-      return html`<p>Loading...</p>`;
+    // Make sure translations are loaded before rendering subviews. Otherwise
+    // eg. data table headers might be loaded before translations are available
+    if (!this.hass || !this.knx || !this._translationsLoaded) {
+      return html` <hass-loading-screen .message=${"Loading KNX..."}></hass-loading-screen> `;
     }
 
     return html`

@@ -132,7 +132,7 @@ export class KNXCreateEntity extends LitElement {
   }
 
   protected render(): TemplateResult {
-    if (!this.hass || !this._intent) {
+    if (!this._intent) {
       return html` <hass-loading-screen></hass-loading-screen> `;
     }
     return this._projectLoadTask.render({
