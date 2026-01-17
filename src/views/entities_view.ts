@@ -142,8 +142,8 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
         const labelEntries = entry.labels.map(
           (labelId) => labels.find((label) => label?.label_id === labelId)!,
         );
-        const platform = computeDomain(entry.entity_id);
-        const platformName = this.hass.localize(`component.${platform}.title`) || platform;
+        const domain = computeDomain(entry.entity_id);
+        const domainName = this.hass.localize(`component.${domain}.title`) || domain;
         return {
           ...entry,
           entityState,
@@ -153,7 +153,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
           area_name: area?.name ?? "",
           disabled: !!entry.disabled_by,
           label_entries: labelEntries,
-          domain: platformName,
+          domain: domainName,
         };
       }),
   );
@@ -227,7 +227,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
       },
       domain: {
         title: this.hass.localize("ui.panel.config.entities.picker.headers.domain"),
-        sortable: false,
+        sortable: true,
         hidden: true,
         filterable: true,
         groupable: true,
