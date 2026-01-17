@@ -77,7 +77,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
   @storage({ key: "knx-entities-table-sort", state: false, subscribe: false })
   private _activeSorting?: SortingChangedEvent;
 
-  private _lastKnxRegistryUpdate = -1; // timestamp may be 0 so use -1 as initial value
+  private _lastKnxRegistryUpdate?: number;
 
   public hassSubscribe(): UnsubscribeFunc[] {
     return [
@@ -86,7 +86,10 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
       }),
       subscribeEntityRegistry(this.hass.connection!, (entries) => {
         // Refresh entities only if KNX entries changed since last fetch
-        if (this._hasNewKnxEntityUpdateTimestamp(entries)) {
+        if (
+          this._lastKnxRegistryUpdate !== undefined && // wait for firstUpdated fetch
+          this._hasNewKnxEntityUpdateTimestamp(entries)
+        ) {
           this._fetchEntities();
         }
       }),
@@ -96,6 +99,8 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
   protected firstUpdated() {
     // Initial fetch - when navigating here and already subscribed (coming from a different HA subpage).
     this._fetchEntities();
+    // initialize last update timestamp to avoid unnecessary refetching
+    this._hasNewKnxEntityUpdateTimestamp(this.knx_entities);
   }
 
   protected willUpdate() {
@@ -108,7 +113,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
       if (entry.platform !== "knx") return acc;
       return Math.max(acc, entry.modified_at);
     }, 0);
-    if (lastUpdate > this._lastKnxRegistryUpdate) {
+    if (this._lastKnxRegistryUpdate === undefined || lastUpdate > this._lastKnxRegistryUpdate) {
       this._lastKnxRegistryUpdate = lastUpdate;
       return true;
     }
@@ -120,7 +125,6 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
       .then((entries) => {
         logger.debug(`Fetched ${entries.length} entity entries.`);
         this.knx_entities = entries;
-        this._hasNewKnxEntityUpdateTimestamp(entries);
       })
       .catch((err) => {
         logger.error("getEntityEntries", err);
@@ -135,7 +139,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
         const device = entry.device_id ? this.hass.devices[entry.device_id] : undefined;
         const areaId = entry.area_id ?? device?.area_id;
         const area = areaId ? this.hass.areas[areaId] : undefined;
-        const labelsEntries = entry.labels.map(
+        const labelEntries = entry.labels.map(
           (labelId) => labels.find((label) => label?.label_id === labelId)!,
         );
         const platform = computeDomain(entry.entity_id);
@@ -148,7 +152,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
           device_name: device?.name_by_user ?? device?.name ?? "",
           area_name: area?.name ?? "",
           disabled: !!entry.disabled_by,
-          label_entries: labelsEntries,
+          label_entries: labelEntries,
           domain: platformName,
         };
       }),
