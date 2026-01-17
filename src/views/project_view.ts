@@ -237,9 +237,6 @@ export class KNXProjectView extends LitElement {
   }
 
   protected render(): TemplateResult {
-    if (!this.hass) {
-      return html` <hass-loading-screen></hass-loading-screen> `;
-    }
     return html` <hass-tabs-subpage
       .hass=${this.hass}
       .narrow=${this.narrow!}

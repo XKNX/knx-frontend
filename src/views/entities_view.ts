@@ -7,14 +7,13 @@ import {
   mdiMathLog,
 } from "@mdi/js";
 import type { TemplateResult } from "lit";
-import { LitElement, html, css, nothing } from "lit";
+import { LitElement, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { storage } from "@ha/common/decorators/storage";
 
 import type { HassEntity, UnsubscribeFunc } from "home-assistant-js-websocket";
 import memoize from "memoize-one";
 
-import "@ha/layouts/hass-loading-screen";
 import "@ha/components/data-table/ha-data-table-labels";
 import "@ha/layouts/hass-tabs-subpage-data-table";
 import "@ha/components/ha-fab";
@@ -351,10 +350,6 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
   };
 
   protected render(): TemplateResult {
-    if (!this.hass || !this.knx) {
-      return html` <hass-loading-screen></hass-loading-screen> `;
-    }
-
     const filteredEntities = this._computeRows(this.knx_entities, this._labels);
 
     return html`
@@ -400,13 +395,6 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
   private _handleSortingChanged(ev: CustomEvent) {
     this._activeSorting = ev.detail;
   }
-
-  static styles = css`
-    hass-loading-screen {
-      --app-header-background-color: var(--sidebar-background-color);
-      --app-header-text-color: var(--sidebar-text-color);
-    }
-  `;
 }
 
 declare global {
