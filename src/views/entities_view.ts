@@ -90,8 +90,6 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
 
   @state() private knx_entities: ExtEntityRegistryEntry[] = [];
 
-  @state() private filterDevice: string | null = null;
-
   @state() private _labels: LabelRegistryEntry[] = [];
 
   @state() private _filters: DataTableFiltersValues = {};
@@ -123,16 +121,17 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
     ];
   }
 
-  protected firstUpdated() {
+  protected async firstUpdated() {
     // Initial fetch - when navigating here and already subscribed (coming from a different HA subpage).
-    this._fetchEntities();
+    await this._fetchEntities();
     // initialize last update timestamp to avoid unnecessary refetching
     this._hasNewKnxEntityUpdateTimestamp(this.knx_entities);
-  }
-
-  protected willUpdate() {
+    // Apply URL-based device filter on initial load
     const urlParams = new URLSearchParams(mainWindow.location.search);
-    this.filterDevice = urlParams.get("device_id");
+    const deviceId = urlParams.get("device_id");
+    if (deviceId && this.knx_entities.some((ent) => ent.device_id === deviceId)) {
+      this._filters = { ...this._filters, device: [deviceId] };
+    }
   }
 
   private _hasNewKnxEntityUpdateTimestamp(entries: EntityRegistryEntry[]): boolean {
@@ -148,15 +147,14 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
   }
 
   private async _fetchEntities() {
-    getEntityEntries(this.hass)
-      .then((entries) => {
-        logger.debug(`Fetched ${entries.length} entity entries.`);
-        this.knx_entities = entries;
-      })
-      .catch((err) => {
-        logger.error("getEntityEntries", err);
-        navigate("/knx/error", { replace: true, data: err });
-      });
+    try {
+      const entries = await getEntityEntries(this.hass);
+      logger.debug(`Fetched ${entries.length} entity entries.`);
+      this.knx_entities = entries;
+    } catch (err) {
+      logger.error("getEntityEntries", err);
+      navigate("/knx/error", { replace: true, data: err });
+    }
   }
 
   private _computeRows = memoize(
@@ -186,17 +184,8 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
   );
 
   private _filterEntities = memoize(
-    (
-      entities: EntityRow[],
-      deviceFilter: string | null,
-      filters: DataTableFiltersValues,
-    ): EntityRow[] => {
+    (entities: EntityRow[], filters: DataTableFiltersValues): EntityRow[] => {
       let result = entities;
-
-      // Filter by device_id from URL parameter
-      if (deviceFilter) {
-        result = result.filter((entity) => entity.device_id === deviceFilter);
-      }
 
       // Apply filter panel filters
       Object.entries(filters).forEach(([key, filter]) => {
@@ -501,7 +490,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
 
   protected render(): TemplateResult {
     const computedRows = this._computeRows(this.knx_entities, this._labels);
-    const filteredEntities = this._filterEntities(computedRows, this.filterDevice, this._filters);
+    const filteredEntities = this._filterEntities(computedRows, this._filters);
 
     return html`
       <hass-tabs-subpage-data-table
