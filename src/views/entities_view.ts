@@ -532,6 +532,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
       >
         <knx-list-filter
           slot="filter-pane"
+          data-filter="domain"
           .hass=${this.hass}
           .knx=${this.knx}
           .data=${this._getDomainFilterData(this.knx_entities)}
@@ -540,11 +541,12 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
           .expanded=${this._expandedFilter === "domain"}
           .narrow=${this.narrow}
           .filterTitle=${this.hass.localize("ui.panel.config.entities.picker.headers.domain")}
-          @selection-changed=${this._handleDomainFilterChange}
-          @expanded-changed=${this._handleDomainFilterExpanded}
+          @selection-changed=${this._onFilterSelectionChanged}
+          @expanded-changed=${this._onFilterExpandedChanged}
         ></knx-list-filter>
         <knx-list-filter
           slot="filter-pane"
+          data-filter="area"
           .hass=${this.hass}
           .knx=${this.knx}
           .data=${this._getAreaFilterData(this.knx_entities)}
@@ -553,11 +555,12 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
           .expanded=${this._expandedFilter === "area"}
           .narrow=${this.narrow}
           .filterTitle=${this.hass.localize("ui.panel.config.entities.picker.headers.area")}
-          @selection-changed=${this._handleAreaFilterChange}
-          @expanded-changed=${this._handleAreaFilterExpanded}
+          @selection-changed=${this._onFilterSelectionChanged}
+          @expanded-changed=${this._onFilterExpandedChanged}
         ></knx-list-filter>
         <knx-list-filter
           slot="filter-pane"
+          data-filter="device"
           .hass=${this.hass}
           .knx=${this.knx}
           .data=${this._getDeviceFilterData(this.knx_entities)}
@@ -566,11 +569,12 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
           .expanded=${this._expandedFilter === "device"}
           .narrow=${this.narrow}
           .filterTitle=${this.hass.localize("ui.panel.config.entities.picker.headers.device")}
-          @selection-changed=${this._handleDeviceFilterChange}
-          @expanded-changed=${this._handleDeviceFilterExpanded}
+          @selection-changed=${this._onFilterSelectionChanged}
+          @expanded-changed=${this._onFilterExpandedChanged}
         ></knx-list-filter>
         <knx-list-filter
           slot="filter-pane"
+          data-filter="label"
           .hass=${this.hass}
           .knx=${this.knx}
           .data=${this._getLabelFilterData(this.knx_entities, this._labels)}
@@ -579,8 +583,8 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
           .expanded=${this._expandedFilter === "label"}
           .narrow=${this.narrow}
           .filterTitle=${this.hass.localize("ui.panel.config.labels.caption")}
-          @selection-changed=${this._handleLabelFilterChange}
-          @expanded-changed=${this._handleLabelFilterExpanded}
+          @selection-changed=${this._onFilterSelectionChanged}
+          @expanded-changed=${this._onFilterExpandedChanged}
         ></knx-list-filter>
         <ha-fab
           slot="fab"
@@ -606,50 +610,22 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
     this._activeSorting = ev.detail;
   }
 
-  private _handleAreaFilterChange = (ev: CustomEvent<{ value: string[] }>): void => {
-    this._filters = { ...this._filters, area: ev.detail.value };
+  private _onFilterSelectionChanged = (ev: CustomEvent<{ value: string[] }>): void => {
+    const target = ev.currentTarget as HTMLElement;
+    const key =
+      target.getAttribute("data-filter") || (ev.target as HTMLElement).getAttribute("data-filter");
+    if (!key) return;
+    this._filters = { ...this._filters, [key]: ev.detail.value };
   };
 
-  private _handleAreaFilterExpanded = (ev: CustomEvent<{ expanded: boolean }>): void => {
+  private _onFilterExpandedChanged = (ev: CustomEvent<{ expanded: boolean }>): void => {
+    const target = ev.currentTarget as HTMLElement;
+    const key =
+      target.getAttribute("data-filter") || (ev.target as HTMLElement).getAttribute("data-filter");
+    if (!key) return;
     if (ev.detail.expanded) {
-      this._expandedFilter = "area";
-    } else if (this._expandedFilter === "area") {
-      this._expandedFilter = undefined;
-    }
-  };
-
-  private _handleDeviceFilterChange = (ev: CustomEvent<{ value: string[] }>): void => {
-    this._filters = { ...this._filters, device: ev.detail.value };
-  };
-
-  private _handleDeviceFilterExpanded = (ev: CustomEvent<{ expanded: boolean }>): void => {
-    if (ev.detail.expanded) {
-      this._expandedFilter = "device";
-    } else if (this._expandedFilter === "device") {
-      this._expandedFilter = undefined;
-    }
-  };
-
-  private _handleDomainFilterChange = (ev: CustomEvent<{ value: string[] }>): void => {
-    this._filters = { ...this._filters, domain: ev.detail.value };
-  };
-
-  private _handleDomainFilterExpanded = (ev: CustomEvent<{ expanded: boolean }>): void => {
-    if (ev.detail.expanded) {
-      this._expandedFilter = "domain";
-    } else if (this._expandedFilter === "domain") {
-      this._expandedFilter = undefined;
-    }
-  };
-
-  private _handleLabelFilterChange = (ev: CustomEvent<{ value: string[] }>): void => {
-    this._filters = { ...this._filters, label: ev.detail.value };
-  };
-
-  private _handleLabelFilterExpanded = (ev: CustomEvent<{ expanded: boolean }>): void => {
-    if (ev.detail.expanded) {
-      this._expandedFilter = "label";
-    } else if (this._expandedFilter === "label") {
+      this._expandedFilter = key;
+    } else if (this._expandedFilter === key) {
       this._expandedFilter = undefined;
     }
   };
