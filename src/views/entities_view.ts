@@ -488,6 +488,14 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
     });
   };
 
+  private _getActiveFilterCount(filters: DataTableFiltersValues): number {
+    return Object.values(filters).filter((filter) =>
+      Array.isArray(filter)
+        ? filter.length
+        : filter && Object.values(filter).some((val) => (Array.isArray(val) ? val.length : val)),
+    ).length;
+  }
+
   protected render(): TemplateResult {
     const computedRows = this._computeRows(this.knx_entities, this._labels);
     const filteredEntities = this._filterEntities(computedRows, this._filters);
@@ -507,12 +515,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
         })}
         .clickable=${false}
         has-filters
-        .filters=${Object.values(this._filters).filter((filter) =>
-          Array.isArray(filter)
-            ? filter.length
-            : filter &&
-              Object.values(filter).some((val) => (Array.isArray(val) ? val.length : val)),
-        ).length}
+        .filters=${this._getActiveFilterCount(this._filters)}
         .initialGroupColumn=${this._activeGrouping}
         .initialSorting=${this._activeSorting}
         @grouping-changed=${this._handleGroupingChanged}
@@ -525,7 +528,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
           .hass=${this.hass}
           .knx=${this.knx}
           .data=${this._getDomainFilterData(this.knx_entities)}
-          .config=${this._getBasicFilterConfig<DomainFilterItem>() as any}
+          .config=${this._getBasicFilterConfig<DomainFilterItem>()}
           .selectedOptions=${this._filters.domain as string[] | undefined}
           .expanded=${this._expandedFilter === "domain"}
           .narrow=${this.narrow}
@@ -539,7 +542,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
           .hass=${this.hass}
           .knx=${this.knx}
           .data=${this._getAreaFilterData(this.knx_entities)}
-          .config=${this._getBasicFilterConfig<AreaFilterItem>() as any}
+          .config=${this._getBasicFilterConfig<AreaFilterItem>()}
           .selectedOptions=${this._filters.area as string[] | undefined}
           .expanded=${this._expandedFilter === "area"}
           .narrow=${this.narrow}
@@ -553,7 +556,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
           .hass=${this.hass}
           .knx=${this.knx}
           .data=${this._getDeviceFilterData(this.knx_entities)}
-          .config=${this._getBasicFilterConfig<DeviceFilterItem>() as any}
+          .config=${this._getBasicFilterConfig<DeviceFilterItem>()}
           .selectedOptions=${this._filters.device as string[] | undefined}
           .expanded=${this._expandedFilter === "device"}
           .narrow=${this.narrow}
@@ -567,7 +570,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
           .hass=${this.hass}
           .knx=${this.knx}
           .data=${this._getLabelFilterData(this.knx_entities, this._labels)}
-          .config=${this._getBasicFilterConfig<LabelFilterItem>() as any}
+          .config=${this._getBasicFilterConfig<LabelFilterItem>()}
           .selectedOptions=${this._filters.label as string[] | undefined}
           .expanded=${this._expandedFilter === "label"}
           .narrow=${this.narrow}
