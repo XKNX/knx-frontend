@@ -21,6 +21,8 @@ import "@ha/components/ha-icon";
 import "@ha/components/ha-icon-button";
 import "@ha/components/ha-state-icon";
 import "@ha/components/ha-svg-icon";
+
+import "../components/data-table/filter/knx-list-filter";
 import { navigate } from "@ha/common/navigate";
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
@@ -29,6 +31,7 @@ import type {
   DataTableColumnContainer,
   SortingChangedEvent,
 } from "@ha/components/data-table/ha-data-table";
+import type { DataTableFiltersValues } from "@ha/data/data_table_filters";
 import type { ExtEntityRegistryEntry, EntityRegistryEntry } from "@ha/data/entity/entity_registry";
 import { subscribeEntityRegistry } from "@ha/data/entity/entity_registry";
 import type { LabelRegistryEntry } from "@ha/data/label/label_registry";
@@ -39,6 +42,7 @@ import type { HomeAssistant, Route } from "@ha/types";
 
 import { getEntityEntries, deleteEntity, getEntityConfig } from "../services/websocket.service";
 import type { KNX } from "../types/knx";
+import type { Config as ListFilterConfig } from "../components/data-table/filter/knx-list-filter";
 import { entitiesTab } from "../knx-router";
 import { KNXLogger } from "../tools/knx-logger";
 
@@ -54,6 +58,26 @@ export interface EntityRow extends ExtEntityRegistryEntry {
   domain: string;
 }
 
+interface AreaFilterItem {
+  id: string;
+  name: string;
+}
+
+interface DeviceFilterItem {
+  id: string;
+  name: string;
+}
+
+interface DomainFilterItem {
+  id: string;
+  name: string;
+}
+
+interface LabelFilterItem {
+  id: string;
+  name: string;
+}
+
 @customElement("knx-entities-view")
 export class KNXEntitiesView extends SubscribeMixin(LitElement) {
   @property({ type: Object }) public hass!: HomeAssistant;
@@ -66,9 +90,11 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
 
   @state() private knx_entities: ExtEntityRegistryEntry[] = [];
 
-  @state() private filterDevice: string | null = null;
-
   @state() private _labels: LabelRegistryEntry[] = [];
+
+  @state() private _filters: DataTableFiltersValues = {};
+
+  @state() private _expandedFilter?: string;
 
   @storage({ key: "knx-entities-table-grouping", state: false, subscribe: false })
   private _activeGrouping = "domain"; // default grouping by domain
@@ -95,16 +121,17 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
     ];
   }
 
-  protected firstUpdated() {
+  protected async firstUpdated() {
     // Initial fetch - when navigating here and already subscribed (coming from a different HA subpage).
-    this._fetchEntities();
+    await this._fetchEntities();
     // initialize last update timestamp to avoid unnecessary refetching
     this._hasNewKnxEntityUpdateTimestamp(this.knx_entities);
-  }
-
-  protected willUpdate() {
+    // Apply URL-based device filter on initial load
     const urlParams = new URLSearchParams(mainWindow.location.search);
-    this.filterDevice = urlParams.get("device_id");
+    const deviceId = urlParams.get("device_id");
+    if (deviceId && this.knx_entities.some((ent) => ent.device_id === deviceId)) {
+      this._filters = { ...this._filters, device: [deviceId] };
+    }
   }
 
   private _hasNewKnxEntityUpdateTimestamp(entries: EntityRegistryEntry[]): boolean {
@@ -120,15 +147,14 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
   }
 
   private async _fetchEntities() {
-    getEntityEntries(this.hass)
-      .then((entries) => {
-        logger.debug(`Fetched ${entries.length} entity entries.`);
-        this.knx_entities = entries;
-      })
-      .catch((err) => {
-        logger.error("getEntityEntries", err);
-        navigate("/knx/error", { replace: true, data: err });
-      });
+    try {
+      const entries = await getEntityEntries(this.hass);
+      logger.debug(`Fetched ${entries.length} entity entries.`);
+      this.knx_entities = entries;
+    } catch (err) {
+      logger.error("getEntityEntries", err);
+      navigate("/knx/error", { replace: true, data: err });
+    }
   }
 
   private _computeRows = memoize(
@@ -156,6 +182,119 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
         };
       }),
   );
+
+  private _filterEntities = memoize(
+    (entities: EntityRow[], filters: DataTableFiltersValues): EntityRow[] => {
+      let result = entities;
+
+      // Apply filter panel filters
+      Object.entries(filters).forEach(([key, filter]) => {
+        if (key === "area" && Array.isArray(filter) && filter.length) {
+          result = result.filter((entity) => {
+            const areaId =
+              entity.area_id || (entity.device_id && this.hass.devices[entity.device_id]?.area_id);
+            return areaId && (filter as string[]).includes(areaId);
+          });
+        } else if (key === "device" && Array.isArray(filter) && filter.length) {
+          result = result.filter(
+            (entity) => entity.device_id && (filter as string[]).includes(entity.device_id),
+          );
+        } else if (key === "label" && Array.isArray(filter) && filter.length) {
+          result = result.filter((entity) =>
+            entity.labels.some((lbl) => (filter as string[]).includes(lbl)),
+          );
+        } else if (key === "domain" && Array.isArray(filter) && filter.length) {
+          result = result.filter((entity) =>
+            (filter as string[]).includes(computeDomain(entity.entity_id)),
+          );
+        }
+      });
+
+      return result;
+    },
+  );
+
+  private _getAreaFilterData = memoize((entities: ExtEntityRegistryEntry[]): AreaFilterItem[] => {
+    const areas = new Map<string, string>();
+    entities.forEach((entity) => {
+      const areaId =
+        entity.area_id || (entity.device_id && this.hass.devices[entity.device_id]?.area_id);
+      if (areaId) {
+        const area = this.hass.areas[areaId];
+        if (area) {
+          areas.set(areaId, area.name);
+        }
+      }
+    });
+    return Array.from(areas, ([id, name]) => ({ id, name }));
+  });
+
+  private _getDeviceFilterData = memoize(
+    (entities: ExtEntityRegistryEntry[]): DeviceFilterItem[] => {
+      const devices = new Map<string, string>();
+      entities.forEach((entity) => {
+        if (entity.device_id) {
+          const device = this.hass.devices[entity.device_id];
+          if (device) {
+            devices.set(entity.device_id, device.name_by_user ?? device.name ?? entity.device_id);
+          }
+        }
+      });
+      return Array.from(devices, ([id, name]) => ({ id, name }));
+    },
+  );
+
+  private _getDomainFilterData = memoize(
+    (entities: ExtEntityRegistryEntry[]): DomainFilterItem[] => {
+      const domains = new Map<string, string>();
+      entities.forEach((entity) => {
+        const domain = computeDomain(entity.entity_id);
+        if (!domains.has(domain)) {
+          const domainName = this.hass.localize(`component.${domain}.title`) || domain;
+          domains.set(domain, domainName);
+        }
+      });
+      return Array.from(domains, ([id, name]) => ({ id, name }));
+    },
+  );
+
+  private _getLabelFilterData = memoize(
+    (entities: ExtEntityRegistryEntry[], labels: LabelRegistryEntry[]): LabelFilterItem[] => {
+      const labelIds = new Set<string>();
+      entities.forEach((entity) => {
+        entity.labels.forEach((labelId) => labelIds.add(labelId));
+      });
+      return Array.from(labelIds, (id) => {
+        const label = labels.find((l) => l.label_id === id);
+        return { id, name: label?.name ?? id };
+      });
+    },
+  );
+
+  private _getBasicFilterConfig = <
+    T extends { id: string; name: string },
+  >(): ListFilterConfig<T> => ({
+    idField: {
+      filterable: false,
+      sortable: false,
+      mapper: (item) => item.id,
+    },
+    primaryField: {
+      filterable: true,
+      sortable: true,
+      mapper: (item) => item.name,
+    },
+    secondaryField: {
+      filterable: false,
+      sortable: false,
+      mapper: () => undefined,
+    },
+    badgeField: {
+      filterable: false,
+      sortable: false,
+      mapper: () => undefined,
+    },
+  });
 
   private _columns = memoize((_language): DataTableColumnContainer<EntityRow> => {
     const iconWidth = "56px";
@@ -349,8 +488,17 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
     });
   };
 
+  private _getActiveFilterCount(filters: DataTableFiltersValues): number {
+    return Object.values(filters).filter((filter) =>
+      Array.isArray(filter)
+        ? filter.length
+        : filter && Object.values(filter).some((val) => (Array.isArray(val) ? val.length : val)),
+    ).length;
+  }
+
   protected render(): TemplateResult {
-    const filteredEntities = this._computeRows(this.knx_entities, this._labels);
+    const computedRows = this._computeRows(this.knx_entities, this._labels);
+    const filteredEntities = this._filterEntities(computedRows, this._filters);
 
     return html`
       <hass-tabs-subpage-data-table
@@ -363,15 +511,73 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
         .data=${filteredEntities}
         .hasFab=${true}
         .searchLabel=${this.hass.localize("ui.panel.config.entities.picker.search", {
-          number: this.knx_entities.length,
+          number: filteredEntities.length,
         })}
         .clickable=${false}
-        .filter=${this.filterDevice ?? ""}
+        has-filters
+        .filters=${this._getActiveFilterCount(this._filters)}
         .initialGroupColumn=${this._activeGrouping}
         .initialSorting=${this._activeSorting}
         @grouping-changed=${this._handleGroupingChanged}
         @sorting-changed=${this._handleSortingChanged}
+        @clear-filter=${this._clearFilter}
       >
+        <knx-list-filter
+          slot="filter-pane"
+          data-filter="domain"
+          .hass=${this.hass}
+          .knx=${this.knx}
+          .data=${this._getDomainFilterData(this.knx_entities)}
+          .config=${this._getBasicFilterConfig<DomainFilterItem>()}
+          .selectedOptions=${this._filters.domain as string[] | undefined}
+          .expanded=${this._expandedFilter === "domain"}
+          .narrow=${this.narrow}
+          .filterTitle=${this.hass.localize("ui.panel.config.entities.picker.headers.domain")}
+          @selection-changed=${this._onFilterSelectionChanged}
+          @expanded-changed=${this._onFilterExpandedChanged}
+        ></knx-list-filter>
+        <knx-list-filter
+          slot="filter-pane"
+          data-filter="area"
+          .hass=${this.hass}
+          .knx=${this.knx}
+          .data=${this._getAreaFilterData(this.knx_entities)}
+          .config=${this._getBasicFilterConfig<AreaFilterItem>()}
+          .selectedOptions=${this._filters.area as string[] | undefined}
+          .expanded=${this._expandedFilter === "area"}
+          .narrow=${this.narrow}
+          .filterTitle=${this.hass.localize("ui.panel.config.entities.picker.headers.area")}
+          @selection-changed=${this._onFilterSelectionChanged}
+          @expanded-changed=${this._onFilterExpandedChanged}
+        ></knx-list-filter>
+        <knx-list-filter
+          slot="filter-pane"
+          data-filter="device"
+          .hass=${this.hass}
+          .knx=${this.knx}
+          .data=${this._getDeviceFilterData(this.knx_entities)}
+          .config=${this._getBasicFilterConfig<DeviceFilterItem>()}
+          .selectedOptions=${this._filters.device as string[] | undefined}
+          .expanded=${this._expandedFilter === "device"}
+          .narrow=${this.narrow}
+          .filterTitle=${this.hass.localize("ui.panel.config.entities.picker.headers.device")}
+          @selection-changed=${this._onFilterSelectionChanged}
+          @expanded-changed=${this._onFilterExpandedChanged}
+        ></knx-list-filter>
+        <knx-list-filter
+          slot="filter-pane"
+          data-filter="label"
+          .hass=${this.hass}
+          .knx=${this.knx}
+          .data=${this._getLabelFilterData(this.knx_entities, this._labels)}
+          .config=${this._getBasicFilterConfig<LabelFilterItem>()}
+          .selectedOptions=${this._filters.label as string[] | undefined}
+          .expanded=${this._expandedFilter === "label"}
+          .narrow=${this.narrow}
+          .filterTitle=${this.hass.localize("ui.panel.config.labels.caption")}
+          @selection-changed=${this._onFilterSelectionChanged}
+          @expanded-changed=${this._onFilterExpandedChanged}
+        ></knx-list-filter>
         <ha-fab
           slot="fab"
           .label=${this.hass.localize("ui.common.add")}
@@ -395,6 +601,30 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
   private _handleSortingChanged(ev: CustomEvent) {
     this._activeSorting = ev.detail;
   }
+
+  private _onFilterSelectionChanged = (ev: CustomEvent<{ value: string[] }>): void => {
+    const target = ev.currentTarget as HTMLElement;
+    const key =
+      target.getAttribute("data-filter") || (ev.target as HTMLElement).getAttribute("data-filter");
+    if (!key) return;
+    this._filters = { ...this._filters, [key]: ev.detail.value };
+  };
+
+  private _onFilterExpandedChanged = (ev: CustomEvent<{ expanded: boolean }>): void => {
+    const target = ev.currentTarget as HTMLElement;
+    const key =
+      target.getAttribute("data-filter") || (ev.target as HTMLElement).getAttribute("data-filter");
+    if (!key) return;
+    if (ev.detail.expanded) {
+      this._expandedFilter = key;
+    } else if (this._expandedFilter === key) {
+      this._expandedFilter = undefined;
+    }
+  };
+
+  private _clearFilter = () => {
+    this._filters = {};
+  };
 }
 
 declare global {
