@@ -35,6 +35,7 @@ import {
 
 import "@ha/components/ha-checkbox";
 import "@ha/components/ha-expansion-panel";
+import "@ha/components/ha-icon";
 import "@ha/components/ha-icon-button";
 import "@ha/components/ha-icon-button-toggle";
 import "@ha/components/ha-svg-icon";
@@ -116,6 +117,12 @@ export interface FieldConfig<T = any> {
   /** Function to extract the display value from raw data items */
   mapper: (item: T) => string | undefined;
 
+  /** Optional function to extract an icon name string (e.g., "mdi:home") for ha-icon rendering */
+  iconMapper?: (item: T) => string | undefined;
+
+  /** Optional function to extract an SVG path for ha-svg-icon rendering */
+  iconPathMapper?: (item: T) => string | undefined;
+
   /** Optional custom comparator for specialized sorting behavior */
   comparator?: Comparator<FilterOption>;
 }
@@ -138,6 +145,10 @@ export interface FilterOption extends Record<string, any> {
   secondaryField?: string;
   /** Optional badge text (count, status, etc.) */
   badgeField?: string;
+  /** Optional icon name string from primaryField.iconMapper (e.g., "mdi:home") */
+  icon?: string;
+  /** Optional icon SVG path from primaryField.iconPathMapper */
+  iconPath?: string;
   /** Current selection state for this option */
   selected: boolean;
   /** Custom fields are added as direct properties with their field names as keys */
@@ -363,6 +374,8 @@ export class KnxListFilter<T = any> extends LitElement {
         primaryField: primary,
         secondaryField: secondaryField.mapper(item),
         badgeField: badgeField.mapper(item),
+        icon: primaryField.iconMapper ? primaryField.iconMapper(item) : undefined,
+        iconPath: primaryField.iconPathMapper ? primaryField.iconPathMapper(item) : undefined,
         selected: selectedOptions.includes(id),
       };
 
@@ -1114,20 +1127,27 @@ export class KnxListFilter<T = any> extends LitElement {
         data-value=${option.idField}
       >
         <div class="option-content">
-          <div class="option-primary">
-            <span class="option-label" title=${option.primaryField}>${option.primaryField}</span>
-            ${option.badgeField
-              ? html`<span class="option-badge">${option.badgeField}</span>`
+          ${option.icon
+            ? html`<ha-icon class="option-icon" .icon=${option.icon}></ha-icon>`
+            : option.iconPath
+              ? html`<ha-svg-icon class="option-icon" .path=${option.iconPath}></ha-svg-icon>`
+              : nothing}
+          <div class="option-text">
+            <div class="option-primary">
+              <span class="option-label" title=${option.primaryField}>${option.primaryField}</span>
+              ${option.badgeField
+                ? html`<span class="option-badge">${option.badgeField}</span>`
+                : nothing}
+            </div>
+
+            ${option.secondaryField
+              ? html`
+                  <div class="option-secondary" title=${option.secondaryField}>
+                    ${option.secondaryField}
+                  </div>
+                `
               : nothing}
           </div>
-
-          ${option.secondaryField
-            ? html`
-                <div class="option-secondary" title=${option.secondaryField}>
-                  ${option.secondaryField}
-                </div>
-              `
-            : nothing}
         </div>
 
         <ha-checkbox
@@ -1317,6 +1337,9 @@ export class KnxListFilter<T = any> extends LitElement {
           cursor: pointer;
           position: relative;
         }
+        .option-item:has(.option-icon) {
+          padding-left: 12px;
+        }
         .option-item:hover {
           background-color: rgba(var(--rgb-primary-text-color), 0.04);
         }
@@ -1326,19 +1349,32 @@ export class KnxListFilter<T = any> extends LitElement {
 
         .option-content {
           display: flex;
-          flex-direction: column;
+          align-items: center;
           width: 100%;
           min-width: 0;
           height: 100%;
+          gap: 8px;
+        }
+
+        .option-icon {
+          flex-shrink: 0;
+          color: var(--secondary-text-color);
+        }
+
+        .option-text {
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+          min-width: 0;
           line-height: normal;
         }
 
         .option-primary {
           display: flex;
-          justify-content: space-between;
           align-items: center;
           width: 100%;
           margin-bottom: 3px;
+          gap: 8px;
         }
 
         .option-label {
@@ -1346,14 +1382,7 @@ export class KnxListFilter<T = any> extends LitElement {
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-        }
-
-        .option-secondary {
-          color: var(--secondary-text-color);
-          font-size: 0.85em;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+          flex: 1;
         }
 
         .option-badge {
@@ -1368,8 +1397,16 @@ export class KnxListFilter<T = any> extends LitElement {
           height: 16px;
           align-items: center;
           justify-content: center;
-          margin-left: 8px;
           vertical-align: middle;
+          flex-shrink: 0;
+        }
+
+        .option-secondary {
+          color: var(--secondary-text-color);
+          font-size: 0.85em;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .empty-message {
