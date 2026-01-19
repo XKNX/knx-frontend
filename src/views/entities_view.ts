@@ -43,6 +43,8 @@ import type { HomeAssistant, Route } from "@ha/types";
 import { getEntityEntries, deleteEntity, getEntityConfig } from "../services/websocket.service";
 import type { KNX } from "../types/knx";
 import type { Config as ListFilterConfig } from "../components/data-table/filter/knx-list-filter";
+import { getPlatformStyle } from "../utils/common";
+import type { SupportedPlatform } from "../types/entity_data";
 import { entitiesTab } from "../knx-router";
 import { KNXLogger } from "../tools/knx-logger";
 
@@ -296,6 +298,48 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
     },
   });
 
+  private _getDomainFilterConfig = <
+    T extends { id: string; name: string },
+  >(): ListFilterConfig<T> => {
+    const base = this._getBasicFilterConfig<T>();
+    return {
+      ...base,
+      primaryField: {
+        ...base.primaryField,
+        iconPathMapper: (item) => getPlatformStyle(item.id as SupportedPlatform).iconPath,
+      },
+    };
+  };
+
+  private _getAreaFilterConfig = <
+    T extends { id: string; name: string },
+  >(): ListFilterConfig<T> => {
+    const base = this._getBasicFilterConfig<T>();
+    return {
+      ...base,
+      primaryField: {
+        ...base.primaryField,
+        iconMapper: (item) => this.hass.areas[item.id]?.icon ?? "mdi:texture-box",
+      },
+    };
+  };
+
+  private _getLabelFilterConfig = <
+    T extends { id: string; name: string },
+  >(): ListFilterConfig<T> => {
+    const base = this._getBasicFilterConfig<T>();
+    return {
+      ...base,
+      primaryField: {
+        ...base.primaryField,
+        iconMapper: (item) => {
+          const label = this._labels.find((l) => l.label_id === item.id);
+          return label?.icon ?? "mdi:label";
+        },
+      },
+    };
+  };
+
   private _columns = memoize((_language): DataTableColumnContainer<EntityRow> => {
     const iconWidth = "56px";
     const actionWidth = "224px"; // 48px*4 + 16px*3 padding
@@ -528,7 +572,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
           .hass=${this.hass}
           .knx=${this.knx}
           .data=${this._getDomainFilterData(this.knx_entities)}
-          .config=${this._getBasicFilterConfig<DomainFilterItem>()}
+          .config=${this._getDomainFilterConfig<DomainFilterItem>()}
           .selectedOptions=${this._filters.domain as string[] | undefined}
           .expanded=${this._expandedFilter === "domain"}
           .narrow=${this.narrow}
@@ -542,7 +586,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
           .hass=${this.hass}
           .knx=${this.knx}
           .data=${this._getAreaFilterData(this.knx_entities)}
-          .config=${this._getBasicFilterConfig<AreaFilterItem>()}
+          .config=${this._getAreaFilterConfig<AreaFilterItem>()}
           .selectedOptions=${this._filters.area as string[] | undefined}
           .expanded=${this._expandedFilter === "area"}
           .narrow=${this.narrow}
@@ -570,7 +614,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
           .hass=${this.hass}
           .knx=${this.knx}
           .data=${this._getLabelFilterData(this.knx_entities, this._labels)}
-          .config=${this._getBasicFilterConfig<LabelFilterItem>()}
+          .config=${this._getLabelFilterConfig<LabelFilterItem>()}
           .selectedOptions=${this._filters.label as string[] | undefined}
           .expanded=${this._expandedFilter === "label"}
           .narrow=${this.narrow}
