@@ -15,6 +15,8 @@ import type {
   KNXBaseData,
 } from "../types/websocket";
 
+import type { ExposeData, ExposeVerificationResult } from "../types/expose_data";
+
 export const getKnxBaseData = (hass: HomeAssistant): Promise<KNXBaseData> =>
   hass.callWS({
     type: "knx/get_base_data",
@@ -66,6 +68,11 @@ export const getSchema = (hass: HomeAssistant, platform: string): Promise<Select
   hass.callWS({
     type: "knx/get_schema",
     platform,
+  });
+export const getExposeSchema = (hass: HomeAssistant, type: string): Promise<SelectorSchema[]> =>
+  hass.callWS({
+    type: "knx/get_expose_schema",
+    expose_type: type,
   });
 
 export const validateEntity = (
@@ -121,4 +128,48 @@ export const createDevice = (
   hass.callWS({
     type: "knx/create_device",
     ...deviceData,
+  });
+
+export const validateExpose = (
+  hass: HomeAssistant,
+  exposeData: ExposeData,
+): Promise<ExposeVerificationResult> =>
+  hass.callWS({
+    type: "knx/validate_expose",
+    data: exposeData,
+  });
+
+export const createExpose = (
+  hass: HomeAssistant,
+  exposeData: ExposeData,
+): Promise<ExposeVerificationResult> =>
+  hass.callWS({
+    type: "knx/create_expose",
+    data: exposeData,
+  });
+
+export const updateExpose = (
+  hass: HomeAssistant,
+  exposeData: ExposeData,
+): Promise<ExposeVerificationResult> =>
+  hass.callWS({
+    type: "knx/update_expose",
+    data: exposeData,
+  });
+
+export const deleteExpose = (hass: HomeAssistant, address: string) =>
+  hass.callWS({
+    type: "knx/delete_expose",
+    address: address,
+  });
+
+export const getExposeConfig = (hass: HomeAssistant, address: string): Promise<ExposeData> =>
+  hass.callWS({
+    type: "knx/get_expose_config",
+    address: address,
+  });
+
+export const getExposeEntries = (hass: HomeAssistant): Promise<Record<string, ExposeData>> =>
+  hass.callWS({
+    type: "knx/get_expose_entries",
   });

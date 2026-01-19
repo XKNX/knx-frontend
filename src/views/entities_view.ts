@@ -391,7 +391,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
             @click=${this._entityEdit}
           ></ha-icon-button>
           <ha-icon-button
-            .label=${this.knx.localize("entities_view_monitor_telegrams")}
+            .label=${this.knx.localize("monitor_telegrams")}
             .path=${mdiMathLog}
             .entityEntry=${entry}
             @click=${this._showEntityTelegrams}

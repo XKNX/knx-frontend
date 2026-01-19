@@ -8,8 +8,9 @@ import type { HomeAssistant } from "@ha/types";
 
 import { localize } from "./localize/localize";
 import { KNXLogger } from "./tools/knx-logger";
-import { getKnxBaseData, getKnxProject, getSchema } from "./services/websocket.service";
+import { getExposeSchema, getKnxBaseData, getKnxProject, getSchema } from "./services";
 import type { KNX } from "./types/knx";
+import type { ExposeType } from "./types/expose_data";
 
 export class KnxElement extends ProvideHassLitMixin(LitElement) {
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -27,12 +28,15 @@ export class KnxElement extends ProvideHassLitMixin(LitElement) {
         log: new KNXLogger(),
         connectionInfo: knxBase.connection_info,
         dptMetadata: knxBase.dpt_metadata,
-        projectInfo: knxBase.project_info, // can  be used to check if project is available
+        projectInfo: knxBase.project_info, // can be used to check if project is available
         supportedPlatforms: knxBase.supported_platforms,
+        supportedExposeTypes: knxBase.supported_expose_types,
         projectData: null,
         loadProject: () => this._loadProjectPromise(),
         schema: {},
         loadSchema: (platform: string) => this._loadSchema(platform),
+        exposeSchema: {},
+        loadExposeSchema: (type: ExposeType) => this._loadExposeSchema(type),
       };
     } catch (err) {
       new KNXLogger().error("Failed to initialize KNX", err);
@@ -59,6 +63,16 @@ export class KnxElement extends ProvideHassLitMixin(LitElement) {
     }
     return getSchema(this.hass, platform).then((schema) => {
       this.knx.schema[platform] = schema;
+    });
+  }
+
+  private async _loadExposeSchema(type: ExposeType): Promise<void> {
+    // load schema only once per type
+    if (type in this.knx.exposeSchema) {
+      return Promise.resolve();
+    }
+    return getExposeSchema(this.hass, type).then((schema) => {
+      this.knx.exposeSchema[type] = schema;
     });
   }
 }
