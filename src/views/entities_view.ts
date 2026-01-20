@@ -20,6 +20,7 @@ import "@ha/components/ha-fab";
 import "@ha/components/ha-icon";
 import "@ha/components/ha-icon-overflow-menu";
 import "@ha/components/ha-state-icon";
+import "@ha/components/ha-svg-icon";
 import "../components/data-table/filter/knx-list-filter";
 import { navigate } from "@ha/common/navigate";
 import { mainWindow } from "@ha/common/dom/get_main_window";
@@ -422,7 +423,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
           const items: IconOverflowMenuItem[] = [
             {
               path: mdiInformationSlabCircleOutline,
-              label: "More info",
+              label: this.hass.localize("ui.dialogs.more_info_control.details"),
               action: () => this._entityMoreInfo(entry),
             },
             {
@@ -476,7 +477,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
       // Extract all group addresses from KNX entity configuration
       const groupAddresses = Object.values(knxData)
         .flatMap((config) => {
-          if (typeof config !== "object" || config === null) return [] as string[];
+          if (typeof config !== "object" || config === null) return [];
           const { write, state: stateAddress, passive } = config as any;
           return [write, stateAddress, ...(Array.isArray(passive) ? passive : [])];
         })
