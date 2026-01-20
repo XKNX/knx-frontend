@@ -340,7 +340,6 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
 
   private _columns = memoize((_language, narrow): DataTableColumnContainer<EntityRow> => {
     const iconWidth = "56px";
-    const actionWidth = "224px"; // 48px*4 + 16px*3 padding
 
     return {
       icon: {
@@ -373,7 +372,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
         filterable: true,
         sortable: true,
         direction: "asc",
-        title: this.hass.localize("ui.panel.config.entities.picker.headers.entity"),
+        title: this.hass.localize("ui.common.name"),
         flex: 2,
         extraTemplate: (entry) =>
           entry.label_entries.length
@@ -381,6 +380,8 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
             : nothing,
       },
       entity_id: {
+        showNarrow: true,
+        defaultHidden: narrow,
         filterable: true,
         sortable: true,
         title: this.hass.localize("ui.panel.config.entities.picker.headers.entity_id"),
@@ -416,8 +417,6 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
         showNarrow: true,
         title: "",
         label: this.hass.localize("ui.panel.config.generic.headers.actions"),
-        minWidth: actionWidth,
-        maxWidth: actionWidth,
         type: "overflow-menu",
         template: (entry) => {
           const items = [
