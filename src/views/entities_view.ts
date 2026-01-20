@@ -18,15 +18,15 @@ import "@ha/components/data-table/ha-data-table-labels";
 import "@ha/layouts/hass-tabs-subpage-data-table";
 import "@ha/components/ha-fab";
 import "@ha/components/ha-icon";
-import "@ha/components/ha-icon-button";
+import "@ha/components/ha-icon-overflow-menu";
 import "@ha/components/ha-state-icon";
 import "@ha/components/ha-svg-icon";
-
 import "../components/data-table/filter/knx-list-filter";
 import { navigate } from "@ha/common/navigate";
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import { computeDomain } from "@ha/common/entity/compute_domain";
+import type { IconOverflowMenuItem } from "@ha/components/ha-icon-overflow-menu";
 import type {
   DataTableColumnContainer,
   SortingChangedEvent,
@@ -59,7 +59,6 @@ export interface EntityRow extends ExtEntityRegistryEntry {
   label_entries: LabelRegistryEntry[];
   domain: string;
 }
-
 interface AreaFilterItem {
   id: string;
   name: string;
@@ -340,9 +339,8 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
     };
   };
 
-  private _columns = memoize((_language): DataTableColumnContainer<EntityRow> => {
+  private _columns = memoize((_language, narrow): DataTableColumnContainer<EntityRow> => {
     const iconWidth = "56px";
-    const actionWidth = "224px"; // 48px*4 + 16px*3 padding
 
     return {
       icon: {
@@ -375,7 +373,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
         filterable: true,
         sortable: true,
         direction: "asc",
-        title: this.hass.localize("ui.panel.config.entities.picker.headers.entity"),
+        title: this.hass.localize("ui.common.name"),
         flex: 2,
         extraTemplate: (entry) =>
           entry.label_entries.length
@@ -383,6 +381,8 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
             : nothing,
       },
       entity_id: {
+        showNarrow: true,
+        defaultHidden: narrow,
         filterable: true,
         sortable: true,
         title: this.hass.localize("ui.panel.config.entities.picker.headers.entity_id"),
@@ -418,35 +418,37 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
         showNarrow: true,
         title: "",
         label: this.hass.localize("ui.panel.config.generic.headers.actions"),
-        minWidth: actionWidth,
-        maxWidth: actionWidth,
-        type: "icon-button",
-        template: (entry) => html`
-          <ha-icon-button
-            .label=${"More info"}
-            .path=${mdiInformationSlabCircleOutline}
-            .entityEntry=${entry}
-            @click=${this._entityMoreInfo}
-          ></ha-icon-button>
-          <ha-icon-button
-            .label=${this.hass.localize("ui.common.edit")}
-            .path=${mdiPencilOutline}
-            .entityEntry=${entry}
-            @click=${this._entityEdit}
-          ></ha-icon-button>
-          <ha-icon-button
-            .label=${this.knx.localize("entities_view_monitor_telegrams")}
-            .path=${mdiMathLog}
-            .entityEntry=${entry}
-            @click=${this._showEntityTelegrams}
-          ></ha-icon-button>
-          <ha-icon-button
-            .label=${this.hass.localize("ui.common.delete")}
-            .path=${mdiDelete}
-            .entityEntry=${entry}
-            @click=${this._entityDelete}
-          ></ha-icon-button>
-        `,
+        type: "overflow-menu",
+        template: (entry) => {
+          const items: IconOverflowMenuItem[] = [
+            {
+              path: mdiInformationSlabCircleOutline,
+              label: this.hass.localize("ui.dialogs.more_info_control.details"),
+              action: () => this._entityMoreInfo(entry),
+            },
+            {
+              path: mdiPencilOutline,
+              label: this.hass.localize("ui.common.edit"),
+              action: () => this._entityEdit(entry),
+            },
+            {
+              path: mdiMathLog,
+              label: this.knx.localize("entities_view_monitor_telegrams"),
+              action: () => this._showEntityTelegrams(entry),
+            },
+            {
+              path: mdiDelete,
+              label: this.hass.localize("ui.common.delete"),
+              action: () => this._entityDelete(entry),
+            },
+          ];
+
+          return html`<ha-icon-overflow-menu
+            .hass=${this.hass}
+            .narrow=${narrow}
+            .items=${items}
+          ></ha-icon-overflow-menu>`;
+        },
       },
       labels: {
         title: "",
@@ -457,30 +459,17 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
     };
   });
 
-  private _entityEdit = (ev: Event) => {
-    ev.stopPropagation();
-    const entry = (ev.target as any).entityEntry as EntityRow;
+  private _entityEdit(entry: EntityRow) {
     navigate("/knx/entities/edit/" + entry.entity_id);
-  };
+  }
 
-  private _entityMoreInfo = (ev: Event) => {
-    ev.stopPropagation();
-    const entry = (ev.target as any).entityEntry as EntityRow;
+  private _entityMoreInfo(entry: EntityRow) {
     fireEvent(mainWindow.document.querySelector("home-assistant")!, "hass-more-info", {
       entityId: entry.entity_id,
     });
-  };
+  }
 
-  private _showEntityTelegrams = async (ev: Event) => {
-    ev.stopPropagation();
-    const entry = (ev.target as any)?.entityEntry as EntityRow;
-
-    if (!entry) {
-      logger.error("No entity entry found in event target");
-      navigate("/knx/group_monitor");
-      return;
-    }
-
+  private async _showEntityTelegrams(entry: EntityRow) {
     try {
       const entityConfig = await getEntityConfig(this.hass, entry.entity_id);
       const knxData = entityConfig.data.knx;
@@ -508,11 +497,9 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
       // Fallback to unfiltered monitor on error
       navigate("/knx/group_monitor");
     }
-  };
+  }
 
-  private _entityDelete = (ev: Event) => {
-    ev.stopPropagation();
-    const entry = (ev.target as any).entityEntry as EntityRow;
+  private _entityDelete(entry: EntityRow) {
     showConfirmationDialog(this, {
       text: `${this.hass.localize("ui.common.delete")} ${entry.entity_id}?`,
     }).then((confirmed) => {
@@ -530,7 +517,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
           });
       }
     });
-  };
+  }
 
   private _getActiveFilterCount(filters: DataTableFiltersValues): number {
     return Object.values(filters).filter((filter) =>
@@ -551,7 +538,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
         .route=${this.route!}
         .tabs=${[entitiesTab]}
         .localizeFunc=${this.knx.localize}
-        .columns=${this._columns(this.hass.language)}
+        .columns=${this._columns(this.hass.language, this.narrow)}
         .data=${filteredEntities}
         .hasFab=${true}
         .searchLabel=${this.hass.localize("ui.panel.config.entities.picker.search", {
