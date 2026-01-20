@@ -3,60 +3,43 @@
 This is the KNX panel for the KNX core integration in Home Assistant. It
 provides a user interface for interacting with the KNX integration.
 
-## Features
-
-* Info:
-  ![Info](./screenshots/info.png?raw=true)
-  * Get an overview of your current KNX installation state (shows if connected
-    to the Bus, which XKNX version is running and the currently assigned
-    Individual address)
-  * Upload ETS project file (which is used in the Group Monitor to provide
-    destination names and DPT interpretation) and delete it again from Home
-    Assistant.
-  * Get key information about the parsed ETS project which has been uploaded
-* Group Monitor: Use the interactive bus monitor to view all incoming and
-  outgoing telegrams on the bus.
-  ![Group Monitor](./screenshots/bus_monitor.png?raw=true)
-* ETS Project: Displays the Group Addresses provided via ETS Project in a tree view
-
 ## Development
 
-If you check this repository out for the first time please run the following command to init the submodules:
+If you check out this repository for the first time please run the following command to init the submodules:
 
 ```shell
-$ make bootstrap
+$ nvm use
+$ script/bootstrap
 ...
 ```
 
 ### Development build (watcher)
 
 ```shell
-$ make develop
+$ script/develop
 ...
 ```
 
 ### Production build
 
 ```shell
-$ make build
+$ script/build
 ...
 ```
 
 ### Update the home assistant frontend
 
-Replace latest_tag with the current release tag.
+Get the latest release tag.
 
 ```shell
-$ cd homeassistant-frontend
-$ git fetch
+$ script/upgrade-frontend
 ...
-$ git checkout latest_tag
-...
-$ cd ..
-$ rm -f yarn.lock
-$ node ./script/merge_requirements.js
-...
-$ script/bootstrap
+```
+
+Or get a specific tag or sha.
+
+```shell
+$ script/upgrade-frontend <tag-or-sha>
 ...
 ```
 
@@ -78,12 +61,14 @@ $ ln -s <knx-frontend-dir>/knx_frontend <hass-dir>/config/deps/lib/python3.xx/si
 $ hass -c config
 ...
 ```
-or on a venv-install
+
+Or on a venv-install
+
 ```shell
 $ cd <hass-dir>
 $ script/setup
 # Next step might be optional
-$ source venv/bin/activate
+$ source .venv/bin/activate
 $ export PYTHONPATH=<knx-frontend-dir>
 $ hass
 ...
@@ -100,8 +85,8 @@ On Home Assistant OS you might use https://github.com/home-assistant/addons-deve
 
 This repository ships a set of instructions for AI coding agents.
 
-- GitHub Copilot comes pre-configured — its guidance lives in `.github/copilot-instructions.md`.
-- For other agents, you can easy symlink the Copilot instructions with:
+* GitHub Copilot comes pre-configured — its guidance lives in `.github/copilot-instructions.md`.
+* For other agents, you can easy symlink the Copilot instructions with:
 
     ```shell
     yarn agent:claude   # Creates CLAUDE.md
