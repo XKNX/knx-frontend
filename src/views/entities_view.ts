@@ -20,12 +20,12 @@ import "@ha/components/ha-fab";
 import "@ha/components/ha-icon";
 import "@ha/components/ha-icon-overflow-menu";
 import "@ha/components/ha-state-icon";
-
 import "../components/data-table/filter/knx-list-filter";
 import { navigate } from "@ha/common/navigate";
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import { computeDomain } from "@ha/common/entity/compute_domain";
+import type { IconOverflowMenuItem } from "@ha/components/ha-icon-overflow-menu";
 import type {
   DataTableColumnContainer,
   SortingChangedEvent,
@@ -419,7 +419,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
         label: this.hass.localize("ui.panel.config.generic.headers.actions"),
         type: "overflow-menu",
         template: (entry) => {
-          const items = [
+          const items: IconOverflowMenuItem[] = [
             {
               path: mdiInformationSlabCircleOutline,
               label: "More info",
