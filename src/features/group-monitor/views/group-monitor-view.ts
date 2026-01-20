@@ -575,7 +575,8 @@ export class KNXGroupMonitor extends LitElement {
     ): DataTableColumnContainer<TelegramRow> => ({
       // Timestamp column with relative time offsets when sorting by time
       ["timestampIso" as TelegramRowKeys]: {
-        showNarrow: false,
+        showNarrow: true,
+        defaultHidden: narrow,
         filterable: true,
         sortable: true,
         direction: "desc",
@@ -700,7 +701,8 @@ export class KNXGroupMonitor extends LitElement {
 
       // Telegram type column with direction indicator and filterable cell
       type: {
-        showNarrow: false,
+        showNarrow: true,
+        defaultHidden: narrow,
         title: this.knx.localize("group_monitor_type"),
         filterable: true,
         sortable: true,
