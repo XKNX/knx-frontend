@@ -43,7 +43,7 @@
   "group_monitor_project_not_loaded_title": "Kein ETS Projekt geladen",
   "group_monitor_project_not_loaded_message": "Für zusätzliche Informationen wie Namen und Werte lade bitte dein ETS Projekt im Info-Tab hoch.",
   "project_title": "Projekt",
-  "project_view_upload": "Keine Projektdaten gefunden. Wechsle zum Info Tab und lade eine Projektdatei hoch.",
+  "project_view_upload": "Keine Projektdaten gefunden. Lade eine Projektdatei hoch.",
   "project_view_version_l1": "Die Version von `XKNXProject` welche für die Verarbeitung des ETS Projektes verwendet wurde, war:",
   "project_view_version_l2": "minimal unterstützte Version",
   "project_view_version_l3": "Lade die Projektdatei erneut hoch, um das ETS Projekt Werkzeug zu nutzen",
