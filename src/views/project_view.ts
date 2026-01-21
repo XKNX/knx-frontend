@@ -61,7 +61,7 @@ export class KNXProjectView extends LitElement {
   @state() private _lastTelegrams: Record<string, TelegramDict> = {};
 
   @storage({
-    key: "knx-entities-view-columns",
+    key: "knx-project-view-columns",
     state: false,
     subscribe: false,
   })
@@ -115,84 +115,86 @@ export class KNXProjectView extends LitElement {
     };
   }
 
-  private _columns = memoize((narrow, _language): DataTableColumnContainer<GroupAddress> => {
-    const addressWidth = "100px";
-    const dptWidth = "82px";
+  private _columns = memoize(
+    (narrow, _language): DataTableColumnContainer<GroupAddress & { dpt_raw: string }> => {
+      const addressWidth = "100px";
+      const dptWidth = "82px";
 
-    return {
-      address: {
-        showNarrow: true,
-        filterable: true,
-        sortable: true,
-        title: this.knx.localize("project_view_table_address"),
-        flex: 1,
-        minWidth: addressWidth,
-        direction: "asc",
-      },
-      name: {
-        showNarrow: true,
-        filterable: true,
-        sortable: true,
-        title: this.knx.localize("project_view_table_name"),
-        flex: 3,
-      },
-      dpt_raw: {
-        showNarrow: true,
-        defaultHidden: narrow,
-        sortable: true,
-        filterable: true,
-        groupable: true,
-        title: this.knx.localize("project_view_table_dpt"),
-        flex: 1,
-        minWidth: dptWidth,
-        template: (ga: GroupAddress) =>
-          ga.dpt
-            ? html`<span style="display:inline-block;width:24px;text-align:right;"
-                  >${ga.dpt.main}</span
-                >${ga.dpt.sub ? "." + ga.dpt.sub.toString().padStart(3, "0") : ""} `
-            : "",
-      },
-      lastValue: {
-        showNarrow: true,
-        filterable: false, // template result value isn't filterable or sortable
-        sortable: false,
-        title: this.knx.localize("project_view_table_last_value"),
-        flex: 2,
-        template: (ga: GroupAddress) => {
-          const lastTelegram: TelegramDict | undefined = this._lastTelegrams[ga.address];
-          if (!lastTelegram) return "";
-          const payload = TelegramDictFormatter.payload(lastTelegram);
-          if (lastTelegram.value == null) return html`<code>${payload}</code>`;
-          return html`<div title=${payload}>
-            ${TelegramDictFormatter.valueWithUnit(this._lastTelegrams[ga.address])}
-          </div>`;
+      return {
+        address: {
+          showNarrow: true,
+          filterable: true,
+          sortable: true,
+          title: this.knx.localize("project_view_table_address"),
+          flex: 1,
+          minWidth: addressWidth,
+          direction: "asc",
         },
-      },
-      updated: {
-        showNarrow: true,
-        defaultHidden: narrow,
-        filterable: false, // template result value isn't filterable or sortable
-        sortable: false,
-        title: this.knx.localize("project_view_table_updated"),
-        flex: 1,
-        template: (ga: GroupAddress) => {
-          const lastTelegram: TelegramDict | undefined = this._lastTelegrams[ga.address];
-          if (!lastTelegram) return "";
-          const tooltip = `${TelegramDictFormatter.dateWithMilliseconds(lastTelegram)}\n\n${lastTelegram.source} ${lastTelegram.source_name}`;
-          return html`<div title=${tooltip}>
-            ${relativeTime(new Date(lastTelegram.timestamp), this.hass.locale)}
-          </div>`;
+        name: {
+          showNarrow: true,
+          filterable: true,
+          sortable: true,
+          title: this.knx.localize("project_view_table_name"),
+          flex: 3,
         },
-      },
-      actions: {
-        showNarrow: true,
-        defaultHidden: narrow,
-        title: "",
-        type: "overflow-menu",
-        template: (ga: GroupAddress) => this._groupAddressMenu(ga),
-      },
-    };
-  });
+        dpt_raw: {
+          showNarrow: true,
+          defaultHidden: narrow,
+          sortable: true,
+          filterable: true,
+          groupable: true,
+          title: this.knx.localize("project_view_table_dpt"),
+          flex: 1,
+          minWidth: dptWidth,
+          template: (ga: GroupAddress) =>
+            ga.dpt
+              ? html`<span style="display:inline-block;width:24px;text-align:right;"
+                    >${ga.dpt.main}</span
+                  >${ga.dpt.sub ? "." + ga.dpt.sub.toString().padStart(3, "0") : ""} `
+              : "",
+        },
+        lastValue: {
+          showNarrow: true,
+          filterable: false, // template result value isn't filterable or sortable
+          sortable: false,
+          title: this.knx.localize("project_view_table_last_value"),
+          flex: 2,
+          template: (ga: GroupAddress) => {
+            const lastTelegram: TelegramDict | undefined = this._lastTelegrams[ga.address];
+            if (!lastTelegram) return "";
+            const payload = TelegramDictFormatter.payload(lastTelegram);
+            if (lastTelegram.value == null) return html`<code>${payload}</code>`;
+            return html`<div title=${payload}>
+              ${TelegramDictFormatter.valueWithUnit(this._lastTelegrams[ga.address])}
+            </div>`;
+          },
+        },
+        updated: {
+          showNarrow: true,
+          defaultHidden: narrow,
+          filterable: false, // template result value isn't filterable or sortable
+          sortable: false,
+          title: this.knx.localize("project_view_table_updated"),
+          flex: 1,
+          template: (ga: GroupAddress) => {
+            const lastTelegram: TelegramDict | undefined = this._lastTelegrams[ga.address];
+            if (!lastTelegram) return "";
+            const tooltip = `${TelegramDictFormatter.dateWithMilliseconds(lastTelegram)}\n\n${lastTelegram.source} ${lastTelegram.source_name}`;
+            return html`<div title=${tooltip}>
+              ${relativeTime(new Date(lastTelegram.timestamp), this.hass.locale)}
+            </div>`;
+          },
+        },
+        actions: {
+          showNarrow: true,
+          defaultHidden: narrow,
+          title: "",
+          type: "overflow-menu",
+          template: (ga: GroupAddress) => this._groupAddressMenu(ga),
+        },
+      };
+    },
+  );
 
   private _groupAddressMenu(groupAddress: GroupAddress): TemplateResult {
     const items: IconOverflowMenuItem[] = [];
@@ -242,7 +244,7 @@ export class KNXProjectView extends LitElement {
     (
       visibleGroupAddresses: string[],
       groupAddresses: Record<string, GroupAddress>,
-    ): DataTableRowData[] => {
+    ): (GroupAddress & { dpt_raw: string })[] => {
       const filtered = !visibleGroupAddresses.length
         ? // if none is set, default to show all
           Object.values(groupAddresses)
@@ -292,7 +294,7 @@ export class KNXProjectView extends LitElement {
       .tabs=${[projectTab]}
       .localizeFunc=${this.hass.localize}
       .columns=${this._columns(this.narrow, this.hass.language)}
-      .data=${filtered}
+      .data=${filtered as DataTableRowData[]}
       .hasFab=${false}
       .searchLabel=${this.hass.localize("ui.components.data-table.search")}
       .clickable=${false}
