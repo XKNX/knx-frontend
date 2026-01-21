@@ -25,6 +25,7 @@ import "../components/data-table/filter/knx-list-filter";
 import { navigate } from "@ha/common/navigate";
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
+import type { HASSDomEvent } from "@ha/common/dom/fire_event";
 import { computeDomain } from "@ha/common/entity/compute_domain";
 import type { IconOverflowMenuItem } from "@ha/components/ha-icon-overflow-menu";
 import type {
@@ -97,11 +98,21 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
 
   @state() private _expandedFilter?: string;
 
-  @storage({ key: "knx-entities-table-grouping", state: false, subscribe: false })
+  @storage({ key: "knx-entities-view-table-grouping", state: false, subscribe: false })
   private _activeGrouping = "domain"; // default grouping by domain
 
-  @storage({ key: "knx-entities-table-sort", state: false, subscribe: false })
+  @storage({ key: "knx-entities-view-table-sort", state: false, subscribe: false })
   private _activeSorting?: SortingChangedEvent;
+
+  @storage({
+    key: "knx-entities-view-columns",
+    state: false,
+    subscribe: false,
+  })
+  private _storedColumns?: {
+    wide?: { columnOrder?: string[]; hiddenColumns?: string[] };
+    narrow?: { columnOrder?: string[]; hiddenColumns?: string[] };
+  };
 
   private _lastKnxRegistryUpdate?: number;
 
@@ -547,11 +558,18 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
         .clickable=${false}
         has-filters
         .filters=${this._getActiveFilterCount(this._filters)}
-        .initialGroupColumn=${this._activeGrouping}
-        .initialSorting=${this._activeSorting}
-        @grouping-changed=${this._handleGroupingChanged}
-        @sorting-changed=${this._handleSortingChanged}
         @clear-filter=${this._clearFilter}
+        .initialGroupColumn=${this._activeGrouping}
+        @grouping-changed=${this._handleGroupingChanged}
+        .initialSorting=${this._activeSorting}
+        @sorting-changed=${this._handleSortingChanged}
+        .columnOrder=${this.narrow
+          ? this._storedColumns?.narrow?.columnOrder
+          : this._storedColumns?.wide?.columnOrder}
+        .hiddenColumns=${this.narrow
+          ? this._storedColumns?.narrow?.hiddenColumns
+          : this._storedColumns?.wide?.hiddenColumns}
+        @columns-changed=${this._handleColumnsChanged}
       >
         <knx-list-filter
           slot="filter-pane"
@@ -631,6 +649,17 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
 
   private _handleSortingChanged(ev: CustomEvent) {
     this._activeSorting = ev.detail;
+  }
+
+  private _handleColumnsChanged(
+    ev: HASSDomEvent<{ columnOrder?: string[]; hiddenColumns?: string[] }>,
+  ) {
+    const { columnOrder, hiddenColumns } = ev.detail;
+    const prev = this._storedColumns ?? {};
+    this._storedColumns = {
+      ...prev,
+      [this.narrow ? "narrow" : "wide"]: { columnOrder, hiddenColumns },
+    };
   }
 
   private _onFilterSelectionChanged = (ev: CustomEvent<{ value: string[] }>): void => {
