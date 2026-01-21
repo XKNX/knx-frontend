@@ -25,6 +25,7 @@ import "../dialogs/telegram-info-dialog";
 import "../../../components/data-table/filter/knx-list-filter";
 
 import { customElement, property, query } from "lit/decorators";
+import { storage } from "@ha/common/decorators/storage";
 import { mdiDeleteSweep, mdiFastForward, mdiPause, mdiRefresh } from "@mdi/js";
 import { formatTimeWithMilliseconds, formatTimeDelta } from "../../../utils/format";
 import type { TelegramRow, TelegramRowKeys } from "../types/telegram-row";
@@ -125,6 +126,16 @@ export class KNXGroupMonitor extends LitElement {
 
   /** Navigation tabs configuration */
   @property({ type: Array, reflect: false }) public tabs!: PageNavigation[];
+
+  @storage({
+    key: "knx-group-monitor-columns",
+    state: false,
+    subscribe: false,
+  })
+  private _storedColumns?: {
+    wide?: { columnOrder?: string[]; hiddenColumns?: string[] };
+    narrow?: { columnOrder?: string[]; hiddenColumns?: string[] };
+  };
 
   /** GroupMonitor controller instance */
   private controller = new GroupMonitorController(this);
@@ -396,6 +407,17 @@ export class KNXGroupMonitor extends LitElement {
     this.controller.sortDirection = direction || undefined;
   }
 
+  private _handleColumnsChanged(
+    ev: HASSDomEvent<{ columnOrder?: string[]; hiddenColumns?: string[] }>,
+  ) {
+    const { columnOrder, hiddenColumns } = ev.detail;
+    const prev = this._storedColumns ?? {};
+    this._storedColumns = {
+      ...prev,
+      [this.narrow ? "narrow" : "wide"]: { columnOrder, hiddenColumns },
+    };
+  }
+
   /**
    * Handles telegram row selection in the data table
    * Opens the detailed telegram information dialog
@@ -575,7 +597,8 @@ export class KNXGroupMonitor extends LitElement {
     ): DataTableColumnContainer<TelegramRow> => ({
       // Timestamp column with relative time offsets when sorting by time
       ["timestampIso" as TelegramRowKeys]: {
-        showNarrow: false,
+        showNarrow: true,
+        defaultHidden: narrow,
         filterable: true,
         sortable: true,
         direction: "desc",
@@ -700,7 +723,8 @@ export class KNXGroupMonitor extends LitElement {
 
       // Telegram type column with direction indicator and filterable cell
       type: {
-        showNarrow: false,
+        showNarrow: true,
+        defaultHidden: narrow,
         title: this.knx.localize("group_monitor_type"),
         filterable: true,
         sortable: true,
@@ -905,6 +929,13 @@ export class KNXGroupMonitor extends LitElement {
         has-filters
         .filters=${activeFilters}
         @clear-filter=${this._handleClearFilters}
+        @columns-changed=${this._handleColumnsChanged}
+        .columnOrder=${this.narrow
+          ? this._storedColumns?.narrow?.columnOrder
+          : this._storedColumns?.wide?.columnOrder}
+        .hiddenColumns=${this.narrow
+          ? this._storedColumns?.narrow?.hiddenColumns
+          : this._storedColumns?.wide?.hiddenColumns}
       >
         <!-- Top header -->
         ${this.controller.connectionError
