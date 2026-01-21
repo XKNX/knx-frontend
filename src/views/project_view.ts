@@ -1,4 +1,4 @@
-import { mdiFilterVariant, mdiPlus, mdiMathLog } from "@mdi/js";
+import { mdiPlus, mdiMathLog } from "@mdi/js";
 import type { TemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
@@ -6,16 +6,18 @@ import { Task } from "@lit/task";
 
 import memoize from "memoize-one";
 
+import { storage } from "@ha/common/decorators/storage";
 import type { HASSDomEvent } from "@ha/common/dom/fire_event";
 import { navigate } from "@ha/common/navigate";
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-tabs-subpage";
+import "@ha/layouts/hass-tabs-subpage-data-table";
 import "@ha/components/ha-alert";
-import "@ha/components/ha-card";
-import "@ha/components/ha-icon-button";
 import "@ha/components/ha-icon-overflow-menu";
-import "@ha/components/data-table/ha-data-table";
-import type { DataTableColumnContainer } from "@ha/components/data-table/ha-data-table";
+import type {
+  DataTableColumnContainer,
+  DataTableRowData,
+} from "@ha/components/data-table/ha-data-table";
 import type { IconOverflowMenuItem } from "@ha/components/ha-icon-overflow-menu";
 import { relativeTime } from "@ha/common/datetime/relative_time";
 
@@ -24,12 +26,12 @@ import "../components/knx-project-tree-view";
 import { compare } from "compare-versions";
 
 import type { HomeAssistant, Route } from "@ha/types";
-import { dptInClasses } from "utils/dpt";
+import { dptInClasses, dptToString } from "utils/dpt";
 import type { KNX } from "../types/knx";
 import { projectTab } from "../knx-router";
 import type { GroupRangeSelectionChangedEvent } from "../components/knx-project-tree-view";
 import { subscribeKnxTelegrams, getGroupTelegrams } from "../services/websocket.service";
-import type { GroupAddress, TelegramDict } from "../types/websocket";
+import type { GroupAddress, TelegramDict, KNXProject } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
 import { TelegramDictFormatter } from "../utils/format";
 
@@ -45,7 +47,7 @@ export class KNXProjectView extends LitElement {
 
   @property({ type: Boolean, reflect: true }) public narrow!: boolean;
 
-  @property({ type: Object }) public route?: Route;
+  @property({ type: Object }) public route!: Route;
 
   @property({ type: Boolean, reflect: true, attribute: "range-selector-hidden" })
   public rangeSelectorHidden = true;
@@ -57,6 +59,16 @@ export class KNXProjectView extends LitElement {
   @state() private _subscribed?: () => void;
 
   @state() private _lastTelegrams: Record<string, TelegramDict> = {};
+
+  @storage({
+    key: "knx-project-view-columns",
+    state: false,
+    subscribe: false,
+  })
+  private _storedColumns?: {
+    wide?: { columnOrder?: string[]; hiddenColumns?: string[] };
+    narrow?: { columnOrder?: string[]; hiddenColumns?: string[] };
+  };
 
   private _projectLoadTask = new Task(this, {
     args: () => [],
@@ -103,74 +115,86 @@ export class KNXProjectView extends LitElement {
     };
   }
 
-  private _columns = memoize((_narrow, _language): DataTableColumnContainer<GroupAddress> => {
-    const addressWidth = "100px";
-    const dptWidth = "82px";
-    const overflowMenuWidth = "72px";
+  private _columns = memoize(
+    (narrow, _language): DataTableColumnContainer<GroupAddress & { dpt_raw: string }> => {
+      const addressWidth = "100px";
+      const dptWidth = "82px";
 
-    return {
-      address: {
-        filterable: true,
-        sortable: true,
-        title: this.knx.localize("project_view_table_address"),
-        flex: 1,
-        minWidth: addressWidth,
-        direction: "asc",
-      },
-      name: {
-        filterable: true,
-        sortable: true,
-        title: this.knx.localize("project_view_table_name"),
-        flex: 3,
-      },
-      dpt: {
-        sortable: true,
-        filterable: true,
-        title: this.knx.localize("project_view_table_dpt"),
-        flex: 1,
-        minWidth: dptWidth,
-        template: (ga: GroupAddress) =>
-          ga.dpt
-            ? html`<span style="display:inline-block;width:24px;text-align:right;"
-                  >${ga.dpt.main}</span
-                >${ga.dpt.sub ? "." + ga.dpt.sub.toString().padStart(3, "0") : ""} `
-            : "",
-      },
-      lastValue: {
-        filterable: true,
-        title: this.knx.localize("project_view_table_last_value"),
-        flex: 2,
-        template: (ga: GroupAddress) => {
-          const lastTelegram: TelegramDict | undefined = this._lastTelegrams[ga.address];
-          if (!lastTelegram) return "";
-          const payload = TelegramDictFormatter.payload(lastTelegram);
-          if (lastTelegram.value == null) return html`<code>${payload}</code>`;
-          return html`<div title=${payload}>
-            ${TelegramDictFormatter.valueWithUnit(this._lastTelegrams[ga.address])}
-          </div>`;
+      return {
+        address: {
+          showNarrow: true,
+          filterable: true,
+          sortable: true,
+          title: this.knx.localize("project_view_table_address"),
+          flex: 1,
+          minWidth: addressWidth,
+          direction: "asc",
         },
-      },
-      updated: {
-        title: this.knx.localize("project_view_table_updated"),
-        flex: 1,
-        showNarrow: false,
-        template: (ga: GroupAddress) => {
-          const lastTelegram: TelegramDict | undefined = this._lastTelegrams[ga.address];
-          if (!lastTelegram) return "";
-          const tooltip = `${TelegramDictFormatter.dateWithMilliseconds(lastTelegram)}\n\n${lastTelegram.source} ${lastTelegram.source_name}`;
-          return html`<div title=${tooltip}>
-            ${relativeTime(new Date(lastTelegram.timestamp), this.hass.locale)}
-          </div>`;
+        name: {
+          showNarrow: true,
+          filterable: true,
+          sortable: true,
+          title: this.knx.localize("project_view_table_name"),
+          flex: 3,
         },
-      },
-      actions: {
-        title: "",
-        minWidth: overflowMenuWidth,
-        type: "overflow-menu",
-        template: (ga: GroupAddress) => this._groupAddressMenu(ga),
-      },
-    };
-  });
+        dpt_raw: {
+          showNarrow: true,
+          defaultHidden: narrow,
+          sortable: true,
+          filterable: true,
+          groupable: true,
+          title: this.knx.localize("project_view_table_dpt"),
+          flex: 1,
+          minWidth: dptWidth,
+          template: (ga: GroupAddress) =>
+            ga.dpt
+              ? html`<span style="display:inline-block;width:24px;text-align:right;"
+                    >${ga.dpt.main}</span
+                  >${ga.dpt.sub ? "." + ga.dpt.sub.toString().padStart(3, "0") : ""} `
+              : "",
+        },
+        lastValue: {
+          showNarrow: true,
+          filterable: false, // template result value isn't filterable or sortable
+          sortable: false,
+          title: this.knx.localize("project_view_table_last_value"),
+          flex: 2,
+          template: (ga: GroupAddress) => {
+            const lastTelegram: TelegramDict | undefined = this._lastTelegrams[ga.address];
+            if (!lastTelegram) return "";
+            const payload = TelegramDictFormatter.payload(lastTelegram);
+            if (lastTelegram.value == null) return html`<code>${payload}</code>`;
+            return html`<div title=${payload}>
+              ${TelegramDictFormatter.valueWithUnit(this._lastTelegrams[ga.address])}
+            </div>`;
+          },
+        },
+        updated: {
+          showNarrow: true,
+          defaultHidden: narrow,
+          filterable: false, // template result value isn't filterable or sortable
+          sortable: false,
+          title: this.knx.localize("project_view_table_updated"),
+          flex: 1,
+          template: (ga: GroupAddress) => {
+            const lastTelegram: TelegramDict | undefined = this._lastTelegrams[ga.address];
+            if (!lastTelegram) return "";
+            const tooltip = `${TelegramDictFormatter.dateWithMilliseconds(lastTelegram)}\n\n${lastTelegram.source} ${lastTelegram.source_name}`;
+            return html`<div title=${tooltip}>
+              ${relativeTime(new Date(lastTelegram.timestamp), this.hass.locale)}
+            </div>`;
+          },
+        },
+        actions: {
+          showNarrow: true,
+          defaultHidden: narrow,
+          title: "",
+          type: "overflow-menu",
+          template: (ga: GroupAddress) => this._groupAddressMenu(ga),
+        },
+      };
+    },
+  );
 
   private _groupAddressMenu(groupAddress: GroupAddress): TemplateResult {
     const items: IconOverflowMenuItem[] = [];
@@ -220,15 +244,14 @@ export class KNXProjectView extends LitElement {
     (
       visibleGroupAddresses: string[],
       groupAddresses: Record<string, GroupAddress>,
-    ): GroupAddress[] => {
-      if (!visibleGroupAddresses.length)
-        // if none is set, default to show all
-        return Object.values(groupAddresses);
-
-      return visibleGroupAddresses
-        .map((key) => groupAddresses[key])
-        .filter((ga): ga is GroupAddress => !!ga)
-        .sort((a, b) => a.raw_address - b.raw_address);
+    ): (GroupAddress & { dpt_raw: string })[] => {
+      const filtered = !visibleGroupAddresses.length
+        ? // if none is set, default to show all
+          Object.values(groupAddresses)
+        : visibleGroupAddresses
+            .map((key) => groupAddresses[key])
+            .filter((ga): ga is GroupAddress => !!ga);
+      return filtered.map((ga) => ({ ...ga, dpt_raw: dptToString(ga.dpt) }));
     },
   );
 
@@ -237,104 +260,81 @@ export class KNXProjectView extends LitElement {
   }
 
   protected render(): TemplateResult {
-    return html` <hass-tabs-subpage
+    return this._projectLoadTask.render({
+      initial: () => html`
+        <hass-loading-screen .message=${"Waiting to fetch project data."}></hass-loading-screen>
+      `,
+      pending: () => html`
+        <hass-loading-screen .message=${"Loading KNX project data."}></hass-loading-screen>
+      `,
+      error: (err) => {
+        logger.error("Error loading KNX project", err);
+        return this._renderError("error", "Error loading KNX project");
+      },
+      complete: () =>
+        this.knx.projectData
+          ? this._renderTable(this.knx.projectData)
+          : this._renderError("info", this.knx.localize("project_view_upload")),
+    });
+  }
+
+  private _renderError(alertType: "error" | "info", message: string): TemplateResult {
+    return html` <hass-tabs-subpage .narrow=${this.narrow} .hass=${this.hass} .tabs=${[projectTab]}
+      ><ha-alert alert-type=${alertType}> ${message} </ha-alert></hass-tabs-subpage
+    >`;
+  }
+
+  private _renderTable(projectData: KNXProject): TemplateResult {
+    const filtered = this._getRows(this._visibleGroupAddresses, projectData.group_addresses);
+
+    return html` <hass-tabs-subpage-data-table
       .hass=${this.hass}
-      .narrow=${this.narrow!}
-      .route=${this.route!}
+      .narrow=${this.narrow}
+      .route=${this.route}
       .tabs=${[projectTab]}
-      .localizeFunc=${this.knx.localize}
+      .localizeFunc=${this.hass.localize}
+      .columns=${this._columns(this.narrow, this.hass.language)}
+      .data=${filtered as DataTableRowData[]}
+      .hasFab=${false}
+      .searchLabel=${this.hass.localize("ui.components.data-table.search")}
+      .clickable=${false}
+      .hasFilters=${this._groupRangeAvailable}
+      .filters=${this._visibleGroupAddresses.length}
+      @columns-changed=${this._handleColumnsChanged}
+      .columnOrder=${this.narrow
+        ? this._storedColumns?.narrow?.columnOrder
+        : this._storedColumns?.wide?.columnOrder}
+      .hiddenColumns=${this.narrow
+        ? this._storedColumns?.narrow?.hiddenColumns
+        : this._storedColumns?.wide?.hiddenColumns}
     >
-      ${this._projectLoadTask.render({
-        initial: () => html`
-          <hass-loading-screen .message=${"Waiting to fetch project data."}></hass-loading-screen>
-        `,
-        pending: () => html`
-          <hass-loading-screen .message=${"Loading KNX project data."}></hass-loading-screen>
-        `,
-        error: (err) => {
-          logger.error("Error loading KNX project", err);
-          return html`<ha-alert alert-type="error">"Error loading KNX project"</ha-alert>`;
-        },
-        complete: () => this.renderMain(),
-      })}
-    </hass-tabs-subpage>`;
+      ${this._groupRangeAvailable
+        ? html`
+            <knx-project-tree-view
+              slot="filter-pane"
+              .data=${projectData}
+              @knx-group-range-selection-changed=${this._visibleAddressesChanged}
+            ></knx-project-tree-view>
+          `
+        : nothing}
+    </hass-tabs-subpage-data-table>`;
   }
 
-  protected renderMain(): TemplateResult {
-    const filtered = this._getRows(
-      this._visibleGroupAddresses,
-      this.knx.projectData!.group_addresses,
-    );
-
-    return this.knx.projectData
-      ? html`${this.narrow && this._groupRangeAvailable
-            ? html`<ha-icon-button
-                slot="toolbar-icon"
-                .label=${this.hass.localize("ui.components.related-filter-menu.filter")}
-                .path=${mdiFilterVariant}
-                @click=${this._toggleRangeSelector}
-              ></ha-icon-button>`
-            : nothing}
-          <div class="sections">
-            ${this._groupRangeAvailable
-              ? html`
-                  <knx-project-tree-view
-                    .data=${this.knx.projectData}
-                    @knx-group-range-selection-changed=${this._visibleAddressesChanged}
-                  ></knx-project-tree-view>
-                `
-              : nothing}
-            <ha-data-table
-              class="ga-table"
-              .hass=${this.hass}
-              .columns=${this._columns(this.narrow, this.hass.language)}
-              .data=${filtered}
-              .hasFab=${false}
-              .searchLabel=${this.hass.localize("ui.components.data-table.search")}
-              .clickable=${false}
-            ></ha-data-table>
-          </div>`
-      : html` <ha-card .header=${this.knx.localize("attention")}>
-          <div class="card-content">
-            <p>${this.knx.localize("project_view_upload")}</p>
-          </div>
-        </ha-card>`;
-  }
-
-  private _toggleRangeSelector() {
-    this.rangeSelectorHidden = !this.rangeSelectorHidden;
+  private _handleColumnsChanged(
+    ev: HASSDomEvent<{ columnOrder?: string[]; hiddenColumns?: string[] }>,
+  ) {
+    const { columnOrder, hiddenColumns } = ev.detail;
+    const prev = this._storedColumns ?? {};
+    this._storedColumns = {
+      ...prev,
+      [this.narrow ? "narrow" : "wide"]: { columnOrder, hiddenColumns },
+    };
   }
 
   static styles = css`
     hass-loading-screen {
       --app-header-background-color: var(--sidebar-background-color);
       --app-header-text-color: var(--sidebar-text-color);
-    }
-    .sections {
-      display: flex;
-      flex-direction: row;
-      height: 100%;
-    }
-
-    :host([narrow]) knx-project-tree-view {
-      position: absolute;
-      max-width: calc(100% - 60px); /* 100% -> max 871px before not narrow */
-      z-index: 1;
-      right: 0;
-      transition: 0.5s;
-      border-left: 1px solid var(--divider-color);
-    }
-
-    :host([narrow][range-selector-hidden]) knx-project-tree-view {
-      width: 0;
-    }
-
-    :host(:not([narrow])) knx-project-tree-view {
-      max-width: 255px; /* min 616px - 816px for tree-view + ga-table (depending on side menu) */
-    }
-
-    .ga-table {
-      flex: 1;
     }
   `;
 }
