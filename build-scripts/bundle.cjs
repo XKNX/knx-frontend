@@ -9,15 +9,15 @@ const BABEL_PLUGINS = path.join(paths.root_dir, "homeassistant-frontend/build-sc
 module.exports.ignorePackages = () => [];
 
 // Files from NPM packages that we should replace with empty file
-module.exports.emptyPackages = ({ isHassioBuild }) =>
+module.exports.emptyPackages = () =>
   [
-    // Icons in supervisor conflict with icons in HA so we don't load.
+    // Icons in landingpage conflict with icons in HA so we don't load.
     // ... for KNX we seem to need it - probably due to iframe.
-    // isHassioBuild &&
+    // 
     //   require.resolve(
     //     path.resolve(paths.root_dir, "homeassistant-frontend/src/components/ha-icon.ts"),
     //   ),
-    // isHassioBuild &&
+    // 
     //   require.resolve(
     //     path.resolve(paths.root_dir, "homeassistant-frontend/src/components/ha-icon-picker.ts"),
     //   ),
@@ -28,7 +28,6 @@ module.exports.definedVars = ({ isProdBuild, latestBuild, defineOverlay }) => ({
   __BUILD__: JSON.stringify(latestBuild ? "latest" : "es5"),
   __VERSION__: JSON.stringify(env.version()),
   __DEMO__: false,
-  __SUPERVISOR__: false,
   __BACKWARDS_COMPAT__: false,
   __STATIC_PATH__: "/static/",
   __HASS_URL__: `\`${
@@ -184,7 +183,6 @@ module.exports.config = {
       publicPath: publicPath(latestBuild, paths.knx_publicPath),
       isProdBuild,
       latestBuild,
-      isHassioBuild: true,
     };
   },
 };
