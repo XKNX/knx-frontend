@@ -6,6 +6,7 @@ import type {
   CreateEntityResult,
   UpdateEntityData,
   DeviceCreateData,
+  TimeServerData,
 } from "../types/entity_data";
 import type { SelectorSchema } from "../types/schema";
 import type {
@@ -121,4 +122,22 @@ export const createDevice = (
   hass.callWS({
     type: "knx/create_device",
     ...deviceData,
+  });
+
+//
+// Time server calls
+//
+export const getTimeServerConfig = (hass: HomeAssistant): Promise<TimeServerData> =>
+  hass.callWS({
+    type: "knx/get_time_server_config",
+  });
+
+export const updateTimeServerConfig = (
+  hass: HomeAssistant,
+  timeServerData: TimeServerData,
+): Promise<CreateEntityResult> =>
+  // CreateEntityResult.entity_id will be null
+  hass.callWS({
+    type: "knx/update_time_server_config",
+    config: timeServerData,
   });

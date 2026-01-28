@@ -1,4 +1,4 @@
-import { mdiCogOutline, mdiLanConnect, mdiFileImportOutline } from "@mdi/js";
+import { mdiCogOutline, mdiLanConnect, mdiFileImportOutline, mdiClockOutline } from "@mdi/js";
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { map } from "lit/directives/map";
@@ -19,6 +19,7 @@ import type { HomeAssistant } from "@ha/types";
 import type { UnsubscribeFunc } from "home-assistant-js-websocket";
 
 import { showKnxProjectUploadDialog } from "../dialogs/show-knx-project-upload-dialog";
+import { showKnxTimeServerDialog } from "../dialogs/show-knx-time-server-dialog";
 import type { KnxPageNavigation } from "../types/navigation";
 import type { KNX } from "../types/knx";
 import { knxMainTabs } from "../knx-router";
@@ -78,6 +79,13 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
       validConfigEntryStates: new Set(["loaded"]),
     },
     {
+      translationKey: "component.knx.config_panel.dashboard.time_server",
+      click: this._openTimeServerDialog,
+      iconPath: mdiClockOutline,
+      iconColor: "var(--green-color)",
+      validConfigEntryStates: new Set(["loaded"]),
+    },
+    {
       translationKey: "component.knx.config_panel.dashboard.project_upload",
       click: this._openProjectUploadDialog,
       iconPath: mdiFileImportOutline,
@@ -99,6 +107,10 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
 
   private _openProjectUploadDialog() {
     showKnxProjectUploadDialog(this);
+  }
+
+  private _openTimeServerDialog() {
+    showKnxTimeServerDialog(this);
   }
 
   private async _openReconfigureFlow() {
