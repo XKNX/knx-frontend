@@ -3,10 +3,11 @@ import { customElement, property, state } from "lit/decorators";
 import { Task } from "@lit/task";
 import type { TemplateResult } from "lit";
 
+import "@ha/components/ha-alert";
 import "@ha/components/ha-button";
 import "@ha/components/ha-dialog-footer";
+import "@ha/components/ha-markdown";
 import "@ha/components/ha-wa-dialog";
-import "@ha/components/ha-alert";
 import "@ha/layouts/hass-loading-screen";
 
 import type { HassDialog } from "@ha/dialogs/make-dialog-manager";
@@ -39,6 +40,9 @@ export class KnxTimeServerDialog
   @state() private _data?: TimeServerData;
 
   @state() private _errors?: ErrorDescription[];
+
+  private _backendLocalize = (key: string) =>
+    this.hass.localize(`component.knx.config_panel.dialogs.time_server.${key}`);
 
   private _loadConfigTask = new Task(this, {
     args: () => [this._open],
@@ -122,13 +126,13 @@ export class KnxTimeServerDialog
         .hass=${this.hass}
         .open=${this._open}
         @closed=${this.closeDialog}
-        .headerTitle=${"Send current time to KNX"}
+        .headerTitle=${this._backendLocalize("title")}
       >
-        <p class="description">
-          Configure group addresses to periodically send the current time to the KNX bus. Time
-          values are broadcast every hour. An empty address field disables broadcasting for that
-          format.
-        </p>
+        <ha-markdown
+          class="description"
+          breaks
+          .content=${this._backendLocalize("description")}
+        ></ha-markdown>
         ${this._loadConfigTask.render({
           initial: () => html`
             <hass-loading-screen
@@ -167,33 +171,36 @@ export class KnxTimeServerDialog
       <knx-group-address-selector
         .hass=${this.hass}
         .knx=${this.knx}
-        .label=${"Time (DPT 10.001)"}
+        .label=${this._backendLocalize("time.label")}
         .key=${"time"}
         .options=${{ write: { required: true }, validDPTs: [{ main: 10, sub: 1 }] }}
         .config=${this._data?.time ?? {}}
         .validationErrors=${extractValidationErrors(this._errors, "time")}
+        .localizeFunction=${this._backendLocalize}
         @value-changed=${this._addressChanged}
       ></knx-group-address-selector>
 
       <knx-group-address-selector
         .hass=${this.hass}
         .knx=${this.knx}
-        .label=${"Date (DPT 11.001)"}
+        .label=${this._backendLocalize("date.label")}
         .key=${"date"}
         .options=${{ write: { required: true }, validDPTs: [{ main: 11, sub: 1 }] }}
         .config=${this._data?.date ?? {}}
         .validationErrors=${extractValidationErrors(this._errors, "date")}
+        .localizeFunction=${this._backendLocalize}
         @value-changed=${this._addressChanged}
       ></knx-group-address-selector>
 
       <knx-group-address-selector
         .hass=${this.hass}
         .knx=${this.knx}
-        .label=${"DateTime (DPT 19.001)"}
+        .label=${this._backendLocalize("datetime.label")}
         .key=${"datetime"}
         .options=${{ write: { required: true }, validDPTs: [{ main: 19, sub: 1 }] }}
         .config=${this._data?.datetime ?? {}}
         .validationErrors=${extractValidationErrors(this._errors, "datetime")}
+        .localizeFunction=${this._backendLocalize}
         @value-changed=${this._addressChanged}
       ></knx-group-address-selector>
 
