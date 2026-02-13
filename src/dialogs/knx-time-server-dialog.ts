@@ -76,9 +76,9 @@ export class KnxTimeServerDialog
     updateTimeServerConfig(this.hass, payload)
       .then((res: CreateEntityResult) => {
         logger.debug("updateTimeServerConfig response", res);
-        if ((res as any).success === false) {
+        if (!res.success) {
           // backend validation errors
-          this._errors = (res as any).errors ?? [];
+          this._errors = res.errors ?? [];
           return;
         }
         // success
