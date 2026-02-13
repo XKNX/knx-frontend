@@ -92,14 +92,24 @@ export class KnxTimeServerDialog
       });
   }
 
-  private _addressChanged(ev: CustomEvent): void {
-    const key: string | undefined = (ev.target as any)?.key;
+  private _addressChanged(
+    ev: CustomEvent<{ value?: { write?: string } }>
+  ): void {
+    const target = ev.target as HTMLElement & {
+      key?: keyof TimeServerData;
+    };
+    const key = target.key;
     const write = ev.detail.value?.write;
-    if (!key) return;
+    if (!key) {
+      return;
+    }
 
-    const newData = { ...(this._data ?? {}) };
-    if (write) newData[key] = { write };
-    else delete newData[key];
+    const newData: TimeServerData = { ...(this._data ?? {}) };
+    if (write) {
+      newData[key] = { write };
+    } else {
+      delete newData[key];
+    }
     this._data = newData;
     logger.debug("timeServerConfig changed", { key, write, data: this._data });
   }
