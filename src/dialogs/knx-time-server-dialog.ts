@@ -92,9 +92,7 @@ export class KnxTimeServerDialog
       });
   }
 
-  private _addressChanged(
-    ev: CustomEvent<{ value?: { write?: string } }>
-  ): void {
+  private _addressChanged(ev: CustomEvent<{ value?: { write?: string } }>): void {
     const target = ev.target as HTMLElement & {
       key?: keyof TimeServerData;
     };
