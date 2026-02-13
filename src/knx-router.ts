@@ -49,7 +49,7 @@ export const projectTab = _knxPageNavigationFactory({
   baseTranslationKey: "component.knx.config_panel.project",
   path: `${BASE_URL}/project`,
   iconPath: mdiFileDocumentOutline,
-  iconColor: "var(--deep-purple-color)",
+  iconColor: "var(--teal-color)",
 });
 export const entitiesTab = _knxPageNavigationFactory({
   baseTranslationKey: "component.knx.config_panel.entities",

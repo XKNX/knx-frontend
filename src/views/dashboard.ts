@@ -1,4 +1,4 @@
-import { mdiCogOutline, mdiLanConnect, mdiFileImportOutline } from "@mdi/js";
+import { mdiCogOutline, mdiLanConnect, mdiFileImportOutline, mdiClockOutline } from "@mdi/js";
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { map } from "lit/directives/map";
@@ -19,6 +19,7 @@ import type { HomeAssistant } from "@ha/types";
 import type { UnsubscribeFunc } from "home-assistant-js-websocket";
 
 import { showKnxProjectUploadDialog } from "../dialogs/show-knx-project-upload-dialog";
+import { showKnxTimeServerDialog } from "../dialogs/show-knx-time-server-dialog";
 import type { KnxPageNavigation } from "../types/navigation";
 import type { KNX } from "../types/knx";
 import { knxMainTabs } from "../knx-router";
@@ -73,21 +74,28 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
     {
       translationKey: "component.knx.config_panel.dashboard.options_flow",
       iconPath: mdiCogOutline,
-      iconColor: "var(--indigo-color)",
+      iconColor: "var(--purple-color)",
       click: this._openOptionFlow,
+      validConfigEntryStates: new Set(["loaded"]),
+    },
+    {
+      translationKey: "component.knx.config_panel.dashboard.time_server",
+      click: this._openTimeServerDialog,
+      iconPath: mdiClockOutline,
+      iconColor: "var(--blue-color)",
       validConfigEntryStates: new Set(["loaded"]),
     },
     {
       translationKey: "component.knx.config_panel.dashboard.project_upload",
       click: this._openProjectUploadDialog,
       iconPath: mdiFileImportOutline,
-      iconColor: "var(--orange-color)",
+      iconColor: "var(--teal-color)",
       validConfigEntryStates: new Set(["loaded"]),
     },
     {
       translationKey: "component.knx.config_panel.dashboard.connection_flow",
       iconPath: mdiLanConnect,
-      iconColor: "var(--cyan-color)",
+      iconColor: "var(--green-color)",
       click: this._openReconfigureFlow,
       validConfigEntryStates: new Set(["loaded", "not_loaded"]),
     },
@@ -99,6 +107,10 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
 
   private _openProjectUploadDialog() {
     showKnxProjectUploadDialog(this);
+  }
+
+  private _openTimeServerDialog() {
+    showKnxTimeServerDialog(this);
   }
 
   private async _openReconfigureFlow() {

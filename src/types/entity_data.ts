@@ -64,3 +64,9 @@ export type CreateEntityResult =
       error_base: string;
       errors: ErrorDescription[];
     };
+
+export interface TimeServerData {
+  time?: GASchema; // only `write` will be used
+  date?: GASchema;
+  datetime?: GASchema;
+}
