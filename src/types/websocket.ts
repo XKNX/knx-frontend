@@ -37,6 +37,7 @@ export interface GroupMonitorInfoData {
 
 // this has to match `TelegramDict` in the integrations `telegram.py`
 export interface TelegramDict {
+  data_secure: boolean;
   destination: string;
   destination_name: string;
   direction: string;
