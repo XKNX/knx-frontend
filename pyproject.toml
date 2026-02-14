@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "knx_frontend"
-license = { text = "MIT" }
+license = "MIT"
 description = "KNX panel for Home Assistant"
 keywords = ["Home Assistant", "KNX"]
 readme = "README.md"
@@ -25,6 +25,6 @@ version = { file = "VERSION" }
 include = ["knx_frontend*"]
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.11"
 show_error_codes = true
 strict = true
