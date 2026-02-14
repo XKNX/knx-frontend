@@ -119,7 +119,7 @@ export class GroupMonitorTelegramInfoDialog extends LitElement {
               : nothing}
           </div>
           <div slot="actionItems" class="direction-badge ${directionClass}">
-            ${this.knx.localize(this.telegram.direction)}
+            ${this.knx.localize(this.telegram.direction) + (this.telegram.dataSecure ? " 🔒" : "")}
           </div>
         </knx-dialog-header>
         <div class="content" @scroll=${this._checkScrolled}>

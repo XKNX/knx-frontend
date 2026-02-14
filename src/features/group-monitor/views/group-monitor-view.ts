@@ -750,7 +750,7 @@ export class KNXGroupMonitor extends LitElement {
                 ? "var(--knx-blue)"
                 : "var(--knx-green)"}"
             >
-              ${row.direction}
+              ${row.direction + (row.dataSecure ? " 🔒" : "")}
             </div>
           </knx-table-cell-filterable>
         `,
