@@ -742,7 +742,13 @@ export class KNXGroupMonitor extends LitElement {
             .filterDisabled=${this.isMobileTouchDevice}
             @toggle-filter=${this._handleTelegramTypeFilterToggle}
           >
-            <div class="primary" slot="primary" title=${row.type}>${row.type}</div>
+            <div
+              class="primary"
+              slot="primary"
+              title=${row.type + (row.dataSecure ? " DataSecure" : "")}
+            >
+              ${row.type}
+            </div>
             <div
               class="secondary"
               slot="secondary"

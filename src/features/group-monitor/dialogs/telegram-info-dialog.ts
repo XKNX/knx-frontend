@@ -118,7 +118,12 @@ export class GroupMonitorTelegramInfoDialog extends LitElement {
                 `
               : nothing}
           </div>
-          <div slot="actionItems" class="direction-badge ${directionClass}">
+          <div
+            slot="actionItems"
+            class="direction-badge ${directionClass}"
+            title=${this.knx.localize(this.telegram.direction) +
+            (this.telegram.dataSecure ? " DataSecure" : "")}
+          >
             ${this.knx.localize(this.telegram.direction) + (this.telegram.dataSecure ? " 🔒" : "")}
           </div>
         </knx-dialog-header>
@@ -379,7 +384,6 @@ export class GroupMonitorTelegramInfoDialog extends LitElement {
         .item-name {
           font-size: 12px;
           color: var(--secondary-text-color);
-          font-style: italic;
           margin-top: 4px;
           text-align: center;
         }

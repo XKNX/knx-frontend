@@ -144,9 +144,9 @@ export class TelegramRow implements DataTableRowData {
 
   /**
    * Indicates whether the telegram was sent using DataSecure (encrypted) communication
-   * true = secure, false = not secure, undefined / null = unknown (undefined for historic telegrams without this flag)
+   * true = secure, false = not secure, null = unknown (historic telegrams)
    */
-  dataSecure?: boolean | null;
+  dataSecure: boolean | null;
 
   /**
    * Processed and formatted value for display
@@ -230,7 +230,7 @@ export class TelegramRow implements DataTableRowData {
     this.unit = telegram.unit;
 
     /** Store data security flag for display */
-    this.dataSecure = telegram.data_secure;
+    this.dataSecure = telegram.data_secure ?? null;
 
     /**
      * Determine best display value using fallback hierarchy:

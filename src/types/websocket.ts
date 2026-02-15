@@ -37,7 +37,7 @@ export interface GroupMonitorInfoData {
 
 // this has to match `TelegramDict` in the integrations `telegram.py`
 export interface TelegramDict {
-  data_secure: boolean;
+  data_secure?: boolean; // undefined for historic telegrams without this flag or unknown
   destination: string;
   destination_name: string;
   direction: string;
