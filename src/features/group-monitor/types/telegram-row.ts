@@ -143,6 +143,12 @@ export class TelegramRow implements DataTableRowData {
   unit: string | null;
 
   /**
+   * Indicates whether the telegram was sent using DataSecure (encrypted) communication
+   * true = secure, false = not secure, null = unknown (historic telegrams)
+   */
+  dataSecure: boolean | null;
+
+  /**
    * Processed and formatted value for display
    * Prioritizes formatted value with units, falls back to payload or type-specific defaults
    */
@@ -222,6 +228,9 @@ export class TelegramRow implements DataTableRowData {
 
     /** Store unit information for value context */
     this.unit = telegram.unit;
+
+    /** Store data security flag for display */
+    this.dataSecure = telegram.data_secure ?? null;
 
     /**
      * Determine best display value using fallback hierarchy:
