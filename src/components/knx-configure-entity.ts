@@ -10,7 +10,6 @@ import "@ha/components/ha-control-select";
 import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-expansion-panel";
 import "@ha/components/ha-selector/ha-selector";
-import "@ha/components/ha-settings-row";
 
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
@@ -493,10 +492,6 @@ export class KNXConfigureEntity extends LitElement {
     ha-expansion-panel {
       margin-bottom: 16px;
     }
-    ha-expansion-panel > :first-child:not(ha-settings-row) {
-      margin-top: 16px; /* ha-settings-row has this margin internally */
-    }
-    ha-expansion-panel > ha-settings-row:first-child,
     ha-expansion-panel > knx-selector-row:first-child {
       border: 0;
     }
@@ -505,10 +500,6 @@ export class KNXConfigureEntity extends LitElement {
       margin-right: 8px;
     }
 
-    ha-settings-row {
-      margin-bottom: 8px;
-      padding: 0;
-    }
     ha-control-select {
       padding: 0;
       margin-left: 0;
@@ -526,9 +517,6 @@ export class KNXConfigureEntity extends LitElement {
     .group-selection {
       padding-left: 8px;
       padding-right: 8px;
-      & ha-settings-row:first-child {
-        border-top: 0;
-      }
     }
 
     knx-group-address-selector,
