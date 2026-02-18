@@ -30,6 +30,7 @@ import "@ha/components/ha-wa-dialog";
 import "@ha/components/ha-button";
 import "@ha/components/ha-selector/ha-selector-text";
 
+import { fireEvent } from "@ha/common/dom/fire_event";
 import type { DeviceRegistryEntry } from "@ha/data/device/device_registry";
 import type { HomeAssistant } from "@ha/types";
 import type { HassDialog } from "@ha/dialogs/make-dialog-manager";
@@ -132,6 +133,7 @@ export class DeviceCreateDialog
     this._params = undefined;
     this._deviceName = undefined;
     this._area = undefined;
+    fireEvent(this, "dialog-closed", { dialog: this.localName }, { bubbles: false });
   }
 
   /**
