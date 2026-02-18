@@ -5,7 +5,7 @@
  * */
 import type { RenderItemFunction } from "@lit-labs/virtualizer/virtualize";
 import type { PropertyValues, TemplateResult } from "lit";
-import { LitElement, html, nothing } from "lit";
+import { LitElement, html } from "lit";
 import { customElement, query, property, state } from "lit/decorators";
 import memoizeOne from "memoize-one";
 
@@ -13,17 +13,16 @@ import "@ha/components/ha-generic-picker";
 import type { HaGenericPicker } from "@ha/components/ha-generic-picker";
 import "@ha/components/ha-list-item";
 
-import "../dialogs/knx-device-create-dialog";
-
 import { fireEvent } from "@ha/common/dom/fire_event";
 import type { ScorableTextItem } from "@ha/common/string/filter/sequence-matching";
 import { stringCompare } from "@ha/common/string/compare";
 
 import type { HomeAssistant, ValueChangedEvent } from "@ha/types";
-import type { AreaRegistryEntry } from "@ha/data/area_registry";
+import type { AreaRegistryEntry } from "@ha/data/area/area_registry";
 import type { DeviceRegistryEntry } from "@ha/data/device/device_registry";
 
 import type { PickerComboBoxItem } from "@ha/components/ha-picker-combo-box";
+import { showKnxDeviceCreateDialog } from "../dialogs/show-knx-device-create-dialog";
 import { knxDevices, getKnxDeviceIdentifier } from "../utils/device";
 
 const SEARCH_KEYS = [
@@ -56,8 +55,6 @@ class KnxDevicePicker extends LitElement {
   @state() private _opened?: boolean;
 
   @query("ha-generic-picker", true) public picker!: HaGenericPicker;
-
-  @state() private _showCreateDeviceDialog = false;
 
   // value is the knx identifier (device_info), not the device id
   private _deviceId?: string;
@@ -153,7 +150,6 @@ class KnxDevicePicker extends LitElement {
         @opened-changed=${this._openedChanged}
         @value-changed=${this._deviceChanged}
       ></ha-generic-picker>
-      ${this._showCreateDeviceDialog ? this._renderCreateDeviceDialog() : nothing}
     `;
   }
 
@@ -194,26 +190,16 @@ class KnxDevicePicker extends LitElement {
     fireEvent(this, "value-changed", { value: identifier });
   }
 
-  private _renderCreateDeviceDialog() {
-    return html`
-      <knx-device-create-dialog
-        .hass=${this.hass}
-        @create-device-dialog-closed=${this._closeCreateDeviceDialog}
-      ></knx-device-create-dialog>
-    `;
-  }
-
   private _openCreateDeviceDialog() {
-    this._showCreateDeviceDialog = true;
-  }
-
-  private async _closeCreateDeviceDialog(ev: CustomEvent) {
-    const newDevice: DeviceRegistryEntry | undefined = ev.detail.newDevice;
-    if (newDevice) {
-      await this._addDevice(newDevice);
-      this._setValue(newDevice.id);
-    }
-    this._showCreateDeviceDialog = false;
+    showKnxDeviceCreateDialog(this, {
+      onClose: (device) => {
+        if (device) {
+          this._addDevice(device).then(() => {
+            this._setValue(device.id);
+          });
+        }
+      },
+    });
   }
 }
 

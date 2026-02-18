@@ -1,12 +1,11 @@
+import { mdiArrowLeft, mdiArrowRight } from "@mdi/js";
 import { LitElement, nothing, html, css } from "lit";
-import { customElement, property } from "lit/decorators";
+import { customElement, property, state } from "lit/decorators";
 import { fireEvent } from "@ha/common/dom/fire_event";
-import { haStyleDialog } from "@ha/resources/styles";
 import type { HomeAssistant } from "@ha/types";
+import type { HassDialog } from "@ha/dialogs/make-dialog-manager";
 import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-button";
-import "../../../components/knx-dialog-header";
-import { mdiArrowLeft, mdiArrowRight, mdiClose } from "@mdi/js";
 
 import {
   formatDateTimeWithMilliseconds,
@@ -15,119 +14,179 @@ import {
 import type { KNX } from "../../../types/knx";
 import type { TelegramRow } from "../types/telegram-row";
 import "@ha/components/ha-relative-time";
-import "@ha/components/ha-icon-button";
-import "@ha/components/ha-dialog";
+import "@ha/components/ha-wa-dialog";
 
 /**
- * Custom dialog to display detailed information about a single KNX telegram.
+ * Parameters for TelegramInfoDialog
+ *
+ * @property knx - KNX instance for localization and project data access
+ * @property telegram - The telegram data to display
+ * @property narrow - Whether to use narrow/mobile layout
+ * @property filteredTelegrams - Array of filtered telegrams for navigation
+ */
+export interface TelegramInfoDialogParams {
+  knx: KNX;
+  telegram: TelegramRow;
+  narrow: boolean;
+  filteredTelegrams: TelegramRow[];
+}
+
+/**
+ * Dialog component to display detailed information about a single KNX telegram
+ *
+ * Features:
+ * - Displays telegram metadata (source, destination, timestamp, direction)
+ * - Shows decoded value and raw payload data
+ * - Enables keyboard navigation between telegrams (arrow keys)
+ * - Updates navigation when telegram list changes via custom events
+ * - Supports both incoming and outgoing telegram types
+ * - Responsive layout for narrow/mobile screens
+ *
+ * Implements HassDialog interface for standard Home Assistant dialog conventions.
  */
 @customElement("knx-group-monitor-telegram-info-dialog")
-export class GroupMonitorTelegramInfoDialog extends LitElement {
+export class GroupMonitorTelegramInfoDialog
+  extends LitElement
+  implements HassDialog<TelegramInfoDialogParams>
+{
   @property({ attribute: false }) public hass!: HomeAssistant;
 
   @property({ attribute: false }) public knx!: KNX;
 
-  @property({ attribute: false }) public narrow = false;
+  @property({ attribute: false }) public filteredTelegrams: TelegramRow[] = [];
 
-  @property({ attribute: false }) public telegram?: TelegramRow;
+  @state() private _open = false;
 
-  @property({ attribute: false }) public disableNext = false;
-
-  @property({ attribute: false }) public disablePrevious = false;
+  @state() private _params?: TelegramInfoDialogParams;
 
   /**
-   * Add keyboard event listener when component is connected to DOM
+   * Get the current navigation state based on filtered telegrams
+   *
+   * Determines whether next/previous buttons should be disabled based on
+   * the current telegram's position in the filtered telegram list.
+   *
+   * @returns Object with disableNext and disablePrevious flags
+   */
+  private _getNavigationState(): { disableNext: boolean; disablePrevious: boolean } {
+    if (!this._params) {
+      return { disableNext: true, disablePrevious: true };
+    }
+    // Use the current filteredTelegrams property which can be updated
+    const telegrams =
+      this.filteredTelegrams.length > 0 ? this.filteredTelegrams : this._params.filteredTelegrams;
+    const index = telegrams.findIndex((t) => t.id === this._params!.telegram.id);
+    return {
+      disableNext: index < 0 || index >= telegrams.length - 1,
+      disablePrevious: index <= 0,
+    };
+  }
+
+  /**
+   * Add event listeners when component is connected to DOM
+   *
+   * Binds keyboard event handlers for navigation and telegram list update handlers
+   * for real-time synchronization with the group monitor view.
    */
   connectedCallback(): void {
     super.connectedCallback();
     this._handleKeyDown = this._handleKeyDown.bind(this);
+    this._handleTelegramListUpdated = this._handleTelegramListUpdated.bind(this);
     document.addEventListener("keydown", this._handleKeyDown);
+    document.addEventListener("knx-telegram-list-updated", this._handleTelegramListUpdated);
   }
 
   /**
-   * Remove keyboard event listener when component is disconnected from DOM
+   * Remove event listeners when component is disconnected from DOM
+   *
+   * Cleans up keyboard and custom event listeners to prevent memory leaks.
    */
   disconnectedCallback(): void {
     document.removeEventListener("keydown", this._handleKeyDown);
+    document.removeEventListener("knx-telegram-list-updated", this._handleTelegramListUpdated);
     super.disconnectedCallback();
   }
 
   /**
-   * Close the dialog and reset properties.
+   * Open the dialog with the given parameters
+   *
+   * Initializes the dialog with telegram data and filtered telegram list.
+   * Stores parameters for navigation and updates the open state.
+   *
+   * Implements HassDialog interface requirement.
+   *
+   * @param params - Dialog parameters including telegram data and navigation context
    */
-  public closeDialog(): void {
-    this.telegram = undefined;
-    fireEvent(this, "dialog-closed", { dialog: this.localName }, { bubbles: false });
+  public async showDialog(params: TelegramInfoDialogParams): Promise<void> {
+    this.knx = params.knx;
+    this._params = params;
+    this.filteredTelegrams = params.filteredTelegrams;
+    this._open = true;
   }
 
   /**
-   * Render the dialog contents.
+   * Close the dialog
+   *
+   * Cleans up internal state. The dialog manager handles the dialog lifecycle,
+   * so no events are fired to parent components.
+   *
+   * Implements HassDialog interface requirement.
+   *
+   * @returns true to indicate successful closure
    */
-  /**
-   * Determine if content is scrolled to show border on header
-   */
-  private _checkScrolled(e: Event): void {
-    const target = e.target as HTMLDivElement;
-    const header = this.shadowRoot?.querySelector("knx-dialog-header");
-    if (header && target.scrollTop > 0) {
-      header.showBorder = true;
-    } else if (header) {
-      header.showBorder = false;
-    }
+  public closeDialog(): boolean {
+    this._open = false;
+    this._params = undefined;
+    fireEvent(this, "dialog-closed", { dialog: this.localName }, { bubbles: false });
+    return true;
   }
+
+  /**
+   * Render the dialog contents
+   *
+   * Displays telegram information including addresses, value, type, DPT,
+   * and payload. Shows navigation buttons for moving between telegrams.
+   *
+   * @returns Template result with dialog markup or nothing if not open
+   */
 
   protected render() {
-    if (!this.telegram) {
-      this.closeDialog();
+    if (!this._open || !this._params) {
       return nothing;
     }
 
-    const isOutgoing = this.telegram.direction === "Outgoing";
+    const { telegram, narrow } = this._params;
+    const { disableNext, disablePrevious } = this._getNavigationState();
+    const isOutgoing = telegram.direction === "Outgoing";
     const directionClass = isOutgoing ? "outgoing" : "incoming";
 
     return html`
-      <!-- 
-        The .heading property is required for the header slot to be rendered,
-        even though we override it with our custom knx-dialog-header component.
-        The value is not displayed but must be truthy for the slot to work.
-      -->
-      <ha-dialog open @closed=${this.closeDialog} .heading=${" "}>
-        <knx-dialog-header slot="heading" .showBorder=${true}>
-          <ha-icon-button
-            slot="navigationIcon"
-            .label=${this.knx.localize("ui.dialogs.generic.close")}
-            .path=${mdiClose}
-            dialogAction="close"
-            class="close-button"
-          ></ha-icon-button>
-          <div slot="title" class="header-title">
-            ${this.knx.localize("knx_telegram_info_dialog_telegram")}
-          </div>
-          <div slot="subtitle">
-            <span title=${formatIsoTimestampWithMicroseconds(this.telegram.timestampIso)}>
-              ${formatDateTimeWithMilliseconds(this.telegram.timestamp) + " "}
-            </span>
-            ${!this.narrow
-              ? html`
-                  (<ha-relative-time
-                    .hass=${this.hass}
-                    .datetime=${this.telegram.timestamp}
-                    .capitalize=${false}
-                  ></ha-relative-time
-                  >)
-                `
-              : nothing}
-          </div>
-          <div
-            slot="actionItems"
-            class="direction-badge ${directionClass}"
-            title=${this.knx.localize(this.telegram.direction) +
-            (this.telegram.dataSecure ? " DataSecure" : "")}
-          >
-            ${this.knx.localize(this.telegram.direction) + (this.telegram.dataSecure ? " 🔒" : "")}
-          </div>
-        </knx-dialog-header>
-        <div class="content" @scroll=${this._checkScrolled}>
+      <ha-wa-dialog .open=${this._open} @closed=${this.closeDialog}>
+        <span slot="headerTitle"> ${this.knx.localize("knx_telegram_info_dialog_telegram")} </span>
+        <div slot="headerSubtitle">
+          <span title=${formatIsoTimestampWithMicroseconds(telegram.timestampIso)}>
+            ${formatDateTimeWithMilliseconds(telegram.timestamp) + " "}
+          </span>
+          ${!narrow
+            ? html`
+                (<ha-relative-time
+                  .hass=${this.hass}
+                  .datetime=${telegram.timestamp}
+                  .capitalize=${false}
+                ></ha-relative-time
+                >)
+              `
+            : nothing}
+        </div>
+        <div
+          slot="headerActionItems"
+          class="direction-badge ${directionClass}"
+          title=${this.knx.localize(telegram.direction) +
+          (telegram.dataSecure ? " DataSecure" : "")}
+        >
+          ${this.knx.localize(telegram.direction) + (telegram.dataSecure ? " 🔒" : "")}
+        </div>
+
+        <div class="content">
           <!-- Body: addresses + value + details -->
           <div class="telegram-body">
             <div class="addresses-row">
@@ -135,29 +194,29 @@ export class GroupMonitorTelegramInfoDialog extends LitElement {
                 <div class="item-label">
                   ${this.knx.localize("knx_telegram_info_dialog_source")}
                 </div>
-                <div class="address-chip">${this.telegram.sourceAddress}</div>
-                ${this.telegram.sourceText
-                  ? html`<div class="item-name">${this.telegram.sourceText}</div>`
+                <div class="address-chip">${telegram.sourceAddress}</div>
+                ${telegram.sourceText
+                  ? html`<div class="item-name">${telegram.sourceText}</div>`
                   : nothing}
               </div>
               <div class="address-item">
                 <div class="item-label">
                   ${this.knx.localize("knx_telegram_info_dialog_destination")}
                 </div>
-                <div class="address-chip">${this.telegram.destinationAddress}</div>
-                ${this.telegram.destinationText
-                  ? html`<div class="item-name">${this.telegram.destinationText}</div>`
+                <div class="address-chip">${telegram.destinationAddress}</div>
+                ${telegram.destinationText
+                  ? html`<div class="item-name">${telegram.destinationText}</div>`
                   : nothing}
               </div>
             </div>
 
-            ${this.telegram.value != null
+            ${telegram.value != null
               ? html`
                   <div class="value-section">
                     <div class="value-label">
                       ${this.knx.localize("knx_telegram_info_dialog_value")}
                     </div>
-                    <div class="value-content">${this.telegram.value}</div>
+                    <div class="value-content">${telegram.value}</div>
                   </div>
                 `
               : nothing}
@@ -168,19 +227,19 @@ export class GroupMonitorTelegramInfoDialog extends LitElement {
                   <div class="detail-label">
                     ${this.knx.localize("knx_telegram_info_dialog_type")}
                   </div>
-                  <div class="detail-value">${this.telegram.type}</div>
+                  <div class="detail-value">${telegram.type}</div>
                 </div>
                 <div class="detail-item">
                   <div class="detail-label">DPT</div>
-                  <div class="detail-value">${this.telegram.dpt || ""}</div>
+                  <div class="detail-value">${telegram.dpt || ""}</div>
                 </div>
-                ${this.telegram.payload != null
+                ${telegram.payload != null
                   ? html`
                       <div class="detail-item payload">
                         <div class="detail-label">
                           ${this.knx.localize("knx_telegram_info_dialog_payload")}
                         </div>
-                        <code>${this.telegram.payload}</code>
+                        <code>${telegram.payload}</code>
                       </div>
                     `
                   : nothing}
@@ -189,57 +248,95 @@ export class GroupMonitorTelegramInfoDialog extends LitElement {
           </div>
         </div>
 
-        <!-- Navigation buttons: previous / next -->
-        <div slot="secondaryAction">
+        <!-- Navigation buttons footer -->
+        <div slot="footer">
           <ha-button
             appearance="plain"
             @click=${this._previousTelegram}
-            .disabled=${this.disablePrevious}
+            .disabled=${disablePrevious}
           >
             <ha-svg-icon .path=${mdiArrowLeft} slot="start"></ha-svg-icon>
             ${this.hass.localize("ui.common.previous")}
           </ha-button>
-        </div>
-        <div slot="primaryAction" class="primaryAction">
-          <ha-button appearance="plain" @click=${this._nextTelegram} .disabled=${this.disableNext}>
+          <ha-button appearance="plain" @click=${this._nextTelegram} .disabled=${disableNext}>
             ${this.hass.localize("ui.common.next")}
             <ha-svg-icon .path=${mdiArrowRight} slot="end"></ha-svg-icon>
           </ha-button>
         </div>
-      </ha-dialog>
+      </ha-wa-dialog>
     `;
   }
 
+  /**
+   * Navigate to the next telegram in the filtered list
+   *
+   * Updates the dialog parameters to show the next telegram.
+   * Does nothing if already at the end of the list.
+   */
   private _nextTelegram() {
-    fireEvent(this, "next-telegram", undefined, { bubbles: true });
+    if (!this._params) return;
+    const telegrams =
+      this.filteredTelegrams.length > 0 ? this.filteredTelegrams : this._params.filteredTelegrams;
+    const index = telegrams.findIndex((t) => t.id === this._params!.telegram.id);
+    if (index >= 0 && index < telegrams.length - 1) {
+      this._params = {
+        ...this._params,
+        telegram: telegrams[index + 1],
+      };
+    }
   }
 
+  /**
+   * Navigate to the previous telegram in the filtered list
+   *
+   * Updates the dialog parameters to show the previous telegram.
+   * Does nothing if already at the beginning of the list.
+   */
   private _previousTelegram() {
-    fireEvent(this, "previous-telegram", undefined, { bubbles: true });
+    if (!this._params) return;
+    const telegrams =
+      this.filteredTelegrams.length > 0 ? this.filteredTelegrams : this._params.filteredTelegrams;
+    const index = telegrams.findIndex((t) => t.id === this._params!.telegram.id);
+    if (index > 0) {
+      this._params = {
+        ...this._params,
+        telegram: telegrams[index - 1],
+      };
+    }
   }
 
   /**
    * Handle keyboard events for navigation
-   * @param event Keyboard event
+   *
+   * Supports:
+   * - ArrowLeft/ArrowDown: Previous telegram
+   * - ArrowRight/ArrowUp: Next telegram
+   *
+   * Only processes events when dialog is open. Prevents default behavior
+   * to avoid page scrolling.
+   *
+   * @param event - Keyboard event to process
    */
   private _handleKeyDown(event: KeyboardEvent): void {
     // Only process keyboard events when dialog is open
-    if (!this.telegram) {
+    if (!this._open || !this._params) {
       return;
     }
+
+    const { disablePrevious, disableNext } = this._getNavigationState();
 
     // Prevent default behavior for arrow keys to avoid scrolling
     switch (event.key) {
       case "ArrowLeft":
       case "ArrowDown":
-        if (!this.disablePrevious) {
+        if (!disablePrevious) {
           event.preventDefault();
           this._previousTelegram();
         }
         break;
       case "ArrowRight":
       case "ArrowUp":
-        if (!this.disableNext) {
+        if (!disableNext) {
           event.preventDefault();
           this._nextTelegram();
         }
@@ -250,60 +347,33 @@ export class GroupMonitorTelegramInfoDialog extends LitElement {
     }
   }
 
+  /**
+   * Handle updates to the telegram list from the group monitor view
+   *
+   * Called when new telegrams arrive or the list is filtered. Updates the
+   * internal filteredTelegrams property and triggers a re-render to update
+   * navigation button states.
+   *
+   * @param event - Custom event with updated filtered telegram list
+   */
+  private _handleTelegramListUpdated = (
+    event: Event & { detail?: { filteredTelegrams: TelegramRow[] } },
+  ): void => {
+    if (event.detail?.filteredTelegrams) {
+      this.filteredTelegrams = event.detail.filteredTelegrams;
+      this.requestUpdate();
+    }
+  };
+
   static get styles() {
     return [
-      haStyleDialog,
       css`
-        ha-dialog {
-          --vertical-align-dialog: center;
-          --dialog-z-index: 20;
-        }
-        @media all and (max-width: 450px), all and (max-height: 500px) {
-          /* When in fullscreen dialog should be attached to top */
-          ha-dialog {
-            --dialog-surface-margin-top: 0px;
-            --dialog-content-padding: 16px 24px 16px 24px;
-          }
-        }
-        @media all and (min-width: 600px) and (min-height: 501px) {
-          /* Set the dialog width and min-height, but let height adapt to content */
-          ha-dialog {
-            --mdc-dialog-min-width: 580px;
-            --mdc-dialog-max-width: 580px;
-            --mdc-dialog-min-height: 70%;
-            --mdc-dialog-max-height: 100%;
-            --dialog-content-padding: 16px 24px 16px 24px;
-          }
+        ha-wa-dialog {
+          --ha-dialog-width-md: 580px;
         }
 
         ha-button {
           --ha-button-radius: 8px; /* Default is --wa-border-radius-pill */
-        }
-
-        /* Custom heading styles */
-        .custom-heading {
-          display: flex;
-          flex-direction: row;
-          padding: 16px 24px 12px 16px;
-          border-bottom: 1px solid var(--divider-color);
-          align-items: center;
-          gap: 12px;
-        }
-        .heading-content {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-        }
-        .header-title {
-          margin: 0;
-          font-size: 18px;
-          font-weight: 500;
-          line-height: 1.3;
-          color: var(--primary-text-color);
-        }
-        .close-button {
-          color: var(--primary-text-color);
-          margin-right: -8px;
         }
 
         /* General content styling */
@@ -315,12 +385,6 @@ export class GroupMonitorTelegramInfoDialog extends LitElement {
           outline: none;
         }
 
-        /* Timestamp style */
-        .timestamp {
-          font-size: 13px;
-          color: var(--secondary-text-color);
-          margin-top: 2px;
-        }
         .direction-badge {
           font-size: 12px;
           font-weight: 500;
@@ -329,6 +393,7 @@ export class GroupMonitorTelegramInfoDialog extends LitElement {
           text-transform: uppercase;
           letter-spacing: 0.4px;
           white-space: nowrap;
+          margin-right: 16px;
         }
         .direction-badge.outgoing {
           background-color: var(--knx-blue, var(--info-color));
@@ -452,10 +517,6 @@ export class GroupMonitorTelegramInfoDialog extends LitElement {
           box-shadow: 0 1px 2px rgba(var(--rgb-primary-text-color), 0.04);
           margin-top: 4px;
         }
-
-        .primaryAction {
-          margin-right: 8px;
-        }
       `,
     ];
   }
@@ -463,8 +524,7 @@ export class GroupMonitorTelegramInfoDialog extends LitElement {
 
 declare global {
   interface HASSDomEvents {
-    "next-telegram": undefined;
-    "previous-telegram": undefined;
+    "knx-telegram-list-updated": { filteredTelegrams: TelegramRow[] };
   }
 
   interface HTMLElementTagNameMap {
