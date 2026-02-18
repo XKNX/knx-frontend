@@ -5,7 +5,7 @@
  * interactive form with device name and area selection, integration with
  * Home Assistant's device registry, real-time validation and error handling,
  * responsive design with proper dialog styling, accessibility support with
- * proper ARIA implementation, and event-driven communication with parent
+ * proper ARIA implementation, and callback-based communication with parent
  * components.
  *
  * Includes required device name validation, optional area assignment with
@@ -14,11 +14,11 @@
  * and integration with Home Assistant's localization system.
  *
  * Workflow:
- * 1. User opens dialog from parent component
+ * 1. User opens dialog from parent component with optional onClose callback
  * 2. User enters device name (required) and selects area (optional)
  * 3. Dialog validates input and creates device via API
- * 4. On success/error, dialog closes and notifies parent
- * 5. Parent receives new device entry or undefined on cancellation
+ * 4. On success/error, dialog invokes onClose callback with result
+ * 5. Parent receives device via callback (DeviceRegistryEntry or undefined)
  */
 
 import { LitElement, html, css } from "lit";
@@ -30,7 +30,6 @@ import "@ha/components/ha-wa-dialog";
 import "@ha/components/ha-button";
 import "@ha/components/ha-selector/ha-selector-text";
 
-import { fireEvent } from "@ha/common/dom/fire_event";
 import type { DeviceRegistryEntry } from "@ha/data/device/device_registry";
 import type { HomeAssistant } from "@ha/types";
 import type { HassDialog } from "@ha/dialogs/make-dialog-manager";
@@ -46,9 +45,17 @@ import { KNXLogger } from "../tools/knx-logger";
 const logger = new KNXLogger("create_device_dialog");
 
 // ============================================================================
-// Event Type Declarations
+// Dialog Parameters
 // ============================================================================
 
+/**
+ * Parameters for the device creation dialog
+ *
+ * @property deviceName - Optional initial device name to pre-populate the form
+ * @property onClose - Optional callback invoked when dialog closes with result:
+ *   - DeviceRegistryEntry if device was successfully created
+ *   - undefined if dialog was cancelled or creation failed
+ */
 export interface KnxDeviceCreateDialogParams {
   deviceName?: string;
   onClose?: (device: DeviceRegistryEntry | undefined) => void;
@@ -113,12 +120,14 @@ export class DeviceCreateDialog
   }
 
   /**
-   * Closes the dialog and notifies parent component of result
+   * Closes the dialog
+   * Implements HassDialog interface requirement
    *
-   * Calls onClose callback if provided with the result of the operation.
-   * Cleans up internal state before closing.
+   * Performs internal cleanup and state reset. The dialog manager
+   * handles dialog lifecycle, so no events are fired.
    *
-   * @param _ev - Event parameter (unused but kept for consistent signature)
+   * @param _ev - Optional event parameter (unused but kept for interface compatibility)
+   * @returns true to indicate successful closure
    */
   public closeDialog(_ev?: any): boolean {
     this._dialogClosed();
@@ -127,17 +136,20 @@ export class DeviceCreateDialog
 
   /**
    * Internal cleanup and state reset
+   * Resets all dialog state without triggering callbacks
    */
   private _dialogClosed(): void {
     this._open = false;
     this._params = undefined;
     this._deviceName = undefined;
     this._area = undefined;
-    fireEvent(this, "dialog-closed", { dialog: this.localName }, { bubbles: false });
   }
 
   /**
-   * Handle cancel action - close dialog with undefined result
+   * Handle cancel action
+   *
+   * Invokes the onClose callback with undefined to indicate cancellation,
+   * then closes the dialog and cleans up state.
    */
   private _cancel(): void {
     if (this._params?.onClose) {
@@ -156,8 +168,8 @@ export class DeviceCreateDialog
    * Process flow:
    * 1. Validates required device name is present
    * 2. Calls WebSocket API to create device with name and optional area
-   * 3. Calls onClose callback with result if successful
-   * 4. Handles errors by logging and navigating to error page
+   * 3. On success: invokes onClose callback with created device, then closes dialog
+   * 4. On error: logs error, navigates to error page, invokes callback with undefined
    * 5. Always closes dialog regardless of success/failure
    *
    * Error handling includes navigation to dedicated error page with
@@ -244,6 +256,8 @@ export class DeviceCreateDialog
    * 3. Component property is updated with new value
    * 4. Event propagation is stopped to prevent bubbling
    *
+   * Supported keys: '_deviceName' (string), '_area' (string | undefined)
+   *
    * @param ev - Custom event containing the new value and target information
    */
   protected _valueChanged(ev: CustomEvent): void {
@@ -259,7 +273,8 @@ export class DeviceCreateDialog
   // ============================================================================
 
   /**
-   * Component-specific styles.
+   * Component-specific styles
+   * Sets custom dialog width for optimal form layout
    */
 
   static get styles() {

@@ -18,6 +18,11 @@ import "@ha/components/ha-wa-dialog";
 
 /**
  * Parameters for TelegramInfoDialog
+ *
+ * @property knx - KNX instance for localization and project data access
+ * @property telegram - The telegram data to display
+ * @property narrow - Whether to use narrow/mobile layout
+ * @property filteredTelegrams - Array of filtered telegrams for navigation
  */
 export interface TelegramInfoDialogParams {
   knx: KNX;
@@ -27,7 +32,16 @@ export interface TelegramInfoDialogParams {
 }
 
 /**
- * Custom dialog to display detailed information about a single KNX telegram.
+ * Dialog component to display detailed information about a single KNX telegram
+ *
+ * Features:
+ * - Displays telegram metadata (source, destination, timestamp, direction)
+ * - Shows decoded value and raw payload data
+ * - Enables keyboard navigation between telegrams (arrow keys)
+ * - Updates navigation when telegram list changes via custom events
+ * - Supports both incoming and outgoing telegram types
+ * - Responsive layout for narrow/mobile screens
+ *
  * Implements HassDialog interface for standard Home Assistant dialog conventions.
  */
 @customElement("knx-group-monitor-telegram-info-dialog")
@@ -46,7 +60,12 @@ export class GroupMonitorTelegramInfoDialog
   @state() private _params?: TelegramInfoDialogParams;
 
   /**
-   * Get the current navigation state (disable flags) based on filtered telegrams
+   * Get the current navigation state based on filtered telegrams
+   *
+   * Determines whether next/previous buttons should be disabled based on
+   * the current telegram's position in the filtered telegram list.
+   *
+   * @returns Object with disableNext and disablePrevious flags
    */
   private _getNavigationState(): { disableNext: boolean; disablePrevious: boolean } {
     if (!this._params) {
@@ -63,7 +82,10 @@ export class GroupMonitorTelegramInfoDialog
   }
 
   /**
-   * Add keyboard event listener when component is connected to DOM
+   * Add event listeners when component is connected to DOM
+   *
+   * Binds keyboard event handlers for navigation and telegram list update handlers
+   * for real-time synchronization with the group monitor view.
    */
   connectedCallback(): void {
     super.connectedCallback();
@@ -74,7 +96,9 @@ export class GroupMonitorTelegramInfoDialog
   }
 
   /**
-   * Remove keyboard event listener when component is disconnected from DOM
+   * Remove event listeners when component is disconnected from DOM
+   *
+   * Cleans up keyboard and custom event listeners to prevent memory leaks.
    */
   disconnectedCallback(): void {
     document.removeEventListener("keydown", this._handleKeyDown);
@@ -84,7 +108,13 @@ export class GroupMonitorTelegramInfoDialog
 
   /**
    * Open the dialog with the given parameters
-   * Implements HassDialog interface
+   *
+   * Initializes the dialog with telegram data and filtered telegram list.
+   * Stores parameters for navigation and updates the open state.
+   *
+   * Implements HassDialog interface requirement.
+   *
+   * @param params - Dialog parameters including telegram data and navigation context
    */
   public async showDialog(params: TelegramInfoDialogParams): Promise<void> {
     this.knx = params.knx;
@@ -95,7 +125,13 @@ export class GroupMonitorTelegramInfoDialog
 
   /**
    * Close the dialog
-   * Implements HassDialog interface
+   *
+   * Cleans up internal state. The dialog manager handles the dialog lifecycle,
+   * so no events are fired to parent components.
+   *
+   * Implements HassDialog interface requirement.
+   *
+   * @returns true to indicate successful closure
    */
   public closeDialog(): boolean {
     this._open = false;
@@ -105,7 +141,12 @@ export class GroupMonitorTelegramInfoDialog
   }
 
   /**
-   * Render the dialog contents.
+   * Render the dialog contents
+   *
+   * Displays telegram information including addresses, value, type, DPT,
+   * and payload. Shows navigation buttons for moving between telegrams.
+   *
+   * @returns Template result with dialog markup or nothing if not open
    */
 
   protected render() {
@@ -226,6 +267,12 @@ export class GroupMonitorTelegramInfoDialog
     `;
   }
 
+  /**
+   * Navigate to the next telegram in the filtered list
+   *
+   * Updates the dialog parameters to show the next telegram.
+   * Does nothing if already at the end of the list.
+   */
   private _nextTelegram() {
     if (!this._params) return;
     const telegrams =
@@ -239,6 +286,12 @@ export class GroupMonitorTelegramInfoDialog
     }
   }
 
+  /**
+   * Navigate to the previous telegram in the filtered list
+   *
+   * Updates the dialog parameters to show the previous telegram.
+   * Does nothing if already at the beginning of the list.
+   */
   private _previousTelegram() {
     if (!this._params) return;
     const telegrams =
@@ -254,7 +307,15 @@ export class GroupMonitorTelegramInfoDialog
 
   /**
    * Handle keyboard events for navigation
-   * @param event Keyboard event
+   *
+   * Supports:
+   * - ArrowLeft/ArrowDown: Previous telegram
+   * - ArrowRight/ArrowUp: Next telegram
+   *
+   * Only processes events when dialog is open. Prevents default behavior
+   * to avoid page scrolling.
+   *
+   * @param event - Keyboard event to process
    */
   private _handleKeyDown(event: KeyboardEvent): void {
     // Only process keyboard events when dialog is open
@@ -287,8 +348,13 @@ export class GroupMonitorTelegramInfoDialog
   }
 
   /**
-   * Handle updates to the telegram list from the parent view
-   * Called when new telegrams arrive or the list is filtered
+   * Handle updates to the telegram list from the group monitor view
+   *
+   * Called when new telegrams arrive or the list is filtered. Updates the
+   * internal filteredTelegrams property and triggers a re-render to update
+   * navigation button states.
+   *
+   * @param event - Custom event with updated filtered telegram list
    */
   private _handleTelegramListUpdated = (
     event: Event & { detail?: { filteredTelegrams: TelegramRow[] } },
