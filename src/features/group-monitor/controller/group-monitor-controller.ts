@@ -69,8 +69,6 @@ export class GroupMonitorController implements ReactiveController {
   private _telegramBuffer = new TelegramBufferService(2000);
 
   // UI state
-  private _selectedTelegramId: string | null = null;
-
   private _filters: Record<string, string[]> = {};
 
   private _sortColumn?: string = "timestampIso";
@@ -154,15 +152,6 @@ export class GroupMonitorController implements ReactiveController {
 
   public get telegrams(): readonly TelegramRow[] {
     return this._telegramBuffer.snapshot;
-  }
-
-  public get selectedTelegramId(): string | null {
-    return this._selectedTelegramId;
-  }
-
-  public set selectedTelegramId(value: string | null) {
-    this._selectedTelegramId = value;
-    this.host.requestUpdate();
   }
 
   public get filters(): Record<string, string[]> {
@@ -479,25 +468,6 @@ export class GroupMonitorController implements ReactiveController {
     this._resetDistinctValues(preserveValues);
     this._isReloadEnabled = true;
     this.host.requestUpdate();
-  }
-
-  // ============================================================================
-  // Navigation methods
-  // ============================================================================
-
-  /**
-   * Navigates through the filtered telegram list
-   */
-  public navigateTelegram(step: number, filteredRows: TelegramRow[]): void {
-    if (!this._selectedTelegramId) return;
-
-    const currentIndex = filteredRows.findIndex((row) => row.id === this._selectedTelegramId);
-    const targetIndex = currentIndex + step;
-
-    if (targetIndex >= 0 && targetIndex < filteredRows.length) {
-      this._selectedTelegramId = filteredRows[targetIndex].id;
-      this.host.requestUpdate();
-    }
   }
 
   // ============================================================================

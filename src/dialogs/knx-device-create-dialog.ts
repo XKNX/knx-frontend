@@ -234,7 +234,9 @@ export class DeviceCreateDialog
         <ha-button appearance="plain" @click=${this._cancel}>
           ${this.hass.localize("ui.common.cancel")}
         </ha-button>
-        <ha-button @click=${this._createDevice}> ${this.hass.localize("ui.common.add")} </ha-button>
+        <ha-button .disabled=${!this._deviceName} @click=${this._createDevice}>
+          ${this.hass.localize("ui.common.add")}
+        </ha-button>
       </div>
     </ha-wa-dialog>`;
   }

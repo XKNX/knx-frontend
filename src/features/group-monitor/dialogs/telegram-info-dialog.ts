@@ -524,8 +524,6 @@ export class GroupMonitorTelegramInfoDialog
 
 declare global {
   interface HASSDomEvents {
-    "next-telegram": undefined;
-    "previous-telegram": undefined;
     "knx-telegram-list-updated": { filteredTelegrams: TelegramRow[] };
   }
 

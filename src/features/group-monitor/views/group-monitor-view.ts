@@ -432,8 +432,6 @@ export class KNXGroupMonitor extends LitElement {
       return;
     }
 
-    this.controller.selectedTelegramId = ev.detail.id;
-
     const params: TelegramInfoDialogParams = {
       knx: this.knx,
       telegram: telegramRow,
