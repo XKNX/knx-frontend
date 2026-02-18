@@ -2,6 +2,7 @@ import type { ReactiveController, ReactiveControllerHost } from "lit";
 import type { HomeAssistant, Route } from "@ha/types";
 import { navigate } from "@ha/common/navigate";
 import { mainWindow } from "@ha/common/dom/get_main_window";
+import { fireEvent } from "@ha/common/dom/fire_event";
 import memoize from "memoize-one";
 import type { SortingDirection } from "@ha/components/data-table/ha-data-table";
 
@@ -97,6 +98,9 @@ export class GroupMonitorController implements ReactiveController {
 
   // Buffer version counter for memoization cache invalidation
   private _bufferVersion = 0;
+
+  // Last filtered telegrams for change detection
+  private _lastFilteredTelegrams: readonly TelegramRow[] = [];
 
   constructor(host: ReactiveControllerHost) {
     this.host = host;
@@ -207,7 +211,7 @@ export class GroupMonitorController implements ReactiveController {
    * Gets both filtered telegrams and distinct values in a single synchronized call
    */
   public getFilteredTelegramsAndDistinctValues(): FilteredTelegramsResult {
-    return this._getFilteredTelegramsAndDistinctValues(
+    const result = this._getFilteredTelegramsAndDistinctValues(
       this._bufferVersion,
       JSON.stringify(this._filters),
       this._telegramBuffer.snapshot,
@@ -215,6 +219,22 @@ export class GroupMonitorController implements ReactiveController {
       this._sortColumn,
       this._sortDirection,
     );
+
+    // Check if filtered telegrams have changed and emit event if so
+    if (result.filteredTelegrams !== this._lastFilteredTelegrams) {
+      this._lastFilteredTelegrams = result.filteredTelegrams;
+      // Emit event to notify dialog about list changes
+      if (this.host instanceof HTMLElement) {
+        fireEvent(
+          this.host,
+          "knx-telegram-list-updated",
+          { filteredTelegrams: result.filteredTelegrams },
+          { bubbles: true },
+        );
+      }
+    }
+
+    return result;
   }
 
   /**

@@ -21,12 +21,14 @@ import { isTouch } from "@ha/util/is_touch";
 
 import "../../../components/data-table/cell/knx-table-cell";
 import "../../../components/data-table/cell/knx-table-cell-filterable";
-import "../dialogs/telegram-info-dialog";
 import "../../../components/data-table/filter/knx-list-filter";
 
 import { customElement, property, query } from "lit/decorators";
 import { storage } from "@ha/common/decorators/storage";
 import { mdiDeleteSweep, mdiFastForward, mdiPause, mdiRefresh } from "@mdi/js";
+
+import { showTelegramInfoDialog } from "../dialogs/show-telegram-info-dialog";
+import type { TelegramInfoDialogParams } from "../dialogs/telegram-info-dialog";
 import { formatTimeWithMilliseconds, formatTimeDelta } from "../../../utils/format";
 import type { TelegramRow, TelegramRowKeys } from "../types/telegram-row";
 import type { ToggleFilterEvent } from "../../../components/data-table/cell/knx-table-cell-filterable";
@@ -423,12 +425,23 @@ export class KNXGroupMonitor extends LitElement {
    * Opens the detailed telegram information dialog
    */
   private _handleRowClick(ev: HASSDomEvent<RowClickedEvent>): void {
-    this.controller.selectedTelegramId = ev.detail.id;
-  }
+    const { filteredTelegrams } = this._getFilteredData();
+    const telegramRow = filteredTelegrams.find((row) => row.id === ev.detail.id);
 
-  /** Closes the telegram detail dialog */
-  private _handleDialogClosed(): void {
-    this.controller.selectedTelegramId = null;
+    if (!telegramRow) {
+      return;
+    }
+
+    this.controller.selectedTelegramId = ev.detail.id;
+
+    const params: TelegramInfoDialogParams = {
+      knx: this.knx,
+      telegram: telegramRow,
+      narrow: this.narrow,
+      filteredTelegrams,
+    };
+
+    showTelegramInfoDialog(this, params);
   }
 
   /** Toggles the pause state of telegram monitoring */
@@ -557,26 +570,6 @@ export class KNXGroupMonitor extends LitElement {
     // Force a re-render so memoized filter configs re-compute using the updated criterion.
     this.requestUpdate();
   };
-
-  // ============================================================================
-  // Telegram Navigation
-  // ============================================================================
-
-  /**
-   * Selects the next telegram in the filtered list
-   */
-  private _selectNextTelegram(): void {
-    const { filteredTelegrams } = this._getFilteredData();
-    this.controller.navigateTelegram(1, filteredTelegrams);
-  }
-
-  /**
-   * Selects the previous telegram in the filtered list
-   */
-  private _selectPreviousTelegram(): void {
-    const { filteredTelegrams } = this._getFilteredData();
-    this.controller.navigateTelegram(-1, filteredTelegrams);
-  }
 
   // ============================================================================
   // Data Table Column Definitions
@@ -856,36 +849,6 @@ export class KNXGroupMonitor extends LitElement {
     return formatTimeDelta(offsetMicros, "milliseconds");
   }
 
-  /**
-   * Renders the telegram information dialog for detailed view
-   * @param id - The telegram ID to display
-   * @returns Template for the dialog component
-   */
-  private _renderTelegramInfoDialog(id: string): TemplateResult | typeof nothing {
-    const { filteredTelegrams } = this._getFilteredData();
-    const arrayIndex = filteredTelegrams.findIndex((row) => row.id === id);
-    const telegramRow = filteredTelegrams[arrayIndex];
-
-    if (!telegramRow) {
-      return nothing;
-    }
-
-    return html`
-      <knx-group-monitor-telegram-info-dialog
-        .hass=${this.hass}
-        .knx=${this.knx}
-        .narrow=${this.narrow}
-        .telegram=${telegramRow}
-        .disableNext=${arrayIndex + 1 >= filteredTelegrams.length}
-        .disablePrevious=${arrayIndex <= 0}
-        @next-telegram=${this._selectNextTelegram}
-        @previous-telegram=${this._selectPreviousTelegram}
-        @dialog-closed=${this._handleDialogClosed}
-      >
-      </knx-group-monitor-telegram-info-dialog>
-    `;
-  }
-
   // ============================================================================
   // Main Render Method
   // ============================================================================
@@ -1102,11 +1065,6 @@ export class KNXGroupMonitor extends LitElement {
           @expanded-changed=${this._handleTelegramTypeFilterExpanded}
         ></knx-list-filter>
       </hass-tabs-subpage-data-table>
-
-      <!-- Telegram detail dialog -->
-      ${this.controller.selectedTelegramId !== null
-        ? this._renderTelegramInfoDialog(this.controller.selectedTelegramId)
-        : nothing}
     `;
   }
 }
