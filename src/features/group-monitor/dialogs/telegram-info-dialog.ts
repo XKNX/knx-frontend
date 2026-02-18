@@ -1,10 +1,10 @@
+import { mdiArrowLeft, mdiArrowRight } from "@mdi/js";
 import { LitElement, nothing, html, css } from "lit";
 import { customElement, property } from "lit/decorators";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import type { HomeAssistant } from "@ha/types";
 import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-button";
-import { mdiArrowLeft, mdiArrowRight } from "@mdi/js";
 
 import {
   formatDateTimeWithMilliseconds,
@@ -229,11 +229,6 @@ export class GroupMonitorTelegramInfoDialog extends LitElement {
           --ha-button-radius: 8px; /* Default is --wa-border-radius-pill */
         }
 
-        .close-button {
-          color: var(--primary-text-color);
-          margin-right: -8px;
-        }
-
         /* General content styling */
         .content {
           display: flex;
@@ -243,12 +238,6 @@ export class GroupMonitorTelegramInfoDialog extends LitElement {
           outline: none;
         }
 
-        /* Timestamp style */
-        .timestamp {
-          font-size: 13px;
-          color: var(--secondary-text-color);
-          margin-top: 2px;
-        }
         .direction-badge {
           font-size: 12px;
           font-weight: 500;
