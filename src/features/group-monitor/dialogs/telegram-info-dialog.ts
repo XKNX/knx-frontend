@@ -1,12 +1,10 @@
 import { LitElement, nothing, html, css } from "lit";
 import { customElement, property } from "lit/decorators";
 import { fireEvent } from "@ha/common/dom/fire_event";
-import { haStyleDialog } from "@ha/resources/styles";
 import type { HomeAssistant } from "@ha/types";
 import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-button";
-import "../../../components/knx-dialog-header";
-import { mdiArrowLeft, mdiArrowRight, mdiClose } from "@mdi/js";
+import { mdiArrowLeft, mdiArrowRight } from "@mdi/js";
 
 import {
   formatDateTimeWithMilliseconds,
@@ -15,8 +13,7 @@ import {
 import type { KNX } from "../../../types/knx";
 import type { TelegramRow } from "../types/telegram-row";
 import "@ha/components/ha-relative-time";
-import "@ha/components/ha-icon-button";
-import "@ha/components/ha-dialog";
+import "@ha/components/ha-wa-dialog";
 
 /**
  * Custom dialog to display detailed information about a single KNX telegram.
@@ -63,18 +60,6 @@ export class GroupMonitorTelegramInfoDialog extends LitElement {
   /**
    * Render the dialog contents.
    */
-  /**
-   * Determine if content is scrolled to show border on header
-   */
-  private _checkScrolled(e: Event): void {
-    const target = e.target as HTMLDivElement;
-    const header = this.shadowRoot?.querySelector("knx-dialog-header");
-    if (header && target.scrollTop > 0) {
-      header.showBorder = true;
-    } else if (header) {
-      header.showBorder = false;
-    }
-  }
 
   protected render() {
     if (!this.telegram) {
@@ -86,48 +71,33 @@ export class GroupMonitorTelegramInfoDialog extends LitElement {
     const directionClass = isOutgoing ? "outgoing" : "incoming";
 
     return html`
-      <!-- 
-        The .heading property is required for the header slot to be rendered,
-        even though we override it with our custom knx-dialog-header component.
-        The value is not displayed but must be truthy for the slot to work.
-      -->
-      <ha-dialog open @closed=${this.closeDialog} .heading=${" "}>
-        <knx-dialog-header slot="heading" .showBorder=${true}>
-          <ha-icon-button
-            slot="navigationIcon"
-            .label=${this.knx.localize("ui.dialogs.generic.close")}
-            .path=${mdiClose}
-            dialogAction="close"
-            class="close-button"
-          ></ha-icon-button>
-          <div slot="title" class="header-title">
-            ${this.knx.localize("knx_telegram_info_dialog_telegram")}
-          </div>
-          <div slot="subtitle">
-            <span title=${formatIsoTimestampWithMicroseconds(this.telegram.timestampIso)}>
-              ${formatDateTimeWithMilliseconds(this.telegram.timestamp) + " "}
-            </span>
-            ${!this.narrow
-              ? html`
-                  (<ha-relative-time
-                    .hass=${this.hass}
-                    .datetime=${this.telegram.timestamp}
-                    .capitalize=${false}
-                  ></ha-relative-time
-                  >)
-                `
-              : nothing}
-          </div>
-          <div
-            slot="actionItems"
-            class="direction-badge ${directionClass}"
-            title=${this.knx.localize(this.telegram.direction) +
-            (this.telegram.dataSecure ? " DataSecure" : "")}
-          >
-            ${this.knx.localize(this.telegram.direction) + (this.telegram.dataSecure ? " 🔒" : "")}
-          </div>
-        </knx-dialog-header>
-        <div class="content" @scroll=${this._checkScrolled}>
+      <ha-wa-dialog open @closed=${this.closeDialog}>
+        <span slot="headerTitle"> ${this.knx.localize("knx_telegram_info_dialog_telegram")} </span>
+        <div slot="headerSubtitle">
+          <span title=${formatIsoTimestampWithMicroseconds(this.telegram.timestampIso)}>
+            ${formatDateTimeWithMilliseconds(this.telegram.timestamp) + " "}
+          </span>
+          ${!this.narrow
+            ? html`
+                (<ha-relative-time
+                  .hass=${this.hass}
+                  .datetime=${this.telegram.timestamp}
+                  .capitalize=${false}
+                ></ha-relative-time
+                >)
+              `
+            : nothing}
+        </div>
+        <div
+          slot="headerActionItems"
+          class="direction-badge ${directionClass}"
+          title=${this.knx.localize(this.telegram.direction) +
+          (this.telegram.dataSecure ? " DataSecure" : "")}
+        >
+          ${this.knx.localize(this.telegram.direction) + (this.telegram.dataSecure ? " 🔒" : "")}
+        </div>
+
+        <div class="content">
           <!-- Body: addresses + value + details -->
           <div class="telegram-body">
             <div class="addresses-row">
@@ -189,8 +159,8 @@ export class GroupMonitorTelegramInfoDialog extends LitElement {
           </div>
         </div>
 
-        <!-- Navigation buttons: previous / next -->
-        <div slot="secondaryAction">
+        <!-- Navigation buttons footer -->
+        <div slot="footer">
           <ha-button
             appearance="plain"
             @click=${this._previousTelegram}
@@ -199,14 +169,12 @@ export class GroupMonitorTelegramInfoDialog extends LitElement {
             <ha-svg-icon .path=${mdiArrowLeft} slot="start"></ha-svg-icon>
             ${this.hass.localize("ui.common.previous")}
           </ha-button>
-        </div>
-        <div slot="primaryAction" class="primaryAction">
           <ha-button appearance="plain" @click=${this._nextTelegram} .disabled=${this.disableNext}>
             ${this.hass.localize("ui.common.next")}
             <ha-svg-icon .path=${mdiArrowRight} slot="end"></ha-svg-icon>
           </ha-button>
         </div>
-      </ha-dialog>
+      </ha-wa-dialog>
     `;
   }
 
@@ -252,55 +220,15 @@ export class GroupMonitorTelegramInfoDialog extends LitElement {
 
   static get styles() {
     return [
-      haStyleDialog,
       css`
-        ha-dialog {
-          --vertical-align-dialog: center;
-          --dialog-z-index: 20;
-        }
-        @media all and (max-width: 450px), all and (max-height: 500px) {
-          /* When in fullscreen dialog should be attached to top */
-          ha-dialog {
-            --dialog-surface-margin-top: 0px;
-            --dialog-content-padding: 16px 24px 16px 24px;
-          }
-        }
-        @media all and (min-width: 600px) and (min-height: 501px) {
-          /* Set the dialog width and min-height, but let height adapt to content */
-          ha-dialog {
-            --mdc-dialog-min-width: 580px;
-            --mdc-dialog-max-width: 580px;
-            --mdc-dialog-min-height: 70%;
-            --mdc-dialog-max-height: 100%;
-            --dialog-content-padding: 16px 24px 16px 24px;
-          }
+        ha-wa-dialog {
+          --ha-dialog-width-md: 580px;
         }
 
         ha-button {
           --ha-button-radius: 8px; /* Default is --wa-border-radius-pill */
         }
 
-        /* Custom heading styles */
-        .custom-heading {
-          display: flex;
-          flex-direction: row;
-          padding: 16px 24px 12px 16px;
-          border-bottom: 1px solid var(--divider-color);
-          align-items: center;
-          gap: 12px;
-        }
-        .heading-content {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-        }
-        .header-title {
-          margin: 0;
-          font-size: 18px;
-          font-weight: 500;
-          line-height: 1.3;
-          color: var(--primary-text-color);
-        }
         .close-button {
           color: var(--primary-text-color);
           margin-right: -8px;
@@ -329,6 +257,7 @@ export class GroupMonitorTelegramInfoDialog extends LitElement {
           text-transform: uppercase;
           letter-spacing: 0.4px;
           white-space: nowrap;
+          margin-right: 16px;
         }
         .direction-badge.outgoing {
           background-color: var(--knx-blue, var(--info-color));
@@ -451,10 +380,6 @@ export class GroupMonitorTelegramInfoDialog extends LitElement {
           white-space: pre;
           box-shadow: 0 1px 2px rgba(var(--rgb-primary-text-color), 0.04);
           margin-top: 4px;
-        }
-
-        .primaryAction {
-          margin-right: 8px;
         }
       `,
     ];
