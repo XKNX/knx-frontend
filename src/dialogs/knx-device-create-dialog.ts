@@ -26,14 +26,13 @@ import { customElement, property, state } from "lit/decorators";
 
 import { navigate } from "@ha/common/navigate";
 import "@ha/components/ha-area-picker";
-import "@ha/components/ha-dialog";
+import "@ha/components/ha-wa-dialog";
 import "@ha/components/ha-button";
 import "@ha/components/ha-selector/ha-selector-text";
 
-import { fireEvent } from "@ha/common/dom/fire_event";
-import { haStyleDialog } from "@ha/resources/styles";
-import type { DeviceRegistryEntry } from "@ha/data/device_registry";
+import type { DeviceRegistryEntry } from "@ha/data/device/device_registry";
 import type { HomeAssistant } from "@ha/types";
+import type { HassDialog } from "@ha/dialogs/make-dialog-manager";
 
 import { createDevice } from "../services/websocket.service";
 import { KNXLogger } from "../tools/knx-logger";
@@ -49,18 +48,9 @@ const logger = new KNXLogger("create_device_dialog");
 // Event Type Declarations
 // ============================================================================
 
-declare global {
-  /**
-   * Custom DOM events fired by the device creation dialog
-   * Enables type-safe event handling in parent components
-   */
-  interface HASSDomEvents {
-    /**
-     * Fired when dialog closes, regardless of success or cancellation
-     * Provides the created device entry or undefined if cancelled/failed
-     */
-    "create-device-dialog-closed": { newDevice: DeviceRegistryEntry | undefined };
-  }
+export interface KnxDeviceCreateDialogParams {
+  deviceName?: string;
+  onClose?: (device: DeviceRegistryEntry | undefined) => void;
 }
 
 /**
@@ -69,55 +59,89 @@ declare global {
  */
 
 @customElement("knx-device-create-dialog")
-class DeviceCreateDialog extends LitElement {
+export class DeviceCreateDialog
+  extends LitElement
+  implements HassDialog<KnxDeviceCreateDialogParams>
+{
   /**
    * Home Assistant instance for accessing global functionality
    * Required for API calls, localization, and component integration
    */
   @property({ attribute: false }) public hass!: HomeAssistant;
 
-  /**
-   * Initial device name value for the form
-   * Can be pre-populated by parent component if desired
-   */
-  @property({ attribute: false }) public deviceName?: string;
-
   // ============================================================================
   // Internal State
   // ============================================================================
 
   /**
+   * Dialog open state
+   * Controls the visibility of the dialog
+   */
+  @state() private _open = false;
+
+  /**
+   * Dialog parameters including optional callback
+   */
+  @state() private _params?: KnxDeviceCreateDialogParams;
+
+  /**
+   * Initial device name value for the form
+   * Can be pre-populated by parent component if desired
+   */
+  @state() private _deviceName?: string;
+
+  /**
    * Selected area ID for the new device
    * Optional field that can be left undefined for devices without area assignment
    */
-  @state() private area?: string;
-
-  /**
-   * Created device entry from successful API call
-   * Stored to pass back to parent component when dialog closes
-   */
-  private _deviceEntry?: DeviceRegistryEntry;
+  @state() private _area?: string;
 
   // ============================================================================
   // Dialog Lifecycle Methods
   // ============================================================================
 
   /**
+   * Opens the dialog with the given parameters
+   * Implements HassDialog interface
+   */
+  public showDialog(params: KnxDeviceCreateDialogParams): void {
+    this._params = params;
+    this._deviceName = params.deviceName;
+    this._area = undefined;
+    this._open = true;
+  }
+
+  /**
    * Closes the dialog and notifies parent component of result
    *
-   * Fires a custom event containing the created device entry or undefined
-   * if the operation was cancelled or failed. Event does not bubble to
-   * prevent interference with other dialog handling logic.
+   * Calls onClose callback if provided with the result of the operation.
+   * Cleans up internal state before closing.
    *
    * @param _ev - Event parameter (unused but kept for consistent signature)
    */
-  public closeDialog(_ev: any): void {
-    fireEvent(
-      this,
-      "create-device-dialog-closed",
-      { newDevice: this._deviceEntry },
-      { bubbles: false },
-    );
+  public closeDialog(_ev?: any): boolean {
+    this._dialogClosed();
+    return true;
+  }
+
+  /**
+   * Internal cleanup and state reset
+   */
+  private _dialogClosed(): void {
+    this._open = false;
+    this._params = undefined;
+    this._deviceName = undefined;
+    this._area = undefined;
+  }
+
+  /**
+   * Handle cancel action - close dialog with undefined result
+   */
+  private _cancel(): void {
+    if (this._params?.onClose) {
+      this._params.onClose(undefined);
+    }
+    this._dialogClosed();
   }
 
   // ============================================================================
@@ -130,7 +154,7 @@ class DeviceCreateDialog extends LitElement {
    * Process flow:
    * 1. Validates required device name is present
    * 2. Calls WebSocket API to create device with name and optional area
-   * 3. Stores successful result for return to parent
+   * 3. Calls onClose callback with result if successful
    * 4. Handles errors by logging and navigating to error page
    * 5. Always closes dialog regardless of success/failure
    *
@@ -138,16 +162,20 @@ class DeviceCreateDialog extends LitElement {
    * error details for user troubleshooting and support.
    */
   private _createDevice(): void {
-    createDevice(this.hass, { name: this.deviceName!, area_id: this.area })
+    createDevice(this.hass, { name: this._deviceName!, area_id: this._area })
       .then((resultDevice) => {
-        this._deviceEntry = resultDevice;
+        if (this._params?.onClose) {
+          this._params.onClose(resultDevice);
+        }
+        this._dialogClosed();
       })
       .catch((err) => {
-        logger.error("getGroupMonitorInfo", err);
+        logger.error("createDevice", err);
         navigate("/knx/error", { replace: true, data: err });
-      })
-      .finally(() => {
-        this.closeDialog(undefined);
+        if (this._params?.onClose) {
+          this._params.onClose(undefined);
+        }
+        this._dialogClosed();
       });
   }
 
@@ -167,37 +195,34 @@ class DeviceCreateDialog extends LitElement {
    * @returns Template result for the complete dialog interface
    */
   protected render() {
-    return html`<ha-dialog
-      open
-      .heading=${"Create new device"}
-      scrimClickAction
-      escapeKeyAction
-      defaultAction="ignore"
-    >
+    return html`<ha-wa-dialog .open=${this._open} @closed=${this.closeDialog}>
+      <span slot="headerTitle">Create new device</span>
+
       <ha-selector-text
         .hass=${this.hass}
         .label=${"Name"}
         .required=${true}
         .selector=${{ text: {} }}
-        .key=${"deviceName"}
-        .value=${this.deviceName}
+        .key=${"_deviceName"}
+        .value=${this._deviceName}
         @value-changed=${this._valueChanged}
       ></ha-selector-text>
       <ha-area-picker
         .hass=${this.hass}
         .label=${"Area"}
-        .key=${"area"}
-        .value=${this.area}
+        .key=${"_area"}
+        .value=${this._area}
         @value-changed=${this._valueChanged}
       >
       </ha-area-picker>
-      <ha-button slot="secondaryAction" @click=${this.closeDialog}>
-        ${this.hass.localize("ui.common.cancel")}
-      </ha-button>
-      <ha-button slot="primaryAction" @click=${this._createDevice}>
-        ${this.hass.localize("ui.common.add")}
-      </ha-button>
-    </ha-dialog>`;
+
+      <div slot="footer">
+        <ha-button appearance="plain" @click=${this._cancel}>
+          ${this.hass.localize("ui.common.cancel")}
+        </ha-button>
+        <ha-button @click=${this._createDevice}> ${this.hass.localize("ui.common.add")} </ha-button>
+      </div>
+    </ha-wa-dialog>`;
   }
 
   // ============================================================================
@@ -237,12 +262,9 @@ class DeviceCreateDialog extends LitElement {
 
   static get styles() {
     return [
-      haStyleDialog,
       css`
-        @media all and (min-width: 600px) {
-          ha-dialog {
-            --mdc-dialog-min-width: 480px;
-          }
+        ha-wa-dialog {
+          --ha-dialog-width-md: 480px;
         }
       `,
     ];
