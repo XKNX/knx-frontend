@@ -16,7 +16,7 @@ import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-list-item";
 
 import type { SortDirection } from "../types/sorting";
-import { KnxSortMenu } from "./knx-sort-menu";
+import { SORT_ASC, SORT_DESC } from "../types/sorting";
 import type { KNX } from "../types/knx";
 
 /**
@@ -58,13 +58,13 @@ export class KnxSortMenuItem extends LitElement {
    * Determines initial behavior when user clicks the main item
    */
   @property({ type: String, attribute: "default-direction" })
-  public defaultDirection: SortDirection = KnxSortMenu.DEFAULT_DIRECTION;
+  public defaultDirection: SortDirection = SORT_ASC;
 
   /**
    * Current sort direction when this item is the active sort
    * Updated by the parent sort menu to reflect current state
    */
-  @property({ type: String }) public direction: SortDirection = KnxSortMenu.ASC;
+  @property({ type: String }) public direction: SortDirection = SORT_ASC;
 
   /**
    * Whether this sort option is currently the active sort criterion
@@ -183,7 +183,7 @@ export class KnxSortMenuItem extends LitElement {
       return nothing;
     }
 
-    const isDescending = this.direction === KnxSortMenu.DESC;
+    const isDescending = this.direction === SORT_DESC;
     return html`
       <ha-icon-button
         class="active"
@@ -205,7 +205,7 @@ export class KnxSortMenuItem extends LitElement {
   private _renderDesktopButtons(): TemplateResult {
     return html`
       <ha-icon-button
-        class=${this.active && this.direction === KnxSortMenu.DESC ? "active" : ""}
+        class=${this.active && this.direction === SORT_DESC ? "active" : ""}
         .path=${this.descendingIcon}
         .label=${this._descendingText}
         .title=${this._descendingText}
@@ -213,7 +213,7 @@ export class KnxSortMenuItem extends LitElement {
         @click=${this.disabled ? nothing : this._handleDescendingClick}
       ></ha-icon-button>
       <ha-icon-button
-        class=${this.active && this.direction === KnxSortMenu.ASC ? "active" : ""}
+        class=${this.active && this.direction === SORT_ASC ? "active" : ""}
         .path=${this.ascendingIcon}
         .label=${this._ascendingText}
         .title=${this._ascendingText}
@@ -237,7 +237,7 @@ export class KnxSortMenuItem extends LitElement {
     e.stopPropagation();
     fireEvent(this, "sort-option-selected", {
       criterion: this.criterion,
-      direction: KnxSortMenu.DESC,
+      direction: SORT_DESC,
     });
   }
 
@@ -251,7 +251,7 @@ export class KnxSortMenuItem extends LitElement {
     e.stopPropagation();
     fireEvent(this, "sort-option-selected", {
       criterion: this.criterion,
-      direction: KnxSortMenu.ASC,
+      direction: SORT_ASC,
     });
   }
 
@@ -265,9 +265,9 @@ export class KnxSortMenuItem extends LitElement {
    */
   private _handleItemClick(): void {
     const newDirection = this.active
-      ? this.direction === KnxSortMenu.ASC
-        ? KnxSortMenu.DESC
-        : KnxSortMenu.ASC
+      ? this.direction === SORT_ASC
+        ? SORT_DESC
+        : SORT_ASC
       : this.defaultDirection;
 
     fireEvent(this, "sort-option-selected", {
@@ -284,7 +284,7 @@ export class KnxSortMenuItem extends LitElement {
    */
   private _handleMobileButtonClick(e: MouseEvent): void {
     e.stopPropagation();
-    const newDirection = this.direction === KnxSortMenu.ASC ? KnxSortMenu.DESC : KnxSortMenu.ASC;
+    const newDirection = this.direction === SORT_ASC ? SORT_DESC : SORT_ASC;
     fireEvent(this, "sort-option-selected", {
       criterion: this.criterion,
       direction: newDirection,

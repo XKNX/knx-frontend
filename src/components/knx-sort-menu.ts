@@ -1,27 +1,17 @@
 /**
- * KNX Sort Menu Component
+ * KNX Sort Menu - A dropdown wrapper for sorting data tables
  *
- * A comprehensive dropdown menu component for sorting data tables that provides:
- * - Dynamic menu items through slotted child components
- * - Customizable header with title and toolbar slots
- * - Sort state management and synchronization
- * - Event-driven communication with parent components
- * - Accessibility support with proper ARIA implementation
- * - Modern dropdown integration with ha-dropdown
- * - Flexible positioning and anchor support
+ * Extends ha-dropdown with sort-specific state management:
+ * - Tracks active sort criterion and direction
+ * - Synchronizes state with child knx-sort-menu-item components
+ * - Dispatches sort-changed events on selection
+ * - Supports customizable header with title and toolbar slots
  *
  * Architecture:
  * - Uses composition pattern with slotted knx-sort-menu-item children
  * - Manages active state and propagates sort configuration changes
- * - Provides programmatic API for opening/closing menu
  * - Supports custom toolbar buttons (like pin toggles)
  * - Handles bidirectional data flow between parent and children
- *
- * Integration:
- * - Works with knx-sort-menu-item components as children
- * - Dispatches sort-changed events for parent consumption
- * - Synchronizes state with child menu items automatically
- * - Supports localization through KNX instance
  */
 
 import { css, html, LitElement } from "lit";
@@ -29,37 +19,15 @@ import type { PropertyValues } from "lit";
 import { customElement, property, query, queryAssignedElements } from "lit/decorators";
 import { fireEvent } from "@ha/common/dom/fire_event";
 
-import "@ha/components/ha-icon-button";
-import "@ha/components/ha-svg-icon";
-import "@ha/components/ha-switch";
 import "@ha/components/ha-dropdown";
-import "@ha/components/ha-dropdown-item";
-
-import "@ha/components/ha-icon-button-toggle";
 import type { SortDirection } from "../types/sorting";
+import { SORT_ASC } from "../types/sorting";
 import type { KnxSortMenuItem } from "./knx-sort-menu-item";
 import type { KNX } from "../types/knx";
 import "./knx-sort-menu-item";
 
-/**
- * Dropdown menu component that manages a collection of sort options
- * Uses slotted children for flexible menu item configuration
- */
 @customElement("knx-sort-menu")
 export class KnxSortMenu extends LitElement {
-  // ============================================================================
-  // Static Constants
-  // ============================================================================
-
-  /** Ascending sort direction constant */
-  static readonly ASC: SortDirection = "asc";
-
-  /** Descending sort direction constant */
-  static readonly DESC: SortDirection = "desc";
-
-  /** Default sort direction used when none specified */
-  static readonly DEFAULT_DIRECTION: SortDirection = KnxSortMenu.ASC;
-
   /**
    * KNX instance for accessing localization and utilities
    * Required for generating localized text and accessing KNX-specific functionality
@@ -78,7 +46,7 @@ export class KnxSortMenu extends LitElement {
    * Applied to the active sort criterion
    */
   @property({ type: String, attribute: "sort-direction" })
-  public sortDirection: SortDirection = KnxSortMenu.DEFAULT_DIRECTION;
+  public sortDirection: SortDirection = SORT_ASC;
 
   /**
    * Whether this is a mobile device (mobile/tablet)
@@ -87,35 +55,14 @@ export class KnxSortMenu extends LitElement {
   @property({ type: Boolean, attribute: "is-mobile-device" })
   public isMobileDevice = false;
 
-  // ============================================================================
-  // Internal References
-  // ============================================================================
-
-  /**
-   * Reference to the underlying ha-dropdown element
-   * Provides programmatic access to dropdown state and methods
-   */
   @query("ha-dropdown") private _dropdown?: any;
 
-  /**
-   * References to all slotted knx-sort-menu-item children
-   * Automatically updated when child elements change
-   */
-
-  @queryAssignedElements({
-    selector: "knx-sort-menu-item",
-  })
+  @queryAssignedElements({ selector: "knx-sort-menu-item" })
   private _sortMenuItems!: KnxSortMenuItem[];
-
-  // ============================================================================
-  // Lifecycle Methods
-  // ============================================================================
 
   /**
    * Lifecycle hook called when component properties change
    * Synchronizes state with child menu items when sort configuration updates
-   *
-   * @param changedProps - Map of changed property names to previous values
    */
   protected updated(changedProps: PropertyValues): void {
     super.updated(changedProps);
@@ -128,15 +75,9 @@ export class KnxSortMenu extends LitElement {
     }
   }
 
-  // ============================================================================
-  // Private Methods
-  // ============================================================================
-
   /**
    * Synchronizes sort state with all child menu items
    * Updates active state, direction, and propagates KNX instance and mobile device state
-   *
-   * Called automatically when sort configuration changes
    */
   private _updateMenuItems(): void {
     if (!this._sortMenuItems) return;
@@ -151,85 +92,40 @@ export class KnxSortMenu extends LitElement {
     });
   }
 
-  // ============================================================================
-  // Render Methods
-  // ============================================================================
-
   /**
    * Main render method that creates the dropdown menu structure
-   *
-   * Structure:
    * - ha-dropdown with a slotted trigger button
    * - Slotted header with customizable title and toolbar
    * - Slotted menu items with event delegation
-   *
-   * @returns Template result for the complete menu component
    */
   protected render() {
     return html`
-      <div class="menu-container">
-        <ha-dropdown
-          .placement=${"bottom-start"}
-          @wa-after-show=${this._handleMenuOpened}
-          @wa-after-hide=${this._handleMenuClosed}
-        >
-          <!-- Trigger button slotted in by parent component -->
-          <slot name="trigger" slot="trigger"></slot>
+      <ha-dropdown .placement=${"bottom-start"} @wa-after-show=${this._handleMenuOpened}>
+        <!-- Trigger button slotted in by parent component -->
+        <slot name="trigger" slot="trigger"></slot>
 
-          <slot name="header">
-            <div class="header">
-              <div class="title">
-                <!-- Slot for custom title -->
-                <slot name="title">${this.knx?.localize("knx_sort_menu_sort_by") ?? ""}</slot>
-              </div>
-              <div class="toolbar">
-                <!-- Slot for adding custom buttons to the header -->
-                <slot name="toolbar"></slot>
-              </div>
+        <slot name="header">
+          <div class="header">
+            <div class="title">
+              <!-- Slot for custom title -->
+              <slot name="title">${this.knx?.localize("knx_sort_menu_sort_by") ?? ""}</slot>
             </div>
-          </slot>
+            <div class="toolbar">
+              <!-- Slot for adding custom buttons to the header -->
+              <slot name="toolbar"></slot>
+            </div>
+          </div>
+        </slot>
 
-          <!-- Menu items will be slotted here -->
-          <slot @sort-option-selected=${this._handleSortOptionSelected}></slot>
-        </ha-dropdown>
-      </div>
+        <!-- Menu items will be slotted here -->
+        <slot @sort-option-selected=${this._handleSortOptionSelected}></slot>
+      </ha-dropdown>
     `;
   }
-
-  // ============================================================================
-  // Public API Methods
-  // ============================================================================
-
-  /**
-   * Opens the dropdown menu programmatically
-   * Provides control for parent components
-   */
-  public openMenu(): void {
-    if (this._dropdown) {
-      this._dropdown.open = true;
-    }
-  }
-
-  /**
-   * Closes the dropdown menu programmatically
-   * Can be called from parent components or event handlers
-   */
-  public closeMenu(): void {
-    if (this._dropdown) {
-      this._dropdown.open = false;
-    }
-  }
-
-  // ============================================================================
-  // Private Methods
-  // ============================================================================
 
   /**
    * Updates the current sorting configuration and dispatches change event
    * Only fires event if the sort configuration actually changed
-   *
-   * @param criterion - The sort criterion identifier
-   * @param direction - The sort direction ("asc" or "desc")
    */
   private _updateSorting(criterion: string, direction: SortDirection): void {
     // Only update and fire event if something actually changed
@@ -241,10 +137,6 @@ export class KnxSortMenu extends LitElement {
     }
   }
 
-  // ============================================================================
-  // Event Handlers
-  // ============================================================================
-
   /**
    * Handles menu opened event
    * Ensures child menu items are synchronized when menu becomes visible
@@ -254,47 +146,27 @@ export class KnxSortMenu extends LitElement {
   }
 
   /**
-   * Handles menu closed event
-   * Available for additional cleanup or state management if needed
-   */
-  private _handleMenuClosed(): void {
-    // Additional actions when menu closes (if needed)
-  }
-
-  /**
    * Handles sort option selection events from child menu items
    * Processes selection and closes menu after updating sort state
-   *
-   * @param e - Custom event containing criterion and direction
    */
   private _handleSortOptionSelected(e: CustomEvent): void {
     const { criterion, direction } = e.detail;
     this._updateSorting(criterion, direction);
-    this.closeMenu();
+    if (this._dropdown) {
+      this._dropdown.open = false;
+    }
   }
 
-  // ============================================================================
-  // Styles
-  // ============================================================================
-
   /**
-   * Component-specific styles.
+   * Component-specific styles for menu container and header
    */
-
   static styles = css`
-    .menu-container {
-      position: relative;
-      z-index: 1000;
-      --mdc-list-vertical-padding: 0;
-    }
-
     .header {
       position: sticky;
       top: 0;
       z-index: 1;
       background-color: var(--card-background-color, #fff);
       border-bottom: 1px solid var(--divider-color);
-      font-weight: 500;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -316,12 +188,6 @@ export class KnxSortMenu extends LitElement {
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      gap: 0px;
-    }
-
-    .menu-header .title {
-      font-size: 14px;
-      color: var(--secondary-text-color);
     }
   `;
 }
