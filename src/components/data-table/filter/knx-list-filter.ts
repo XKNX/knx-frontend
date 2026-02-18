@@ -743,20 +743,6 @@ export class KnxListFilter<T = any> extends LitElement {
   }
 
   /**
-   * Handles sort button clicks to open the sort menu
-   * Prevents event propagation and locates the sort menu component
-   *
-   * @param ev - Mouse event from the sort button
-   */
-  private _handleSortButtonClick(ev: MouseEvent): void {
-    ev.stopPropagation();
-    const sortMenu = this.shadowRoot?.querySelector("knx-sort-menu");
-    if (sortMenu) {
-      sortMenu.openMenu(ev.currentTarget as HTMLElement);
-    }
-  }
-
-  /**
    * Handles sort configuration changes from the sort menu
    * Updates both the sort criterion and direction based on user selection
    *
@@ -925,15 +911,6 @@ export class KnxListFilter<T = any> extends LitElement {
         ${this._hasSortableFields()
           ? html`
               <div class="buttons">
-                <ha-icon-button
-                  class="sort-button"
-                  .path=${this._getSortIcon()}
-                  title=${this.sortDirection === SORT_ASC
-                    ? this.knx.localize("knx_list_filter_sort_ascending_tooltip")
-                    : this.knx.localize("knx_list_filter_sort_descending_tooltip")}
-                  @click=${this._handleSortButtonClick}
-                ></ha-icon-button>
-
                 <knx-sort-menu
                   .knx=${this.knx}
                   .sortCriterion=${this.sortCriterion}
@@ -941,6 +918,16 @@ export class KnxListFilter<T = any> extends LitElement {
                   .isMobileDevice=${this.isMobileDevice}
                   @sort-changed=${this._handleSortChanged}
                 >
+                  <!-- Sort button as trigger -->
+                  <ha-icon-button
+                    slot="trigger"
+                    class="sort-button"
+                    .path=${this._getSortIcon()}
+                    title=${this.sortDirection === SORT_ASC
+                      ? this.knx.localize("knx_list_filter_sort_ascending_tooltip")
+                      : this.knx.localize("knx_list_filter_sort_descending_tooltip")}
+                  ></ha-icon-button>
+
                   <div slot="title">${this.knx.localize("knx_list_filter_sort_by")}</div>
 
                   <!-- Toolbar with additional controls like pin button -->

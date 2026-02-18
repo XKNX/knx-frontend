@@ -7,7 +7,7 @@
  * - Sort state management and synchronization
  * - Event-driven communication with parent components
  * - Accessibility support with proper ARIA implementation
- * - Material Design integration with ha-menu
+ * - Modern dropdown integration with ha-dropdown
  * - Flexible positioning and anchor support
  *
  * Architecture:
@@ -32,7 +32,8 @@ import { fireEvent } from "@ha/common/dom/fire_event";
 import "@ha/components/ha-icon-button";
 import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-switch";
-import "@ha/components/ha-menu";
+import "@ha/components/ha-dropdown";
+import "@ha/components/ha-dropdown-item";
 
 import "@ha/components/ha-icon-button-toggle";
 import type { SortDirection } from "../types/sorting";
@@ -91,10 +92,10 @@ export class KnxSortMenu extends LitElement {
   // ============================================================================
 
   /**
-   * Reference to the underlying ha-menu element
-   * Provides programmatic access to menu state and methods
+   * Reference to the underlying ha-dropdown element
+   * Provides programmatic access to dropdown state and methods
    */
-  @query("ha-menu") private _menu?: any;
+  @query("ha-dropdown") private _dropdown?: any;
 
   /**
    * References to all slotted knx-sort-menu-item children
@@ -158,9 +159,8 @@ export class KnxSortMenu extends LitElement {
    * Main render method that creates the dropdown menu structure
    *
    * Structure:
-   * - ha-menu container with positioning and event handling
+   * - ha-dropdown with a slotted trigger button
    * - Slotted header with customizable title and toolbar
-   * - Divider separator between header and items
    * - Slotted menu items with event delegation
    *
    * @returns Template result for the complete menu component
@@ -168,12 +168,14 @@ export class KnxSortMenu extends LitElement {
   protected render() {
     return html`
       <div class="menu-container">
-        <ha-menu
-          .corner=${"BOTTOM_START"}
-          .fixed=${true}
-          @opened=${this._handleMenuOpened}
-          @closed=${this._handleMenuClosed}
+        <ha-dropdown
+          .placement=${"bottom-start"}
+          @wa-after-show=${this._handleMenuOpened}
+          @wa-after-hide=${this._handleMenuClosed}
         >
+          <!-- Trigger button slotted in by parent component -->
+          <slot name="trigger" slot="trigger"></slot>
+
           <slot name="header">
             <div class="header">
               <div class="title">
@@ -185,12 +187,11 @@ export class KnxSortMenu extends LitElement {
                 <slot name="toolbar"></slot>
               </div>
             </div>
-            <li divider></li>
           </slot>
 
           <!-- Menu items will be slotted here -->
           <slot @sort-option-selected=${this._handleSortOptionSelected}></slot>
-        </ha-menu>
+        </ha-dropdown>
       </div>
     `;
   }
@@ -200,15 +201,12 @@ export class KnxSortMenu extends LitElement {
   // ============================================================================
 
   /**
-   * Opens the dropdown menu anchored to the specified element
-   * Provides programmatic control for parent components
-   *
-   * @param anchorEl - HTML element to anchor the menu to
+   * Opens the dropdown menu programmatically
+   * Provides control for parent components
    */
-  public openMenu(anchorEl: HTMLElement): void {
-    if (this._menu) {
-      this._menu.anchor = anchorEl;
-      this._menu.show();
+  public openMenu(): void {
+    if (this._dropdown) {
+      this._dropdown.open = true;
     }
   }
 
@@ -217,8 +215,8 @@ export class KnxSortMenu extends LitElement {
    * Can be called from parent components or event handlers
    */
   public closeMenu(): void {
-    if (this._menu) {
-      this._menu.close();
+    if (this._dropdown) {
+      this._dropdown.open = false;
     }
   }
 
