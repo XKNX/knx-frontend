@@ -2,7 +2,7 @@ import memoize from "memoize-one";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
-import "@ha/components/ha-wa-dialog";
+import "@ha/components/ha-dialog";
 import "@ha/components/ha-button";
 import "@ha/components/ha-dialog-footer";
 import "@ha/components/search-input";
@@ -202,7 +202,7 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
       : [];
     const hasFilteredItems = groupItems.length > 0;
 
-    return html`<ha-wa-dialog
+    return html`<ha-dialog
       .hass=${this.hass}
       .open=${this._open}
       width=${this._params.width ?? "medium"}
@@ -243,7 +243,7 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
           ${this.hass.localize("ui.common.ok")}
         </ha-button>
       </ha-dialog-footer>
-    </ha-wa-dialog>`;
+    </ha-dialog>`;
   }
 
   static get styles() {
@@ -251,7 +251,7 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
       haStyleDialog,
       css`
         @media all and (min-width: 600px) {
-          ha-wa-dialog {
+          ha-dialog {
             --mdc-dialog-min-width: 360px;
           }
         }

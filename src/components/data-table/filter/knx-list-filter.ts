@@ -1408,7 +1408,7 @@ export class KnxListFilter<T = any> extends LitElement {
         }
 
         knx-sort-menu ha-icon-button-toggle {
-          --mdc-icon-button-size: 36px; /* Default is 48px */
+          --ha-icon-button-size: 36px; /* Default is 48px */
           --mdc-icon-size: 18px; /* Default is 24px */
           color: var(--secondary-text-color);
         }

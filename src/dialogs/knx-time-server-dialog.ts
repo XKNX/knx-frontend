@@ -7,7 +7,7 @@ import "@ha/components/ha-alert";
 import "@ha/components/ha-button";
 import "@ha/components/ha-dialog-footer";
 import "@ha/components/ha-markdown";
-import "@ha/components/ha-wa-dialog";
+import "@ha/components/ha-dialog";
 import "@ha/layouts/hass-loading-screen";
 
 import type { HassDialog } from "@ha/dialogs/make-dialog-manager";
@@ -122,7 +122,7 @@ export class KnxTimeServerDialog
     }
 
     return html`
-      <ha-wa-dialog
+      <ha-dialog
         .hass=${this.hass}
         .open=${this._open}
         @closed=${this.closeDialog}
@@ -151,7 +151,7 @@ export class KnxTimeServerDialog
           complete: () => this._renderContent(),
           error: (err) => this._renderError(err),
         })}
-      </ha-wa-dialog>
+      </ha-dialog>
     `;
   }
 

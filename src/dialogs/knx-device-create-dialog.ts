@@ -26,7 +26,7 @@ import { customElement, property, state } from "lit/decorators";
 
 import { navigate } from "@ha/common/navigate";
 import "@ha/components/ha-area-picker";
-import "@ha/components/ha-wa-dialog";
+import "@ha/components/ha-dialog";
 import "@ha/components/ha-button";
 import "@ha/components/ha-selector/ha-selector-text";
 
@@ -209,7 +209,7 @@ export class DeviceCreateDialog
    * @returns Template result for the complete dialog interface
    */
   protected render() {
-    return html`<ha-wa-dialog .open=${this._open} @closed=${this.closeDialog}>
+    return html`<ha-dialog .open=${this._open} @closed=${this.closeDialog}>
       <span slot="headerTitle">Create new device</span>
 
       <ha-selector-text
@@ -238,7 +238,7 @@ export class DeviceCreateDialog
           ${this.hass.localize("ui.common.add")}
         </ha-button>
       </div>
-    </ha-wa-dialog>`;
+    </ha-dialog>`;
   }
 
   // ============================================================================
@@ -282,7 +282,7 @@ export class DeviceCreateDialog
   static get styles() {
     return [
       css`
-        ha-wa-dialog {
+        ha-dialog {
           --ha-dialog-width-md: 480px;
         }
       `,

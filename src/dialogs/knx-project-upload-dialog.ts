@@ -7,7 +7,7 @@ import "@ha/components/ha-dialog-footer";
 import "@ha/components/ha-file-upload";
 import "@ha/components/ha-markdown";
 import "@ha/components/ha-selector/ha-selector-text";
-import "@ha/components/ha-wa-dialog";
+import "@ha/components/ha-dialog";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
 import { uploadFile } from "@ha/data/file_upload";
@@ -55,7 +55,7 @@ export class KnxProjectUploadDialog
 
   protected render() {
     return html`
-      <ha-wa-dialog
+      <ha-dialog
         .hass=${this.hass}
         .open=${this._opened}
         @closed=${this.closeDialog}
@@ -98,7 +98,7 @@ export class KnxProjectUploadDialog
             ${this.hass.localize("ui.common.cancel")}
           </ha-button></ha-dialog-footer
         >
-      </ha-wa-dialog>
+      </ha-dialog>
     `;
   }
 
