@@ -128,15 +128,9 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
   }
 
   protected render() {
-    // main page for narrow layout to show menu icon instead of back button
     return html`
-      <hass-subpage
-        .narrow=${this.narrow}
-        .hass=${this.hass}
-        header="KNX"
-        ?main-page=${this.narrow}
-      >
-        <ha-config-section .narrow=${this.narrow} .isWide=${this.isWide}>
+      <hass-subpage .narrow=${this.narrow} .hass=${this.hass} header="KNX" back-path="/config">
+        <ha-config-section .isWide=${this.isWide}>
           <ha-card outlined>
             <ha-navigation-list
               .hass=${this.hass}
