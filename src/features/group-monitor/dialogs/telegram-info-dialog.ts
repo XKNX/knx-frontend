@@ -14,7 +14,7 @@ import {
 import type { KNX } from "../../../types/knx";
 import type { TelegramRow } from "../types/telegram-row";
 import "@ha/components/ha-relative-time";
-import "@ha/components/ha-wa-dialog";
+import "@ha/components/ha-dialog";
 
 /**
  * Parameters for TelegramInfoDialog
@@ -160,7 +160,7 @@ export class GroupMonitorTelegramInfoDialog
     const directionClass = isOutgoing ? "outgoing" : "incoming";
 
     return html`
-      <ha-wa-dialog .open=${this._open} @closed=${this.closeDialog}>
+      <ha-dialog .open=${this._open} @closed=${this.closeDialog}>
         <span slot="headerTitle"> ${this.knx.localize("knx_telegram_info_dialog_telegram")} </span>
         <div slot="headerSubtitle">
           <span title=${formatIsoTimestampWithMicroseconds(telegram.timestampIso)}>
@@ -263,7 +263,7 @@ export class GroupMonitorTelegramInfoDialog
             <ha-svg-icon .path=${mdiArrowRight} slot="end"></ha-svg-icon>
           </ha-button>
         </div>
-      </ha-wa-dialog>
+      </ha-dialog>
     `;
   }
 
@@ -368,7 +368,7 @@ export class GroupMonitorTelegramInfoDialog
   static get styles() {
     return [
       css`
-        ha-wa-dialog {
+        ha-dialog {
           --ha-dialog-width-md: 580px;
         }
 
