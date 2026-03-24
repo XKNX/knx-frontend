@@ -19,7 +19,7 @@ import "./knx-sync-state-selector-row";
 import { extractValidationErrors, getValidationError } from "../utils/validation";
 import { KNXLogger } from "../tools/knx-logger";
 import type { KNX } from "../types/knx";
-import type { EntityData, ErrorDescription } from "../types/entity_data";
+import type { ErrorDescription } from "../types/entity_data";
 import type {
   Section,
   SelectorSchema,
@@ -44,15 +44,13 @@ export class KnxForm extends LitElement {
 
   @property({ attribute: false }) public knx!: KNX;
 
-  @property({ attribute: false }) public config!: EntityData;
+  @property({ attribute: false }) public config!: Record<string, unknown>;
 
   @property({ attribute: false }) public schema!: SelectorSchema[];
 
   @property({ attribute: false }) public validationErrors?: ErrorDescription[];
 
-  public configChangedCallback!: (config: EntityData) => void;
-
-  public backendLocalize!: (key: string) => string;
+  @property({ attribute: false }) public backendLocalize!: (key: string) => string;
 
   @state() private _selectedGroupSelectOptions: Record<string, number> = {};
 
@@ -469,6 +467,6 @@ declare global {
 declare global {
   // for fire event
   interface HASSDomEvents {
-    "knx-form-config-changed": EntityData;
+    "knx-form-config-changed": { value: Record<string, unknown> };
   }
 }
