@@ -74,7 +74,7 @@ export class KnxForm extends LitElement {
   ) {
     // wrap items into a `knx_section_flat` or forward to _generateItem - schema is flat, not nested
 
-    const result: TemplateResult[] = [];
+    const result: (TemplateResult | typeof nothing)[] = [];
     let flatSection: SectionFlat | undefined;
     let flatSectionSelectors: Exclude<SelectorSchema, SectionFlat>[] = [];
 
@@ -117,7 +117,7 @@ export class KnxForm extends LitElement {
 
       if (flatSection === undefined) {
         // no flat-section for this item, so render it directly
-        result.push(this._generateItem(selector, path, errors) as TemplateResult);
+        result.push(this._generateItem(selector, path, errors));
       } else {
         flatSectionSelectors.push(selector);
       }
@@ -395,10 +395,6 @@ export class KnxForm extends LitElement {
   static styles = css`
     p {
       color: var(--secondary-text-color);
-    }
-
-    ::slotted(ha-alert) {
-      margin-top: 0 !important;
     }
 
     ha-expansion-panel {
