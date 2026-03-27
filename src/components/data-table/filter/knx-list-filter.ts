@@ -39,12 +39,14 @@ import "@ha/components/ha-icon";
 import "@ha/components/ha-icon-button";
 import "@ha/components/ha-icon-button-toggle";
 import "@ha/components/ha-svg-icon";
-import "@ha/components/search-input-outlined";
+import "@ha/components/input/ha-input-search";
 
 import { haStyleScrollbar } from "@ha/resources/styles";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
 import type { HomeAssistant } from "@ha/types";
+import type { HaInputSearch } from "@ha/components/input/ha-input-search";
+
 import type { KNX } from "types/knx";
 import type { Comparator, SortDirection } from "../../../types/sorting";
 import { SORT_ASC } from "../../../types/sorting";
@@ -738,8 +740,8 @@ export class KnxListFilter<T = any> extends LitElement {
    *
    * @param ev - Custom event containing the new search value
    */
-  private _handleSearchChange(ev: CustomEvent<{ value: string }>): void {
-    this.filterQuery = ev.detail.value;
+  private _handleSearchChange(ev: InputEvent): void {
+    this.filterQuery = (ev.target as HaInputSearch).value ?? "";
   }
 
   /**
@@ -900,11 +902,11 @@ export class KnxListFilter<T = any> extends LitElement {
         <div class="search">
           ${this._hasFilterableFields()
             ? html`
-                <search-input-outlined
-                  .hass=${this.hass}
-                  .filter=${this.filterQuery}
-                  @value-changed=${this._handleSearchChange}
-                ></search-input-outlined>
+                <ha-input-search
+                  appearance="outlined"
+                  .value=${this.filterQuery}
+                  @input=${this._handleSearchChange}
+                ></ha-input-search>
               `
             : nothing}
         </div>
@@ -1309,7 +1311,7 @@ export class KnxListFilter<T = any> extends LitElement {
           margin-right: -8px;
         }
 
-        search-input-outlined {
+        ha-input-search {
           display: block;
           flex: 1;
           padding: 8px 0;
