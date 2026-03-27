@@ -1305,6 +1305,7 @@ export class KnxListFilter<T = any> extends LitElement {
 
         .search {
           flex: 1;
+          min-width: 150px;
         }
 
         .buttons:last-of-type {
