@@ -4,7 +4,6 @@ import log from "fancy-log";
 import fs from "fs";
 import gulp from "gulp";
 import rspack from "@rspack/core";
-import { RspackDevServer } from "@rspack/dev-server";
 import paths from "../paths.cjs";
 import { createKNXConfig } from "../rspack.cjs";
 
@@ -37,7 +36,6 @@ const doneHandler = (done) => (err, stats) => {
   }
 
   if (stats.hasErrors() || stats.hasWarnings()) {
-    // eslint-disable-next-line no-console
     console.log(stats.toString("minimal"));
   }
 
