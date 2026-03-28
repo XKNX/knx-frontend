@@ -32,7 +32,7 @@ export interface KnxDptSelectDialogParams {
 }
 
 @customElement("knx-dpt-select-dialog")
-export class KnxDptSelectDialog extends DialogMixin(LitElement)<KnxDptSelectDialogParams> {
+export class KnxDptSelectDialog extends DialogMixin<KnxDptSelectDialogParams>(LitElement) {
   @state() private dpts: Record<string, DPTMetadata> = {};
 
   /** Currently selected DPT */
