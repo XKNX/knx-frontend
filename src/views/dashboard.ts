@@ -102,6 +102,8 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
   ];
 
   private async _openOptionFlow() {
+    // ensure translations are loaded - showOptionsFlowDialog does it too, but sometimes seems to not work
+    await this.hass.loadBackendTranslation("options", "knx");
     showOptionsFlowDialog(this, this.knx.config_entry);
   }
 
@@ -114,6 +116,8 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
   }
 
   private async _openReconfigureFlow() {
+    // ensure translations are loaded - showConfigFlowDialog does it too, but sometimes seems to not work
+    await this.hass.loadBackendTranslation("config", "knx");
     showConfigFlowDialog(this, {
       startFlowHandler: this.knx.config_entry.domain,
       showAdvanced: this.hass.userData?.showAdvanced,
