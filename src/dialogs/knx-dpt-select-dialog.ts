@@ -11,7 +11,6 @@ import "@ha/components/ha-md-list-item";
 import "@ha/components/ha-section-title";
 import "@ha/components/input/ha-input-search";
 
-import { fireEvent } from "@ha/common/dom/fire_event";
 import { localizeContext } from "@ha/data/context";
 import { DialogMixin } from "@ha/dialogs/dialog-mixin";
 import { haStyleDialog } from "@ha/resources/styles";
@@ -34,10 +33,6 @@ export interface KnxDptSelectDialogParams {
 
 @customElement("knx-dpt-select-dialog")
 export class KnxDptSelectDialog extends DialogMixin(LitElement)<KnxDptSelectDialogParams> {
-  @state() private _open = false;
-
-  @state() private _params?: KnxDptSelectDialogParams;
-
   @state() private dpts: Record<string, DPTMetadata> = {};
 
   /** Currently selected DPT */
@@ -50,27 +45,30 @@ export class KnxDptSelectDialog extends DialogMixin(LitElement)<KnxDptSelectDial
   @consume({ context: localizeContext, subscribe: true })
   private localize!: ContextType<typeof localizeContext>;
 
-  public async showDialog(params: KnxDptSelectDialogParams): Promise<void> {
-    this._params = params;
-    this.dpts = params.dpts ?? {};
-    this._selected = params.initialSelection ?? this._selected;
+  public connectedCallback() {
+    super.connectedCallback();
+
+    if (this.params) {
+      this.dpts = this.params.dpts ?? {};
+      this._selected = this.params.initialSelection ?? this._selected;
+    }
   }
 
   private _cancel(): void {
     this._selected = undefined;
     // Inform caller via callback that dialog was closed without a selection
-    if (this._params?.onClose) {
-      this._params.onClose(undefined);
+    if (this.params?.onClose) {
+      this.params.onClose(undefined);
     }
-    this._dialogClosed();
+    this.closeDialog();
   }
 
   private _confirm(): void {
     // If a callback was provided by the caller, call it with the selected value.
-    if (this._params?.onClose) {
-      this._params.onClose(this._selected);
+    if (this.params?.onClose) {
+      this.params.onClose(this._selected);
     }
-    this._dialogClosed();
+    this.closeDialog();
   }
 
   private _itemKeydown(ev: KeyboardEvent): void {
@@ -172,25 +170,17 @@ export class KnxDptSelectDialog extends DialogMixin(LitElement)<KnxDptSelectDial
     };
   }
 
-  private _dialogClosed(): void {
-    this._open = false;
-    this._params = undefined;
-    this._filter = "";
-    this._selected = undefined;
-    fireEvent(this, "dialog-closed", { dialog: this.localName });
-  }
-
   protected render() {
-    if (!this._params) {
+    if (!this.params) {
       return nothing;
     }
 
-    const width = this._params.width ?? "medium";
+    const width = this.params.width ?? "medium";
     return html` <ha-dialog
-      .open=${this._open}
+      open
       width=${width}
-      .headerTitle=${this._params.title}
-      @closed=${this._dialogClosed}
+      .headerTitle=${this.params.title}
+      @closed=${this.closeDialog}
     >
       <div class="dialog-body">
         <ha-input-search .value=${this._filter} @input=${this._onFilterChanged}></ha-input-search>
