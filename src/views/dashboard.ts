@@ -112,7 +112,7 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
   }
 
   private _openTimeServerDialog() {
-    showKnxTimeServerDialog(this);
+    showKnxTimeServerDialog(this, { hass: this.hass, knx: this.knx });
   }
 
   private async _openReconfigureFlow() {

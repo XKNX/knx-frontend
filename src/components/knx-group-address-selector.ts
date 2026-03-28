@@ -1,14 +1,14 @@
 import { mdiAlertCircleOutline, mdiClose } from "@mdi/js";
 import type { TemplateResult, PropertyValues, HTMLTemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
+import { consume, type ContextType } from "@lit/context";
 import { customElement, property, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
-import { consume } from "@lit/context";
 import memoize from "memoize-one";
 
 import "@ha/components/ha-icon-button";
 import { fireEvent } from "@ha/common/dom/fire_event";
-import type { HomeAssistant } from "@ha/types";
+import { localizeContext } from "@ha/data/context";
 
 import "./knx-dpt-option-selector";
 import "./knx-dpt-dialog-selector";
@@ -25,8 +25,6 @@ import type { DPT, GroupAddress } from "../types/websocket";
 @customElement("knx-group-address-selector")
 export class GroupAddressSelector extends LitElement {
   @consume({ context: dragDropContext, subscribe: true }) _dragDropContext?: DragDropContext;
-
-  @property({ attribute: false }) public hass!: HomeAssistant;
 
   @property({ attribute: false }) public knx!: KNX;
 
@@ -48,6 +46,10 @@ export class GroupAddressSelector extends LitElement {
 
   @state() private _showEmptyPassiveField = false;
 
+  @state()
+  @consume({ context: localizeContext, subscribe: true })
+  private localize!: ContextType<typeof localizeContext>;
+
   private _selectedDPTValue?: string;
 
   // all group addresses that are valid according to the accepted DPTs
@@ -67,7 +69,7 @@ export class GroupAddressSelector extends LitElement {
     key: string,
     values?: Record<string, string | number | HTMLTemplateResult | null | undefined>,
   ) =>
-    this.hass.localize(
+    this.localize(
       `component.knx.config_panel.entities.create._.knx.knx_group_address.${key}`,
       values,
     );
@@ -106,11 +108,6 @@ export class GroupAddressSelector extends LitElement {
       ? this.getValidGroupAddresses([dpt])
       : this.validGroupAddresses;
   });
-
-  protected shouldUpdate(changedProps: PropertyValues<this>) {
-    // ignore hass updates - we shouldn't need to re-render on those
-    return !(changedProps.size === 1 && changedProps.has("hass"));
-  }
 
   private _getDPTsFromClasses = memoize((dptClasses?: string[]): DPT[] => {
     if (!dptClasses?.length || !this.knx.dptMetadata) return [];
@@ -164,9 +161,7 @@ export class GroupAddressSelector extends LitElement {
 
     const generalValidationError = getValidationError(this.validationErrors);
     const gaDescription = this.localizeFunction(this.key + ".description");
-    const requiredLabel = this.required
-      ? this.hass.localize("ui.common.error_required")
-      : undefined;
+    const requiredLabel = this.required ? this.localize("ui.common.error_required") : undefined;
 
     return html`
       <p class="title">${this.label}</p>
@@ -187,7 +182,6 @@ export class GroupAddressSelector extends LitElement {
                   "valid-drop-zone": validGADropTargetClass,
                   "invalid-drop-zone": invalidGADropTargetClass,
                 })}
-                .hass=${this.hass}
                 .knx=${this.knx}
                 .label=${this._baseTranslation("send_address")}
                 .parentLabel=${this.label}
@@ -210,7 +204,6 @@ export class GroupAddressSelector extends LitElement {
                   "valid-drop-zone": validGADropTargetClass,
                   "invalid-drop-zone": invalidGADropTargetClass,
                 })}
-                .hass=${this.hass}
                 .knx=${this.knx}
                 .label=${this._baseTranslation("state_address")}
                 .parentLabel=${this.label}
@@ -242,7 +235,6 @@ export class GroupAddressSelector extends LitElement {
                     "valid-drop-zone": validGADropTargetClass,
                     "invalid-drop-zone": invalidGADropTargetClass,
                   })}
-                  .hass=${this.hass}
                   .knx=${this.knx}
                   .label=${this._baseTranslation("passive_address")}
                   .parentLabel=${this.label}
@@ -262,7 +254,7 @@ export class GroupAddressSelector extends LitElement {
                 <ha-icon-button
                   class="remove-passive"
                   .path=${mdiClose}
-                  .label=${this.hass.localize("ui.common.remove")}
+                  .label=${this.localize("ui.common.remove")}
                   data-index=${index}
                   @click=${this._onRemovePassiveClick}
                 ></ha-icon-button>
@@ -316,7 +308,6 @@ export class GroupAddressSelector extends LitElement {
     const invalid = getValidationError(this.validationErrors, "dpt");
     return html`<knx-dpt-dialog-selector
       .key=${"dpt"}
-      .hass=${this.hass}
       .knx=${this.knx}
       .parentLabel=${this.label}
       .validDPTs=${this._getDptStringsFromClasses(this.options.dptClasses)}

@@ -1,19 +1,20 @@
+import { mdiTextSearchVariant } from "@mdi/js";
+
 import type { TemplateResult, HTMLTemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
+import { consume, type ContextType } from "@lit/context";
 import { customElement, property, query, state } from "lit/decorators";
+
 import "@ha/components/ha-icon-button";
 import "@ha/components/ha-textfield";
-import { mdiTextSearchVariant } from "@mdi/js";
 import { fireEvent } from "@ha/common/dom/fire_event";
-import type { HomeAssistant } from "@ha/types";
+import { localizeContext } from "@ha/data/context";
 
 import type { GroupAddress } from "../types/websocket";
 import type { KNX } from "../types/knx";
 
 @customElement("knx-single-address-selector")
 export class KnxSingleAddressSelector extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
-
   @property({ attribute: false }) public knx!: KNX;
 
   @property({ type: String }) public key!: string;
@@ -41,13 +42,17 @@ export class KnxSingleAddressSelector extends LitElement {
 
   @state() private _currentName?: string;
 
+  @state()
+  @consume({ context: localizeContext, subscribe: true })
+  private localize!: ContextType<typeof localizeContext>;
+
   @query("ha-textfield") private _textField?: HTMLElement;
 
   private _baseTranslation = (
     key: string,
     values?: Record<string, string | number | HTMLTemplateResult | null | undefined>,
   ) =>
-    this.hass.localize(
+    this.localize(
       `component.knx.config_panel.entities.create._.knx.knx_group_address.${key}`,
       values,
     );

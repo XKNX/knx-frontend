@@ -1,18 +1,17 @@
 import { LitElement, html, css, nothing } from "lit";
 import type { HTMLTemplateResult } from "lit";
-import { customElement, property } from "lit/decorators";
+import { consume, type ContextType } from "@lit/context";
+import { customElement, property, state } from "lit/decorators";
 
 import "@ha/components/ha-icon-button";
 import { mdiClose, mdiMenuOpen } from "@mdi/js";
 import { fireEvent } from "@ha/common/dom/fire_event";
-import type { HomeAssistant } from "@ha/types";
+import { localizeContext } from "@ha/data/context";
 
 import type { KNX } from "../types/knx";
 
 @customElement("knx-dpt-dialog-selector")
 class KnxDptDialogSelector extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
-
   @property({ attribute: false }) public knx!: KNX;
 
   @property({ type: String }) public key!: string;
@@ -31,11 +30,15 @@ class KnxDptDialogSelector extends LitElement {
 
   @property({ type: String }) public translation_key?: string;
 
+  @state()
+  @consume({ context: localizeContext, subscribe: true })
+  private localize!: ContextType<typeof localizeContext>;
+
   private _baseTranslation = (
     key: string,
     values?: Record<string, string | number | HTMLTemplateResult | null | undefined>,
   ) =>
-    this.hass.localize(
+    this.localize(
       `component.knx.config_panel.entities.create._.knx.knx_group_address.${key}`,
       values,
     );
@@ -55,7 +58,7 @@ class KnxDptDialogSelector extends LitElement {
           ? html`<div class="selection">
                 <div class="dpt-number">${this.value}</div>
                 <div class="dpt-name">
-                  ${this.hass.localize(
+                  ${this.localize(
                     `component.knx.config_panel.dpt.options.${this.value.replace(".", "_")}`,
                   ) || this.knx.dptMetadata[this.value]?.name}
                 </div>
@@ -64,7 +67,7 @@ class KnxDptDialogSelector extends LitElement {
               <ha-icon-button
                 class="clear-button"
                 .path=${mdiClose}
-                .label=${this.hass.localize("ui.common.clear")}
+                .label=${this.localize("ui.common.clear")}
                 @click=${this._clearSelection}
               ></ha-icon-button>`
           : html`<div no-selection class="selection">
