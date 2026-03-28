@@ -10,7 +10,7 @@ import "@ha/components/ha-markdown";
 import "@ha/components/ha-dialog";
 import "@ha/layouts/hass-loading-screen";
 
-import type { HassDialog } from "@ha/dialogs/make-dialog-manager";
+import { DialogMixin } from "@ha/dialogs/dialog-mixin";
 import type { HomeAssistant } from "@ha/types";
 
 import { getTimeServerConfig, updateTimeServerConfig } from "../services/websocket.service";
@@ -23,31 +23,26 @@ import { extractValidationErrors, getValidationError } from "../utils/validation
 const logger = new KNXLogger("time-server-dialog");
 
 export interface KnxTimeServerDialogParams {
+  hass: HomeAssistant;
   knx: KNX;
 }
 
 @customElement("knx-time-server-dialog")
-export class KnxTimeServerDialog
-  extends LitElement
-  implements HassDialog<KnxTimeServerDialogParams>
-{
-  @property({ attribute: false }) public hass!: HomeAssistant;
-
+export class KnxTimeServerDialog extends DialogMixin<KnxTimeServerDialogParams>(LitElement) {
   @property({ attribute: false }) public knx!: KNX;
-
-  @state() private _open = false;
 
   @state() private _data?: TimeServerData;
 
   @state() private _errors?: ErrorDescription[];
 
+  public hass!: HomeAssistant; // no need for @property here - save rendering cycles
+
   private _backendLocalize = (key: string) =>
     this.hass.localize(`component.knx.config_panel.dialogs.time_server.${key}`);
 
   private _loadConfigTask = new Task(this, {
-    args: () => [this._open],
+    args: () => [],
     task: async () => {
-      if (!this._open) return;
       this._errors = undefined;
       if (this.knx.projectInfo && !this.knx.projectData) {
         await this.knx.loadProject();
@@ -57,20 +52,13 @@ export class KnxTimeServerDialog
     },
   });
 
-  public showDialog(params: KnxTimeServerDialogParams): void {
-    this.knx = params.knx;
-    this._data = undefined;
-    this._open = true;
-  }
+  public connectedCallback() {
+    super.connectedCallback();
 
-  public closeDialog(_historyState?: any): boolean {
-    this._open = false;
-    this._data = undefined;
-    return true;
-  }
-
-  private _cancel(): void {
-    this.closeDialog();
+    if (this.params) {
+      this.hass = this.params.hass;
+      this.knx = this.params.knx;
+    }
   }
 
   private _save(): void {
@@ -117,17 +105,12 @@ export class KnxTimeServerDialog
   }
 
   protected render() {
-    if (!this._open) {
+    if (!this.params) {
       return nothing;
     }
 
     return html`
-      <ha-dialog
-        .hass=${this.hass}
-        .open=${this._open}
-        @closed=${this.closeDialog}
-        .headerTitle=${this._backendLocalize("title")}
-      >
+      <ha-dialog open @closed=${this.closeDialog} .headerTitle=${this._backendLocalize("title")}>
         <ha-markdown
           class="description"
           breaks
@@ -169,7 +152,6 @@ export class KnxTimeServerDialog
         : nothing}
 
       <knx-group-address-selector
-        .hass=${this.hass}
         .knx=${this.knx}
         .label=${this._backendLocalize("time.label")}
         .key=${"time"}
@@ -181,7 +163,6 @@ export class KnxTimeServerDialog
       ></knx-group-address-selector>
 
       <knx-group-address-selector
-        .hass=${this.hass}
         .knx=${this.knx}
         .label=${this._backendLocalize("date.label")}
         .key=${"date"}
@@ -193,7 +174,6 @@ export class KnxTimeServerDialog
       ></knx-group-address-selector>
 
       <knx-group-address-selector
-        .hass=${this.hass}
         .knx=${this.knx}
         .label=${this._backendLocalize("datetime.label")}
         .key=${"datetime"}
@@ -205,7 +185,7 @@ export class KnxTimeServerDialog
       ></knx-group-address-selector>
 
       <ha-dialog-footer slot="footer">
-        <ha-button slot="secondaryAction" @click=${this._cancel}>
+        <ha-button slot="secondaryAction" @click=${this.closeDialog}>
           ${this.hass.localize("ui.common.cancel")}
         </ha-button>
         <ha-button slot="primaryAction" @click=${this._save}>

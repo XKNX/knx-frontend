@@ -1,6 +1,7 @@
 import memoize from "memoize-one";
 import { LitElement, html, css, nothing } from "lit";
-import { customElement, property, state } from "lit/decorators";
+import { consume, type ContextType } from "@lit/context";
+import { customElement, state } from "lit/decorators";
 
 import "@ha/components/ha-dialog";
 import "@ha/components/ha-button";
@@ -10,11 +11,10 @@ import "@ha/components/ha-md-list-item";
 import "@ha/components/ha-section-title";
 import "@ha/components/input/ha-input-search";
 
-import { fireEvent } from "@ha/common/dom/fire_event";
+import { localizeContext } from "@ha/data/context";
+import { DialogMixin } from "@ha/dialogs/dialog-mixin";
 import { haStyleDialog } from "@ha/resources/styles";
-import type { HomeAssistant } from "@ha/types";
 import type { HaInputSearch } from "@ha/components/input/ha-input-search";
-import type { HassDialog } from "@ha/dialogs/make-dialog-manager";
 
 import { stringToDpt, compareDpt } from "../utils/dpt";
 import type { DPTMetadata } from "../types/websocket";
@@ -32,13 +32,7 @@ export interface KnxDptSelectDialogParams {
 }
 
 @customElement("knx-dpt-select-dialog")
-export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptSelectDialogParams> {
-  @property({ attribute: false }) public hass!: HomeAssistant;
-
-  @state() private _open = false;
-
-  @state() private _params?: KnxDptSelectDialogParams;
-
+export class KnxDptSelectDialog extends DialogMixin<KnxDptSelectDialogParams>(LitElement) {
   @state() private dpts: Record<string, DPTMetadata> = {};
 
   /** Currently selected DPT */
@@ -47,33 +41,34 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
   /** Filter string for the DPT list */
   @state() private _filter = "";
 
-  public async showDialog(params: KnxDptSelectDialogParams): Promise<void> {
-    this._params = params;
-    this.dpts = params.dpts ?? {};
-    this._selected = params.initialSelection ?? this._selected;
-    this._open = true;
-  }
+  @state()
+  @consume({ context: localizeContext, subscribe: true })
+  private localize!: ContextType<typeof localizeContext>;
 
-  public closeDialog(_historyState?: any): boolean {
-    this._dialogClosed();
-    return true;
+  public connectedCallback() {
+    super.connectedCallback();
+
+    if (this.params) {
+      this.dpts = this.params.dpts ?? {};
+      this._selected = this.params.initialSelection ?? this._selected;
+    }
   }
 
   private _cancel(): void {
     this._selected = undefined;
     // Inform caller via callback that dialog was closed without a selection
-    if (this._params?.onClose) {
-      this._params.onClose(undefined);
+    if (this.params?.onClose) {
+      this.params.onClose(undefined);
     }
-    this._dialogClosed();
+    this.closeDialog();
   }
 
   private _confirm(): void {
     // If a callback was provided by the caller, call it with the selected value.
-    if (this._params?.onClose) {
-      this._params.onClose(this._selected);
+    if (this.params?.onClose) {
+      this.params.onClose(this._selected);
     }
-    this._dialogClosed();
+    this.closeDialog();
   }
 
   private _itemKeydown(ev: KeyboardEvent): void {
@@ -168,33 +163,24 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
     const meta = this.dpts[dpt];
     return {
       label:
-        this.hass.localize(`component.knx.config_panel.dpt.options.${dpt.replace(".", "_")}`) ??
+        this.localize(`component.knx.config_panel.dpt.options.${dpt.replace(".", "_")}`) ??
         meta?.name ??
-        this.hass.localize("state.default.unknown"),
+        this.localize("state.default.unknown"),
       unit: meta?.unit ?? "",
     };
   }
 
-  private _dialogClosed(): void {
-    this._open = false;
-    this._params = undefined;
-    this._filter = "";
-    this._selected = undefined;
-    fireEvent(this, "dialog-closed", { dialog: this.localName });
-  }
-
   protected render() {
-    if (!this._params || !this.hass) {
+    if (!this.params) {
       return nothing;
     }
 
-    const width = this._params.width ?? "medium";
+    const width = this.params.width ?? "medium";
     return html` <ha-dialog
-      .hass=${this.hass}
-      .open=${this._open}
+      open
       width=${width}
-      .headerTitle=${this._params.title}
-      @closed=${this._dialogClosed}
+      .headerTitle=${this.params.title}
+      @closed=${this.closeDialog}
     >
       <div class="dialog-body">
         <ha-input-search .value=${this._filter} @input=${this._onFilterChanged}></ha-input-search>
@@ -234,10 +220,10 @@ export class KnxDptSelectDialog extends LitElement implements HassDialog<KnxDptS
 
       <ha-dialog-footer slot="footer">
         <ha-button slot="secondaryAction" appearance="plain" @click=${this._cancel}>
-          ${this.hass.localize("ui.common.cancel") ?? "Cancel"}
+          ${this.localize("ui.common.cancel") ?? "Cancel"}
         </ha-button>
         <ha-button slot="primaryAction" @click=${this._confirm} .disabled=${!this._selected}>
-          ${this.hass.localize("ui.common.ok") ?? "OK"}
+          ${this.localize("ui.common.ok") ?? "OK"}
         </ha-button>
       </ha-dialog-footer>
     </ha-dialog>`;

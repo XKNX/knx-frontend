@@ -1,6 +1,6 @@
 import { mdiFileUpload } from "@mdi/js";
-import { css, html, LitElement } from "lit";
-import { customElement, property, state } from "lit/decorators";
+import { LitElement, css, html, nothing } from "lit";
+import { customElement, state } from "lit/decorators";
 
 import "@ha/components/ha-button";
 import "@ha/components/ha-dialog-footer";
@@ -10,24 +10,21 @@ import "@ha/components/ha-selector/ha-selector-text";
 import "@ha/components/ha-dialog";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
+import { DialogMixin } from "@ha/dialogs/dialog-mixin";
 import { uploadFile } from "@ha/data/file_upload";
 import { extractApiErrorMessage } from "@ha/data/hassio/common";
 import { showAlertDialog } from "@ha/dialogs/generic/show-dialog-box";
-import type { HassDialog } from "@ha/dialogs/make-dialog-manager";
 import type { HomeAssistant } from "@ha/types";
 
 import { processProjectFile } from "../services/websocket.service";
 
-export interface KnxProjectUploadDialogParams {}
+export interface KnxProjectUploadDialogParams {
+  hass: HomeAssistant;
+}
 
 @customElement("knx-project-upload-dialog")
-export class KnxProjectUploadDialog
-  extends LitElement
-  implements HassDialog<KnxProjectUploadDialogParams>
-{
-  @property({ attribute: false }) public hass!: HomeAssistant;
-
-  @state() private _opened = false;
+export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogParams>(LitElement) {
+  @state() public hass!: HomeAssistant;
 
   @state() private _projectPassword?: string;
 
@@ -35,32 +32,23 @@ export class KnxProjectUploadDialog
 
   @state() private _projectFile?: File;
 
+  public connectedCallback() {
+    super.connectedCallback();
+
+    if (this.params) {
+      this.hass = this.params.hass;
+    }
+  }
+
   private _backendLocalize = (key: string) =>
     this.hass.localize(`component.knx.config_panel.dialogs.project_upload.${key}`);
 
-  public showDialog(_params: any) {
-    this._opened = true;
-    this._projectFile = undefined;
-    this._projectPassword = undefined;
-    this._uploading = false;
-  }
-
-  public closeDialog(_historyState?: any): boolean {
-    this._projectFile = undefined;
-    this._projectPassword = undefined;
-    this._uploading = false;
-    this._opened = false;
-    return true;
-  }
-
   protected render() {
+    if (!this.params) {
+      return nothing;
+    }
     return html`
-      <ha-dialog
-        .hass=${this.hass}
-        .open=${this._opened}
-        @closed=${this.closeDialog}
-        .headerTitle=${this._backendLocalize("title")}
-      >
+      <ha-dialog open @closed=${this.closeDialog} .headerTitle=${this._backendLocalize("title")}>
         <div class="content">
           <ha-markdown
             class="description"
@@ -75,6 +63,7 @@ export class KnxProjectUploadDialog
             .value=${this._projectFile?.name}
             .uploading=${this._uploading}
             @file-picked=${this._filePicked}
+            @files-cleared=${this._filePicked}
           ></ha-file-upload>
           <ha-selector-text
             .hass=${this.hass}
@@ -103,7 +92,12 @@ export class KnxProjectUploadDialog
   }
 
   private _filePicked(ev) {
-    this._projectFile = ev.detail.files[0];
+    if (ev.detail.files) {
+      this._projectFile = ev.detail.files[0];
+    } else {
+      // files-cleared event
+      this._projectFile = undefined;
+    }
   }
 
   private _passwordChanged(ev) {
