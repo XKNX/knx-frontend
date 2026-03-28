@@ -36,7 +36,7 @@ export interface KnxGaSelectDialogParams {
 }
 
 @customElement("knx-ga-select-dialog")
-export class KnxGaSelectDialog extends DialogMixin(LitElement)<KnxGaSelectDialogParams> {
+export class KnxGaSelectDialog extends DialogMixin<KnxGaSelectDialogParams>(LitElement) {
   @property({ attribute: false }) public knx!: KNX;
 
   // all valid group addresses to select from

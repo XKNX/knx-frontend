@@ -1,5 +1,5 @@
 import { mdiFileUpload } from "@mdi/js";
-import { LitElement, css, html } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, state } from "lit/decorators";
 
 import "@ha/components/ha-button";
@@ -44,6 +44,9 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
     this.hass.localize(`component.knx.config_panel.dialogs.project_upload.${key}`);
 
   protected render() {
+    if (!this.params) {
+      return nothing;
+    }
     return html`
       <ha-dialog open @closed=${this.closeDialog} .headerTitle=${this._backendLocalize("title")}>
         <div class="content">
