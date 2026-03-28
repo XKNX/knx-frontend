@@ -32,6 +32,12 @@ cd ..
 
 # KNX Frontend
 
+haNodeVersion=$(cat homeassistant-frontend/.nvmrc)
+knxNodeVersion=$(cat .nvmrc)
+if [ "$knxNodeVersion" != "$haNodeVersion" ]; then
+    cp homeassistant-frontend/.nvmrc .
+fi
+
 echo "Copying browserslist"
 cp homeassistant-frontend/.browserslistrc .
 
@@ -49,3 +55,7 @@ yarn dedupe
 
 echo "\nUpdated HA frontend from $previousTag to $newTag"
 echo "Here is the diff: https://github.com/home-assistant/frontend/compare/$previousTag..$newTag"
+
+if [ "$knxNodeVersion" != "$haNodeVersion" ]; then
+    echo "\nNode version was updated from $knxNodeVersion to $haNodeVersion. run \`nvm install && nvm use\` to switch to the upstream Node version."
+fi

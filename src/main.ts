@@ -1,4 +1,4 @@
-import type { LitElement } from "lit";
+import type { LitElement, PropertyValues } from "lit";
 import { css, html } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
@@ -11,6 +11,7 @@ import { navigate } from "@ha/common/navigate";
 import { makeDialogManager } from "@ha/dialogs/make-dialog-manager";
 import "@ha/layouts/hass-loading-screen";
 import "@ha/resources/append-ha-style";
+import { contextMixin } from "@ha/state/context-mixin";
 
 import type { HomeAssistant, Route } from "@ha/types";
 
@@ -27,7 +28,7 @@ declare global {
 }
 
 @customElement("knx-frontend")
-class KnxFrontend extends KnxElement {
+class KnxFrontend extends contextMixin(KnxElement) {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
   @property({ attribute: false }) public knx!: KNX;
@@ -38,10 +39,13 @@ class KnxFrontend extends KnxElement {
 
   @state() private _translationsLoaded = false;
 
-  protected async firstUpdated(_changedProps) {
+  protected async firstUpdated(_changedProps: PropertyValues<this>) {
     if (!this.hass) {
       return;
     }
+    // connect contexts by contextMixin
+    this.hassConnected();
+
     if (!this.knx) {
       await this._initKnx();
     }
@@ -76,7 +80,14 @@ class KnxFrontend extends KnxElement {
       this._applyTheme();
     });
 
-    makeDialogManager(this, this.shadowRoot!);
+    makeDialogManager(this);
+  }
+
+  protected willUpdate(changedProperties: PropertyValues<this>) {
+    if (changedProperties.has("hass")) {
+      // update context providers when hass changes
+      this._updateHass(this.hass);
+    }
   }
 
   private async _loadTranslations() {

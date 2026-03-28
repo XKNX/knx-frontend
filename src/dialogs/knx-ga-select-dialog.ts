@@ -2,16 +2,18 @@ import memoize from "memoize-one";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
+
 import "@ha/components/ha-dialog";
 import "@ha/components/ha-button";
 import "@ha/components/ha-dialog-footer";
-import "@ha/components/search-input";
 import "@ha/components/ha-md-list";
 import "@ha/components/ha-md-list-item";
+import "@ha/components/input/ha-input-search";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
 import { haStyleDialog } from "@ha/resources/styles";
 import type { HomeAssistant } from "@ha/types";
+import type { HaInputSearch } from "@ha/components/input/ha-input-search";
 import type { HassDialog } from "@ha/dialogs/make-dialog-manager";
 
 import type { GroupAddress, GroupRange, KNXProject } from "../types/websocket";
@@ -105,8 +107,8 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
     this._selected = value ?? undefined;
   }
 
-  private _onFilterChanged(ev: CustomEvent<{ value: string }>): void {
-    this._filter = ev.detail?.value ?? "";
+  private _onFilterChanged(ev: InputEvent): void {
+    this._filter = (ev.target as HaInputSearch).value ?? "";
   }
 
   private _groupItems = memoize(
@@ -210,13 +212,7 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
       @closed=${this._dialogClosed}
     >
       <div class="dialog-body">
-        <search-input
-          ?autofocus=${true}
-          .hass=${this.hass}
-          .filter=${this._filter}
-          @value-changed=${this._onFilterChanged}
-          .label=${this.hass.localize("ui.common.search")}
-        ></search-input>
+        <ha-input-search .value=${this._filter} @input=${this._onFilterChanged}></ha-input-search>
 
         <div class="ga-list-container">
           ${noProjectData || !hasAddresses

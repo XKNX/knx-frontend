@@ -1,17 +1,16 @@
-import { LitElement } from "lit";
 import { property } from "lit/decorators";
 
 import { navigate } from "@ha/common/navigate";
 import { getConfigEntries } from "@ha/data/config_entries";
-import { ProvideHassLitMixin } from "@ha/mixins/provide-hass-lit-mixin";
 import type { HomeAssistant } from "@ha/types";
+import { HassBaseEl } from "@ha/state/hass-base-mixin";
 
 import { localize } from "./localize/localize";
 import { KNXLogger } from "./tools/knx-logger";
 import { getKnxBaseData, getKnxProject, getSchema } from "./services/websocket.service";
 import type { KNX } from "./types/knx";
 
-export class KnxElement extends ProvideHassLitMixin(LitElement) {
+export class KnxElement extends HassBaseEl {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
   @property({ attribute: false }) public knx!: KNX;
