@@ -1,5 +1,6 @@
 import memoize from "memoize-one";
 import { LitElement, html, css, nothing } from "lit";
+import { consume, type ContextType } from "@lit/context";
 import { customElement, property, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 
@@ -10,11 +11,10 @@ import "@ha/components/ha-md-list";
 import "@ha/components/ha-md-list-item";
 import "@ha/components/input/ha-input-search";
 
-import { fireEvent } from "@ha/common/dom/fire_event";
+import { localizeContext } from "@ha/data/context";
+import { DialogMixin } from "@ha/dialogs/dialog-mixin";
 import { haStyleDialog } from "@ha/resources/styles";
-import type { HomeAssistant } from "@ha/types";
 import type { HaInputSearch } from "@ha/components/input/ha-input-search";
-import type { HassDialog } from "@ha/dialogs/make-dialog-manager";
 
 import type { GroupAddress, GroupRange, KNXProject } from "../types/websocket";
 import type { KNX } from "../types/knx";
@@ -36,14 +36,8 @@ export interface KnxGaSelectDialogParams {
 }
 
 @customElement("knx-ga-select-dialog")
-export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSelectDialogParams> {
-  @property({ attribute: false }) public hass!: HomeAssistant;
-
+export class KnxGaSelectDialog extends DialogMixin(LitElement)<KnxGaSelectDialogParams> {
   @property({ attribute: false }) public knx!: KNX;
-
-  @state() private _open = false;
-
-  @state() private _params?: KnxGaSelectDialogParams;
 
   // all valid group addresses to select from
   @state() private _groupAddresses: GroupAddress[] = [];
@@ -52,32 +46,33 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
 
   @state() private _filter = "";
 
-  public async showDialog(params: KnxGaSelectDialogParams): Promise<void> {
-    this._params = params;
-    this._groupAddresses = params.groupAddresses ?? [];
-    this.knx = params.knx;
-    this._selected = params.initialSelection ?? this._selected;
-    this._open = true;
-  }
+  @state()
+  @consume({ context: localizeContext, subscribe: true })
+  private localize!: ContextType<typeof localizeContext>;
 
-  public closeDialog(_historyState?: any): boolean {
-    this._dialogClosed();
-    return true;
+  public connectedCallback() {
+    super.connectedCallback();
+
+    if (this.params) {
+      this._groupAddresses = this.params.groupAddresses ?? [];
+      this.knx = this.params.knx;
+      this._selected = this.params.initialSelection ?? this._selected;
+    }
   }
 
   private _cancel(): void {
     this._selected = undefined;
-    if (this._params?.onClose) {
-      this._params.onClose(undefined);
+    if (this.params?.onClose) {
+      this.params.onClose(undefined);
     }
-    this._dialogClosed();
+    this.closeDialog();
   }
 
   private _confirm(): void {
-    if (this._params?.onClose) {
-      this._params.onClose(this._selected);
+    if (this.params?.onClose) {
+      this.params.onClose(this._selected);
     }
-    this._dialogClosed();
+    this.closeDialog();
   }
 
   private _itemKeydown(ev: KeyboardEvent): void {
@@ -155,14 +150,6 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
     },
   );
 
-  private _dialogClosed(): void {
-    this._open = false;
-    this._params = undefined;
-    this._filter = "";
-    this._selected = undefined;
-    fireEvent(this, "dialog-closed", { dialog: this.localName });
-  }
-
   private _renderGroup(group: GroupNode) {
     return html`
       <div class="group-section">
@@ -193,7 +180,7 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
   }
 
   protected render() {
-    if (!this._params || !this.hass) {
+    if (!this.params) {
       return nothing;
     }
 
@@ -205,11 +192,10 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
     const hasFilteredItems = groupItems.length > 0;
 
     return html`<ha-dialog
-      .hass=${this.hass}
-      .open=${this._open}
-      width=${this._params.width ?? "medium"}
-      .headerTitle=${this._params.title}
-      @closed=${this._dialogClosed}
+      open
+      width=${this.params.width ?? "medium"}
+      .headerTitle=${this.params.title}
+      @closed=${this.closeDialog}
     >
       <div class="dialog-body">
         <ha-input-search .value=${this._filter} @input=${this._onFilterChanged}></ha-input-search>
@@ -217,13 +203,13 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
         <div class="ga-list-container">
           ${noProjectData || !hasAddresses
             ? html`<div class="empty-state">
-                ${this.hass.localize(
+                ${this.localize(
                   "component.knx.config_panel.entities.create._.knx.knx_group_address.group_address_none_for_dpt",
                 )}
               </div>`
             : !hasFilteredItems
               ? html`<div class="empty-state">
-                  ${this.hass.localize(
+                  ${this.localize(
                     "component.knx.config_panel.entities.create._.knx.knx_group_address.group_address_none_for_filter",
                   )}
                 </div>`
@@ -233,10 +219,10 @@ export class KnxGaSelectDialog extends LitElement implements HassDialog<KnxGaSel
 
       <ha-dialog-footer slot="footer">
         <ha-button slot="secondaryAction" appearance="plain" @click=${this._cancel}>
-          ${this.hass.localize("ui.common.cancel")}
+          ${this.localize("ui.common.cancel")}
         </ha-button>
         <ha-button slot="primaryAction" @click=${this._confirm} .disabled=${!this._selected}>
-          ${this.hass.localize("ui.common.ok")}
+          ${this.localize("ui.common.ok")}
         </ha-button>
       </ha-dialog-footer>
     </ha-dialog>`;
