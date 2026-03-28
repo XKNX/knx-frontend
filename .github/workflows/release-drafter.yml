@@ -13,9 +13,8 @@ jobs:
           version=$(date --utc '+%Y.%-m.%-d.%-H%M%S')
           echo "KNX_FRONTEND_VERSION=$version" >> $GITHUB_OUTPUT
 
-      - uses: release-drafter/release-drafter@v6
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: release-drafter/release-drafter@v7
         with:
           tag: ${{ steps.version.outputs.KNX_FRONTEND_VERSION }}
           name: ${{ steps.version.outputs.KNX_FRONTEND_VERSION }}
+          token: ${{ secrets.GITHUB_TOKEN }}
