@@ -5,14 +5,14 @@ runs:
   using: 'composite'
   steps:
     - name: Setup Node
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       id: setup-node
       with:
         node-version-file: ".nvmrc"
         cache: 'yarn'
 
     - name: Cache knx-frontend dependencies
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: |
           .yarn/cache
