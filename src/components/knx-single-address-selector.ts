@@ -3,12 +3,13 @@ import { mdiTextSearchVariant } from "@mdi/js";
 import type { TemplateResult, HTMLTemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { consume, type ContextType } from "@lit/context";
-import { customElement, property, query, state } from "lit/decorators";
+import { customElement, property, state } from "lit/decorators";
 
 import "@ha/components/ha-icon-button";
-import "@ha/components/ha-textfield";
+import "@ha/components/input/ha-input";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import { localizeContext } from "@ha/data/context";
+import type { HaInput } from "@ha/components/input/ha-input";
 
 import type { GroupAddress } from "../types/websocket";
 import type { KNX } from "../types/knx";
@@ -46,8 +47,6 @@ export class KnxSingleAddressSelector extends LitElement {
   @consume({ context: localizeContext, subscribe: true })
   private localize!: ContextType<typeof localizeContext>;
 
-  @query("ha-textfield") private _textField?: HTMLElement;
-
   private _baseTranslation = (
     key: string,
     values?: Record<string, string | number | HTMLTemplateResult | null | undefined>,
@@ -72,18 +71,6 @@ export class KnxSingleAddressSelector extends LitElement {
         }
         this._currentName = match?.name;
       }
-    }
-  }
-
-  protected updated() {
-    // show invalid style without adding helper text "Invalid" below
-    // helper text is already shown in parent component - it's more width there
-    const label = this._textField?.shadowRoot?.querySelector("label");
-    if (!label) return;
-    if (this.invalid) {
-      label.classList.add("mdc-text-field--invalid");
-    } else {
-      label.classList.remove("mdc-text-field--invalid");
     }
   }
 
@@ -113,13 +100,15 @@ export class KnxSingleAddressSelector extends LitElement {
 
         <div class="input-wrap">
           <div class="input-row">
-            <ha-textfield
-              .disabled=${this.disabled}
-              .required=${this.required}
-              .value=${this.value ?? ""}
+            <ha-input
+              ?disabled=${this.disabled}
+              ?required=${this.required}
               .label=${this.label ?? ""}
+              .value=${this.value ?? ""}
+              .invalid=${this.invalid}
               @input=${this._onInput}
-            ></ha-textfield>
+            >
+            </ha-input>
             ${displayName
               ? html`<div
                   class="ga-name"
@@ -137,9 +126,8 @@ export class KnxSingleAddressSelector extends LitElement {
     `;
   }
 
-  private _onInput(ev: Event) {
-    const target = ev.target as HTMLInputElement & { value?: string };
-    const value = target?.value ?? "";
+  private _onInput(ev: InputEvent) {
+    const value = (ev.target as HaInput).value ?? "";
     this.value = value || undefined;
     fireEvent(this, "value-changed", { value: this.value });
   }
@@ -205,11 +193,13 @@ export class KnxSingleAddressSelector extends LitElement {
       min-width: 0;
     }
 
-    ha-textfield {
+    ha-input {
       width: 18ch; /* account for label in various languages, not only GA strings */
       flex: 0 0 auto;
-      /* prevent content from expanding the field */
-      --text-field-overflow: hidden;
+    }
+    ha-input::part(wa-hint) {
+      /* we don't use the built-in hint field - hide it so it doesn't create padding */
+      display: none;
     }
 
     .ga-name {
