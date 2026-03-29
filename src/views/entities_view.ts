@@ -396,7 +396,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
         defaultHidden: narrow,
         filterable: true,
         sortable: true,
-        title: this.hass.localize("ui.panel.config.entities.picker.headers.entity_id"),
+        title: this.hass.localize("ui.panel.config.generic.headers.entity_id"),
         flex: 1,
       },
       device_name: {
@@ -412,14 +412,14 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
         template: (entry) => entry.device_id ?? "",
       },
       area_name: {
-        title: this.hass.localize("ui.panel.config.entities.picker.headers.area"),
+        title: this.hass.localize("ui.panel.config.generic.headers.area"),
         sortable: true,
         filterable: true,
         groupable: true,
         flex: 1,
       },
       domain: {
-        title: this.hass.localize("ui.panel.config.entities.picker.headers.domain"),
+        title: this.hass.localize("ui.panel.config.generic.headers.domain"),
         sortable: true,
         hidden: true,
         filterable: true,
@@ -581,7 +581,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
           .selectedOptions=${this._filters.domain as string[] | undefined}
           .expanded=${this._expandedFilter === "domain"}
           .narrow=${this.narrow}
-          .filterTitle=${this.hass.localize("ui.panel.config.entities.picker.headers.domain")}
+          .filterTitle=${this.hass.localize("ui.panel.config.generic.headers.domain")}
           @selection-changed=${this._onFilterSelectionChanged}
           @expanded-changed=${this._onFilterExpandedChanged}
         ></knx-list-filter>
@@ -595,7 +595,7 @@ export class KNXEntitiesView extends SubscribeMixin(LitElement) {
           .selectedOptions=${this._filters.area as string[] | undefined}
           .expanded=${this._expandedFilter === "area"}
           .narrow=${this.narrow}
-          .filterTitle=${this.hass.localize("ui.panel.config.entities.picker.headers.area")}
+          .filterTitle=${this.hass.localize("ui.panel.config.generic.headers.area")}
           @selection-changed=${this._onFilterSelectionChanged}
           @expanded-changed=${this._onFilterExpandedChanged}
         ></knx-list-filter>
