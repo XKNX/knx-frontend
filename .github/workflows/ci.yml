@@ -64,7 +64,7 @@ jobs:
         run: yarn run test:coverage
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         # always() to also upload coverage if tests are failing
         if: always()
         with:
