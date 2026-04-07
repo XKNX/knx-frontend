@@ -110,5 +110,8 @@
   "knx_telegram_info_dialog_destination": "Destination",
   "knx_telegram_info_dialog_value": "Value",
   "knx_telegram_info_dialog_type": "Type",
-  "knx_telegram_info_dialog_payload": "Payload"
+  "knx_telegram_info_dialog_payload": "Payload",
+  "expose_create_loading": "Loading expose configuration.",
+  "expose_create_load_error": "Error loading expose configuration.",
+  "expose_validation_error": "Validation error"
 }

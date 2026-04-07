@@ -1,4 +1,10 @@
-import { mdiInformationOutline, mdiLan, mdiFileDocumentOutline, mdiViewList } from "@mdi/js";
+import {
+  mdiInformationOutline,
+  mdiLan,
+  mdiFileDocumentOutline,
+  mdiViewList,
+  mdiExport,
+} from "@mdi/js";
 import { customElement, property } from "lit/decorators";
 
 import type { RouterOptions } from "@ha/layouts/hass-router-page";
@@ -57,9 +63,16 @@ export const entitiesTab = _knxPageNavigationFactory({
   iconPath: mdiViewList,
   iconColor: "var(--blue-color)",
 });
+export const exposeTab = _knxPageNavigationFactory({
+  baseTranslationKey: "component.knx.config_panel.expose",
+  path: `${BASE_URL}/expose`,
+  iconPath: mdiExport,
+  iconColor: "var(--cyan-color)",
+});
 
 export const knxMainTabs = (hasProject: boolean): KnxPageNavigation[] => [
   entitiesTab,
+  exposeTab,
   ...(hasProject ? [projectTab] : []),
   groupMonitorTab,
   infoTab,
@@ -107,8 +120,15 @@ export class KnxRouter extends HassRouterPage {
       entities: {
         tag: "knx-entities-router",
         load: () => {
-          logger.debug("Importing knx-entities-view");
+          logger.debug("Importing knx-entities-router");
           return import("./views/entities_router");
+        },
+      },
+      expose: {
+        tag: "knx-expose-router",
+        load: () => {
+          logger.debug("Importing knx-expose-router");
+          return import("./views/expose_router");
         },
       },
       error: {

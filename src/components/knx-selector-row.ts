@@ -75,6 +75,7 @@ export class KnxSelectorRow extends LitElement {
           .hass=${this.hass}
           .selector=${this.selector.selector}
           .disabled=${!this._enabled}
+          .placeholder=${this.selector.placeholder}
           .value=${this._haSelectorValue}
           .localizeValue=${this.hass.localize}
           @value-changed=${this._valueChange}
@@ -101,7 +102,9 @@ export class KnxSelectorRow extends LitElement {
           this._inlineSelector ? haSelector : nothing
         }
       </div>
-      ${this._inlineSelector ? nothing : haSelector}
+      ${this._inlineSelector || !this._enabled // hide disabled optional selector
+        ? nothing
+        : haSelector}
       ${invalid ? html`<p class="invalid-message">${invalid.error_message}</p>` : nothing}
     `;
   }

@@ -7,6 +7,9 @@ import type {
   UpdateEntityData,
   DeviceCreateData,
   TimeServerData,
+  ExposeConfigData,
+  ExposeResult,
+  ExposeOption,
 } from "../types/entity_data";
 import type { SelectorSchema } from "../types/schema";
 import type {
@@ -122,6 +125,45 @@ export const createDevice = (
   hass.callWS({
     type: "knx/create_device",
     ...deviceData,
+  });
+
+//
+// Expose store calls
+//
+
+export const getExposeGroups = (hass: HomeAssistant): Promise<Record<string, string[]>> =>
+  hass.callWS({
+    type: "knx/get_expose_groups",
+  });
+
+export const getExposeConfig = (hass: HomeAssistant, entityId: string): Promise<ExposeOption[]> =>
+  hass.callWS({
+    type: "knx/get_expose_config",
+    entity_id: entityId,
+  });
+
+export const validateExposeConfig = (
+  hass: HomeAssistant,
+  config: ExposeConfigData,
+): Promise<ExposeResult> =>
+  hass.callWS({
+    type: "knx/validate_expose",
+    ...config,
+  });
+
+export const updateExpose = (
+  hass: HomeAssistant,
+  config: ExposeConfigData,
+): Promise<ExposeResult> =>
+  hass.callWS({
+    type: "knx/update_expose",
+    ...config,
+  });
+
+export const deleteExpose = (hass: HomeAssistant, entityId: string) =>
+  hass.callWS({
+    type: "knx/delete_expose",
+    entity_id: entityId,
   });
 
 //

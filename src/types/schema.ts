@@ -48,6 +48,7 @@ export interface KnxHaSelector {
   default?: any;
   required?: boolean; // for optional boolean selectors, there shall be no default value (can't get applied)
   selector: Selector;
+  placeholder?: any;
 }
 
 export interface GASelector {
