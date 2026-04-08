@@ -233,7 +233,7 @@ export class KNXCreateExpose extends LitElement {
       <hass-subpage
         .hass=${this.hass}
         .narrow=${this.narrow}
-        .backPath=${"knx/expose/view"}
+        .backPath=${"/knx/expose/view"}
         .header=${this.hass.localize("component.knx.config_panel.expose.create.title")}
       >
         <div class="content">
@@ -534,9 +534,10 @@ export class KNXCreateExpose extends LitElement {
   }
 
   private _updateExposeAtIndex(ev: CustomEvent<{ value: unknown }>) {
-    const target = ev.currentTarget as HTMLElement;
+    const target = ev.currentTarget as HTMLElement & { key?: string; selector?: KnxHaSelector };
     const idx = parseInt(target.dataset.idx ?? "0");
-    const key = target.key as string;
+    const key = target.key;
+    if (!key) return;
     const newExposes = [...this._exposes];
     const nextItem: Record<string, any> = {
       ...newExposes[idx],

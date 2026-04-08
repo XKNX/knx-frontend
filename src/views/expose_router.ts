@@ -4,7 +4,7 @@ import type { RouterOptions } from "@ha/layouts/hass-router-page";
 import { KnxRouter } from "../knx-router";
 import { KNXLogger } from "../tools/knx-logger";
 
-const logger = new KNXLogger("router");
+const logger = new KNXLogger("knx-expose-router");
 
 @customElement("knx-expose-router")
 class KnxExposesRouter extends KnxRouter {
