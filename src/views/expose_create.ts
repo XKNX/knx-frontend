@@ -78,7 +78,7 @@ export class KNXCreateExpose extends LitElement {
 
   @state() private _entityId?: string;
 
-  @state() private _exposes: ExposeOption[] = [{ ga: {} }];
+  @state() private _options: ExposeOption[] = [{ ga: {} }];
 
   @state() private _validationErrors?: ErrorDescription[];
 
@@ -149,9 +149,9 @@ export class KNXCreateExpose extends LitElement {
     args: () => [this._entityId] as const,
     task: async ([entityId]) => {
       if (!entityId) return;
-      this._exposes = await getExposeConfig(this.hass, entityId);
-      if (this._exposes.length === 0) {
-        this._exposes.push({ ga: {} });
+      this._options = await getExposeConfig(this.hass, entityId);
+      if (this._options.length === 0) {
+        this._options.push({ ga: {} });
       }
       this._validationErrors = undefined;
       this._validationBaseError = undefined;
@@ -177,7 +177,7 @@ export class KNXCreateExpose extends LitElement {
       const entityId = this.route.path.split("/")[1] || undefined;
       if (entityId !== this._entityId) {
         this._entityId = entityId;
-        this._exposes = [{ ga: {} }];
+        this._options = [{ ga: {} }];
         this._validationErrors = undefined;
         this._validationBaseError = undefined;
       }
@@ -210,7 +210,7 @@ export class KNXCreateExpose extends LitElement {
         >`;
       },
       complete: () => html`
-        ${this._exposes.map((option, idx) => this._renderExposeOption(option, idx))}
+        ${this._options.map((option, idx) => this._renderExposeOption(option, idx))}
         <div class="add-button-row">
           <ha-button @click=${this._addExpose}>
             <ha-svg-icon slot="start" .path=${mdiPlus}></ha-svg-icon>
@@ -301,7 +301,7 @@ export class KNXCreateExpose extends LitElement {
             : this.hass.localize("ui.common.save")}
           extended
           @click=${this._save}
-          ?disabled=${this._exposes.some((e) => !e.ga?.write)}
+          ?disabled=${this._options.some((e) => !e.ga?.write)}
         >
           <ha-svg-icon slot="icon" .path=${create ? mdiPlus : mdiFloppy}></ha-svg-icon>
         </ha-fab>
@@ -402,7 +402,7 @@ export class KNXCreateExpose extends LitElement {
       : "";
     return html`
       <ha-expansion-panel outlined expanded left-chevron .header=${title} .secondary=${gaName}>
-        ${this._exposes.length > 1
+        ${this._options.length > 1
           ? html`
               <ha-icon-button
                 slot="icons"
@@ -522,14 +522,14 @@ export class KNXCreateExpose extends LitElement {
   }
 
   private _addExpose() {
-    this._exposes = [...this._exposes, { ga: {} }];
+    this._options = [...this._options, { ga: {} }];
   }
 
   private _removeExpose(ev: Event) {
     ev.preventDefault();
     ev.stopPropagation();
     const idx = parseInt((ev.currentTarget as HTMLElement).dataset.idx ?? "0");
-    this._exposes = this._exposes.filter((_, i) => i !== idx);
+    this._options = this._options.filter((_, i) => i !== idx);
     if (this._validationErrors) this._validate();
   }
 
@@ -538,10 +538,10 @@ export class KNXCreateExpose extends LitElement {
     const idx = parseInt(target.dataset.idx ?? "0");
     const key = target.key;
     if (!key) return;
-    const newExposes = [...this._exposes];
+    const newOptions = [...this._options];
     const nextItem: Record<string, any> = {
-      ...newExposes[idx],
-      ga: { ...(newExposes[idx].ga ?? {}) },
+      ...newOptions[idx],
+      ga: { ...(newOptions[idx].ga ?? {}) },
     };
     let value = ev.detail.value ?? undefined;
     if (
@@ -557,15 +557,15 @@ export class KNXCreateExpose extends LitElement {
         (value.milliseconds ?? 0) / 1000;
     }
     setNestedValue(nextItem, key, value, logger);
-    newExposes[idx] = nextItem as ExposeOption;
-    this._exposes = newExposes;
-    logger.debug("Updated expose item", idx, key, value, "new config:", this._exposes);
+    newOptions[idx] = nextItem as ExposeOption;
+    this._options = newOptions;
+    logger.debug("Updated expose item", idx, key, value, "new config:", this._options);
     if (this._validationErrors) this._validate();
   }
 
   private _validate = throttle(() => {
     if (!this._entityId) return;
-    const config: ExposeConfigData = { entity_id: this._entityId, options: this._exposes };
+    const config: ExposeConfigData = { entity_id: this._entityId, options: this._options };
     validateExposeConfig(this.hass, config)
       .then((result) => this._handleResult(result, false))
       .catch((err) => {
@@ -577,7 +577,7 @@ export class KNXCreateExpose extends LitElement {
   private async _save(ev: Event) {
     ev.stopPropagation();
     if (!this._entityId) return;
-    const config: ExposeConfigData = { entity_id: this._entityId, options: this._exposes };
+    const config: ExposeConfigData = { entity_id: this._entityId, options: this._options };
     try {
       logger.debug("Saving expose config", config);
       const result = await updateExpose(this.hass, config);
