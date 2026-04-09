@@ -60,3 +60,26 @@ export interface TimeServerData {
   date?: GASchema;
   datetime?: GASchema;
 }
+
+// #################
+// Expose config
+// #################
+
+export interface ExposeOption {
+  ga: GASchema;
+  attribute?: string;
+  default?: boolean | string | number;
+  value_template?: string;
+  cooldown?: number;
+  periodic_send?: number;
+  respond_to_read?: boolean;
+}
+
+export interface ExposeConfigData {
+  entity_id: string;
+  options: ExposeOption[];
+}
+
+export type ExposeResult =
+  | { success: true }
+  | { success: false; error_base: string; errors: ErrorDescription[] };
