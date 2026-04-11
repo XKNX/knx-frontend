@@ -154,7 +154,7 @@ export class KNXCreateExpose extends LitElement {
 
       const urlParams = new URLSearchParams(mainWindow.location.search);
       const copyFrom = urlParams.get("copy");
-      if (copyFrom) {
+      if (copyFrom && copyFrom !== entityId) {
         const copyOptions = await getExposeConfig(this.hass, copyFrom);
         logger.debug("Copying expose options from", copyFrom, copyOptions);
         this._options.push(...copyOptions);
