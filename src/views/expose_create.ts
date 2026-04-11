@@ -22,6 +22,7 @@ import "@ha/components/entity/ha-entity-picker";
 import "@ha/components/entity/ha-entity-attribute-picker";
 
 import { transform } from "@ha/common/decorators/transform";
+import { mainWindow } from "@ha/common/dom/get_main_window";
 import { navigate } from "@ha/common/navigate";
 import { throttle } from "@ha/common/util/throttle";
 import type { HomeAssistant, Route } from "@ha/types";
@@ -150,6 +151,14 @@ export class KNXCreateExpose extends LitElement {
     task: async ([entityId]) => {
       if (!entityId) return;
       this._options = await getExposeConfig(this.hass, entityId);
+
+      const urlParams = new URLSearchParams(mainWindow.location.search);
+      const copyFrom = urlParams.get("copy");
+      if (copyFrom && copyFrom !== entityId) {
+        const copyOptions = await getExposeConfig(this.hass, copyFrom);
+        logger.debug("Copying expose options from", copyFrom, copyOptions);
+        this._options.push(...copyOptions);
+      }
       if (this._options.length === 0) {
         this._options.push({ ga: {} });
       }
@@ -229,6 +238,9 @@ export class KNXCreateExpose extends LitElement {
   }
 
   private _renderEntityPicker(): TemplateResult {
+    const urlParams = new URLSearchParams(mainWindow.location.search);
+    const copyFrom = urlParams.get("copy");
+
     return html`
       <hass-subpage
         .hass=${this.hass}
@@ -253,6 +265,14 @@ export class KNXCreateExpose extends LitElement {
               ></ha-entity-picker>
             </div>
           </ha-card>
+          ${copyFrom
+            ? html` <ha-alert alert-type="info">
+                ${this.hass.localize("component.knx.config_panel.expose.create.copy_info", {
+                  entity_name: this.hass.states[copyFrom]?.attributes.friendly_name ?? "?",
+                  entity_id: copyFrom,
+                })}
+              </ha-alert>`
+            : nothing}
         </div>
       </hass-subpage>
     `;
@@ -517,7 +537,7 @@ export class KNXCreateExpose extends LitElement {
   private _entityChanged(ev: CustomEvent) {
     const entityId = (ev.detail.value as string) || undefined;
     if (entityId) {
-      navigate(`/knx/expose/create/${entityId}`);
+      navigate(`/knx/expose/create/${entityId}${mainWindow.location.search}`);
     }
   }
 

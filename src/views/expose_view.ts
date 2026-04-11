@@ -1,4 +1,5 @@
 import {
+  mdiContentCopy,
   mdiDelete,
   mdiInformationSlabCircleOutline,
   mdiInformationOffOutline,
@@ -50,6 +51,7 @@ const logger = new KNXLogger("knx-expose-view");
 
 export interface EntityRow {
   entityState?: HassEntity;
+  entity_id: string;
   friendly_name: string;
   device_name: string;
   area_name: string;
@@ -368,6 +370,16 @@ export class KNXExposeView extends LitElement {
               action: () => this._entityMoreInfo(entry),
             },
             {
+              path: mdiContentCopy,
+              label: this.hass.localize("ui.common.copy"),
+              action: () => {
+                const url = new URL(mainWindow.location.href);
+                url.pathname = `/knx/expose/create`;
+                url.searchParams.set("copy", entry.entity_id);
+                navigate(url.pathname + url.search);
+              },
+            },
+            {
               path: mdiPencilOutline,
               label: this.hass.localize("ui.common.edit"),
               action: () => this._exposeEdit(entry),
@@ -434,6 +446,7 @@ export class KNXExposeView extends LitElement {
     return html`
       <hass-tabs-subpage-data-table
         .hass=${this.hass}
+        .backPath=${"/knx"}
         .narrow=${this.narrow}
         .route=${this.route!}
         .tabs=${[exposeTab]}
