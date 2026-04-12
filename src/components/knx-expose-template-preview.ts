@@ -78,25 +78,35 @@ export class KnxExposeTemplatePreview extends LitElement {
       return;
     }
     logger.debug("Updating value template", this.valueTemplate, this._stateOrAttribute);
-    this._unsubRenderTemplate = await subscribeRenderTemplate(
-      this._connection,
-      (result) => {
-        if ("error" in result) {
-          logger.error("Template render error", result.error);
-          this._templateResult = undefined;
-          this._error = `Error rendering template: ${result.error}`;
-          return;
-        }
-        this._error = undefined;
-        this._templateResult = result.result;
-      },
-      {
-        template: this.valueTemplate,
-        timeout: 3,
-        report_errors: true,
-        variables: { value: this._stateOrAttribute },
-      },
-    );
+    try {
+      this._unsubRenderTemplate = await subscribeRenderTemplate(
+        this._connection,
+        (result) => {
+          if ("error" in result) {
+            logger.error("Template render error", result.error);
+            this._templateResult = undefined;
+            this._error = `Error rendering template: ${result.error}`;
+            return;
+          }
+          this._error = undefined;
+          this._templateResult = result.result;
+        },
+        {
+          template: this.valueTemplate,
+          timeout: 3,
+          report_errors: true,
+          variables: { value: this._stateOrAttribute },
+        },
+      );
+    } catch (err) {
+      logger.error("Template subscription error", err);
+      this._unsubRenderTemplate = undefined;
+      this._templateResult = undefined;
+      this._error =
+        err instanceof Error
+          ? err.message
+          : this.localize("ui.panel.config.developer-tools.tabs.templates.unknown_error_template");
+    }
   }
 
   private _scheduleTemplateUpdate(): void {
