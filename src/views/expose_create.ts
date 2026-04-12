@@ -28,6 +28,7 @@ import { throttle } from "@ha/common/util/throttle";
 import type { HomeAssistant, Route } from "@ha/types";
 import { statesContext } from "@ha/data/context";
 
+import "../components/knx-expose-template-preview";
 import "../components/knx-group-address-selector";
 import "../components/knx-selector-row";
 
@@ -492,7 +493,13 @@ export class KNXCreateExpose extends LitElement {
               .validationErrors=${extractValidationErrors(optionErrors, "value_template")}
               .localizeFunction=${this._backendLocalize}
               @value-changed=${this._updateExposeAtIndex}
-            ></knx-selector-row>
+            >
+              <knx-expose-template-preview
+                .entityId=${this._entityId}
+                .attribute=${option.attribute}
+                .valueTemplate=${option.value_template}
+              ></knx-expose-template-preview>
+            </knx-selector-row>
             <knx-selector-row
               data-idx=${idx}
               .hass=${this.hass}
