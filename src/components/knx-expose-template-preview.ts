@@ -129,16 +129,10 @@ export class KnxExposeTemplatePreview extends LitElement {
     if (!this._unsubRenderTemplate) {
       return;
     }
-
     try {
       this._unsubRenderTemplate();
     } catch (err: any) {
       logger.error("Error unsubscribing from template", err);
-      if (err.code === "not_found") {
-        // If we get here, the connection was probably already closed. Ignore.
-      } else {
-        throw err;
-      }
     } finally {
       this._unsubRenderTemplate = undefined;
       logger.debug("Unsubscribed from template");
