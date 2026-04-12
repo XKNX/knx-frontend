@@ -42,7 +42,7 @@ export class KnxExposeTemplatePreview extends LitElement {
     },
     watch: ["entityId", "attribute"],
   })
-  private _stateOrAttribute?: string;
+  private _stateOrAttribute?: unknown;
 
   @state()
   @consume({ context: localizeContext, subscribe: true })
@@ -169,6 +169,7 @@ export class KnxExposeTemplatePreview extends LitElement {
     }
     .preview code {
       color: var(--primary-text-color);
+    }
   `;
 }
 
