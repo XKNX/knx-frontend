@@ -105,6 +105,7 @@ export class KnxSelectorRow extends LitElement {
       ${this._inlineSelector || !this._enabled // hide disabled optional selector
         ? nothing
         : haSelector}
+      ${this._enabled ? html`<slot></slot>` : nothing}
       ${invalid ? html`<p class="invalid-message">${invalid.error_message}</p>` : nothing}
     `;
   }

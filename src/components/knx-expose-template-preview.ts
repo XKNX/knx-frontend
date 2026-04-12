@@ -1,5 +1,5 @@
 import type { TemplateResult, PropertyValues } from "lit";
-import { LitElement, html, css } from "lit";
+import { LitElement, html, css, nothing } from "lit";
 import { consume, type ContextType } from "@lit/context";
 import { customElement, property, state } from "lit/decorators";
 
@@ -137,24 +137,36 @@ export class KnxExposeTemplatePreview extends LitElement {
     }
   }
 
-  protected render(): TemplateResult {
-    return this._error
-      ? html`<div class="error">
-          ${this.localize("ui.panel.config.integrations.config_flow.error")}: ${this._error}
+  protected render(): TemplateResult | typeof nothing {
+    return this.valueTemplate
+      ? html`<div class="container">
+          ${this._error
+            ? html`<div class="error">
+                ${this.localize("ui.panel.config.integrations.config_flow.error")}: ${this._error}
+              </div>`
+            : html`<div class="preview">
+                ${this.localize("ui.panel.config.integrations.config_flow.preview")}:
+                <code>${this._templateResult ?? "None"}</code>
+              </div>`}
         </div>`
-      : html`<div class="preview">
-          ${this.localize("ui.panel.config.integrations.config_flow.preview")}:
-          <code>${this._templateResult ?? "None"}</code>
-        </div>`;
+      : nothing;
   }
 
   static styles = css`
+    .container {
+      background-color: var(--secondary-background-color);
+      border-radius: 4px;
+      margin-top: 8px;
+      padding: 8px;
+    }
     .error {
       color: var(--error-color);
     }
     .preview {
       color: var(--secondary-text-color);
     }
+    .preview code {
+      color: var(--primary-text-color);
   `;
 }
 
