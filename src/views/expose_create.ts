@@ -498,8 +498,8 @@ export class KNXCreateExpose extends LitElement {
                 .entityId=${this._entityId}
                 .attribute=${option.attribute}
                 .valueTemplate=${option.value_template}
-              ></knx-expose-template-preview
-            ></knx-selector-row>
+              ></knx-expose-template-preview>
+            </knx-selector-row>
             <knx-selector-row
               data-idx=${idx}
               .hass=${this.hass}

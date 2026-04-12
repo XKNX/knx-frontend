@@ -59,16 +59,14 @@ export class KnxExposeTemplatePreview extends LitElement {
   }
 
   protected willUpdate(changedProperties: PropertyValues<this>) {
-    if (changedProperties.has("valueTemplate")) {
-      this._scheduleTemplateUpdate();
-    } else if (
+    if (
+      changedProperties.has("valueTemplate") ||
       changedProperties.has("entityId") ||
       // to update value variable for template calculation
       changedProperties.has("attribute") ||
       changedProperties.has("_stateOrAttribute")
     ) {
-      this._clearUpdateDebounce();
-      this._updateValueTemplate();
+      this._scheduleTemplateUpdate();
     }
   }
 
