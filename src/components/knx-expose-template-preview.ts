@@ -1,11 +1,11 @@
 import type { TemplateResult, PropertyValues } from "lit";
 import { LitElement, html, css } from "lit";
-import { consume } from "@lit/context";
+import { consume, type ContextType } from "@lit/context";
 import { customElement, property, state } from "lit/decorators";
 
 import type { HassEntities, UnsubscribeFunc } from "home-assistant-js-websocket";
 
-import { connectionContext, statesContext } from "@ha/data/context";
+import { localizeContext, connectionContext, statesContext } from "@ha/data/context";
 
 import { transform } from "@ha/common/decorators/transform";
 import type { HomeAssistant } from "@ha/types";
@@ -17,11 +17,13 @@ const logger = new KNXLogger("knx-expose-template-preview");
 
 @customElement("knx-expose-template-preview")
 export class KnxExposeTemplatePreview extends LitElement {
+  private static readonly _UPDATE_DEBOUNCE_MS = 350;
+
   @property({ attribute: false }) public entityId!: string;
 
   @property({ attribute: false }) public attribute?: string;
 
-  @property({ attribute: false }) public valueTemplate?;
+  @property({ attribute: false }) public valueTemplate?: string;
 
   @state() private _templateResult?: string;
 
@@ -42,22 +44,32 @@ export class KnxExposeTemplatePreview extends LitElement {
   })
   private _stateOrAttribute?: string;
 
+  @state()
+  @consume({ context: localizeContext, subscribe: true })
+  private localize!: ContextType<typeof localizeContext>;
+
   private _unsubRenderTemplate?: UnsubscribeFunc;
 
+  private _updateDebounceHandle?: number;
+
+  public disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._clearUpdateDebounce();
+    this._unsubscribeTemplate();
+  }
+
   protected willUpdate(changedProperties: PropertyValues<this>) {
-    if (
-      changedProperties.has("valueTemplate") ||
+    if (changedProperties.has("valueTemplate")) {
+      this._scheduleTemplateUpdate();
+    } else if (
       changedProperties.has("entityId") ||
       // to update value variable for template calculation
       changedProperties.has("attribute") ||
       changedProperties.has("_stateOrAttribute")
     ) {
+      this._clearUpdateDebounce();
       this._updateValueTemplate();
     }
-  }
-
-  protected render(): TemplateResult {
-    return html`${this._templateResult} - ${this._error}`;
   }
 
   private async _updateValueTemplate() {
@@ -89,6 +101,22 @@ export class KnxExposeTemplatePreview extends LitElement {
     );
   }
 
+  private _scheduleTemplateUpdate(): void {
+    this._clearUpdateDebounce();
+    this._updateDebounceHandle = window.setTimeout(() => {
+      this._updateDebounceHandle = undefined;
+      this._updateValueTemplate();
+    }, KnxExposeTemplatePreview._UPDATE_DEBOUNCE_MS);
+  }
+
+  private _clearUpdateDebounce(): void {
+    if (this._updateDebounceHandle === undefined) {
+      return;
+    }
+    window.clearTimeout(this._updateDebounceHandle);
+    this._updateDebounceHandle = undefined;
+  }
+
   private async _unsubscribeTemplate(): Promise<void> {
     if (!this._unsubRenderTemplate) {
       return;
@@ -96,8 +124,6 @@ export class KnxExposeTemplatePreview extends LitElement {
 
     try {
       this._unsubRenderTemplate();
-      // const unsub = await this._unsubRenderTemplate();
-      // unsub();
     } catch (err: any) {
       logger.error("Error unsubscribing from template", err);
       if (err.code === "not_found") {
@@ -111,7 +137,25 @@ export class KnxExposeTemplatePreview extends LitElement {
     }
   }
 
-  static styles = css``;
+  protected render(): TemplateResult {
+    return this._error
+      ? html`<div class="error">
+          ${this.localize("ui.panel.config.integrations.config_flow.error")}: ${this._error}
+        </div>`
+      : html`<div class="preview">
+          ${this.localize("ui.panel.config.integrations.config_flow.preview")}:
+          <code>${this._templateResult ?? "None"}</code>
+        </div>`;
+  }
+
+  static styles = css`
+    .error {
+      color: var(--error-color);
+    }
+    .preview {
+      color: var(--secondary-text-color);
+    }
+  `;
 }
 
 declare global {
