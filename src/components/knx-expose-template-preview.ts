@@ -199,7 +199,9 @@ export class KnxExposeTemplatePreview extends LitElement {
             : html`<div class="preview">
                 ${this.localize("ui.panel.config.integrations.config_flow.preview")}
                 <code class="value-preview"> value: ${this._stateOrAttribute ?? "None"}</code>
-                ${this._typingIndicator ? html`<span class="typing-indicator">…</span>` : nothing}
+                ${this._typingIndicator
+                  ? html`<span class="typing-indicator" aria-hidden="true">…</span>`
+                  : nothing}
                 <div class="template-result"><code>${this._templateResult ?? "None"}</code></div>
               </div>`}
         </div>`
