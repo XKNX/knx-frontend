@@ -56,8 +56,12 @@ export class KnxExposeTemplatePreview extends LitElement {
 
   private _lastTemplateUpdateAt = 0;
 
+  private _updateRequestId = 0;
+
   public disconnectedCallback(): void {
     super.disconnectedCallback();
+    // Invalidate pending async update runs when element disconnects.
+    this._updateRequestId++;
     this._clearUpdateDebounce();
     this._unsubscribeTemplate();
   }
@@ -80,7 +84,13 @@ export class KnxExposeTemplatePreview extends LitElement {
    * the latest template text and current input value.
    */
   private async _updateValueTemplate() {
+    const requestId = ++this._updateRequestId;
     await this._unsubscribeTemplate();
+
+    if (requestId !== this._updateRequestId) {
+      return;
+    }
+
     this._templateResult = undefined;
     if (!this.valueTemplate) {
       this._typingIndicator = false;
@@ -89,9 +99,13 @@ export class KnxExposeTemplatePreview extends LitElement {
     }
     logger.debug("Updating value template", this.valueTemplate, this._stateOrAttribute);
     try {
-      this._unsubRenderTemplate = await subscribeRenderTemplate(
+      const unsubscribe = await subscribeRenderTemplate(
         this._connection,
         (result) => {
+          if (requestId !== this._updateRequestId) {
+            return;
+          }
+
           if ("error" in result) {
             logger.error("Template render error", result.error);
             this._templateResult = undefined;
@@ -108,7 +122,18 @@ export class KnxExposeTemplatePreview extends LitElement {
           variables: { value: this._stateOrAttribute },
         },
       );
+
+      if (requestId !== this._updateRequestId) {
+        unsubscribe();
+        return;
+      }
+
+      this._unsubRenderTemplate = unsubscribe;
     } catch (err) {
+      if (requestId !== this._updateRequestId) {
+        return;
+      }
+
       logger.error("Template subscription error", err);
       this._unsubRenderTemplate = undefined;
       this._templateResult = undefined;
