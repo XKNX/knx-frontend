@@ -189,6 +189,15 @@ export class KnxExposeTemplatePreview extends LitElement {
     }
   }
 
+  private _toRawValueString(value: unknown): string {
+    if (value === null || value === undefined) return "None";
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+
   protected render(): TemplateResult | typeof nothing {
     return this.valueTemplate
       ? html`<div class="container">
@@ -198,11 +207,15 @@ export class KnxExposeTemplatePreview extends LitElement {
               </div>`
             : html`<div class="preview">
                 ${this.localize("ui.panel.config.integrations.config_flow.preview")}
-                <code class="value-preview"> value: ${this._stateOrAttribute ?? "None"}</code>
+                <code class="value-preview">
+                  value: ${this._toRawValueString(this._stateOrAttribute)}</code
+                >
                 ${this._typingIndicator
                   ? html`<span class="typing-indicator" aria-hidden="true">…</span>`
                   : nothing}
-                <div class="template-result"><code>${this._templateResult ?? "None"}</code></div>
+                <div class="template-result">
+                  <code>${this._toRawValueString(this._templateResult)}</code>
+                </div>
               </div>`}
         </div>`
       : nothing;
