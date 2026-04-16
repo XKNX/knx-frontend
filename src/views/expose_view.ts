@@ -384,7 +384,7 @@ export class KNXExposeView extends LitElement {
       },
       group_address_names: {
         hidden: true,
-        title: "Groupn Address Names",
+        title: "Group Address Names",
         filterable: true,
         sortable: false,
       },
@@ -425,7 +425,7 @@ export class KNXExposeView extends LitElement {
           return html`<ha-icon-overflow-menu
             .hass=${this.hass}
             .items=${items}
-            narrow
+            .narrow=${this.narrow}
           ></ha-icon-overflow-menu>`;
         },
       },

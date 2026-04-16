@@ -16,7 +16,7 @@ interface GroupAddressParts {
 
 @customElement("knx-data-table-ga-label")
 class KnxDataTableGaLabel extends LitElement {
-  @property({ attribute: false }) public groupAddresses!: GroupAddressParts[];
+  @property({ attribute: false }) public groupAddresses: GroupAddressParts[] = [];
 
   protected render(): TemplateResult {
     const gas = this.groupAddresses;
