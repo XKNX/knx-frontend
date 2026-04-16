@@ -7,7 +7,7 @@ import {
   mdiPencilOutline,
 } from "@mdi/js";
 import type { TemplateResult } from "lit";
-import { LitElement, html } from "lit";
+import { LitElement, html, nothing } from "lit";
 import { consume } from "@lit/context";
 import { customElement, property, state } from "lit/decorators";
 import { storage } from "@ha/common/decorators/storage";
@@ -21,7 +21,6 @@ import "@ha/components/ha-icon";
 import "@ha/components/ha-icon-overflow-menu";
 import "@ha/components/ha-state-icon";
 import "@ha/components/ha-svg-icon";
-import "../components/data-table/filter/knx-list-filter";
 import { transform } from "@ha/common/decorators/transform";
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
@@ -38,6 +37,9 @@ import type { DataTableFiltersValues } from "@ha/data/data_table_filters";
 import type { EntityRegistryEntry } from "@ha/data/entity/entity_registry";
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 import type { HomeAssistant, Route } from "@ha/types";
+
+import "../components/data-table/knx-data-table-ga-label";
+import "../components/data-table/filter/knx-list-filter";
 
 import { getExposeGroups, deleteExpose } from "../services/websocket.service";
 import type { KNX } from "../types/knx";
@@ -57,6 +59,8 @@ export interface EntityRow {
   area_name: string;
   disabled: boolean;
   domain: string;
+  group_addresses: string[];
+  group_address_names: (string | undefined)[];
 }
 
 interface UnknownEntity {
@@ -127,6 +131,9 @@ export class KNXExposeView extends LitElement {
   };
 
   protected async firstUpdated() {
+    if (this.knx.projectInfo && !this.knx.projectData) {
+      await this.knx.loadProject();
+    }
     await this._fetchExposeGroups();
   }
 
@@ -158,6 +165,12 @@ export class KNXExposeView extends LitElement {
         area_name: area?.name ?? "",
         disabled: !!entry.disabled_by,
         domain: domainName,
+        group_addresses: this.exposeGroups[entry.entity_id] ?? [],
+        // matched by index with group_addresses
+        group_address_names:
+          (this.exposeGroups[entry.entity_id] ?? []).map(
+            (ga) => this.knx.projectData?.group_addresses[ga]?.name,
+          ) ?? [],
       };
     }),
   );
@@ -321,7 +334,7 @@ export class KNXExposeView extends LitElement {
         sortable: true,
         direction: "asc",
         title: this.hass.localize("ui.common.name"),
-        flex: 2,
+        flex: 1,
       },
       entity_id: {
         showNarrow: true,
@@ -332,18 +345,14 @@ export class KNXExposeView extends LitElement {
         flex: 1,
       },
       device_name: {
+        defaultHidden: true,
         filterable: true,
         sortable: true,
         title: this.hass.localize("ui.panel.config.entities.picker.headers.device"),
         flex: 1,
       },
-      device_id: {
-        hidden: true, // for filtering only
-        title: "Device ID",
-        filterable: true,
-        template: (entry) => entry.device_id ?? "",
-      },
       area_name: {
+        defaultHidden: true,
         title: this.hass.localize("ui.panel.config.generic.headers.area"),
         sortable: true,
         filterable: true,
@@ -356,6 +365,28 @@ export class KNXExposeView extends LitElement {
         hidden: true,
         filterable: true,
         groupable: true,
+      },
+      group_addresses: {
+        showNarrow: true,
+        title: this.hass.localize("component.knx.config_panel.common.group_addresses"),
+        filterable: true,
+        sortable: false,
+        flex: 1,
+        template: (entry) =>
+          entry.group_addresses.length
+            ? html`<knx-data-table-ga-label
+                .groupAddresses=${entry.group_addresses.map((ga, index) => ({
+                  address: ga,
+                  name: entry.group_address_names[index],
+                }))}
+              ></knx-data-table-ga-label>`
+            : nothing,
+      },
+      group_address_names: {
+        hidden: true,
+        title: "Group Address Names",
+        filterable: true,
+        sortable: false,
       },
       actions: {
         showNarrow: true,
@@ -393,8 +424,8 @@ export class KNXExposeView extends LitElement {
 
           return html`<ha-icon-overflow-menu
             .hass=${this.hass}
-            .narrow=${narrow}
             .items=${items}
+            .narrow=${this.narrow}
           ></ha-icon-overflow-menu>`;
         },
       },
