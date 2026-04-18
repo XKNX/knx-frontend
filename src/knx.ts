@@ -15,13 +15,7 @@ export class KnxElement extends HassBaseEl {
 
   @property({ attribute: false }) public knx!: KNX;
 
-  protected _projectContextProvider = new KnxProjectContextProvider(this, {
-    onLoad: (project) => {
-      if (this.knx) {
-        this.knx.projectData = project;
-      }
-    },
-  });
+  protected _projectContextProvider = new KnxProjectContextProvider(this);
 
   protected async _initKnx() {
     try {
@@ -36,7 +30,6 @@ export class KnxElement extends HassBaseEl {
         dptMetadata: knxBase.dpt_metadata,
         projectInfo: knxBase.project_info, // can  be used to check if project is available
         supportedPlatforms: knxBase.supported_platforms,
-        projectData: null,
         schema: {},
         loadSchema: (platform: string) => this._loadSchema(platform),
       };

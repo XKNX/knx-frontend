@@ -11,12 +11,14 @@ import { fireEvent } from "@ha/common/dom/fire_event";
 import { localizeContext } from "@ha/data/context";
 import type { HaInput } from "@ha/components/input/ha-input";
 
-import type { GroupAddress } from "../types/websocket";
-import type { KNX } from "../types/knx";
+import type { GroupAddress, KNXProject } from "../types/websocket";
+import { knxProjectContext } from "../data/knx-project-context";
 
 @customElement("knx-single-address-selector")
 export class KnxSingleAddressSelector extends LitElement {
-  @property({ attribute: false }) public knx!: KNX;
+  @state()
+  @consume({ context: knxProjectContext, subscribe: true })
+  private _projectData: KNXProject | null = null;
 
   @property({ type: String }) public key!: string;
 
@@ -61,11 +63,11 @@ export class KnxSingleAddressSelector extends LitElement {
       this.invalid = !!this.invalidMessage;
     }
 
-    if (changed.has("value") || changed.has("groupAddresses") || changed.has("knx")) {
-      if (this.knx.projectData) {
+    if (changed.has("value") || changed.has("groupAddresses") || changed.has("_projectData")) {
+      if (this._projectData) {
         let match = this.groupAddresses?.find((ga) => ga.address === this.value);
         if (!match) {
-          match = Object.values(this.knx.projectData.group_addresses).find(
+          match = Object.values(this._projectData.group_addresses).find(
             (ga) => ga.address === this.value,
           );
         }
@@ -77,7 +79,7 @@ export class KnxSingleAddressSelector extends LitElement {
   protected render(): TemplateResult {
     const nameKnown = !!this._currentName;
     const noAddressKnown = !this.value && this.groupAddresses.length === 0;
-    const displayName = this.knx?.projectData
+    const displayName = this._projectData
       ? (this._currentName ??
         (this.value
           ? this._baseTranslation("group_address_unknown")
@@ -88,7 +90,7 @@ export class KnxSingleAddressSelector extends LitElement {
 
     return html`
       <div class="container">
-        ${this.knx?.projectData
+        ${this._projectData
           ? html`<ha-icon-button
               class="menu-button"
               .disabled=${this.disabled || this.groupAddresses.length === 0}
@@ -140,7 +142,6 @@ export class KnxSingleAddressSelector extends LitElement {
         title: `${this.parentLabel ? this.parentLabel + " - " : ""}${this.label ?? ""}`,
         groupAddresses: this.groupAddresses ?? [],
         initialSelection: this.value,
-        knx: this.knx,
         onClose: (address?: string) => {
           if (address && address !== this.value) {
             this.value = address;

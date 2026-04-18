@@ -29,10 +29,7 @@ export class KnxProjectContextProvider {
 
   private _hasProject = false;
 
-  private _onLoad?: (value: KNXProject | null) => void;
-
-  constructor(host: ReactiveElement, options?: { onLoad?: (value: KNXProject | null) => void }) {
-    this._onLoad = options?.onLoad;
+  constructor(host: ReactiveElement) {
     // Listen for context-request BEFORE the ContextProvider to trigger lazy loading.
     host.addEventListener("context-request", this._onContextRequest as EventListener);
     this._provider = new ContextProvider(host, {
@@ -62,7 +59,6 @@ export class KnxProjectContextProvider {
     try {
       const project = await getKnxProject(this._hass);
       this._provider.setValue(project);
-      this._onLoad?.(project);
     } catch (err) {
       logger.error("getKnxProject", err);
     } finally {

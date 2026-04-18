@@ -1,7 +1,7 @@
 import type { ConfigEntry } from "@ha/data/config_entries";
 import type { SupportedPlatform } from "./entity_data";
 import type { SelectorSchema } from "./schema";
-import type { DPTMetadata, KNXInfoData, KNXProjectInfo, KNXProject } from "./websocket";
+import type { DPTMetadata, KNXInfoData, KNXProjectInfo } from "./websocket";
 
 export interface KNX {
   language: string;
@@ -17,11 +17,6 @@ export interface KNX {
    */
   projectInfo: KNXProjectInfo | null;
   supportedPlatforms: SupportedPlatform[];
-  /**
-   * Fully parsed KNX project content (group addresses, devices, etc.).
-   * Initially null; populated by requesting the project context.
-   */
-  projectData: KNXProject | null;
   /**
    * Cache for platform schemas (selector definitions).
    * Once a platform schema has been loaded, it is stored here
