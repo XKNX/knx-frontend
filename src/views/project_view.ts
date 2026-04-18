@@ -1,5 +1,5 @@
 import { mdiPlus, mdiMathLog } from "@mdi/js";
-import type { TemplateResult } from "lit";
+import type { PropertyValues, TemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { consume } from "@lit/context";
@@ -97,8 +97,14 @@ export class KNXProjectView extends LitElement {
     });
   }
 
-  private _isGroupRangeAvailable(projectData: KNXProject) {
-    const projectVersion = projectData.info.xknxproject_version ?? "0.0.0";
+  protected willUpdate(changedProperties: PropertyValues): void {
+    if (changedProperties.has("_projectData")) {
+      this._isGroupRangeAvailable(this._projectData);
+    }
+  }
+
+  private _isGroupRangeAvailable(projectData: KNXProject | null): void {
+    const projectVersion = projectData?.info.xknxproject_version ?? "0.0.0";
     logger.debug("project version: " + projectVersion);
     this._groupRangeAvailable = compare(projectVersion, MIN_XKNXPROJECT_VERSION, ">=");
   }
@@ -263,7 +269,6 @@ export class KNXProjectView extends LitElement {
         <hass-loading-screen .message=${"Loading KNX project data."}></hass-loading-screen>
       `;
     }
-    this._isGroupRangeAvailable(this._projectData);
     return this._renderTable(this._projectData);
   }
 
