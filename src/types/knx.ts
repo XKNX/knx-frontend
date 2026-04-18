@@ -19,16 +19,9 @@ export interface KNX {
   supportedPlatforms: SupportedPlatform[];
   /**
    * Fully parsed KNX project content (group addresses, devices, etc.).
-   * Initially null; populated only after calling `loadProject()`.
-   * Prefer `projectInfo` to detect availability, then `await loadProject()` to access details.
+   * Initially null; populated by requesting the project context.
    */
   projectData: KNXProject | null;
-  /**
-   * Loads full KNX project data into `projectData`.
-   * First check `projectInfo` to ensure a project exists.
-   * Call only if `projectData` is null or to reload the project.
-   */
-  loadProject(): Promise<void>;
   /**
    * Cache for platform schemas (selector definitions).
    * Once a platform schema has been loaded, it is stored here

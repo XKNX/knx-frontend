@@ -2,7 +2,7 @@ import { mdiPlus, mdiFloppy } from "@mdi/js";
 import type { TemplateResult, PropertyValues } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state, query } from "lit/decorators";
-import { ContextProvider } from "@lit/context";
+import { ContextProvider, consume } from "@lit/context";
 import { Task } from "@lit/task";
 
 import "@ha/layouts/hass-loading-screen";
@@ -34,11 +34,13 @@ import type {
   SupportedPlatform,
 } from "types/entity_data";
 
+import { knxProjectContext } from "../data/knx-project-context";
 import { getPlatformStyle } from "../utils/common";
 import { validDPTsForSchema } from "../utils/dpt";
 import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
 import { KNXLogger } from "../tools/knx-logger";
 import type { KNX } from "../types/knx";
+import type { KNXProject } from "../types/websocket";
 
 const logger = new KNXLogger("knx-create-entity");
 
@@ -69,14 +71,9 @@ export class KNXCreateEntity extends LitElement {
 
   private entityId?: string; // only used for "edit" intent
 
-  private _projectLoadTask = new Task(this, {
-    args: () => [],
-    task: async () => {
-      if (!this.knx.projectInfo) return; // no project
-      if (this.knx.projectData) return; // already loaded
-      await this.knx.loadProject();
-    },
-  });
+  @state()
+  @consume({ context: knxProjectContext, subscribe: true })
+  private _projectData: KNXProject | null = null;
 
   private _schemaLoadTask = new Task(this, {
     args: () => [this.entityPlatform] as const,
@@ -135,21 +132,7 @@ export class KNXCreateEntity extends LitElement {
     if (!this._intent) {
       return html` <hass-loading-screen></hass-loading-screen> `;
     }
-    return this._projectLoadTask.render({
-      initial: () => html`
-        <hass-loading-screen .message=${"Waiting to fetch project data."}></hass-loading-screen>
-      `,
-      pending: () => html`
-        <hass-loading-screen .message=${"Loading KNX project data."}></hass-loading-screen>
-      `,
-      error: (err) => this._renderError("Error loading KNX project", err),
-      complete: () => {
-        if (this._intent === "edit") {
-          return this._renderEdit();
-        }
-        return this._renderCreate();
-      },
-    });
+    return this._intent === "edit" ? this._renderEdit() : this._renderCreate();
   }
 
   private _renderCreate(): TemplateResult {
@@ -317,10 +300,10 @@ export class KNXCreateEntity extends LitElement {
             <ha-svg-icon slot="icon" .path=${create ? mdiPlus : mdiFloppy}></ha-svg-icon>
           </ha-fab>
         </div>
-        ${this.knx.projectData
+        ${this._projectData
           ? html` <div class="panel">
               <knx-project-device-tree
-                .data=${this.knx.projectData}
+                .data=${this._projectData}
                 .validDPTs=${validDPTsForSchema(schema, this.knx.dptMetadata)}
               ></knx-project-device-tree>
             </div>`

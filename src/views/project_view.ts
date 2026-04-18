@@ -2,7 +2,7 @@ import { mdiPlus, mdiMathLog } from "@mdi/js";
 import type { TemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
-import { Task } from "@lit/task";
+import { consume } from "@lit/context";
 
 import memoize from "memoize-one";
 
@@ -27,6 +27,7 @@ import { compare } from "compare-versions";
 
 import type { HomeAssistant, Route } from "@ha/types";
 import { dptInClasses, dptToString } from "utils/dpt";
+import { knxProjectContext } from "../data/knx-project-context";
 import type { KNX } from "../types/knx";
 import { projectTab } from "../knx-router";
 import type { GroupRangeSelectionChangedEvent } from "../components/knx-project-tree-view";
@@ -60,6 +61,10 @@ export class KNXProjectView extends LitElement {
 
   @state() private _lastTelegrams: Record<string, TelegramDict> = {};
 
+  @state()
+  @consume({ context: knxProjectContext, subscribe: true })
+  private _projectData: KNXProject | null = null;
+
   @storage({
     key: "knx-project-view-columns",
     state: false,
@@ -69,16 +74,6 @@ export class KNXProjectView extends LitElement {
     wide?: { columnOrder?: string[]; hiddenColumns?: string[] };
     narrow?: { columnOrder?: string[]; hiddenColumns?: string[] };
   };
-
-  private _projectLoadTask = new Task(this, {
-    args: () => [],
-    task: async () => {
-      if (!!this.knx.projectInfo && !this.knx.projectData) {
-        await this.knx.loadProject();
-      }
-      this._isGroupRangeAvailable();
-    },
-  });
 
   public disconnectedCallback() {
     super.disconnectedCallback();
@@ -102,8 +97,8 @@ export class KNXProjectView extends LitElement {
     });
   }
 
-  private _isGroupRangeAvailable() {
-    const projectVersion = this.knx.projectData?.info.xknxproject_version ?? "0.0.0";
+  private _isGroupRangeAvailable(projectData: KNXProject) {
+    const projectVersion = projectData.info.xknxproject_version ?? "0.0.0";
     logger.debug("project version: " + projectVersion);
     this._groupRangeAvailable = compare(projectVersion, MIN_XKNXPROJECT_VERSION, ">=");
   }
@@ -260,22 +255,16 @@ export class KNXProjectView extends LitElement {
   }
 
   protected render(): TemplateResult {
-    return this._projectLoadTask.render({
-      initial: () => html`
-        <hass-loading-screen .message=${"Waiting to fetch project data."}></hass-loading-screen>
-      `,
-      pending: () => html`
+    if (!this.knx.projectInfo) {
+      return this._renderError("info", this.knx.localize("project_view_upload"));
+    }
+    if (!this._projectData) {
+      return html`
         <hass-loading-screen .message=${"Loading KNX project data."}></hass-loading-screen>
-      `,
-      error: (err) => {
-        logger.error("Error loading KNX project", err);
-        return this._renderError("error", "Error loading KNX project");
-      },
-      complete: () =>
-        this.knx.projectData
-          ? this._renderTable(this.knx.projectData)
-          : this._renderError("info", this.knx.localize("project_view_upload")),
-    });
+      `;
+    }
+    this._isGroupRangeAvailable(this._projectData);
+    return this._renderTable(this._projectData);
   }
 
   private _renderError(alertType: "error" | "info", message: string): TemplateResult {

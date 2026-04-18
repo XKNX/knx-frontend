@@ -43,8 +43,10 @@ import type { KnxHaSelector } from "../types/schema";
 import { setNestedValue } from "../utils/config-helper";
 import { extractValidationErrors, getValidationError } from "../utils/validation";
 
+import { knxProjectContext } from "../data/knx-project-context";
 import { KNXLogger } from "../tools/knx-logger";
 import type { KNX } from "../types/knx";
+import type { KNXProject } from "../types/websocket";
 
 const logger = new KNXLogger("knx-create-expose");
 
@@ -87,6 +89,10 @@ export class KNXCreateExpose extends LitElement {
   @state() private _validationBaseError?: string;
 
   @state() private _showRawValues = false;
+
+  @state()
+  @consume({ context: knxProjectContext, subscribe: true })
+  private _projectData: KNXProject | null = null;
 
   @state()
   @consume({ context: statesContext, subscribe: true })
@@ -137,15 +143,6 @@ export class KNXCreateExpose extends LitElement {
   };
 
   private _intent?: "create" | "edit";
-
-  private _projectLoadTask = new Task(this, {
-    args: () => [] as const,
-    task: async () => {
-      if (!this.knx.projectInfo) return;
-      if (this.knx.projectData) return;
-      await this.knx.loadProject();
-    },
-  });
 
   private _configLoadTask = new Task(this, {
     args: () => [this._entityId] as const,
@@ -198,14 +195,7 @@ export class KNXCreateExpose extends LitElement {
     if (!this._intent) {
       return html`<hass-loading-screen></hass-loading-screen>`;
     }
-    return this._projectLoadTask.render({
-      initial: () => this._renderContent(),
-      pending: () => html`
-        <hass-loading-screen .message=${"Loading KNX project data."}></hass-loading-screen>
-      `,
-      error: () => this._renderContent(),
-      complete: () => this._renderContent(),
-    });
+    return this._renderContent();
   }
 
   private _renderConfigTask() {
@@ -419,7 +409,7 @@ export class KNXCreateExpose extends LitElement {
         : this.hass.localize("ui.components.selectors.selector.types.state")
       : "";
     const gaName = option.ga?.write
-      ? (this.knx.projectData?.group_addresses[option.ga.write]?.name ?? option.ga.write)
+      ? (this._projectData?.group_addresses[option.ga.write]?.name ?? option.ga.write)
       : "";
     return html`
       <ha-expansion-panel outlined expanded left-chevron .header=${title} .secondary=${gaName}>
