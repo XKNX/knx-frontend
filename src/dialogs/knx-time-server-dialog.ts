@@ -44,9 +44,6 @@ export class KnxTimeServerDialog extends DialogMixin<KnxTimeServerDialogParams>(
     args: () => [],
     task: async () => {
       this._errors = undefined;
-      if (this.knx.projectInfo && !this.knx.projectData) {
-        await this.knx.loadProject();
-      }
       this._data = await getTimeServerConfig(this.hass);
       logger.debug("getTimeServerConfig", this._data);
     },

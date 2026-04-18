@@ -1,7 +1,7 @@
 import memoize from "memoize-one";
 import { LitElement, html, css, nothing } from "lit";
 import { consume, type ContextType } from "@lit/context";
-import { customElement, property, state } from "lit/decorators";
+import { customElement, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 
 import "@ha/components/ha-dialog";
@@ -17,7 +17,7 @@ import { haStyleDialog } from "@ha/resources/styles";
 import type { HaInputSearch } from "@ha/components/input/ha-input-search";
 
 import type { GroupAddress, GroupRange, KNXProject } from "../types/websocket";
-import type { KNX } from "../types/knx";
+import { knxProjectContext } from "../data/knx-project-context";
 
 interface GroupNode {
   title: string;
@@ -27,7 +27,6 @@ interface GroupNode {
 }
 
 export interface KnxGaSelectDialogParams {
-  knx: KNX;
   groupAddresses: GroupAddress[];
   title?: string;
   width?: "small" | "medium" | "large" | "full";
@@ -37,7 +36,9 @@ export interface KnxGaSelectDialogParams {
 
 @customElement("knx-ga-select-dialog")
 export class KnxGaSelectDialog extends DialogMixin<KnxGaSelectDialogParams>(LitElement) {
-  @property({ attribute: false }) public knx!: KNX;
+  @state()
+  @consume({ context: knxProjectContext, subscribe: true })
+  private _projectData: KNXProject | null = null;
 
   // all valid group addresses to select from
   @state() private _groupAddresses: GroupAddress[] = [];
@@ -55,7 +56,6 @@ export class KnxGaSelectDialog extends DialogMixin<KnxGaSelectDialogParams>(LitE
 
     if (this.params) {
       this._groupAddresses = this.params.groupAddresses ?? [];
-      this.knx = this.params.knx;
       this._selected = this.params.initialSelection ?? this._selected;
     }
   }
@@ -184,10 +184,10 @@ export class KnxGaSelectDialog extends DialogMixin<KnxGaSelectDialogParams>(LitE
       return nothing;
     }
 
-    const noProjectData = !this.knx.projectData?.group_ranges;
+    const noProjectData = !this._projectData?.group_ranges;
     const hasAddresses = this._groupAddresses?.length > 0;
     const groupItems = hasAddresses
-      ? this._groupItems(this._filter, this._groupAddresses, this.knx.projectData)
+      ? this._groupItems(this._filter, this._groupAddresses, this._projectData)
       : [];
     const hasFilteredItems = groupItems.length > 0;
 

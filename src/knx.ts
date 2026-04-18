@@ -1,19 +1,21 @@
 import { property } from "lit/decorators";
 
-import { navigate } from "@ha/common/navigate";
 import { getConfigEntries } from "@ha/data/config_entries";
 import type { HomeAssistant } from "@ha/types";
 import { HassBaseEl } from "@ha/state/hass-base-mixin";
 
+import { KnxProjectContextProvider } from "./data/knx-project-context";
 import { localize } from "./localize/localize";
 import { KNXLogger } from "./tools/knx-logger";
-import { getKnxBaseData, getKnxProject, getSchema } from "./services/websocket.service";
+import { getKnxBaseData, getSchema } from "./services/websocket.service";
 import type { KNX } from "./types/knx";
 
 export class KnxElement extends HassBaseEl {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
   @property({ attribute: false }) public knx!: KNX;
+
+  protected _projectContextProvider = new KnxProjectContextProvider(this);
 
   protected async _initKnx() {
     try {
@@ -28,27 +30,13 @@ export class KnxElement extends HassBaseEl {
         dptMetadata: knxBase.dpt_metadata,
         projectInfo: knxBase.project_info, // can  be used to check if project is available
         supportedPlatforms: knxBase.supported_platforms,
-        projectData: null,
-        loadProject: () => this._loadProjectPromise(),
         schema: {},
         loadSchema: (platform: string) => this._loadSchema(platform),
       };
+      this._projectContextProvider.update(this.hass, !!knxBase.project_info);
     } catch (err) {
       new KNXLogger().error("Failed to initialize KNX", err);
     }
-  }
-
-  private _loadProjectPromise(): Promise<void> {
-    // load project only when needed since it can be quite big
-    // check if this.knx.projectData is available before using in component
-    return getKnxProject(this.hass)
-      .then((knxProject) => {
-        this.knx.projectData = knxProject;
-      })
-      .catch((err) => {
-        this.knx.log.error("getKnxProject", err);
-        navigate("/knx/error", { replace: true, data: err });
-      });
   }
 
   private async _loadSchema(platform: string): Promise<void> {
