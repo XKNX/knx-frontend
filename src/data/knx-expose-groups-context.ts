@@ -85,7 +85,6 @@ export class KnxExposeGroupsContextProvider {
     });
     logger.debug("Loading KNX expose groups from backend...");
     try {
-      throw new Error("Simulated error loading expose groups");
       const exposeGroups = await getExposeGroups(this._hass);
       logger.debug(`Fetched ${Object.keys(exposeGroups).length} expose entities.`);
       this._provider.setValue({
