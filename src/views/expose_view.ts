@@ -6,7 +6,7 @@ import {
   mdiPlus,
   mdiPencilOutline,
 } from "@mdi/js";
-import type { TemplateResult } from "lit";
+import type { PropertyValues, TemplateResult } from "lit";
 import { LitElement, html, nothing } from "lit";
 import { consume } from "@lit/context";
 import { customElement, property, state } from "lit/decorators";
@@ -468,13 +468,15 @@ export class KNXExposeView extends LitElement {
     ).length;
   }
 
+  protected willUpdate(_changedProperties: PropertyValues): void {
+    if (_changedProperties.has("_exposeGroupsCtx") && this._exposeGroupsCtx?.error) {
+      navigate("/knx/error", { replace: true, data: this._exposeGroupsCtx.error });
+    }
+  }
+
   protected render(): TemplateResult | typeof nothing {
     if (!this._exposeGroupsCtx || this._exposeGroupsCtx.loading) {
       return html`<hass-loading-screen></hass-loading-screen>`;
-    }
-    if (this._exposeGroupsCtx.error) {
-      navigate("/knx/error", { replace: true, data: this._exposeGroupsCtx.error });
-      return nothing;
     }
     const computedRows = this._computeRows(this._exposes, this._projectData);
     const filteredEntities = this._filterEntities(computedRows, this._filters);
