@@ -13,6 +13,7 @@ export type ExposeGroups = Record<string, string[]>;
 export interface ExposeGroupsContextValue {
   groups: ExposeGroups;
   loading: boolean;
+  error: string | null;
   reload: () => Promise<void>;
 }
 
@@ -38,6 +39,8 @@ export class KnxExposeGroupsContextProvider {
   private _requested = false;
 
   private _hass?: HomeAssistant;
+
+  private _reload = () => this._load();
 
   constructor(host: ReactiveElement) {
     // Listen for context-request BEFORE the ContextProvider to trigger lazy loading.
@@ -77,19 +80,28 @@ export class KnxExposeGroupsContextProvider {
     this._provider.setValue({
       groups: this._provider.value?.groups ?? {},
       loading: true,
-      reload: () => this._load(),
+      error: null,
+      reload: this._reload,
     });
     logger.debug("Loading KNX expose groups from backend...");
     try {
+      throw new Error("Simulated error loading expose groups");
       const exposeGroups = await getExposeGroups(this._hass);
       logger.debug(`Fetched ${Object.keys(exposeGroups).length} expose entities.`);
       this._provider.setValue({
         groups: exposeGroups,
         loading: false,
-        reload: () => this._load(),
+        error: null,
+        reload: this._reload,
       });
     } catch (err) {
       logger.error("getExposeGroups", err);
+      this._provider.setValue({
+        groups: this._provider.value?.groups ?? {},
+        loading: false,
+        error: err instanceof Error ? err.message : String(err),
+        reload: this._reload,
+      });
     } finally {
       this._loading = false;
     }

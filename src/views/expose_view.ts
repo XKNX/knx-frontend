@@ -468,9 +468,13 @@ export class KNXExposeView extends LitElement {
     ).length;
   }
 
-  protected render(): TemplateResult {
+  protected render(): TemplateResult | typeof nothing {
     if (!this._exposeGroupsCtx || this._exposeGroupsCtx.loading) {
       return html`<hass-loading-screen></hass-loading-screen>`;
+    }
+    if (this._exposeGroupsCtx.error) {
+      navigate("/knx/error", { replace: true, data: this._exposeGroupsCtx.error });
+      return nothing;
     }
     const computedRows = this._computeRows(this._exposes, this._projectData);
     const filteredEntities = this._filterEntities(computedRows, this._filters);
