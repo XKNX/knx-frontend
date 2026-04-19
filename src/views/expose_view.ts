@@ -6,7 +6,7 @@ import {
   mdiPlus,
   mdiPencilOutline,
 } from "@mdi/js";
-import type { TemplateResult } from "lit";
+import type { PropertyValues, TemplateResult } from "lit";
 import { LitElement, html, nothing } from "lit";
 import { consume } from "@lit/context";
 import { customElement, property, state } from "lit/decorators";
@@ -15,6 +15,7 @@ import { storage } from "@ha/common/decorators/storage";
 import type { HassEntity } from "home-assistant-js-websocket";
 import memoize from "memoize-one";
 
+import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-tabs-subpage-data-table";
 import "@ha/components/ha-fab";
 import "@ha/components/ha-icon";
@@ -42,7 +43,9 @@ import "../components/data-table/knx-data-table-ga-label";
 import "../components/data-table/filter/knx-list-filter";
 
 import { knxProjectContext } from "../data/knx-project-context";
-import { getExposeGroups, deleteExpose } from "../services/websocket.service";
+import { exposeGroupsContext } from "../data/knx-expose-groups-context";
+import type { ExposeGroupsContextValue } from "../data/knx-expose-groups-context";
+import { deleteExpose } from "../services/websocket.service";
 import type { KNX } from "../types/knx";
 import type { KNXProject } from "../types/websocket";
 import type { Config as ListFilterConfig } from "../components/data-table/filter/knx-list-filter";
@@ -94,7 +97,9 @@ export class KNXExposeView extends LitElement {
 
   @property({ type: Object }) public route?: Route;
 
-  @state() private exposeGroups: Record<string, string[]> = {}; // TODO: entity_id, ga[]
+  @state()
+  @consume({ context: exposeGroupsContext, subscribe: true })
+  private _exposeGroupsCtx: ExposeGroupsContextValue | null = null;
 
   @state()
   @consume({ context: knxProjectContext, subscribe: true })
@@ -104,7 +109,8 @@ export class KNXExposeView extends LitElement {
   @consume({ context: fullEntitiesContext, subscribe: true })
   @transform({
     transformer: function (this: KNXExposeView, entities: EntityRegistryEntry[]) {
-      return Object.keys(this.exposeGroups).map(
+      if (!this._exposeGroupsCtx) return [];
+      return Object.keys(this._exposeGroupsCtx.groups).map(
         (entityId) =>
           entities.find((e) => e.entity_id === entityId) ??
           ({
@@ -112,7 +118,7 @@ export class KNXExposeView extends LitElement {
           } as UnknownEntity),
       );
     },
-    watch: ["exposeGroups"],
+    watch: ["_exposeGroupsCtx"],
   })
   private _exposes: (EntityRegistryEntry | UnknownEntity)[] = [];
 
@@ -136,21 +142,6 @@ export class KNXExposeView extends LitElement {
     narrow?: { columnOrder?: string[]; hiddenColumns?: string[] };
   };
 
-  protected async firstUpdated() {
-    await this._fetchExposeGroups();
-  }
-
-  private async _fetchExposeGroups() {
-    try {
-      const exposeGroups = await getExposeGroups(this.hass);
-      logger.debug(`Fetched ${Object.keys(exposeGroups).length} expose entities.`);
-      this.exposeGroups = exposeGroups;
-    } catch (err) {
-      logger.error("getExposeGroups", err);
-      navigate("/knx/error", { replace: true, data: err });
-    }
-  }
-
   private _computeRows = memoize(
     (
       entries: (EntityRegistryEntry | UnknownEntity)[],
@@ -172,10 +163,10 @@ export class KNXExposeView extends LitElement {
           area_name: area?.name ?? "",
           disabled: !!entry.disabled_by,
           domain: domainName,
-          group_addresses: this.exposeGroups[entry.entity_id] ?? [],
+          group_addresses: this._exposeGroupsCtx?.groups[entry.entity_id] ?? [],
           // matched by index with group_addresses
           group_address_names:
-            (this.exposeGroups[entry.entity_id] ?? []).map(
+            (this._exposeGroupsCtx?.groups[entry.entity_id] ?? []).map(
               (ga) => projectData?.group_addresses[ga]?.name,
             ) ?? [],
         };
@@ -457,7 +448,7 @@ export class KNXExposeView extends LitElement {
         deleteExpose(this.hass, entry.entity_id)
           .then(() => {
             logger.debug("expose deleted", entry.entity_id);
-            this._fetchExposeGroups();
+            this._exposeGroupsCtx?.reload();
           })
           .catch((err: any) => {
             showAlertDialog(this, {
@@ -477,7 +468,16 @@ export class KNXExposeView extends LitElement {
     ).length;
   }
 
-  protected render(): TemplateResult {
+  protected willUpdate(_changedProperties: PropertyValues): void {
+    if (_changedProperties.has("_exposeGroupsCtx") && this._exposeGroupsCtx?.error) {
+      navigate("/knx/error", { replace: true, data: this._exposeGroupsCtx.error });
+    }
+  }
+
+  protected render(): TemplateResult | typeof nothing {
+    if (!this._exposeGroupsCtx || this._exposeGroupsCtx.loading) {
+      return html`<hass-loading-screen></hass-loading-screen>`;
+    }
     const computedRows = this._computeRows(this._exposes, this._projectData);
     const filteredEntities = this._filterEntities(computedRows, this._filters);
 
