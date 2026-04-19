@@ -41,8 +41,10 @@ import type { HomeAssistant, Route } from "@ha/types";
 import "../components/data-table/knx-data-table-ga-label";
 import "../components/data-table/filter/knx-list-filter";
 
+import { knxProjectContext } from "../data/knx-project-context";
 import { getExposeGroups, deleteExpose } from "../services/websocket.service";
 import type { KNX } from "../types/knx";
+import type { KNXProject } from "../types/websocket";
 import type { Config as ListFilterConfig } from "../components/data-table/filter/knx-list-filter";
 import { getPlatformStyle } from "../utils/common";
 import type { SupportedPlatform } from "../types/entity_data";
@@ -95,6 +97,10 @@ export class KNXExposeView extends LitElement {
   @state() private exposeGroups: Record<string, string[]> = {}; // TODO: entity_id, ga[]
 
   @state()
+  @consume({ context: knxProjectContext, subscribe: true })
+  private _projectData: KNXProject | null = null;
+
+  @state()
   @consume({ context: fullEntitiesContext, subscribe: true })
   @transform({
     transformer: function (this: KNXExposeView, entities: EntityRegistryEntry[]) {
@@ -131,9 +137,6 @@ export class KNXExposeView extends LitElement {
   };
 
   protected async firstUpdated() {
-    if (this.knx.projectInfo && !this.knx.projectData) {
-      await this.knx.loadProject();
-    }
     await this._fetchExposeGroups();
   }
 
@@ -148,31 +151,35 @@ export class KNXExposeView extends LitElement {
     }
   }
 
-  private _computeRows = memoize((entries: (EntityRegistryEntry | UnknownEntity)[]): EntityRow[] =>
-    entries.map((entry) => {
-      const entityState: HassEntity | undefined = this.hass.states[entry.entity_id]; // undefined for disabled entities
-      const device = entry.device_id ? this.hass.devices[entry.device_id] : undefined;
-      const areaId = entry.area_id ?? device?.area_id;
-      const area = areaId ? this.hass.areas[areaId] : undefined;
-      const domain = computeDomain(entry.entity_id);
-      const domainName = this.hass.localize(`component.${domain}.title`) || domain;
-      return {
-        ...entry,
-        entityState,
-        friendly_name:
-          entityState?.attributes.friendly_name ?? entry.name ?? entry.original_name ?? "",
-        device_name: device?.name_by_user ?? device?.name ?? "",
-        area_name: area?.name ?? "",
-        disabled: !!entry.disabled_by,
-        domain: domainName,
-        group_addresses: this.exposeGroups[entry.entity_id] ?? [],
-        // matched by index with group_addresses
-        group_address_names:
-          (this.exposeGroups[entry.entity_id] ?? []).map(
-            (ga) => this.knx.projectData?.group_addresses[ga]?.name,
-          ) ?? [],
-      };
-    }),
+  private _computeRows = memoize(
+    (
+      entries: (EntityRegistryEntry | UnknownEntity)[],
+      projectData: KNXProject | null,
+    ): EntityRow[] =>
+      entries.map((entry) => {
+        const entityState: HassEntity | undefined = this.hass.states[entry.entity_id]; // undefined for disabled entities
+        const device = entry.device_id ? this.hass.devices[entry.device_id] : undefined;
+        const areaId = entry.area_id ?? device?.area_id;
+        const area = areaId ? this.hass.areas[areaId] : undefined;
+        const domain = computeDomain(entry.entity_id);
+        const domainName = this.hass.localize(`component.${domain}.title`) || domain;
+        return {
+          ...entry,
+          entityState,
+          friendly_name:
+            entityState?.attributes.friendly_name ?? entry.name ?? entry.original_name ?? "",
+          device_name: device?.name_by_user ?? device?.name ?? "",
+          area_name: area?.name ?? "",
+          disabled: !!entry.disabled_by,
+          domain: domainName,
+          group_addresses: this.exposeGroups[entry.entity_id] ?? [],
+          // matched by index with group_addresses
+          group_address_names:
+            (this.exposeGroups[entry.entity_id] ?? []).map(
+              (ga) => projectData?.group_addresses[ga]?.name,
+            ) ?? [],
+        };
+      }),
   );
 
   private _filterEntities = memoize(
@@ -471,7 +478,7 @@ export class KNXExposeView extends LitElement {
   }
 
   protected render(): TemplateResult {
-    const computedRows = this._computeRows(this._exposes);
+    const computedRows = this._computeRows(this._exposes, this._projectData);
     const filteredEntities = this._filterEntities(computedRows, this._filters);
 
     return html`

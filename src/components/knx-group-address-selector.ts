@@ -18,13 +18,18 @@ import { dragDropContext } from "../utils/drag-drop-context";
 import { isValidDPT, dptToString, stringToDpt } from "../utils/dpt";
 import { getValidationError, extractValidationErrors } from "../utils/validation";
 import type { ErrorDescription, GASchema } from "../types/entity_data";
+import { knxProjectContext } from "../data/knx-project-context";
 import type { KNX } from "../types/knx";
 import type { GASelectorOptions } from "../types/schema";
-import type { DPT, GroupAddress } from "../types/websocket";
+import type { DPT, GroupAddress, KNXProject } from "../types/websocket";
 
 @customElement("knx-group-address-selector")
 export class GroupAddressSelector extends LitElement {
   @consume({ context: dragDropContext, subscribe: true }) _dragDropContext?: DragDropContext;
+
+  @state()
+  @consume({ context: knxProjectContext, subscribe: true })
+  private _projectData: KNXProject | null = null;
 
   @property({ attribute: false }) public knx!: KNX;
 
@@ -85,8 +90,8 @@ export class GroupAddressSelector extends LitElement {
   }
 
   getValidGroupAddresses(validDPTs: DPT[]): GroupAddress[] {
-    return this.knx.projectData
-      ? Object.values(this.knx.projectData.group_addresses).filter((groupAddress) =>
+    return this._projectData
+      ? Object.values(this._projectData.group_addresses).filter((groupAddress) =>
           groupAddress.dpt ? isValidDPT(groupAddress.dpt, validDPTs) : false,
         )
       : [];
@@ -122,18 +127,18 @@ export class GroupAddressSelector extends LitElement {
   );
 
   protected willUpdate(changedProps: PropertyValues<this>) {
-    if (changedProps.has("options")) {
+    if (changedProps.has("options") || changedProps.has("_projectData")) {
       // initialize
       this.validGroupAddresses = this.getValidGroupAddresses(this._getAcceptedDPTs());
       this.filteredGroupAddresses = this.validGroupAddresses;
     }
 
-    if (changedProps.has("config")) {
+    if (changedProps.has("config") || changedProps.has("_projectData")) {
       this._selectedDPTValue = this.config.dpt ?? this._selectedDPTValue;
       const selectedDPT = this.getDptByValue(this._selectedDPTValue);
       this.setFilteredGroupAddresses(selectedDPT);
 
-      if (selectedDPT && this.knx.projectData) {
+      if (selectedDPT && this._projectData) {
         const allDpts = [
           this.config.write,
           this.config.state,
@@ -142,7 +147,7 @@ export class GroupAddressSelector extends LitElement {
         this.dptSelectorDisabled =
           allDpts.length > 0 &&
           allDpts.every((ga) => {
-            const _dpt = this.knx.projectData!.group_addresses[ga!]?.dpt;
+            const _dpt = this._projectData!.group_addresses[ga!]?.dpt;
             return _dpt ? isValidDPT(_dpt, [selectedDPT]) : false;
           });
       } else {
@@ -182,7 +187,6 @@ export class GroupAddressSelector extends LitElement {
                   "valid-drop-zone": validGADropTargetClass,
                   "invalid-drop-zone": invalidGADropTargetClass,
                 })}
-                .knx=${this.knx}
                 .label=${this._baseTranslation("send_address")}
                 .parentLabel=${this.label}
                 .required=${this.options.write.required}
@@ -204,7 +208,6 @@ export class GroupAddressSelector extends LitElement {
                   "valid-drop-zone": validGADropTargetClass,
                   "invalid-drop-zone": invalidGADropTargetClass,
                 })}
-                .knx=${this.knx}
                 .label=${this._baseTranslation("state_address")}
                 .parentLabel=${this.label}
                 .required=${this.options.state.required}
@@ -235,7 +238,6 @@ export class GroupAddressSelector extends LitElement {
                     "valid-drop-zone": validGADropTargetClass,
                     "invalid-drop-zone": invalidGADropTargetClass,
                   })}
-                  .knx=${this.knx}
                   .label=${this._baseTranslation("passive_address")}
                   .parentLabel=${this.label}
                   .required=${false}
@@ -357,7 +359,7 @@ export class GroupAddressSelector extends LitElement {
     }
 
     // below only applies to loaded projects as it inferes DPT from selected group address
-    if (!this.knx.projectData) return;
+    if (!this._projectData) return;
 
     const newGa = this._getAddedGroupAddress(targetKey, newConfig);
     if (!newGa || this._selectedDPTValue !== undefined) return;
@@ -392,16 +394,16 @@ export class GroupAddressSelector extends LitElement {
   }
 
   private _isGaDptMismatch(ga?: string | null): boolean {
-    if (!ga || !this.knx.projectData) return false;
+    if (!ga || !this._projectData) return false;
 
-    const selectedGA = this.knx.projectData.group_addresses[ga];
+    const selectedGA = this._projectData.group_addresses[ga];
     if (!selectedGA) return false; // unknown GA
     return !this.filteredGroupAddresses.find((groupAddress) => groupAddress === selectedGA);
   }
 
   private _dptMismatchMessage(ga?: string | null): string | undefined {
-    if (!ga || !this.knx.projectData) return undefined;
-    const dpt = dptToString(this.knx.projectData.group_addresses[ga]?.dpt) ?? "?";
+    if (!ga || !this._projectData) return undefined;
+    const dpt = dptToString(this._projectData.group_addresses[ga]?.dpt) ?? "?";
     return this._baseTranslation("dpt_incompatible", { dpt });
   }
 
