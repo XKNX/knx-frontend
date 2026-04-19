@@ -33,7 +33,7 @@ export class KnxElement extends HassBaseEl {
         schema: {},
         loadSchema: (platform: string) => this._loadSchema(platform),
       };
-      this._projectContextProvider.update(this.hass, !!knxBase.project_info);
+      this._projectContextProvider.update(this.hass, knxBase.project_info);
     } catch (err) {
       new KNXLogger().error("Failed to initialize KNX", err);
     }

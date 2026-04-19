@@ -5,7 +5,7 @@ import type { HomeAssistant } from "@ha/types";
 
 import { getKnxProject } from "../services/websocket.service";
 import { KNXLogger } from "../tools/knx-logger";
-import type { KNXProject } from "../types/websocket";
+import type { KNXProject, KNXProjectInfo } from "../types/websocket";
 
 const logger = new KNXLogger("knx-project-context");
 
@@ -25,9 +25,12 @@ export class KnxProjectContextProvider {
 
   private _loading = false;
 
+  /** Whether any consumer has requested this context. This will not be unset on unsubscribe. */
+  private _requested = false;
+
   private _hass?: HomeAssistant;
 
-  private _hasProject = false;
+  private _projectInfo: KNXProjectInfo | null = null;
 
   constructor(host: ReactiveElement) {
     // Listen for context-request BEFORE the ContextProvider to trigger lazy loading.
@@ -38,17 +41,41 @@ export class KnxProjectContextProvider {
     });
   }
 
-  /** Update connection and project availability. Call after _initKnx. */
-  public update(hass: HomeAssistant, hasProject: boolean): void {
+  /**
+   * Update connection and project availability. Call after _initKnx.
+   *
+   * Loading is deferred until the first consumer requests the context.
+   * On subsequent calls, data is reloaded only if projectInfo changed and
+   * a consumer has previously requested data (`_requested`) or data has
+   * already been loaded (`_provider.value`).
+   */
+  public update(hass: HomeAssistant, projectInfo: KNXProjectInfo | null): void {
     this._hass = hass;
-    this._hasProject = hasProject;
+    if (!projectInfo) {
+      this._projectInfo = null;
+      this._loading = false;
+      this._provider.setValue(null);
+      return;
+    }
+    const changed =
+      !this._projectInfo ||
+      (Object.keys(projectInfo) as (keyof KNXProjectInfo)[]).some(
+        (key) => projectInfo[key] !== this._projectInfo![key],
+      );
+    this._projectInfo = projectInfo;
+    // Reload if project changed and data was previously loaded or requested.
+    // If neither, loading is deferred to the first context-request.
+    if (changed && (this._provider.value || this._requested)) {
+      this._load();
+    }
   }
 
   private _onContextRequest = (ev: Event): void => {
     const contextEvent = ev as Event & { context: unknown };
     if (contextEvent.context !== knxProjectContext) return;
+    this._requested = true;
     // Trigger lazy loading if not yet loaded and project is available
-    if (!this._provider.value && !this._loading && this._hasProject && this._hass) {
+    if (!this._provider.value && !this._loading && this._projectInfo && this._hass) {
       this._load();
     }
   };
@@ -56,6 +83,7 @@ export class KnxProjectContextProvider {
   private async _load(): Promise<void> {
     if (!this._hass) return;
     this._loading = true;
+    logger.debug("Loading KNX project data from backend...");
     try {
       const project = await getKnxProject(this._hass);
       this._provider.setValue(project);
