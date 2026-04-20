@@ -111,6 +111,7 @@ export class GroupAddressSelector extends LitElement {
   getFilteredGroupAddresses = memoize(
     (
       dpt: DPT | undefined,
+      _validGroupAddresses: GroupAddress[], // for memoization - recompute when valid group addresses change
       _projectData: KNXProject | null, // for memoization - recompute when loaded
     ): GroupAddress[] => (dpt ? this.getValidGroupAddresses([dpt]) : this.validGroupAddresses),
   );
@@ -128,17 +129,28 @@ export class GroupAddressSelector extends LitElement {
   );
 
   protected willUpdate(changedProps: PropertyValues<this>) {
+    this._selectedDPTValue = this.config.dpt ?? this._selectedDPTValue;
+    const selectedDPT = this.getDptByValue(this._selectedDPTValue);
+
     if (changedProps.has("options") || changedProps.has("_projectData")) {
       // initialize
       this.validGroupAddresses = this.getValidGroupAddresses(this._getAcceptedDPTs());
-      this.filteredGroupAddresses = this.validGroupAddresses;
+    }
+
+    if (
+      changedProps.has("config") ||
+      changedProps.has("options") ||
+      changedProps.has("_projectData")
+    ) {
+      // recompute for both, options (initialize) and config changes
+      this.filteredGroupAddresses = this.getFilteredGroupAddresses(
+        selectedDPT,
+        this.validGroupAddresses,
+        this._projectData,
+      );
     }
 
     if (changedProps.has("config") || changedProps.has("_projectData")) {
-      this._selectedDPTValue = this.config.dpt ?? this._selectedDPTValue;
-      const selectedDPT = this.getDptByValue(this._selectedDPTValue);
-      this.filteredGroupAddresses = this.getFilteredGroupAddresses(selectedDPT, this._projectData);
-
       if (selectedDPT && this._projectData) {
         const allDpts = [
           this.config.write,
