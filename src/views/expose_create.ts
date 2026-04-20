@@ -39,7 +39,10 @@ import type {
   ExposeResult,
   ErrorDescription,
 } from "types/entity_data";
-import { exposeGroupsContext } from "../data/knx-expose-groups-context";
+import {
+  exposeGroupsContext,
+  type ExposeGroupsContextValue,
+} from "../data/knx-expose-groups-context";
 import type { KnxHaSelector } from "../types/schema";
 import { setNestedValue } from "../utils/config-helper";
 import { extractValidationErrors, getValidationError } from "../utils/validation";
