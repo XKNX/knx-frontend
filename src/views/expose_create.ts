@@ -39,6 +39,10 @@ import type {
   ExposeResult,
   ErrorDescription,
 } from "types/entity_data";
+import {
+  exposeGroupsContext,
+  type ExposeGroupsContextValue,
+} from "../data/knx-expose-groups-context";
 import type { KnxHaSelector } from "../types/schema";
 import { setNestedValue } from "../utils/config-helper";
 import { extractValidationErrors, getValidationError } from "../utils/validation";
@@ -103,6 +107,10 @@ export class KNXCreateExpose extends LitElement {
     watch: ["_entityId"],
   })
   private _stateObj?: HassEntity;
+
+  @state()
+  @consume({ context: exposeGroupsContext, subscribe: true })
+  private _exposeGroupsCtx: ExposeGroupsContextValue | null = null;
 
   @query("ha-alert") private _alertElement?: HTMLElement;
 
@@ -600,6 +608,7 @@ export class KNXCreateExpose extends LitElement {
       const result = await updateExpose(this.hass, config);
       if (this._handleResult(result, true)) return;
       logger.debug("Successfully saved expose", this._entityId);
+      this._exposeGroupsCtx?.reload();
       navigate("/knx/expose", { replace: true });
     } catch (err) {
       logger.error("Error saving expose", err);
