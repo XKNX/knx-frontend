@@ -111,9 +111,14 @@ export class GroupAddressSelector extends LitElement {
   getFilteredGroupAddresses = memoize(
     (
       dpt: DPT | undefined,
-      _validGroupAddresses: GroupAddress[], // for memoization - recompute when valid group addresses change
+      validGroupAddresses: GroupAddress[],
       _projectData: KNXProject | null, // for memoization - recompute when loaded
-    ): GroupAddress[] => (dpt ? this.getValidGroupAddresses([dpt]) : this.validGroupAddresses),
+    ): GroupAddress[] =>
+      dpt
+        ? validGroupAddresses.filter((groupAddress) =>
+            groupAddress.dpt ? isValidDPT(groupAddress.dpt, [dpt]) : false,
+          )
+        : validGroupAddresses,
   );
 
   private _getDPTsFromClasses = memoize((dptClasses?: string[]): DPT[] => {
