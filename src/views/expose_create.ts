@@ -43,7 +43,7 @@ import {
   exposeGroupsContext,
   type ExposeGroupsContextValue,
 } from "../data/knx-expose-groups-context";
-import type { KnxHaSelector } from "../types/schema";
+import type { KnxHaSelector, GASelectorOptions } from "../types/schema";
 import { setNestedValue } from "../utils/config-helper";
 import { extractValidationErrors, getValidationError } from "../utils/validation";
 
@@ -53,6 +53,47 @@ import type { KNX } from "../types/knx";
 import type { KNXProject } from "../types/websocket";
 
 const logger = new KNXLogger("knx-create-expose");
+
+const GA_SELECTOR_OPTIONS: GASelectorOptions = {
+  write: { required: true },
+  dptClasses: ["numeric", "enum", "string", "complex"],
+};
+
+const DEFAULT_SELECTOR: KnxHaSelector = {
+  type: "ha_selector",
+  name: "default",
+  selector: { object: {} },
+};
+
+const VALUE_TEMPLATE_SELECTOR: KnxHaSelector = {
+  type: "ha_selector",
+  name: "value_template",
+  placeholder: "{# example: invert a percent attribute #}\n{{ 100 - value }}",
+  selector: { template: { preview: false } },
+};
+
+const COOLDOWN_SELECTOR: KnxHaSelector = {
+  type: "ha_selector",
+  name: "cooldown",
+  selector: {
+    duration: { allow_negative: false, enable_millisecond: true, enable_day: false },
+  },
+};
+
+const PERIODIC_SEND_SELECTOR: KnxHaSelector = {
+  type: "ha_selector",
+  name: "periodic_send",
+  selector: {
+    duration: { allow_negative: false, enable_millisecond: true, enable_day: false },
+  },
+};
+
+const RESPOND_TO_READ_SELECTOR: KnxHaSelector = {
+  type: "ha_selector",
+  name: "respond_to_read",
+  default: true,
+  selector: { boolean: {} },
+};
 
 const HIDDEN_ATTRIBUTES = new Set([
   "attribution",
@@ -113,42 +154,6 @@ export class KNXCreateExpose extends LitElement {
   private _exposeGroupsCtx: ExposeGroupsContextValue | null = null;
 
   @query("ha-alert") private _alertElement?: HTMLElement;
-
-  private readonly _defaultSelector: KnxHaSelector = {
-    type: "ha_selector",
-    name: "default",
-    selector: { object: {} },
-  };
-
-  private readonly _valueTemplateSelector: KnxHaSelector = {
-    type: "ha_selector",
-    name: "value_template",
-    placeholder: "{# example: invert a percent attribute #}\n{{ 100 - value }}",
-    selector: { template: { preview: false } },
-  };
-
-  private readonly _cooldownSelector: KnxHaSelector = {
-    type: "ha_selector",
-    name: "cooldown",
-    selector: {
-      duration: { allow_negative: false, enable_millisecond: true, enable_day: false },
-    },
-  };
-
-  private readonly _periodicSendSelector: KnxHaSelector = {
-    type: "ha_selector",
-    name: "periodic_send",
-    selector: {
-      duration: { allow_negative: false, enable_millisecond: true, enable_day: false },
-    },
-  };
-
-  private readonly _respondToReadSelector: KnxHaSelector = {
-    type: "ha_selector",
-    name: "respond_to_read",
-    default: true,
-    selector: { boolean: {} },
-  };
 
   private _intent?: "create" | "edit";
 
@@ -457,10 +462,7 @@ export class KNXCreateExpose extends LitElement {
             data-idx=${idx}
             .knx=${this.knx}
             .key=${"ga"}
-            .options=${{
-              write: { required: true },
-              dptClasses: ["numeric", "enum", "string", "complex"],
-            }}
+            .options=${GA_SELECTOR_OPTIONS}
             .config=${option.ga ?? {}}
             .label=${this.hass.localize("component.knx.config_panel.expose.create.ga.label")}
             .localizeFunction=${this._backendLocalize}
@@ -476,7 +478,7 @@ export class KNXCreateExpose extends LitElement {
               data-idx=${idx}
               .hass=${this.hass}
               .key=${"default"}
-              .selector=${this._defaultSelector}
+              .selector=${DEFAULT_SELECTOR}
               .value=${option.default ?? undefined}
               .validationErrors=${extractValidationErrors(optionErrors, "default")}
               .localizeFunction=${this._backendLocalize}
@@ -486,7 +488,7 @@ export class KNXCreateExpose extends LitElement {
               data-idx=${idx}
               .hass=${this.hass}
               .key=${"value_template"}
-              .selector=${this._valueTemplateSelector}
+              .selector=${VALUE_TEMPLATE_SELECTOR}
               .value=${option.value_template}
               .validationErrors=${extractValidationErrors(optionErrors, "value_template")}
               .localizeFunction=${this._backendLocalize}
@@ -502,7 +504,7 @@ export class KNXCreateExpose extends LitElement {
               data-idx=${idx}
               .hass=${this.hass}
               .key=${"cooldown"}
-              .selector=${this._cooldownSelector}
+              .selector=${COOLDOWN_SELECTOR}
               .value=${option.cooldown}
               .validationErrors=${extractValidationErrors(optionErrors, "cooldown")}
               .localizeFunction=${this._backendLocalize}
@@ -512,7 +514,7 @@ export class KNXCreateExpose extends LitElement {
               data-idx=${idx}
               .hass=${this.hass}
               .key=${"periodic_send"}
-              .selector=${this._periodicSendSelector}
+              .selector=${PERIODIC_SEND_SELECTOR}
               .value=${option.periodic_send}
               .validationErrors=${extractValidationErrors(optionErrors, "periodic_send")}
               .localizeFunction=${this._backendLocalize}
@@ -522,7 +524,7 @@ export class KNXCreateExpose extends LitElement {
               data-idx=${idx}
               .hass=${this.hass}
               .key=${"respond_to_read"}
-              .selector=${this._respondToReadSelector}
+              .selector=${RESPOND_TO_READ_SELECTOR}
               .value=${option.respond_to_read}
               .validationErrors=${extractValidationErrors(optionErrors, "respond_to_read")}
               .localizeFunction=${this._backendLocalize}
