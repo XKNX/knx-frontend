@@ -118,24 +118,38 @@ export class KnxEntitiesByGroupContextProvider {
     entitiesByGroup: EntitiesByGroupIdentifiers,
     entityRegistry: EntityRegistryEntry[],
   ): EntitiesByGroup {
+    // Phase 1: Build a map from KNX identifiers to resolved entity_ids
+    // (accounts for entity renames in the registry).
     const entityIdsByIdentifier = new Map<string, string[]>();
     entityRegistry.forEach((entry) => {
+      if (entry.platform !== "knx") {
+        return;
+      }
       const identifier = `${computeDomain(entry.entity_id)}:${entry.unique_id}`;
-      const existing = entityIdsByIdentifier.get(identifier) ?? [];
-      existing.push(entry.entity_id);
-      entityIdsByIdentifier.set(identifier, existing);
+      if (!entityIdsByIdentifier.has(identifier)) {
+        entityIdsByIdentifier.set(identifier, []);
+      }
+      entityIdsByIdentifier.get(identifier)!.push(entry.entity_id);
     });
 
+    // Phase 2: Map group addresses to entity_ids, partitioned by source (ui/yaml).
     return Object.fromEntries(
       Object.entries(entitiesByGroup).map(([groupAddress, identifiers]) => {
         const ui = new Set<string>();
         const yaml = new Set<string>();
         identifiers.forEach((identifier) => {
-          const key = `${identifier.platform}:${identifier.unique_id}`;
+          const entityIds =
+            entityIdsByIdentifier.get(`${identifier.platform}:${identifier.unique_id}`) ?? [];
           const target = identifier.ui ? ui : yaml;
-          (entityIdsByIdentifier.get(key) ?? []).forEach((entityId) => target.add(entityId));
+          entityIds.forEach((entityId) => target.add(entityId));
         });
-        return [groupAddress, { ui: [...ui], yaml: [...yaml] }];
+        return [
+          groupAddress,
+          {
+            ui: [...ui],
+            yaml: [...yaml],
+          },
+        ];
       }),
     );
   }
