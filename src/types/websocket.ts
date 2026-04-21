@@ -23,6 +23,12 @@ export interface DPTMetadata {
   sensor_state_class: string | null;
 }
 
+export interface KNXEntityIdentifier {
+  platform: string;
+  unique_id: string;
+  ui: boolean;
+}
+
 export interface KNXProjectInfo {
   name: string;
   last_modified: string;

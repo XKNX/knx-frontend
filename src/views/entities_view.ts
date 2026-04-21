@@ -56,7 +56,7 @@ import { getPlatformStyle } from "../utils/common";
 import {
   createGroupAddressesByEntityMap,
   type EntityGroupAddresses,
-} from "../utils/entities-by-group";
+} from "../data/groups-by-entity";
 import type { SupportedPlatform } from "../types/entity_data";
 import type { KNXProject } from "../types/websocket";
 import { entitiesTab } from "../knx-router";

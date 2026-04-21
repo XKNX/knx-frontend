@@ -1,4 +1,4 @@
-import type { EntitiesByGroup } from "../data/knx-entities-by-group-context";
+import type { EntitiesByGroup } from "./knx-entities-by-group-context";
 
 interface EntityGroupAddressMapOptions {
   ui?: boolean;
