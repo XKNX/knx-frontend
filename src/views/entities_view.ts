@@ -53,6 +53,10 @@ import { knxProjectContext } from "../data/knx-project-context";
 import type { KNX } from "../types/knx";
 import type { Config as ListFilterConfig } from "../components/data-table/filter/knx-list-filter";
 import { getPlatformStyle } from "../utils/common";
+import {
+  createGroupAddressesByEntityMap,
+  type EntityGroupAddresses,
+} from "../utils/entities-by-group";
 import type { SupportedPlatform } from "../types/entity_data";
 import type { KNXProject } from "../types/websocket";
 import { entitiesTab } from "../knx-router";
@@ -117,8 +121,8 @@ export class KNXEntitiesView extends LitElement {
       if (!byGroup || !entities.length) {
         return [];
       }
-      const entityIds = new Set(Object.values(byGroup).flatMap((group) => group.ui));
-      return entities.filter((entry) => entityIds.has(entry.entity_id));
+      const groupAddressesByEntity = this._getGroupAddressesByEntity(byGroup);
+      return entities.filter((entry) => groupAddressesByEntity[entry.entity_id]);
     },
     watch: ["_entitiesByGroupCtx"],
   })
@@ -175,25 +179,15 @@ export class KNXEntitiesView extends LitElement {
   private _getGroupAddressesByEntity = memoize(
     (
       entitiesByGroup: EntitiesByGroupContextValue["groups"] | undefined,
-    ): Record<string, string[]> => {
-      if (!entitiesByGroup) {
-        return {};
-      }
-      const byEntity: Record<string, string[]> = {};
-      Object.entries(entitiesByGroup).forEach(([groupAddress, entityIdsByType]) => {
-        [...entityIdsByType.ui, ...entityIdsByType.yaml].forEach((entityId) => {
-          byEntity[entityId] = [...(byEntity[entityId] ?? []), groupAddress];
-        });
-      });
-      return byEntity;
-    },
+    ): Record<string, EntityGroupAddresses> =>
+      createGroupAddressesByEntityMap(entitiesByGroup, { ui: true, yaml: false }),
   );
 
   private _computeRows = memoize(
     (
       entries: EntityRegistryEntry[],
       labels: LabelRegistryEntry[],
-      groupAddressesByEntity: Record<string, string[]>,
+      groupAddressesByEntity: Record<string, EntityGroupAddresses>,
       projectData: KNXProject | null,
     ): EntityRow[] =>
       entries.map((entry) => {
@@ -204,6 +198,7 @@ export class KNXEntitiesView extends LitElement {
         const labelEntries = entry.labels
           .map((labelId) => labels.find((label) => label.label_id === labelId))
           .filter((label): label is LabelRegistryEntry => Boolean(label));
+        const groupAddresses = Array.from(groupAddressesByEntity[entry.entity_id]?.groups ?? []);
         const domain = computeDomain(entry.entity_id);
         const domainName = this.hass.localize(`component.${domain}.title`) || domain;
         return {
@@ -214,12 +209,9 @@ export class KNXEntitiesView extends LitElement {
           device_name: device?.name_by_user ?? device?.name ?? "",
           area_name: area?.name ?? "",
           disabled: !!entry.disabled_by,
-          group_addresses: groupAddressesByEntity[entry.entity_id] ?? [],
+          group_addresses: groupAddresses,
           // matched by index with group_addresses
-          group_address_names:
-            (groupAddressesByEntity[entry.entity_id] ?? []).map(
-              (ga) => projectData?.group_addresses[ga]?.name,
-            ) ?? [],
+          group_address_names: groupAddresses.map((ga) => projectData?.group_addresses[ga]?.name),
           label_entries: labelEntries,
           domain: domainName,
         };
