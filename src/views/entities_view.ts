@@ -1,66 +1,69 @@
 import {
   mdiDelete,
-  mdiInformationSlabCircleOutline,
   mdiInformationOffOutline,
-  mdiPlus,
-  mdiPencilOutline,
+  mdiInformationSlabCircleOutline,
   mdiMathLog,
+  mdiPencilOutline,
+  mdiPlus,
 } from "@mdi/js";
+
 import type { TemplateResult } from "lit";
 import { LitElement, html, nothing } from "lit";
 import { consume } from "@lit/context";
 import { customElement, property, state } from "lit/decorators";
-import { storage } from "@ha/common/decorators/storage";
-import { transform } from "@ha/common/decorators/transform";
 
 import type { HassEntity } from "home-assistant-js-websocket";
 import memoize from "memoize-one";
 
 import "@ha/components/data-table/ha-data-table-labels";
 import "@ha/components/ha-alert";
-import "@ha/layouts/hass-loading-screen";
-import "@ha/layouts/hass-tabs-subpage-data-table";
 import "@ha/components/ha-fab";
 import "@ha/components/ha-icon";
 import "@ha/components/ha-icon-overflow-menu";
+import type { IconOverflowMenuItem } from "@ha/components/ha-icon-overflow-menu";
 import "@ha/components/ha-state-icon";
 import "@ha/components/ha-svg-icon";
-import "../components/data-table/knx-data-table-ga-label";
-import "../components/data-table/filter/knx-list-filter";
-import { navigate } from "@ha/common/navigate";
-import { mainWindow } from "@ha/common/dom/get_main_window";
-import { fireEvent } from "@ha/common/dom/fire_event";
+
+import { storage } from "@ha/common/decorators/storage";
+import { transform } from "@ha/common/decorators/transform";
 import type { HASSDomEvent } from "@ha/common/dom/fire_event";
+import { fireEvent } from "@ha/common/dom/fire_event";
+import { mainWindow } from "@ha/common/dom/get_main_window";
 import { computeDomain } from "@ha/common/entity/compute_domain";
-import type { IconOverflowMenuItem } from "@ha/components/ha-icon-overflow-menu";
+import { navigate } from "@ha/common/navigate";
 import type {
   DataTableColumnContainer,
   SortingChangedEvent,
 } from "@ha/components/data-table/ha-data-table";
+import { fullEntitiesContext, labelsContext } from "@ha/data/context";
 import type { DataTableFiltersValues } from "@ha/data/data_table_filters";
 import type { EntityRegistryEntry } from "@ha/data/entity/entity_registry";
-import { fullEntitiesContext, labelsContext } from "@ha/data/context";
 import type { LabelRegistryEntry } from "@ha/data/label/label_registry";
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
+import "@ha/layouts/hass-loading-screen";
+import "@ha/layouts/hass-tabs-subpage-data-table";
 import type { HomeAssistant, Route } from "@ha/types";
 
-import { deleteEntity, getEntityConfig } from "../services/websocket.service";
+import "../components/data-table/filter/knx-list-filter";
+import "../components/data-table/knx-data-table-ga-label";
+
+import type { Config as ListFilterConfig } from "../components/data-table/filter/knx-list-filter";
+import {
+  createGroupAddressesByEntityMap,
+  type EntityGroupAddresses,
+} from "../data/groups-by-entity";
 import {
   entitiesByGroupContext,
   type EntitiesByGroupContextValue,
 } from "../data/knx-entities-by-group-context";
 import { knxProjectContext } from "../data/knx-project-context";
-import type { KNX } from "../types/knx";
-import type { Config as ListFilterConfig } from "../components/data-table/filter/knx-list-filter";
-import { getPlatformStyle } from "../utils/common";
-import {
-  createGroupAddressesByEntityMap,
-  type EntityGroupAddresses,
-} from "../data/groups-by-entity";
-import type { SupportedPlatform } from "../types/entity_data";
-import type { KNXProject } from "../types/websocket";
 import { entitiesTab } from "../knx-router";
+import { deleteEntity, getEntityConfig } from "../services/websocket.service";
 import { KNXLogger } from "../tools/knx-logger";
+import type { SupportedPlatform } from "../types/entity_data";
+import type { KNX } from "../types/knx";
+import type { KNXProject } from "../types/websocket";
+import { getPlatformStyle } from "../utils/common";
 
 const logger = new KNXLogger("knx-entities-view");
 
