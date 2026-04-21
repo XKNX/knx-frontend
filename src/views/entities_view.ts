@@ -171,7 +171,7 @@ export class KNXEntitiesView extends LitElement {
   }
 
   protected updated(changedProps): void {
-    if (changedProps.has("knx_entities") && !this._deviceFilterApplied) {
+    if (changedProps.has("_knx_entities") && !this._deviceFilterApplied) {
       // Delay marking as applied until a matching device is found (or no URL filter exists).
       if (this._applyDeviceFilterFromUrl()) {
         this._deviceFilterApplied = true;
