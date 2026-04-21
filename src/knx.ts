@@ -4,6 +4,7 @@ import { getConfigEntries } from "@ha/data/config_entries";
 import type { HomeAssistant } from "@ha/types";
 import { HassBaseEl } from "@ha/state/hass-base-mixin";
 
+import { KnxEntitiesByGroupContextProvider } from "./data/knx-entities-by-group-context";
 import { KnxExposeGroupsContextProvider } from "./data/knx-expose-groups-context";
 import { KnxProjectContextProvider } from "./data/knx-project-context";
 import { localize } from "./localize/localize";
@@ -19,6 +20,8 @@ export class KnxElement extends HassBaseEl {
   protected _projectContextProvider = new KnxProjectContextProvider(this);
 
   protected _exposeGroupsContextProvider = new KnxExposeGroupsContextProvider(this);
+
+  protected _entitiesByGroupContextProvider = new KnxEntitiesByGroupContextProvider(this);
 
   protected async _initKnx() {
     try {
@@ -38,6 +41,7 @@ export class KnxElement extends HassBaseEl {
       };
       this._projectContextProvider.update(this.hass, knxBase.project_info);
       this._exposeGroupsContextProvider.update(this.hass);
+      this._entitiesByGroupContextProvider.update(this.hass);
     } catch (err) {
       new KNXLogger().error("Failed to initialize KNX", err);
     }

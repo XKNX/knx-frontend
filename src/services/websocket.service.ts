@@ -17,6 +17,7 @@ import type {
   KNXProject,
   GroupMonitorInfoData,
   KNXBaseData,
+  KNXEntityIdentifier,
 } from "../types/websocket";
 
 export const getKnxBaseData = (hass: HomeAssistant): Promise<KNXBaseData> =>
@@ -116,6 +117,13 @@ export const getEntityConfig = (hass: HomeAssistant, entityId: string): Promise<
 export const getEntityEntries = (hass: HomeAssistant): Promise<ExtEntityRegistryEntry[]> =>
   hass.callWS({
     type: "knx/get_entity_entries",
+  });
+
+export const getEntitiesByGroup = (
+  hass: HomeAssistant,
+): Promise<Record<string, KNXEntityIdentifier[]>> =>
+  hass.callWS({
+    type: "knx/get_entities_by_group",
   });
 
 export const createDevice = (
