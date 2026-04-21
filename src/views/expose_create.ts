@@ -149,8 +149,7 @@ export class KNXCreateExpose extends LitElement {
   })
   private _stateObj?: HassEntity;
 
-  @state()
-  @consume({ context: exposeGroupsContext, subscribe: true })
+  @consume({ context: exposeGroupsContext, subscribe: false })
   private _exposeGroupsCtx: ExposeGroupsContextValue | null = null;
 
   @query("ha-alert") private _alertElement?: HTMLElement;
