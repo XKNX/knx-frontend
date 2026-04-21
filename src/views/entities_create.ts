@@ -35,6 +35,8 @@ import type {
 } from "types/entity_data";
 
 import { knxProjectContext } from "../data/knx-project-context";
+import { entitiesByGroupContext } from "../data/knx-entities-by-group-context";
+import type { EntitiesByGroupContextValue } from "../data/knx-entities-by-group-context";
 import { getPlatformStyle } from "../utils/common";
 import { validDPTsForSchema } from "../utils/dpt";
 import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
@@ -74,6 +76,9 @@ export class KNXCreateEntity extends LitElement {
   @state()
   @consume({ context: knxProjectContext, subscribe: true })
   private _projectData: KNXProject | null = null;
+
+  @consume({ context: entitiesByGroupContext, subscribe: false })
+  private _entitiesByGroupContext?: EntitiesByGroupContextValue | null;
 
   private _schemaLoadTask = new Task(this, {
     args: () => [this.entityPlatform] as const,
@@ -344,6 +349,7 @@ export class KNXCreateEntity extends LitElement {
       .then((createEntityResult) => {
         if (this._handleValidationError(createEntityResult, true)) return;
         logger.debug("Successfully created entity", createEntityResult.entity_id);
+        this._entitiesByGroupContext?.reload();
         navigate("/knx/entities", { replace: true });
         if (!createEntityResult.entity_id) {
           logger.error("entity_id not found after creation.");
@@ -375,6 +381,7 @@ export class KNXCreateEntity extends LitElement {
       .then((createEntityResult) => {
         if (this._handleValidationError(createEntityResult, true)) return;
         logger.debug("Successfully updated entity", this.entityId);
+        this._entitiesByGroupContext?.reload();
         navigate("/knx/entities", { replace: true });
       })
       .catch((err) => {
