@@ -1,5 +1,4 @@
 import type { HomeAssistant } from "@ha/types";
-import type { ExtEntityRegistryEntry } from "@ha/data/entity/entity_registry";
 import type { DeviceRegistryEntry } from "@ha/data/device/device_registry";
 import type {
   CreateEntityData,
@@ -112,11 +111,6 @@ export const getEntityConfig = (hass: HomeAssistant, entityId: string): Promise<
   hass.callWS({
     type: "knx/get_entity_config",
     entity_id: entityId,
-  });
-
-export const getEntityEntries = (hass: HomeAssistant): Promise<ExtEntityRegistryEntry[]> =>
-  hass.callWS({
-    type: "knx/get_entity_entries",
   });
 
 export const getEntitiesByGroup = (
