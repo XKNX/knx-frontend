@@ -7,9 +7,9 @@ import {
   mdiPlus,
 } from "@mdi/js";
 
+import { consume } from "@lit/context";
 import type { TemplateResult } from "lit";
 import { LitElement, html, nothing } from "lit";
-import { consume } from "@lit/context";
 import { customElement, property, state } from "lit/decorators";
 
 import type { HassEntity } from "home-assistant-js-websocket";
@@ -20,7 +20,6 @@ import "@ha/components/ha-alert";
 import "@ha/components/ha-fab";
 import "@ha/components/ha-icon";
 import "@ha/components/ha-icon-overflow-menu";
-import type { IconOverflowMenuItem } from "@ha/components/ha-icon-overflow-menu";
 import "@ha/components/ha-state-icon";
 import "@ha/components/ha-svg-icon";
 
@@ -35,6 +34,7 @@ import type {
   DataTableColumnContainer,
   SortingChangedEvent,
 } from "@ha/components/data-table/ha-data-table";
+import type { IconOverflowMenuItem } from "@ha/components/ha-icon-overflow-menu";
 import { fullEntitiesContext, labelsContext } from "@ha/data/context";
 import type { DataTableFiltersValues } from "@ha/data/data_table_filters";
 import type { EntityRegistryEntry } from "@ha/data/entity/entity_registry";
@@ -129,7 +129,7 @@ export class KNXEntitiesView extends LitElement {
     },
     watch: ["_entitiesByGroupCtx"],
   })
-  private knx_entities: EntityRegistryEntry[] = [];
+  private _knx_entities: EntityRegistryEntry[] = [];
 
   @state()
   @consume({ context: labelsContext, subscribe: true })
@@ -163,7 +163,7 @@ export class KNXEntitiesView extends LitElement {
     if (!deviceId) {
       return true;
     }
-    if (this.knx_entities.some((ent) => ent.device_id === deviceId)) {
+    if (this._knx_entities.some((ent) => ent.device_id === deviceId)) {
       this._filters = { ...this._filters, device: [deviceId] };
       return true;
     }
@@ -591,7 +591,7 @@ export class KNXEntitiesView extends LitElement {
     }
     const groupAddressesByEntity = this._getGroupAddressesByEntity(this._entitiesByGroupCtx.groups);
     const computedRows = this._computeRows(
-      this.knx_entities,
+      this._knx_entities,
       this._labels,
       groupAddressesByEntity,
       this._projectData,
@@ -632,7 +632,7 @@ export class KNXEntitiesView extends LitElement {
           data-filter="domain"
           .hass=${this.hass}
           .knx=${this.knx}
-          .data=${this._getDomainFilterData(this.knx_entities)}
+          .data=${this._getDomainFilterData(this._knx_entities)}
           .config=${this._getDomainFilterConfig<DomainFilterItem>()}
           .selectedOptions=${this._filters.domain as string[] | undefined}
           .expanded=${this._expandedFilter === "domain"}
@@ -646,7 +646,7 @@ export class KNXEntitiesView extends LitElement {
           data-filter="area"
           .hass=${this.hass}
           .knx=${this.knx}
-          .data=${this._getAreaFilterData(this.knx_entities)}
+          .data=${this._getAreaFilterData(this._knx_entities)}
           .config=${this._getAreaFilterConfig<AreaFilterItem>()}
           .selectedOptions=${this._filters.area as string[] | undefined}
           .expanded=${this._expandedFilter === "area"}
@@ -660,7 +660,7 @@ export class KNXEntitiesView extends LitElement {
           data-filter="device"
           .hass=${this.hass}
           .knx=${this.knx}
-          .data=${this._getDeviceFilterData(this.knx_entities)}
+          .data=${this._getDeviceFilterData(this._knx_entities)}
           .config=${this._getBasicFilterConfig<DeviceFilterItem>()}
           .selectedOptions=${this._filters.device as string[] | undefined}
           .expanded=${this._expandedFilter === "device"}
@@ -674,7 +674,7 @@ export class KNXEntitiesView extends LitElement {
           data-filter="label"
           .hass=${this.hass}
           .knx=${this.knx}
-          .data=${this._getLabelFilterData(this.knx_entities, this._labels)}
+          .data=${this._getLabelFilterData(this._knx_entities, this._labels)}
           .config=${this._getLabelFilterConfig<LabelFilterItem>()}
           .selectedOptions=${this._filters.label as string[] | undefined}
           .expanded=${this._expandedFilter === "label"}
