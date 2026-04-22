@@ -22,11 +22,15 @@ import type { IconOverflowMenuItem } from "@ha/components/ha-icon-overflow-menu"
 import { relativeTime } from "@ha/common/datetime/relative_time";
 
 import "../components/knx-project-tree-view";
+import "../components/data-table/knx-data-table-related-label";
 
 import { compare } from "compare-versions";
 
 import type { HomeAssistant, Route } from "@ha/types";
 import { dptInClasses, dptToString } from "utils/dpt";
+import { createExposesByGroupAddressMap } from "../data/exposes-by-group";
+import { exposeGroupsContext } from "../data/knx-expose-groups-context";
+import type { ExposeGroupsContextValue } from "../data/knx-expose-groups-context";
 import { knxProjectContext } from "../data/knx-project-context";
 import type { KNX } from "../types/knx";
 import { projectTab } from "../knx-router";
@@ -64,6 +68,10 @@ export class KNXProjectView extends LitElement {
   @state()
   @consume({ context: knxProjectContext, subscribe: true })
   private _projectData: KNXProject | null = null;
+
+  @state()
+  @consume({ context: exposeGroupsContext, subscribe: true })
+  private _exposeGroupsCtx: ExposeGroupsContextValue | null = null;
 
   @storage({
     key: "knx-project-view-columns",
@@ -117,7 +125,10 @@ export class KNXProjectView extends LitElement {
   }
 
   private _columns = memoize(
-    (narrow, _language): DataTableColumnContainer<GroupAddress & { dpt_raw: string }> => {
+    (
+      narrow,
+      _language,
+    ): DataTableColumnContainer<GroupAddress & { dpt_raw: string; related: string[] }> => {
       const addressWidth = "100px";
       const dptWidth = "82px";
 
@@ -186,6 +197,20 @@ export class KNXProjectView extends LitElement {
             </div>`;
           },
         },
+        related: {
+          showNarrow: true,
+          defaultHidden: narrow,
+          filterable: true,
+          sortable: false,
+          title: "Related",
+          flex: 2,
+          template: (ga) =>
+            ga.related.length
+              ? html`<knx-data-table-related-label
+                  .exposes=${ga.related}
+                ></knx-data-table-related-label>`
+              : nothing,
+        },
         actions: {
           showNarrow: true,
           defaultHidden: narrow,
@@ -245,14 +270,20 @@ export class KNXProjectView extends LitElement {
     (
       visibleGroupAddresses: string[],
       groupAddresses: Record<string, GroupAddress>,
-    ): (GroupAddress & { dpt_raw: string })[] => {
+      exposeGroups: Record<string, string[]>,
+    ): (GroupAddress & { dpt_raw: string; related: string[] })[] => {
+      const exposesByGA = createExposesByGroupAddressMap(exposeGroups);
       const filtered = !visibleGroupAddresses.length
         ? // if none is set, default to show all
           Object.values(groupAddresses)
         : visibleGroupAddresses
             .map((key) => groupAddresses[key])
             .filter((ga): ga is GroupAddress => !!ga);
-      return filtered.map((ga) => ({ ...ga, dpt_raw: dptToString(ga.dpt) }));
+      return filtered.map((ga) => ({
+        ...ga,
+        dpt_raw: dptToString(ga.dpt),
+        related: exposesByGA[ga.address] ?? [],
+      }));
     },
   );
 
@@ -279,7 +310,11 @@ export class KNXProjectView extends LitElement {
   }
 
   private _renderTable(projectData: KNXProject): TemplateResult {
-    const filtered = this._getRows(this._visibleGroupAddresses, projectData.group_addresses);
+    const filtered = this._getRows(
+      this._visibleGroupAddresses,
+      projectData.group_addresses,
+      this._exposeGroupsCtx?.groups ?? {},
+    );
 
     return html` <hass-tabs-subpage-data-table
       .hass=${this.hass}
