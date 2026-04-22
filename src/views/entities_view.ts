@@ -452,7 +452,6 @@ export class KNXEntitiesView extends LitElement {
         hidden: true, // for filtering only
         title: "Device ID",
         filterable: true,
-        template: (entry) => entry.device_id ?? "",
       },
       area_name: {
         title: this.hass.localize("ui.panel.config.generic.headers.area"),
