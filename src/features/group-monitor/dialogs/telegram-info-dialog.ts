@@ -1,20 +1,28 @@
+import { consume } from "@lit/context";
 import { mdiArrowLeft, mdiArrowRight } from "@mdi/js";
-import { LitElement, nothing, html, css } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
-import { fireEvent } from "@ha/common/dom/fire_event";
-import type { HomeAssistant } from "@ha/types";
-import type { HassDialog } from "@ha/dialogs/make-dialog-manager";
-import "@ha/components/ha-svg-icon";
-import "@ha/components/ha-button";
 
+import "@ha/components/ha-button";
+import "@ha/components/ha-dialog";
+import "@ha/components/ha-relative-time";
+import "@ha/components/ha-svg-icon";
+
+import { fireEvent } from "@ha/common/dom/fire_event";
+import type { HassDialog } from "@ha/dialogs/make-dialog-manager";
+import type { HomeAssistant } from "@ha/types";
+
+import "../../../components/data-table/knx-data-table-related-label";
+import type { EntitiesByGroupContextValue } from "../../../data/knx-entities-by-group-context";
+import { entitiesByGroupContext } from "../../../data/knx-entities-by-group-context";
+import type { ExposeGroupsContextValue } from "../../../data/knx-expose-groups-context";
+import { exposeGroupsContext } from "../../../data/knx-expose-groups-context";
+import type { KNX } from "../../../types/knx";
 import {
   formatDateTimeWithMilliseconds,
   formatIsoTimestampWithMicroseconds,
 } from "../../../utils/format";
-import type { KNX } from "../../../types/knx";
 import type { TelegramRow } from "../types/telegram-row";
-import "@ha/components/ha-relative-time";
-import "@ha/components/ha-dialog";
 
 /**
  * Parameters for TelegramInfoDialog
@@ -54,6 +62,14 @@ export class GroupMonitorTelegramInfoDialog
   @property({ attribute: false }) public knx!: KNX;
 
   @property({ attribute: false }) public filteredTelegrams: TelegramRow[] = [];
+
+  @state()
+  @consume({ context: entitiesByGroupContext, subscribe: true })
+  private _entitiesByGroupCtx: EntitiesByGroupContextValue | null = null;
+
+  @state()
+  @consume({ context: exposeGroupsContext, subscribe: true })
+  private _exposeGroupsCtx: ExposeGroupsContextValue | null = null;
 
   @state() private _open = false;
 
@@ -159,6 +175,11 @@ export class GroupMonitorTelegramInfoDialog
     const isOutgoing = telegram.direction === "Outgoing";
     const directionClass = isOutgoing ? "outgoing" : "incoming";
 
+    const destAddr = telegram.destinationAddress;
+    const relatedEntities = this._entitiesByGroupCtx?.groups[destAddr]?.ui ?? [];
+    const relatedEntitiesYaml = this._entitiesByGroupCtx?.groups[destAddr]?.yaml ?? [];
+    const relatedExposes = this._exposeGroupsCtx?.groups[destAddr] ?? [];
+
     return html`
       <ha-dialog .open=${this._open} @closed=${this.closeDialog}>
         <span slot="headerTitle"> ${this.knx.localize("knx_telegram_info_dialog_telegram")} </span>
@@ -245,6 +266,22 @@ export class GroupMonitorTelegramInfoDialog
                   : nothing}
               </div>
             </div>
+
+            ${relatedEntities.length || relatedEntitiesYaml.length || relatedExposes.length
+              ? html`
+                  <div class="item-related">
+                    <div class="related-label">
+                      ${this.hass.localize("ui.dialogs.entity_registry.related")}
+                    </div>
+                    <knx-data-table-related-label
+                      .hass=${this.hass}
+                      .entities=${relatedEntities}
+                      .entitiesYaml=${relatedEntitiesYaml}
+                      .exposes=${relatedExposes}
+                    ></knx-data-table-related-label>
+                  </div>
+                `
+              : nothing}
           </div>
         </div>
 
@@ -451,6 +488,20 @@ export class GroupMonitorTelegramInfoDialog
           color: var(--secondary-text-color);
           margin-top: 4px;
           text-align: center;
+        }
+        .item-related {
+          padding: 16px;
+          background: var(--card-background-color);
+          border-radius: 8px;
+          margin-top: 8px;
+          box-shadow: 0 1px 2px rgba(var(--rgb-primary-text-color), 0.06);
+        }
+        .related-label {
+          font-size: 13px;
+          color: var(--secondary-text-color);
+          margin-bottom: 8px;
+          font-weight: 500;
+          letter-spacing: 0.4px;
         }
 
         /* Value section */
