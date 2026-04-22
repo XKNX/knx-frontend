@@ -2,7 +2,6 @@ import {
   mdiDelete,
   mdiInformationOffOutline,
   mdiInformationSlabCircleOutline,
-  mdiMathLog,
   mdiPencilOutline,
   mdiPlus,
 } from "@mdi/js";
@@ -58,7 +57,7 @@ import {
 } from "../data/knx-entities-by-group-context";
 import { knxProjectContext } from "../data/knx-project-context";
 import { entitiesTab } from "../knx-router";
-import { deleteEntity, getEntityConfig } from "../services/websocket.service";
+import { deleteEntity } from "../services/websocket.service";
 import { KNXLogger } from "../tools/knx-logger";
 import type { SupportedPlatform } from "../types/entity_data";
 import type { KNX } from "../types/knx";
@@ -487,11 +486,6 @@ export class KNXEntitiesView extends LitElement {
               action: () => this._entityEdit(entry),
             },
             {
-              path: mdiMathLog,
-              label: this.knx.localize("entities_view_monitor_telegrams"),
-              action: () => this._showEntityTelegrams(entry),
-            },
-            {
               path: mdiDelete,
               label: this.hass.localize("ui.common.delete"),
               action: () => this._entityDelete(entry),
@@ -522,36 +516,6 @@ export class KNXEntitiesView extends LitElement {
     fireEvent(mainWindow.document.querySelector("home-assistant")!, "hass-more-info", {
       entityId: entry.entity_id,
     });
-  }
-
-  private async _showEntityTelegrams(entry: EntityRow) {
-    try {
-      const entityConfig = await getEntityConfig(this.hass, entry.entity_id);
-      const knxData = entityConfig.data.knx;
-
-      // Extract all group addresses from KNX entity configuration
-      const groupAddresses = Object.values(knxData)
-        .flatMap((config) => {
-          if (typeof config !== "object" || config === null) return [];
-          const { write, state: stateAddress, passive } = config as any;
-          return [write, stateAddress, ...(Array.isArray(passive) ? passive : [])];
-        })
-        .filter((address): address is string => Boolean(address));
-
-      // Navigate to group monitor with entity-specific filter
-      const uniqueAddresses = [...new Set(groupAddresses)];
-      if (uniqueAddresses.length > 0) {
-        const destinationFilter = uniqueAddresses.join(",");
-        navigate(`/knx/group_monitor?destination=${encodeURIComponent(destinationFilter)}`);
-      } else {
-        logger.warn("No group addresses found for entity", entry.entity_id);
-        navigate("/knx/group_monitor");
-      }
-    } catch (err) {
-      logger.error("Failed to load entity configuration for monitor", entry.entity_id, err);
-      // Fallback to unfiltered monitor on error
-      navigate("/knx/group_monitor");
-    }
   }
 
   private _entityDelete(entry: EntityRow) {
