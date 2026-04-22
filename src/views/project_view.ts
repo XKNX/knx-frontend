@@ -306,15 +306,15 @@ export class KNXProjectView extends LitElement {
     (
       visibleGroupAddresses: string[],
       groupAddresses: Record<string, GroupAddress>,
-      exposeGroups: Record<string, string[]>,
-      entitiesByGroup: EntitiesByGroupContextValue["groups"],
+      exposeGroups: Record<string, string[]> | null,
+      entitiesByGroup: EntitiesByGroupContextValue["groups"] | null,
     ): (GroupAddress & {
       dpt_raw: string;
       related_exposes: string[];
       related_entities: string[];
       related_entities_yaml: string[];
     })[] => {
-      const exposesByGA = createExposesByGroupAddressMap(exposeGroups);
+      const exposesByGA = exposeGroups ? createExposesByGroupAddressMap(exposeGroups) : null;
       const filtered = !visibleGroupAddresses.length
         ? // if none is set, default to show all
           Object.values(groupAddresses)
@@ -324,9 +324,9 @@ export class KNXProjectView extends LitElement {
       return filtered.map((ga) => ({
         ...ga,
         dpt_raw: dptToString(ga.dpt),
-        related_exposes: exposesByGA[ga.address] ?? [],
-        related_entities: entitiesByGroup[ga.address]?.ui ?? [],
-        related_entities_yaml: entitiesByGroup[ga.address]?.yaml ?? [],
+        related_exposes: exposesByGA?.[ga.address] ?? [],
+        related_entities: entitiesByGroup?.[ga.address]?.ui ?? [],
+        related_entities_yaml: entitiesByGroup?.[ga.address]?.yaml ?? [],
       }));
     },
   );
@@ -357,8 +357,8 @@ export class KNXProjectView extends LitElement {
     const filtered = this._getRows(
       this._visibleGroupAddresses,
       projectData.group_addresses,
-      this._exposeGroupsCtx?.groups ?? {},
-      this._entitiesByGroupCtx?.groups ?? {},
+      this._exposeGroupsCtx?.groups ?? null, // null instead of empty object `{}` for memoize
+      this._entitiesByGroupCtx?.groups ?? null,
     );
 
     return html` <hass-tabs-subpage-data-table
