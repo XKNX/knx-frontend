@@ -62,57 +62,74 @@ class KnxDataTableRelatedLabel extends LitElement {
     }
 
     return html`
-      <ha-chip-set>
-        ${this._renderItemSection("entities")} ${this._renderItemSection("exposes")}
-      </ha-chip-set>
+      <ha-chip-set> ${this._renderEntitiesSection()} ${this._renderExposesSection()} </ha-chip-set>
     `;
   }
 
-  private _renderItemSection(sectionType: "entities" | "exposes"): TemplateResult | typeof nothing {
-    const itemCount =
-      sectionType === "entities"
-        ? this.entities.length + this.entitiesYaml.length
-        : this.exposes.length;
+  private _renderEntitiesSection(): TemplateResult | typeof nothing {
+    const itemCount = this.entities.length + this.entitiesYaml.length;
     if (!itemCount) {
       return nothing;
     }
 
     if (itemCount === 1) {
-      return sectionType === "entities"
-        ? this.entities.length === 1
-          ? this._renderEntityItem(this.entities[0])
-          : this._renderEntityYamlItem(this.entitiesYaml[0])
-        : this._renderExposeItem(this.exposes[0]);
+      return this.entities.length === 1
+        ? this._renderEntityItem(this.entities[0])
+        : this._renderEntityYamlItem(this.entitiesYaml[0]);
     }
 
-    const openDropdownLabel =
-      sectionType === "entities"
-        ? this.localize("ui.components.target-picker.selected.entity", { count: itemCount })
-        : this.localize("component.knx.config_panel.common.exposes_count", { count: itemCount });
+    const openDropdownLabel = this.localize("ui.components.target-picker.selected.entity", {
+      count: itemCount,
+    });
 
     return html`
       <ha-dropdown role="button" tabindex="0" @click=${stopPropagation}>
         <ha-label slot="trigger" class="open-menu" dense>${openDropdownLabel}</ha-label>
         ${repeat(
-          sectionType === "entities" ? this.entities : this.exposes,
+          this.entities,
           (itemId) => itemId,
           (itemId) =>
             html`<ha-dropdown-item .value=${itemId}>
-              ${sectionType === "entities"
-                ? this._renderEntityItem(itemId)
-                : this._renderExposeItem(itemId)}
+              ${this._renderEntityItem(itemId)}
             </ha-dropdown-item>`,
         )}
-        ${sectionType === "entities" && this.entitiesYaml.length
-          ? repeat(
-              this.entitiesYaml,
-              (itemId) => itemId,
-              (itemId) =>
-                html`<ha-dropdown-item .value=${itemId}>
-                  ${this._renderEntityYamlItem(itemId)}
-                </ha-dropdown-item>`,
-            )
-          : nothing}
+        ${repeat(
+          this.entitiesYaml,
+          (itemId) => itemId,
+          (itemId) =>
+            html`<ha-dropdown-item .value=${itemId}>
+              ${this._renderEntityYamlItem(itemId)}
+            </ha-dropdown-item>`,
+        )}
+      </ha-dropdown>
+    `;
+  }
+
+  private _renderExposesSection(): TemplateResult | typeof nothing {
+    const itemCount = this.exposes.length;
+    if (!itemCount) {
+      return nothing;
+    }
+
+    if (itemCount === 1) {
+      return this._renderExposeItem(this.exposes[0]);
+    }
+
+    const openDropdownLabel = this.localize("component.knx.config_panel.common.exposes_count", {
+      count: itemCount,
+    });
+
+    return html`
+      <ha-dropdown role="button" tabindex="0" @click=${stopPropagation}>
+        <ha-label slot="trigger" class="open-menu" dense>${openDropdownLabel}</ha-label>
+        ${repeat(
+          this.exposes,
+          (itemId) => itemId,
+          (itemId) =>
+            html`<ha-dropdown-item .value=${itemId}>
+              ${this._renderExposeItem(itemId)}
+            </ha-dropdown-item>`,
+        )}
       </ha-dropdown>
     `;
   }
