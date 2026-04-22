@@ -357,7 +357,7 @@ export class KNXProjectView extends LitElement {
     const filtered = this._getRows(
       this._visibleGroupAddresses,
       projectData.group_addresses,
-      this._exposeGroupsCtx?.groups ?? null, // null instead of empty object `{}` for memoize
+      this._exposeGroupsCtx?.groups ?? null, // pass null when groups are unavailable to stabilize memoize inputs
       this._entitiesByGroupCtx?.groups ?? null,
     );
 

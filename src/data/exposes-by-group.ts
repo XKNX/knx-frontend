@@ -12,7 +12,7 @@ import memoizeOne from "memoize-one";
  */
 export const createExposesByGroupAddressMap = memoizeOne(
   (groups: Record<string, string[]>): Record<string, string[]> => {
-    const byGA: Record<string, string[]> = {};
+    const byGA: Record<string, string[]> = Object.create(null);
     Object.entries(groups).forEach(([entityId, addresses]) => {
       addresses.forEach((ga) => {
         byGA[ga] ??= [];
