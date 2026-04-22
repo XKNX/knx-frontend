@@ -68,15 +68,7 @@ class KnxDataTableGaLabel extends LitElement {
             gas,
             (ga) => ga.address,
             (ga) => html`
-              <ha-dropdown-item .value=${ga.address}>
-                <a
-                  class="link"
-                  href=${this._groupMonitorHref([ga.address])}
-                  @click=${this._linkClicked}
-                >
-                  ${this._renderGA(ga)}
-                </a>
-              </ha-dropdown-item>
+              <ha-dropdown-item .value=${ga.address}>${this._renderGA(ga)}</ha-dropdown-item>
             `,
           )}
         </ha-dropdown>
@@ -86,12 +78,10 @@ class KnxDataTableGaLabel extends LitElement {
 
   private _renderGA(ga: GroupAddressParts) {
     return html`
-      <div class="ga">
-        <a class="link" href=${this._groupMonitorHref([ga.address])} @click=${this._linkClicked}>
-          <ha-label dense .description=${ga.name ?? ""}> ${ga.address} </ha-label>
-        </a>
+      <a class="ga link" href=${this._groupMonitorHref([ga.address])} @click=${this._linkClicked}>
+        <ha-label dense .description=${ga.name ?? ""}> ${ga.address} </ha-label>
         ${ga.name ? html`<div>${ga.name}</div>` : nothing}
-      </div>
+      </a>
     `;
   }
 
