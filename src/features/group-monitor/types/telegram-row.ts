@@ -137,6 +137,11 @@ export class TelegramRow implements DataTableRowData {
   dpt: string | null;
 
   /**
+   * Raw Data Point Type (DPT) number (e.g., "1.001") for technical reference and filtering
+   */
+  dptId: string | null;
+
+  /**
    * Unit of measurement for the telegram value
    * May be null for dimensionless or unknown value types
    */
@@ -225,6 +230,7 @@ export class TelegramRow implements DataTableRowData {
 
     /** Extract and format DPT information for technical reference */
     this.dpt = TelegramDictFormatter.dptNameNumber(telegram);
+    this.dptId = TelegramDictFormatter.dptNumber(telegram) || null;
 
     /** Store unit information for value context */
     this.unit = telegram.unit;

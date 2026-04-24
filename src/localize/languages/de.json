@@ -79,6 +79,11 @@
   "telegram_filter_destination_sort_by_secondaryText": "Name",
   "telegram_filter_destination_sort_by_primaryText": "Zieladresse",
 
+  "telegram_filter_dpt_title": "DPT",
+  "telegram_filter_dpt_sort_by_primaryText": "Nummer",
+  "telegram_filter_dpt_sort_by_secondaryText": "Name",
+  "telegram_filter_dpt_sort_by_badge": "Anzahl",
+
   "telegram_filter_no_results": "Keine Ergebnisse gefunden",
   "telegram_filter_sort_by": "Sortieren nach:",
   "telegram_filter_sort_ascending_tooltip": "Aufsteigend sortiert",

@@ -34,7 +34,7 @@ import { formatTimeWithMilliseconds, formatTimeDelta } from "../../../utils/form
 import type { TelegramRow, TelegramRowKeys } from "../types/telegram-row";
 import type { ToggleFilterEvent } from "../../../components/data-table/cell/knx-table-cell-filterable";
 import { GroupMonitorController } from "../controller/group-monitor-controller";
-import type { DistinctValueInfo } from "../controller/group-monitor-controller";
+import type { DistinctValueInfo, DistinctValues } from "../controller/group-monitor-controller";
 import { groupMonitorTab } from "../../../knx-router";
 
 import type { KNX } from "../../../types/knx";
@@ -152,6 +152,9 @@ export class KNXGroupMonitor extends LitElement {
   /** Reference to destination filter component */
   @query('knx-list-filter[data-filter="destination"]') private destinationFilter?: KnxListFilter;
 
+  /** Reference to dpt filter component */
+  @query('knx-list-filter[data-filter="dpt"]') private dptFilter?: KnxListFilter;
+
   /**
    * Detects if the current device is a mobile touch device
    * Used to disable quick filter buttons on mobile for better UX
@@ -165,6 +168,43 @@ export class KNXGroupMonitor extends LitElement {
    */
   private _getFilteredData() {
     return this.controller.getFilteredTelegramsAndDistinctValues();
+  }
+
+  /**
+   * Combines all available DPTs from metadata with dynamic counts from telegrams
+   */
+  private _getDptFilterData(distinctValues: DistinctValues): DistinctValueInfo[] {
+    const dptMap: Record<string, DistinctValueInfo> = {};
+
+    // 1. Initialize with all known DPTs from metadata
+    if (this.knx.dptMetadata) {
+      for (const [dptId, meta] of Object.entries(this.knx.dptMetadata)) {
+        dptMap[dptId] = {
+          id: dptId,
+          name: meta.name || "",
+          totalCount: 0,
+          filteredCount: 0,
+        };
+      }
+    }
+
+    // 2. Override/update with actual telegram distinct values
+    for (const info of Object.values(distinctValues.dpt)) {
+      const dptId = info.id;
+      if (dptMap[dptId]) {
+        dptMap[dptId].totalCount = info.totalCount;
+        dptMap[dptId].filteredCount = info.filteredCount;
+      } else {
+        dptMap[dptId] = {
+          id: info.id,
+          name: info.name,
+          totalCount: info.totalCount,
+          filteredCount: info.filteredCount,
+        };
+      }
+    }
+
+    return Object.values(dptMap);
   }
 
   // ============================================================================
@@ -398,6 +438,49 @@ export class KNXGroupMonitor extends LitElement {
     }),
   );
 
+  /**
+   * Memoized configuration for DPT filter
+   */
+  private _dptFilterConfig = memoize(
+    (
+      hasActiveFilters: boolean,
+      _dptFiltersLength: number,
+      _dptFilterSortCriterion: string | undefined,
+      _language: string,
+    ): ListFilterConfig<DistinctValueInfo> => ({
+      idField: {
+        filterable: false,
+        sortable: false,
+        mapper: (item: DistinctValueInfo) => item.id,
+      },
+      primaryField: {
+        fieldName: this.knx.localize("telegram_filter_dpt_sort_by_primaryText"),
+        filterable: true,
+        sortable: true,
+        sortAscendingText: this.knx.localize("telegram_filter_sort_ascending"),
+        sortDescendingText: this.knx.localize("telegram_filter_sort_descending"),
+        sortDefaultDirection: "asc",
+        mapper: (item: DistinctValueInfo) => item.id,
+      },
+      secondaryField: {
+        fieldName: this.knx.localize("telegram_filter_dpt_sort_by_secondaryText"),
+        filterable: true,
+        sortable: true,
+        sortAscendingText: this.knx.localize("telegram_filter_sort_ascending"),
+        sortDescendingText: this.knx.localize("telegram_filter_sort_descending"),
+        sortDefaultDirection: "asc",
+        mapper: (item: DistinctValueInfo) => item.name,
+      },
+      badgeField: {
+        fieldName: this.knx.localize("telegram_filter_dpt_sort_by_badge"),
+        filterable: false,
+        sortable: false,
+        mapper: (item: DistinctValueInfo) =>
+          hasActiveFilters ? `${item.filteredCount}/${item.totalCount}` : `${item.totalCount}`,
+      },
+    }),
+  );
+
   // ============================================================================
   // Event Handlers
   // ============================================================================
@@ -552,6 +635,14 @@ export class KNXGroupMonitor extends LitElement {
   /** Handles time-delta filter panel expansion */
   private _handleTimeDeltaExpanded = (ev: CustomEvent<{ expanded: boolean }>): void => {
     this._onFilterExpansionChange("timedelta", ev.detail.expanded);
+  };
+
+  private _handleDptFilterChange = (ev: HASSDomEvent<ListFilterSelectionChangedEvent>): void => {
+    this._onFilterSelectionChange("dpt", ev.detail.value);
+  };
+
+  private _handleDptFilterExpanded = (ev: HASSDomEvent<ListFilterExpandedChangedEvent>): void => {
+    this._onFilterExpansionChange("dpt", ev.detail.expanded);
   };
 
   // Table cell filter toggle handlers (for quick filtering from table cells)
@@ -1082,6 +1173,29 @@ export class KNXGroupMonitor extends LitElement {
           .filterTitle=${this.knx.localize("group_monitor_type")}
           @selection-changed=${this._handleTelegramTypeFilterChange}
           @expanded-changed=${this._handleTelegramTypeFilterExpanded}
+        ></knx-list-filter>
+
+        <!-- Filter for DPT -->
+        <knx-list-filter
+          data-filter="dpt"
+          slot="filter-pane"
+          .hass=${this.hass}
+          .knx=${this.knx}
+          .data=${this._getDptFilterData(distinctValues)}
+          .config=${this._dptFilterConfig(
+            this._hasActiveFilters("dpt"),
+            this.controller.filters.dpt?.length || 0,
+            this.dptFilter?.sortCriterion,
+            this.hass.language,
+          ) as any}
+          .selectedOptions=${this.controller.filters.dpt}
+          .expanded=${this.controller.expandedFilter === "dpt"}
+          .narrow=${this.narrow}
+          .isMobileDevice=${this.isMobileTouchDevice}
+          .filterTitle=${this.knx.localize("telegram_filter_dpt_title")}
+          @selection-changed=${this._handleDptFilterChange}
+          @expanded-changed=${this._handleDptFilterExpanded}
+          @sort-changed=${this._handleFilterSortChanged}
         ></knx-list-filter>
 
         <!-- Time-Delta Context Filter -->
