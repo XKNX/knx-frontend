@@ -17,7 +17,7 @@ import { extractMicrosecondsFromIso } from "../../../utils/format";
 const logger = new KNXLogger("group_monitor_controller");
 
 // Filter and distinct values types for type safety
-export type FilterField = "source" | "destination" | "direction" | "telegramtype";
+export type FilterField = "source" | "destination" | "direction" | "telegramtype" | "dpt";
 
 // All filter fields as a constant array
 export const FILTER_FIELDS: readonly FilterField[] = [
@@ -25,6 +25,7 @@ export const FILTER_FIELDS: readonly FilterField[] = [
   "destination",
   "direction",
   "telegramtype",
+  "dpt",
 ] as const;
 
 export type FilterMap = Record<FilterField, ReadonlySet<string>>;
@@ -97,6 +98,7 @@ export class GroupMonitorController implements ReactiveController {
     destination: {},
     direction: {},
     telegramtype: {},
+    dpt: {},
   };
 
   // Buffer version counter for memoization cache invalidation
@@ -351,6 +353,7 @@ export class GroupMonitorController implements ReactiveController {
         destination: {},
         direction: {},
         telegramtype: {},
+        dpt: {},
       };
 
       // Initialize all distinct values with filteredCount = 0
@@ -582,6 +585,9 @@ export class GroupMonitorController implements ReactiveController {
         return { id: telegram.direction, name: "" };
       case "telegramtype":
         return { id: telegram.type, name: "" };
+      case "dpt":
+        if (!telegram.dptId) return null;
+        return { id: telegram.dptId, name: telegram.dpt || telegram.dptId };
       default:
         return null;
     }
@@ -736,6 +742,7 @@ export class GroupMonitorController implements ReactiveController {
       destination: {},
       direction: {},
       telegramtype: {},
+      dpt: {},
     };
 
     for (const field of FILTER_FIELDS) {
@@ -793,6 +800,7 @@ export class GroupMonitorController implements ReactiveController {
         destination: { ...preserveValues.destination },
         direction: { ...preserveValues.direction },
         telegramtype: { ...preserveValues.telegramtype },
+        dpt: { ...preserveValues.dpt },
       };
     } else {
       // Reset to empty
@@ -801,6 +809,7 @@ export class GroupMonitorController implements ReactiveController {
         destination: {},
         direction: {},
         telegramtype: {},
+        dpt: {},
       };
     }
 

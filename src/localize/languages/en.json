@@ -80,6 +80,11 @@
   "telegram_filter_destination_sort_by_badge": "Count",
   "telegram_filter_destination_sort_by_secondaryText": "Destination name",
 
+  "telegram_filter_dpt_title": "DPT",
+  "telegram_filter_dpt_sort_by_primaryText": "Number",
+  "telegram_filter_dpt_sort_by_secondaryText": "Name",
+  "telegram_filter_dpt_sort_by_badge": "Count",
+
   "telegram_filter_no_results": "No results found",
   "telegram_filter_sort_by": "Sort by:",
   "telegram_filter_sort_ascending_tooltip": "Sorted ascending",
