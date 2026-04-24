@@ -22,6 +22,7 @@ import { isTouch } from "@ha/util/is_touch";
 import "../../../components/data-table/cell/knx-table-cell";
 import "../../../components/data-table/cell/knx-table-cell-filterable";
 import "../../../components/data-table/filter/knx-list-filter";
+import "../../../components/data-table/filter/knx-time-delta-filter";
 
 import { customElement, property, query } from "lit/decorators";
 import { storage } from "@ha/common/decorators/storage";
@@ -43,6 +44,7 @@ import type {
   Config as ListFilterConfig,
   KnxListFilter,
 } from "../../../components/data-table/filter/knx-list-filter";
+import type { TimeDeltaChangedEvent } from "../../../components/data-table/filter/knx-time-delta-filter";
 
 /**
  * KNX Group Monitor Component
@@ -538,6 +540,16 @@ export class KNXGroupMonitor extends LitElement {
     ev: HASSDomEvent<ListFilterExpandedChangedEvent>,
   ): void => {
     this._onFilterExpansionChange("telegramtype", ev.detail.expanded);
+  };
+
+  /** Handles time-delta filter value changes */
+  private _handleTimeDeltaChanged = (ev: HASSDomEvent<TimeDeltaChangedEvent>): void => {
+    this.controller.setTimeDelta(ev.detail.deltaBefore, ev.detail.deltaAfter, this.route);
+  };
+
+  /** Handles time-delta filter panel expansion */
+  private _handleTimeDeltaExpanded = (ev: CustomEvent<{ expanded: boolean }>): void => {
+    this._onFilterExpansionChange("timedelta", ev.detail.expanded);
   };
 
   // Table cell filter toggle handlers (for quick filtering from table cells)
@@ -1062,6 +1074,18 @@ export class KNXGroupMonitor extends LitElement {
           @selection-changed=${this._handleTelegramTypeFilterChange}
           @expanded-changed=${this._handleTelegramTypeFilterExpanded}
         ></knx-list-filter>
+
+        <!-- Time-Delta Context Filter -->
+        <knx-time-delta-filter
+          slot="filter-pane"
+          .knx=${this.knx}
+          .deltaBefore=${this.controller.timeDeltaBefore}
+          .deltaAfter=${this.controller.timeDeltaAfter}
+          .disabled=${!this.controller.hasActiveListFilters}
+          .expanded=${this.controller.expandedFilter === "timedelta"}
+          @time-delta-changed=${this._handleTimeDeltaChanged}
+          @expanded-changed=${this._handleTimeDeltaExpanded}
+        ></knx-time-delta-filter>
       </hass-tabs-subpage-data-table>
     `;
   }
