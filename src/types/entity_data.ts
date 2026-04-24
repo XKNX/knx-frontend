@@ -76,8 +76,8 @@ export interface ExposeOption {
 }
 
 export interface ExposeConfigData {
-  entity_id: string;
   options: ExposeOption[];
+  notes?: string;
 }
 
 export type ExposeResult =

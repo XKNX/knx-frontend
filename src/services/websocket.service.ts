@@ -8,7 +8,6 @@ import type {
   TimeServerData,
   ExposeConfigData,
   ExposeResult,
-  ExposeOption,
 } from "../types/entity_data";
 import type { SelectorSchema } from "../types/schema";
 import type {
@@ -138,7 +137,7 @@ export const getExposeGroups = (hass: HomeAssistant): Promise<Record<string, str
     type: "knx/get_expose_groups",
   });
 
-export const getExposeConfig = (hass: HomeAssistant, entityId: string): Promise<ExposeOption[]> =>
+export const getExposeConfig = (hass: HomeAssistant, entityId: string): Promise<ExposeConfigData> =>
   hass.callWS({
     type: "knx/get_expose_config",
     entity_id: entityId,
@@ -146,20 +145,24 @@ export const getExposeConfig = (hass: HomeAssistant, entityId: string): Promise<
 
 export const validateExposeConfig = (
   hass: HomeAssistant,
-  config: ExposeConfigData,
+  entity_id: string,
+  data: ExposeConfigData,
 ): Promise<ExposeResult> =>
   hass.callWS({
     type: "knx/validate_expose",
-    ...config,
+    entity_id,
+    data,
   });
 
 export const updateExpose = (
   hass: HomeAssistant,
-  config: ExposeConfigData,
+  entity_id: string,
+  data: ExposeConfigData,
 ): Promise<ExposeResult> =>
   hass.callWS({
     type: "knx/update_expose",
-    ...config,
+    entity_id,
+    data,
   });
 
 export const deleteExpose = (hass: HomeAssistant, entityId: string) =>
