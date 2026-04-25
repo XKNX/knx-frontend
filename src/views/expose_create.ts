@@ -1,4 +1,4 @@
-import { mdiDelete, mdiPlus, mdiFloppy } from "@mdi/js";
+import { mdiDelete, mdiFileDocumentEdit, mdiPlus, mdiFloppy } from "@mdi/js";
 import type { TemplateResult, PropertyValues } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { consume } from "@lit/context";
@@ -12,7 +12,9 @@ import "@ha/layouts/hass-subpage";
 import "@ha/components/ha-alert";
 import "@ha/components/ha-button";
 import "@ha/components/ha-card";
+import "@ha/components/ha-adaptive-dialog";
 import "@ha/components/ha-expansion-panel";
+import "@ha/components/ha-textarea";
 import "@ha/components/ha-fab";
 import "@ha/components/ha-icon-button";
 import "@ha/components/ha-state-icon";
@@ -127,13 +129,15 @@ export class KNXCreateExpose extends LitElement {
 
   @state() private _entityId?: string;
 
-  @state() private _options: ExposeOption[] = [{ ga: {} }];
+  @state() private _config: ExposeConfigData = { options: [{ ga: {} }] };
 
   @state() private _validationErrors?: ErrorDescription[];
 
   @state() private _validationBaseError?: string;
 
   @state() private _showRawValues = false;
+
+  @state() private _showNotesDialog = false;
 
   @state()
   @consume({ context: knxProjectContext, subscribe: true })
@@ -160,17 +164,17 @@ export class KNXCreateExpose extends LitElement {
     args: () => [this._entityId] as const,
     task: async ([entityId]) => {
       if (!entityId) return;
-      this._options = await getExposeConfig(this.hass, entityId);
+      this._config = await getExposeConfig(this.hass, entityId);
 
       const urlParams = new URLSearchParams(mainWindow.location.search);
       const copyFrom = urlParams.get("copy");
       if (copyFrom && copyFrom !== entityId) {
-        const copyOptions = await getExposeConfig(this.hass, copyFrom);
-        logger.debug("Copying expose options from", copyFrom, copyOptions);
-        this._options.push(...copyOptions);
+        const copyConfig = await getExposeConfig(this.hass, copyFrom);
+        logger.debug("Copying expose options from", copyFrom, copyConfig);
+        this._config = copyConfig;
       }
-      if (this._options.length === 0) {
-        this._options.push({ ga: {} });
+      if (this._config.options.length === 0) {
+        this._config = { ...this._config, options: [{ ga: {} }] };
       }
       this._validationErrors = undefined;
       this._validationBaseError = undefined;
@@ -196,7 +200,7 @@ export class KNXCreateExpose extends LitElement {
       const entityId = this.route.path.split("/")[1] || undefined;
       if (entityId !== this._entityId) {
         this._entityId = entityId;
-        this._options = [{ ga: {} }];
+        this._config = { options: [{ ga: {} }] };
         this._validationErrors = undefined;
         this._validationBaseError = undefined;
       }
@@ -221,15 +225,20 @@ export class KNXCreateExpose extends LitElement {
           >${this.knx.localize("expose_create_load_error")}</ha-alert
         >`;
       },
-      complete: () => html`
-        ${this._options.map((option, idx) => this._renderExposeOption(option, idx))}
-        <div class="add-button-row">
-          <ha-button @click=${this._addExpose}>
-            <ha-svg-icon slot="start" .path=${mdiPlus}></ha-svg-icon>
-            ${this.hass.localize("component.knx.config_panel.expose.create.add_expose")}
-          </ha-button>
-        </div>
-      `,
+      complete: () => {
+        const baseErrors = extractValidationErrors(this._validationErrors, "data");
+        return html`
+          ${this._config.options.map((option, idx) =>
+            this._renderExposeOption(option, idx, baseErrors),
+          )}
+          <div class="add-button-row">
+            <ha-button @click=${this._addExpose}>
+              <ha-svg-icon slot="start" .path=${mdiPlus}></ha-svg-icon>
+              ${this.hass.localize("component.knx.config_panel.expose.create.add_expose")}
+            </ha-button>
+          </div>
+        `;
+      },
     });
   }
 
@@ -294,8 +303,12 @@ export class KNXCreateExpose extends LitElement {
           ? this.hass.localize("component.knx.config_panel.expose.create.title")
           : `${this.hass.localize("ui.common.edit")}: ${this._entityId}`}
       >
+        ${this.narrow ? this._renderNotesDialog() : nothing}
         <div class="content config-layout ${this.narrow ? "" : "wide"}">
-          <div class="entity-column">${this._renderEntityInfo()}</div>
+          <div class="entity-column">
+            <div class="entity-info-sticky">${this._renderEntityInfo()}</div>
+            ${!this.narrow ? this._renderNotesCard() : nothing}
+          </div>
           <div class="config-column">
             ${this._renderConfigTask()}
             ${this._validationBaseError
@@ -324,10 +337,22 @@ export class KNXCreateExpose extends LitElement {
             : this.hass.localize("ui.common.save")}
           extended
           @click=${this._save}
-          ?disabled=${this._options.some((e) => !e.ga?.write)}
+          ?disabled=${this._config.options.some((e) => !e.ga?.write)}
         >
           <ha-svg-icon slot="icon" .path=${create ? mdiPlus : mdiFloppy}></ha-svg-icon>
         </ha-fab>
+        ${this.narrow && this._entityId
+          ? html`
+              <ha-fab
+                class="notes-fab"
+                .label=${this.hass.localize("component.knx.config_panel.expose.create.notes.label")}
+                extended
+                @click=${this._openNotesDialog}
+              >
+                <ha-svg-icon slot="icon" .path=${mdiFileDocumentEdit}></ha-svg-icon>
+              </ha-fab>
+            `
+          : nothing}
       </hass-subpage>
     `;
   }
@@ -401,6 +426,70 @@ export class KNXCreateExpose extends LitElement {
     this._showRawValues = (ev.currentTarget as HTMLInputElement).checked;
   }
 
+  private _renderNotesCard(): TemplateResult {
+    return html`
+      <ha-card outlined class="notes-card">
+        <div class="card-header">
+          ${this.hass.localize("component.knx.config_panel.expose.create.notes.label")}
+        </div>
+        <div class="card-content">
+          <ha-textarea
+            .placeholder=${this.hass.localize(
+              "component.knx.config_panel.expose.create.notes.placeholder",
+            )}
+            .rows=${this._getNotesRows()}
+            .value=${this._config.notes ?? ""}
+            @input=${this._updateNotes}
+          ></ha-textarea>
+        </div>
+      </ha-card>
+    `;
+  }
+
+  private _renderNotesDialog(): TemplateResult {
+    return html`
+      <ha-adaptive-dialog
+        .hass=${this.hass}
+        .open=${this._showNotesDialog}
+        @closed=${this._closeNotesDialog}
+        .headerTitle=${this.hass.localize("component.knx.config_panel.expose.create.notes.label")}
+      >
+        <ha-textarea
+          .rows=${this._getNotesRows()}
+          class="notes-textarea-dialog"
+          .placeholder=${this.hass.localize(
+            "component.knx.config_panel.expose.create.notes.placeholder",
+          )}
+          .value=${this._config.notes ?? ""}
+          @input=${this._updateNotes}
+        ></ha-textarea>
+      </ha-adaptive-dialog>
+    `;
+  }
+
+  private _getNotesRows(): number {
+    const notes = this._config.notes ?? "";
+    const newlineCount = (notes.match(/\n/g) ?? []).length;
+    const softWrapLines = Math.ceil(notes.length / 100);
+    return Math.max(4, newlineCount + softWrapLines + 1);
+  }
+
+  private _updateNotes(ev: Event) {
+    const textarea = ev.currentTarget as { value?: string } | null;
+    const value = textarea?.value ?? "";
+    const config = { ...this._config };
+    setNestedValue(config, "notes", value || undefined, logger);
+    this._config = config as ExposeConfigData;
+  }
+
+  private _openNotesDialog() {
+    this._showNotesDialog = true;
+  }
+
+  private _closeNotesDialog() {
+    this._showNotesDialog = false;
+  }
+
   private _toRawValueString(value: unknown): string {
     if (value === null) return "None";
     try {
@@ -410,8 +499,12 @@ export class KNXCreateExpose extends LitElement {
     }
   }
 
-  private _renderExposeOption(option: ExposeOption, idx: number): TemplateResult {
-    const optionErrors = this._getExposeOptionValidationErrors(idx);
+  private _renderExposeOption(
+    option: ExposeOption,
+    idx: number,
+    errors?: ErrorDescription[],
+  ): TemplateResult {
+    const optionErrors = this._getExposeOptionValidationErrorsForIndex(errors, idx);
     const optionError = getValidationError(optionErrors);
     const attributeError = getValidationError(optionErrors, "attribute");
     const gaErrors = extractValidationErrors(optionErrors, "ga");
@@ -425,7 +518,7 @@ export class KNXCreateExpose extends LitElement {
       : "";
     return html`
       <ha-expansion-panel outlined expanded left-chevron .header=${title} .secondary=${gaName}>
-        ${this._options.length > 1
+        ${this._config.options.length > 1
           ? html`
               <ha-icon-button
                 slot="icons"
@@ -452,7 +545,7 @@ export class KNXCreateExpose extends LitElement {
               "component.knx.config_panel.expose.create.attribute.description",
             )}
             .hideAttributes=${[...HIDDEN_ATTRIBUTES]}
-            @value-changed=${this._updateExposeAtIndex}
+            @value-changed=${this._updateExposeOptionAtIndex}
           ></ha-entity-attribute-picker>
           ${attributeError
             ? html` <ha-alert alert-type="error">${attributeError.error_message}</ha-alert> `
@@ -466,7 +559,7 @@ export class KNXCreateExpose extends LitElement {
             .label=${this.hass.localize("component.knx.config_panel.expose.create.ga.label")}
             .localizeFunction=${this._backendLocalize}
             .validationErrors=${gaErrors}
-            @value-changed=${this._updateExposeAtIndex}
+            @value-changed=${this._updateExposeOptionAtIndex}
           ></knx-group-address-selector>
           <ha-expansion-panel
             .header=${this.hass.localize(
@@ -481,7 +574,7 @@ export class KNXCreateExpose extends LitElement {
               .value=${option.default ?? undefined}
               .validationErrors=${extractValidationErrors(optionErrors, "default")}
               .localizeFunction=${this._backendLocalize}
-              @value-changed=${this._updateExposeAtIndex}
+              @value-changed=${this._updateExposeOptionAtIndex}
             ></knx-selector-row>
             <knx-selector-row
               data-idx=${idx}
@@ -491,10 +584,10 @@ export class KNXCreateExpose extends LitElement {
               .value=${option.value_template}
               .validationErrors=${extractValidationErrors(optionErrors, "value_template")}
               .localizeFunction=${this._backendLocalize}
-              @value-changed=${this._updateExposeAtIndex}
+              @value-changed=${this._updateExposeOptionAtIndex}
             >
               <knx-expose-template-preview
-                .entityId=${this._entityId}
+                .entityId=${this._entityId ?? ""}
                 .attribute=${option.attribute}
                 .valueTemplate=${option.value_template}
               ></knx-expose-template-preview>
@@ -507,7 +600,7 @@ export class KNXCreateExpose extends LitElement {
               .value=${option.cooldown}
               .validationErrors=${extractValidationErrors(optionErrors, "cooldown")}
               .localizeFunction=${this._backendLocalize}
-              @value-changed=${this._updateExposeAtIndex}
+              @value-changed=${this._updateExposeOptionAtIndex}
             ></knx-selector-row>
             <knx-selector-row
               data-idx=${idx}
@@ -517,7 +610,7 @@ export class KNXCreateExpose extends LitElement {
               .value=${option.periodic_send}
               .validationErrors=${extractValidationErrors(optionErrors, "periodic_send")}
               .localizeFunction=${this._backendLocalize}
-              @value-changed=${this._updateExposeAtIndex}
+              @value-changed=${this._updateExposeOptionAtIndex}
             ></knx-selector-row>
             <knx-selector-row
               data-idx=${idx}
@@ -527,7 +620,7 @@ export class KNXCreateExpose extends LitElement {
               .value=${option.respond_to_read}
               .validationErrors=${extractValidationErrors(optionErrors, "respond_to_read")}
               .localizeFunction=${this._backendLocalize}
-              @value-changed=${this._updateExposeAtIndex}
+              @value-changed=${this._updateExposeOptionAtIndex}
             ></knx-selector-row>
           </ha-expansion-panel>
         </div>
@@ -535,8 +628,11 @@ export class KNXCreateExpose extends LitElement {
     `;
   }
 
-  private _getExposeOptionValidationErrors(idx: number): ErrorDescription[] | undefined {
-    const optionErrors = extractValidationErrors(this._validationErrors, "options");
+  private _getExposeOptionValidationErrorsForIndex(
+    errors: ErrorDescription[] | undefined,
+    idx: number,
+  ): ErrorDescription[] | undefined {
+    const optionErrors = extractValidationErrors(errors, "options");
     return optionErrors ? extractValidationErrors(optionErrors, String(idx)) : undefined;
   }
 
@@ -548,23 +644,23 @@ export class KNXCreateExpose extends LitElement {
   }
 
   private _addExpose() {
-    this._options = [...this._options, { ga: {} }];
+    this._config = { ...this._config, options: [...this._config.options, { ga: {} }] };
   }
 
   private _removeExpose(ev: Event) {
     ev.preventDefault();
     ev.stopPropagation();
     const idx = parseInt((ev.currentTarget as HTMLElement).dataset.idx ?? "0");
-    this._options = this._options.filter((_, i) => i !== idx);
+    this._config = { ...this._config, options: this._config.options.filter((_, i) => i !== idx) };
     if (this._validationErrors) this._validate();
   }
 
-  private _updateExposeAtIndex(ev: CustomEvent<{ value: unknown }>) {
+  private _updateExposeOptionAtIndex(ev: CustomEvent<{ value: unknown }>) {
     const target = ev.currentTarget as HTMLElement & { key?: string; selector?: KnxHaSelector };
     const idx = parseInt(target.dataset.idx ?? "0");
     const key = target.key;
     if (!key) return;
-    const newOptions = [...this._options];
+    const newOptions = [...this._config.options];
     const nextItem: Record<string, any> = {
       ...newOptions[idx],
       ga: { ...(newOptions[idx].ga ?? {}) },
@@ -575,24 +671,29 @@ export class KNXCreateExpose extends LitElement {
       typeof target.selector?.selector === "object" &&
       "duration" in target.selector.selector
     ) {
+      const duration = value as {
+        hours?: number;
+        minutes?: number;
+        seconds?: number;
+        milliseconds?: number;
+      };
       // convert duration object to seconds for storage
       value =
-        (value.hours ?? 0) * 3600 +
-        (value.minutes ?? 0) * 60 +
-        (value.seconds ?? 0) +
-        (value.milliseconds ?? 0) / 1000;
+        (duration.hours ?? 0) * 3600 +
+        (duration.minutes ?? 0) * 60 +
+        (duration.seconds ?? 0) +
+        (duration.milliseconds ?? 0) / 1000;
     }
     setNestedValue(nextItem, key, value, logger);
     newOptions[idx] = nextItem as ExposeOption;
-    this._options = newOptions;
-    logger.debug("Updated expose item", idx, key, value, "new config:", this._options);
+    this._config = { ...this._config, options: newOptions };
+    logger.debug("Updated expose item", idx, key, value, "new config:", this._config);
     if (this._validationErrors) this._validate();
   }
 
   private _validate = throttle(() => {
     if (!this._entityId) return;
-    const config: ExposeConfigData = { entity_id: this._entityId, options: this._options };
-    validateExposeConfig(this.hass, config)
+    validateExposeConfig(this.hass, this._entityId, this._config)
       .then((result) => this._handleResult(result, false))
       .catch((err) => {
         logger.error("validateExposeConfig", err);
@@ -603,10 +704,9 @@ export class KNXCreateExpose extends LitElement {
   private async _save(ev: Event) {
     ev.stopPropagation();
     if (!this._entityId) return;
-    const config: ExposeConfigData = { entity_id: this._entityId, options: this._options };
     try {
-      logger.debug("Saving expose config", config);
-      const result = await updateExpose(this.hass, config);
+      logger.debug("Saving expose config", this._config);
+      const result = await updateExpose(this.hass, this._entityId, this._config);
       if (this._handleResult(result, true)) return;
       logger.debug("Successfully saved expose", this._entityId);
       this._exposeGroupsCtx?.reload();
@@ -678,10 +778,9 @@ export class KNXCreateExpose extends LitElement {
       gap: 16px;
     }
 
-    .config-layout.wide .entity-column {
+    .config-layout.wide .entity-info-sticky {
       position: sticky;
       top: 16px;
-      align-self: start;
     }
 
     .panel-content {
@@ -766,12 +865,35 @@ export class KNXCreateExpose extends LitElement {
       justify-content: center;
     }
 
+    .notes-fab {
+      position: fixed;
+      left: max(16px, var(--safe-area-inset-left));
+      bottom: calc(16px + var(--safe-area-inset-bottom));
+      z-index: 6;
+      --mdc-theme-secondary: var(--state-inactive-color) !important;
+    }
+
     ha-alert {
       display: block;
 
       & summary {
         padding: 10px;
       }
+    }
+
+    ha-card .card-content ha-textarea {
+      display: block;
+      width: 100%;
+    }
+
+    .notes-textarea-dialog {
+      display: block;
+      width: 100%;
+      max-height: 75vh;
+    }
+
+    .notes-card {
+      margin-top: 16px;
     }
   `;
 }
