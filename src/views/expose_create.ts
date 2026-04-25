@@ -1,4 +1,4 @@
-import { mdiDelete, mdiPlus, mdiFloppy } from "@mdi/js";
+import { mdiDelete, mdiFileDocumentEdit, mdiPlus, mdiFloppy } from "@mdi/js";
 import type { TemplateResult, PropertyValues } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { consume } from "@lit/context";
@@ -12,7 +12,9 @@ import "@ha/layouts/hass-subpage";
 import "@ha/components/ha-alert";
 import "@ha/components/ha-button";
 import "@ha/components/ha-card";
+import "@ha/components/ha-adaptive-dialog";
 import "@ha/components/ha-expansion-panel";
+import "@ha/components/ha-textarea";
 import "@ha/components/ha-fab";
 import "@ha/components/ha-icon-button";
 import "@ha/components/ha-state-icon";
@@ -134,6 +136,8 @@ export class KNXCreateExpose extends LitElement {
   @state() private _validationBaseError?: string;
 
   @state() private _showRawValues = false;
+
+  @state() private _showNotesDialog = false;
 
   @state()
   @consume({ context: knxProjectContext, subscribe: true })
@@ -299,8 +303,12 @@ export class KNXCreateExpose extends LitElement {
           ? this.hass.localize("component.knx.config_panel.expose.create.title")
           : `${this.hass.localize("ui.common.edit")}: ${this._entityId}`}
       >
+        ${this.narrow ? this._renderNotesDialog() : nothing}
         <div class="content config-layout ${this.narrow ? "" : "wide"}">
-          <div class="entity-column">${this._renderEntityInfo()}</div>
+          <div class="entity-column">
+            <div class="entity-info-sticky">${this._renderEntityInfo()}</div>
+            ${!this.narrow ? this._renderNotesCard() : nothing}
+          </div>
           <div class="config-column">
             ${this._renderConfigTask()}
             ${this._validationBaseError
@@ -333,6 +341,13 @@ export class KNXCreateExpose extends LitElement {
         >
           <ha-svg-icon slot="icon" .path=${create ? mdiPlus : mdiFloppy}></ha-svg-icon>
         </ha-fab>
+        ${this.narrow && this._entityId
+          ? html`
+              <ha-fab class="notes-fab" .label=${"Notes"} extended @click=${this._openNotesDialog}>
+                <ha-svg-icon slot="icon" .path=${mdiFileDocumentEdit}></ha-svg-icon>
+              </ha-fab>
+            `
+          : nothing}
       </hass-subpage>
     `;
   }
@@ -404,6 +419,70 @@ export class KNXCreateExpose extends LitElement {
 
   private _showRawValuesChanged(ev: Event) {
     this._showRawValues = (ev.currentTarget as HTMLInputElement).checked;
+  }
+
+  private _renderNotesCard(): TemplateResult {
+    return html`
+      <ha-card outlined class="notes-card">
+        <div class="card-header">
+          ${this.hass.localize("component.knx.config_panel.expose.create.notes.label")}
+        </div>
+        <div class="card-content">
+          <ha-textarea
+            .placeholder=${this.hass.localize(
+              "component.knx.config_panel.expose.create.notes.placeholder",
+            )}
+            .rows=${this._getNotesRows()}
+            .value=${this._config.notes ?? ""}
+            @input=${this._updateNotes}
+          ></ha-textarea>
+        </div>
+      </ha-card>
+    `;
+  }
+
+  private _renderNotesDialog(): TemplateResult {
+    return html`
+      <ha-adaptive-dialog
+        .hass=${this.hass}
+        .open=${this._showNotesDialog}
+        @closed=${this._closeNotesDialog}
+        .headerTitle=${this.hass.localize("component.knx.config_panel.expose.create.notes.label")}
+      >
+        <ha-textarea
+          .rows=${this._getNotesRows()}
+          class="notes-textarea-dialog"
+          .placeholder=${this.hass.localize(
+            "component.knx.config_panel.expose.create.notes.placeholder",
+          )}
+          .value=${this._config.notes ?? ""}
+          @input=${this._updateNotes}
+        ></ha-textarea>
+      </ha-adaptive-dialog>
+    `;
+  }
+
+  private _getNotesRows(): number {
+    const notes = this._config.notes ?? "";
+    const newlineCount = (notes.match(/\n/g) ?? []).length;
+    const softWrapLines = Math.ceil(notes.length / 100);
+    return Math.max(4, newlineCount + softWrapLines + 1);
+  }
+
+  private _updateNotes(ev: Event) {
+    const textarea = ev.currentTarget as { value?: string } | null;
+    const value = textarea?.value ?? "";
+    const config = { ...this._config };
+    setNestedValue(config, "notes", value || undefined, logger);
+    this._config = config as ExposeConfigData;
+  }
+
+  private _openNotesDialog() {
+    this._showNotesDialog = true;
+  }
+
+  private _closeNotesDialog() {
+    this._showNotesDialog = false;
   }
 
   private _toRawValueString(value: unknown): string {
@@ -695,9 +774,11 @@ export class KNXCreateExpose extends LitElement {
     }
 
     .config-layout.wide .entity-column {
+    }
+
+    .config-layout.wide .entity-info-sticky {
       position: sticky;
       top: 16px;
-      align-self: start;
     }
 
     .panel-content {
@@ -782,12 +863,35 @@ export class KNXCreateExpose extends LitElement {
       justify-content: center;
     }
 
+    .notes-fab {
+      position: fixed;
+      left: max(16px, var(--safe-area-inset-left));
+      bottom: calc(16px + var(--safe-area-inset-bottom));
+      z-index: 6;
+      --mdc-theme-secondary: var(--state-inactive-color) !important;
+    }
+
     ha-alert {
       display: block;
 
       & summary {
         padding: 10px;
       }
+    }
+
+    ha-card .card-content ha-textarea {
+      display: block;
+      width: 100%;
+    }
+
+    .notes-textarea-dialog {
+      display: block;
+      width: 100%;
+      max-height: 75vh;
+    }
+
+    .notes-card {
+      margin-top: 16px;
     }
   `;
 }
