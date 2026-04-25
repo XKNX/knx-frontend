@@ -869,12 +869,19 @@ export class KNXGroupMonitor extends LitElement {
    * @returns The complete template for the group monitor interface
    */
   protected render(): TemplateResult {
-    const activeFilters = Object.values(this.controller.filters).filter(
+    let activeFilters = Object.values(this.controller.filters).filter(
       (f) => Array.isArray(f) && f.length,
     ).length;
 
+    if (
+      activeFilters > 0 &&
+      (this.controller.timeDeltaBefore > 0 || this.controller.timeDeltaAfter > 0)
+    ) {
+      activeFilters++;
+    }
+
     // Get filtered data once to avoid update loops
-    const { filteredTelegrams, distinctValues } = this._getFilteredData();
+    const { filteredTelegrams, distinctValues, timeDeltaAddedCount } = this._getFilteredData();
 
     return html`
       <hass-tabs-subpage-data-table
@@ -1078,9 +1085,11 @@ export class KNXGroupMonitor extends LitElement {
         <!-- Time-Delta Context Filter -->
         <knx-time-delta-filter
           slot="filter-pane"
+          .hass=${this.hass}
           .knx=${this.knx}
           .deltaBefore=${this.controller.timeDeltaBefore}
           .deltaAfter=${this.controller.timeDeltaAfter}
+          .addedCount=${timeDeltaAddedCount || 0}
           .disabled=${!this.controller.hasActiveListFilters}
           .expanded=${this.controller.expandedFilter === "timedelta"}
           @time-delta-changed=${this._handleTimeDeltaChanged}

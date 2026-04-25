@@ -12,10 +12,12 @@
 import type { TemplateResult } from "lit";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
+import { mdiFilterVariantRemove } from "@mdi/js";
 
-import "@ha/components/ha-expansion-panel";
-import "@ha/components/ha-textfield";
+import "@ha/components/ha-icon-button";
+import "@ha/components/ha-selector/ha-selector-number";
 import { fireEvent } from "@ha/common/dom/fire_event";
+import type { HomeAssistant } from "@ha/types";
 
 import "../../flex-content-expansion-panel";
 import type { KNX } from "../../../types/knx";
@@ -44,6 +46,8 @@ export interface TimeDeltaExpandedChangedEvent {
 
 @customElement("knx-time-delta-filter")
 export class KnxTimeDeltaFilter extends LitElement {
+  @property({ attribute: false }) public hass!: HomeAssistant;
+
   /**
    * KNX integration instance providing localization
    */
@@ -65,6 +69,11 @@ export class KnxTimeDeltaFilter extends LitElement {
   @property({ type: Number, attribute: "delta-after" }) public deltaAfter = 0;
 
   /**
+   * Number of telegrams added by this filter
+   */
+  @property({ type: Number, attribute: "added-count" }) public addedCount = 0;
+
+  /**
    * Whether the filter is disabled (no other filters active)
    */
   @property({ type: Boolean }) public disabled = false;
@@ -78,20 +87,28 @@ export class KnxTimeDeltaFilter extends LitElement {
     fireEvent(this, "expanded-changed", { expanded: this.expanded });
   }
 
-  private _handleBeforeInput(ev: InputEvent): void {
-    const target = ev.target as HTMLInputElement;
-    const value = Math.max(0, Math.floor(Number(target.value) || 0));
+  private _handleBeforeInput(ev: CustomEvent): void {
+    const value = Math.max(0, Math.floor(Number(ev.detail.value) || 0));
     if (value !== this.deltaBefore) {
       this.deltaBefore = value;
       this._fireTimeDeltaChanged();
     }
   }
 
-  private _handleAfterInput(ev: InputEvent): void {
-    const target = ev.target as HTMLInputElement;
-    const value = Math.max(0, Math.floor(Number(target.value) || 0));
+  private _handleAfterInput(ev: CustomEvent): void {
+    const value = Math.max(0, Math.floor(Number(ev.detail.value) || 0));
     if (value !== this.deltaAfter) {
       this.deltaAfter = value;
+      this._fireTimeDeltaChanged();
+    }
+  }
+
+  private _handleClearFiltersButtonClick(ev: MouseEvent): void {
+    ev.stopPropagation();
+    ev.preventDefault();
+    if (this.deltaBefore > 0 || this.deltaAfter > 0) {
+      this.deltaBefore = 0;
+      this.deltaAfter = 0;
       this._fireTimeDeltaChanged();
     }
   }
@@ -120,13 +137,42 @@ export class KnxTimeDeltaFilter extends LitElement {
         <div slot="header" class="header">
           <span class="title">
             ${headerText}
-            ${hasValues && !this.disabled ? html`<div class="badge">●</div>` : nothing}
+            ${hasValues && !this.disabled ? html`<div class="badge">1</div>` : nothing}
           </span>
+          <div class="controls">
+            ${hasValues && !this.disabled
+              ? html`
+                  <ha-icon-button
+                    .path=${mdiFilterVariantRemove}
+                    @click=${this._handleClearFiltersButtonClick}
+                    .title=${this.knx.localize("knx_list_filter_clear")}
+                  ></ha-icon-button>
+                `
+              : nothing}
+          </div>
         </div>
 
         ${this.expanded
           ? html`
               <div class="filter-content">
+                ${hasValues && !this.disabled
+                  ? html`
+                      <div class="summary-item">
+                        <div class="summary-text">
+                          <div class="summary-primary">
+                            <span class="summary-label">
+                              ${this.knx.localize("group_monitor_time_delta_summary", {
+                                before: this.deltaBefore,
+                                after: this.deltaAfter,
+                              })}
+                            </span>
+                            <span class="summary-badge">${this.addedCount}</span>
+                          </div>
+                        </div>
+                      </div>
+                    `
+                  : nothing}
+
                 <p class="description">
                   ${this.knx.localize("group_monitor_time_delta_description")}
                 </p>
@@ -139,40 +185,50 @@ export class KnxTimeDeltaFilter extends LitElement {
                     `
                   : html`
                       <div class="input-row">
-                        <label class="input-label">
+                        <div class="input-label" aria-hidden="true">
                           ${this.knx.localize("group_monitor_time_delta_before")}
-                        </label>
+                        </div>
                         <div class="input-wrapper">
-                          <ha-textfield
-                            type="number"
-                            .value=${this.deltaBefore.toString()}
-                            .placeholder=${this.knx.localize(
-                              "group_monitor_time_delta_placeholder",
-                            )}
-                            min="0"
+                          <ha-selector-number
+                            id="delta-before"
+                            .hass=${this.hass}
+                            .value=${this.deltaBefore}
                             .disabled=${this.disabled}
-                            @change=${this._handleBeforeInput}
-                            suffix="ms"
-                          ></ha-textfield>
+                            .label=${this.knx.localize("group_monitor_time_delta_before")}
+                            .selector=${{
+                              number: {
+                                min: 0,
+                                step: 10,
+                                mode: "box",
+                                unit_of_measurement: "ms",
+                              },
+                            }}
+                            @value-changed=${this._handleBeforeInput}
+                          ></ha-selector-number>
                         </div>
                       </div>
 
                       <div class="input-row">
-                        <label class="input-label">
+                        <div class="input-label" aria-hidden="true">
                           ${this.knx.localize("group_monitor_time_delta_after")}
-                        </label>
+                        </div>
                         <div class="input-wrapper">
-                          <ha-textfield
-                            type="number"
-                            .value=${this.deltaAfter.toString()}
-                            .placeholder=${this.knx.localize(
-                              "group_monitor_time_delta_placeholder",
-                            )}
-                            min="0"
+                          <ha-selector-number
+                            id="delta-after"
+                            .hass=${this.hass}
+                            .value=${this.deltaAfter}
                             .disabled=${this.disabled}
-                            @change=${this._handleAfterInput}
-                            suffix="ms"
-                          ></ha-textfield>
+                            .label=${this.knx.localize("group_monitor_time_delta_after")}
+                            .selector=${{
+                              number: {
+                                min: 0,
+                                step: 10,
+                                mode: "box",
+                                unit_of_measurement: "ms",
+                              },
+                            }}
+                            @value-changed=${this._handleAfterInput}
+                          ></ha-selector-number>
                         </div>
                       </div>
                     `}
@@ -221,8 +277,15 @@ export class KnxTimeDeltaFilter extends LitElement {
       align-items: center;
       justify-content: center;
       margin-left: 8px;
-      font-size: 10px;
-      color: var(--primary-color);
+      min-width: 20px;
+      height: 20px;
+      box-sizing: border-box;
+      border-radius: 50%;
+      font-weight: 500;
+      background-color: var(--primary-color);
+      color: var(--text-primary-color, white);
+      font-size: 12px;
+      padding: 0 4px;
     }
 
     .filter-content {
@@ -269,8 +332,62 @@ export class KnxTimeDeltaFilter extends LitElement {
       gap: 8px;
     }
 
-    ha-textfield {
+    ha-selector-number {
       flex: 1;
+      width: 100%;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+    }
+
+    .summary-item {
+      display: flex;
+      align-items: center;
+      height: 48px;
+      padding: 0 16px;
+      margin: 0 -16px 8px -16px;
+      background-color: var(--mdc-theme-surface-variant, rgba(var(--rgb-primary-color), 0.06));
+    }
+
+    .summary-text {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 0;
+      line-height: normal;
+    }
+
+    .summary-primary {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      gap: 8px;
+    }
+
+    .summary-label {
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    .summary-badge {
+      display: inline-flex;
+      background-color: rgba(var(--rgb-primary-color), 0.15);
+      color: var(--primary-color);
+      font-weight: 500;
+      font-size: 0.75em;
+      padding: 1px 6px;
+      border-radius: 10px;
+      min-width: 20px;
+      height: 16px;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      flex-shrink: 0;
     }
   `;
 }

@@ -44,6 +44,7 @@ export type DistinctValues = Record<FilterField, Record<string, DistinctValueInf
 export interface FilteredTelegramsResult {
   filteredTelegrams: TelegramRow[];
   distinctValues: DistinctValues;
+  timeDeltaAddedCount?: number;
 }
 
 /**
@@ -222,17 +223,6 @@ export class GroupMonitorController implements ReactiveController {
   }
 
   /**
-   * Whether the time-delta filter is active
-   * Only active when at least one list-based filter is set AND a delta > 0
-   */
-  public get isTimeDeltaActive(): boolean {
-    const hasListFilters = Object.values(this._filters).some(
-      (f) => Array.isArray(f) && f.length > 0,
-    );
-    return hasListFilters && (this._timeDeltaBefore > 0 || this._timeDeltaAfter > 0);
-  }
-
-  /**
    * Whether any list-based filters are active
    * Used by the UI to decide whether to disable the time-delta inputs
    */
@@ -299,6 +289,8 @@ export class GroupMonitorController implements ReactiveController {
         timeDeltaBefore || 0,
         timeDeltaAfter || 0,
       );
+
+      const timeDeltaAddedCount = filteredTelegrams.length - matchingTelegrams.length;
 
       // Sort telegrams if a sort column and direction are specified
       if (sortColumn && sortDirection) {
@@ -407,6 +399,7 @@ export class GroupMonitorController implements ReactiveController {
       return {
         filteredTelegrams,
         distinctValues: distinctValuesWithFilteredCounts,
+        timeDeltaAddedCount,
       };
     },
   );
@@ -447,6 +440,14 @@ export class GroupMonitorController implements ReactiveController {
       this._filters = { ...this._filters, [field]: [...currentFilters, value] };
     }
 
+    if (!this.hasActiveListFilters) {
+      if (this._timeDeltaBefore > 0 || this._timeDeltaAfter > 0) {
+        this._timeDeltaBefore = 0;
+        this._timeDeltaAfter = 0;
+        this._bufferVersion++;
+      }
+    }
+
     this._updateUrlFromFilters(route);
     this._cleanupUnusedFilterValues();
 
@@ -458,6 +459,15 @@ export class GroupMonitorController implements ReactiveController {
    */
   public setFilterFieldValue(field: string, value: string[], route?: Route): void {
     this._filters = { ...this._filters, [field]: value };
+
+    if (!this.hasActiveListFilters) {
+      if (this._timeDeltaBefore > 0 || this._timeDeltaAfter > 0) {
+        this._timeDeltaBefore = 0;
+        this._timeDeltaAfter = 0;
+        this._bufferVersion++;
+      }
+    }
+
     this._updateUrlFromFilters(route);
     this._cleanupUnusedFilterValues();
 
@@ -481,8 +491,15 @@ export class GroupMonitorController implements ReactiveController {
    * Updates time-delta values and persists to URL
    */
   public setTimeDelta(before: number, after: number, route?: Route): void {
-    this._timeDeltaBefore = Math.max(0, Math.floor(before));
-    this._timeDeltaAfter = Math.max(0, Math.floor(after));
+    const newBefore = Math.max(0, Math.floor(before));
+    const newAfter = Math.max(0, Math.floor(after));
+
+    if (this._timeDeltaBefore === newBefore && this._timeDeltaAfter === newAfter) {
+      return;
+    }
+
+    this._timeDeltaBefore = newBefore;
+    this._timeDeltaAfter = newAfter;
     this._bufferVersion++;
     this._updateUrlFromFilters(route);
     this.host.requestUpdate();
@@ -918,12 +935,13 @@ export class GroupMonitorController implements ReactiveController {
       }
     });
 
-    // Persist time-delta values in URL
-    if (this._timeDeltaBefore > 0) {
-      params.set("timedelta_before", this._timeDeltaBefore.toString());
-    }
-    if (this._timeDeltaAfter > 0) {
-      params.set("timedelta_after", this._timeDeltaAfter.toString());
+    if (this.hasActiveListFilters) {
+      if (this._timeDeltaBefore > 0) {
+        params.set("timedelta_before", this._timeDeltaBefore.toString());
+      }
+      if (this._timeDeltaAfter > 0) {
+        params.set("timedelta_after", this._timeDeltaAfter.toString());
+      }
     }
 
     const newPath = params.toString()
@@ -945,16 +963,18 @@ export class GroupMonitorController implements ReactiveController {
     const timeDeltaBefore = searchParams.get("timedelta_before");
     const timeDeltaAfter = searchParams.get("timedelta_after");
 
-    // Restore time-delta values from URL
+    if (!source && !destination && !direction && !telegramtype) {
+      this._timeDeltaBefore = 0;
+      this._timeDeltaAfter = 0;
+      return;
+    }
+
+    // Restore time-delta values from URL only if list filters exist
     if (timeDeltaBefore) {
       this._timeDeltaBefore = Math.max(0, Math.floor(Number(timeDeltaBefore) || 0));
     }
     if (timeDeltaAfter) {
       this._timeDeltaAfter = Math.max(0, Math.floor(Number(timeDeltaAfter) || 0));
-    }
-
-    if (!source && !destination && !direction && !telegramtype) {
-      return;
     }
 
     this._filters = {
