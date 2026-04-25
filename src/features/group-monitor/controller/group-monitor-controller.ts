@@ -222,17 +222,6 @@ export class GroupMonitorController implements ReactiveController {
   }
 
   /**
-   * Whether the time-delta filter is active
-   * Only active when at least one list-based filter is set AND a delta > 0
-   */
-  public get isTimeDeltaActive(): boolean {
-    const hasListFilters = Object.values(this._filters).some(
-      (f) => Array.isArray(f) && f.length > 0,
-    );
-    return hasListFilters && (this._timeDeltaBefore > 0 || this._timeDeltaAfter > 0);
-  }
-
-  /**
    * Whether any list-based filters are active
    * Used by the UI to decide whether to disable the time-delta inputs
    */
@@ -447,6 +436,14 @@ export class GroupMonitorController implements ReactiveController {
       this._filters = { ...this._filters, [field]: [...currentFilters, value] };
     }
 
+    if (!this.hasActiveListFilters) {
+      if (this._timeDeltaBefore > 0 || this._timeDeltaAfter > 0) {
+        this._timeDeltaBefore = 0;
+        this._timeDeltaAfter = 0;
+        this._bufferVersion++;
+      }
+    }
+
     this._updateUrlFromFilters(route);
     this._cleanupUnusedFilterValues();
 
@@ -458,6 +455,15 @@ export class GroupMonitorController implements ReactiveController {
    */
   public setFilterFieldValue(field: string, value: string[], route?: Route): void {
     this._filters = { ...this._filters, [field]: value };
+
+    if (!this.hasActiveListFilters) {
+      if (this._timeDeltaBefore > 0 || this._timeDeltaAfter > 0) {
+        this._timeDeltaBefore = 0;
+        this._timeDeltaAfter = 0;
+        this._bufferVersion++;
+      }
+    }
+
     this._updateUrlFromFilters(route);
     this._cleanupUnusedFilterValues();
 
@@ -481,8 +487,15 @@ export class GroupMonitorController implements ReactiveController {
    * Updates time-delta values and persists to URL
    */
   public setTimeDelta(before: number, after: number, route?: Route): void {
-    this._timeDeltaBefore = Math.max(0, Math.floor(before));
-    this._timeDeltaAfter = Math.max(0, Math.floor(after));
+    const newBefore = Math.max(0, Math.floor(before));
+    const newAfter = Math.max(0, Math.floor(after));
+
+    if (this._timeDeltaBefore === newBefore && this._timeDeltaAfter === newAfter) {
+      return;
+    }
+
+    this._timeDeltaBefore = newBefore;
+    this._timeDeltaAfter = newAfter;
     this._bufferVersion++;
     this._updateUrlFromFilters(route);
     this.host.requestUpdate();

@@ -1,5 +1,4 @@
-import { describe, it, expect } from "vitest";
-import { TelegramRow } from "../types/telegram-row";
+import { describe, it, expect, beforeEach } from "vitest";
 import type { TelegramDict } from "../../../types/websocket";
 import { GroupMonitorController } from "./group-monitor-controller";
 
@@ -25,218 +24,194 @@ function createMockTelegram(overrides: Partial<TelegramDict> = {}): TelegramDict
   };
 }
 
-/**
- * Helper to create TelegramRow with specific timestamp, source and destination
- */
-function createTelegramRow(
-  timestamp: string,
-  source = "1.2.3",
-  destination = "1/2/3",
-  telegramtype = "GroupValueWrite",
-  direction = "Outgoing",
-): TelegramRow {
-  const mockData = createMockTelegram({
-    timestamp,
-    source,
-    destination,
-    telegramtype,
-    direction,
-  });
-  return new TelegramRow(mockData);
-}
-
-/**
- * Test the time-delta expansion logic directly.
- * We access the private method via casting to any, since
- * it encapsulates the core algorithm we want to verify.
- */
 describe("GroupMonitorController - Time-Delta Expansion", () => {
-  // Create a controller instance to test the private method
-  // We need a minimal host mock
-  const mockHost = {
-    addController: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
-    removeController: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
-    requestUpdate: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
-    updateComplete: Promise.resolve(true),
+  let controller: GroupMonitorController;
+
+  beforeEach(() => {
+    const mockHost = {
+      addController: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
+      removeController: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
+      requestUpdate: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
+      updateComplete: Promise.resolve(true),
+    };
+    controller = new GroupMonitorController(mockHost as any);
+  });
+
+  const injectTelegrams = (telegrams: TelegramDict[]) => {
+    for (const t of telegrams) {
+      // We simulate incoming websocket messages. While this uses 'as any',
+      // it avoids coupling the tests to the private expansion algorithm signature.
+      (controller as any)._handleIncomingTelegram(t);
+    }
   };
 
-  const controller = new GroupMonitorController(mockHost as any);
-  const applyTimeDeltaExpansion = (controller as any)._applyTimeDeltaExpansion.bind(controller);
+  const getFiltered = () => controller.getFilteredTelegramsAndDistinctValues().filteredTelegrams;
 
   describe("No delta (passthrough)", () => {
     it("should return matching telegrams unchanged when both deltas are 0", () => {
-      const t1 = createTelegramRow("2024-01-01T10:00:00.000Z", "1.2.1", "1/2/1");
-      const t2 = createTelegramRow("2024-01-01T10:00:01.000Z", "1.2.2", "1/2/2");
-      const t3 = createTelegramRow("2024-01-01T10:00:02.000Z", "1.2.3", "1/2/3");
+      injectTelegrams([
+        createMockTelegram({ timestamp: "2024-01-01T10:00:00.000Z", source: "1.2.1" }),
+        createMockTelegram({ timestamp: "2024-01-01T10:00:01.000Z", source: "1.2.2" }),
+        createMockTelegram({ timestamp: "2024-01-01T10:00:02.000Z", source: "1.2.3" }),
+      ]);
 
-      const allTelegrams = [t1, t2, t3];
-      const matchingTelegrams = [t2];
+      controller.setFilterFieldValue("source", ["1.2.2"]);
+      controller.setTimeDelta(0, 0);
 
-      const result = applyTimeDeltaExpansion(matchingTelegrams, allTelegrams, 0, 0);
-      expect(result).toEqual([t2]);
+      const result = getFiltered();
+      expect(result).toHaveLength(1);
+      expect(result[0].sourceAddress).toBe("1.2.2");
     });
 
-    it("should return matching telegrams unchanged when matching is empty", () => {
-      const t1 = createTelegramRow("2024-01-01T10:00:00.000Z", "1.2.1", "1/2/1");
-      const result = applyTimeDeltaExpansion([], [t1], 500, 500);
+    it("should return empty array when matching is empty", () => {
+      injectTelegrams([
+        createMockTelegram({ timestamp: "2024-01-01T10:00:00.000Z", source: "1.2.1" }),
+      ]);
+
+      controller.setFilterFieldValue("source", ["9.9.9"]);
+      controller.setTimeDelta(500, 500);
+
+      const result = getFiltered();
       expect(result).toEqual([]);
     });
   });
 
   describe("Before delta only", () => {
     it("should include telegrams within the before window", () => {
-      // t1 at 10:00:00.000, t2 at 10:00:00.500, t3 at 10:00:01.000
-      const t1 = createTelegramRow("2024-01-01T10:00:00.000Z", "1.2.1", "1/2/1");
-      const t2 = createTelegramRow("2024-01-01T10:00:00.500Z", "1.2.2", "1/2/2");
-      const t3 = createTelegramRow("2024-01-01T10:00:01.000Z", "1.2.3", "1/2/3");
+      injectTelegrams([
+        createMockTelegram({ timestamp: "2024-01-01T10:00:00.000Z", source: "1.2.1" }), // t1
+        createMockTelegram({ timestamp: "2024-01-01T10:00:00.500Z", source: "1.2.2" }), // t2
+        createMockTelegram({ timestamp: "2024-01-01T10:00:01.000Z", source: "1.2.3" }), // t3
+      ]);
 
-      const allTelegrams = [t1, t2, t3];
-      const matchingTelegrams = [t3]; // Only t3 matches filters
-
+      // Only match t3
+      controller.setFilterFieldValue("source", ["1.2.3"]);
       // 600ms before t3 should include t2 (500ms before) but not t1 (1000ms before)
-      const result = applyTimeDeltaExpansion(matchingTelegrams, allTelegrams, 600, 0);
+      controller.setTimeDelta(600, 0);
+
+      const result = getFiltered();
       expect(result).toHaveLength(2);
-      expect(result).toContain(t2);
-      expect(result).toContain(t3);
+      expect(result.map((r) => r.sourceAddress).sort()).toEqual(["1.2.2", "1.2.3"]);
     });
 
     it("should not include telegrams outside the before window", () => {
-      const t1 = createTelegramRow("2024-01-01T10:00:00.000Z", "1.2.1", "1/2/1");
-      const t2 = createTelegramRow("2024-01-01T10:00:02.000Z", "1.2.2", "1/2/2");
+      injectTelegrams([
+        createMockTelegram({ timestamp: "2024-01-01T10:00:00.000Z", source: "1.2.1" }),
+        createMockTelegram({ timestamp: "2024-01-01T10:00:02.000Z", source: "1.2.2" }),
+      ]);
 
-      const allTelegrams = [t1, t2];
-      const matchingTelegrams = [t2];
-
+      controller.setFilterFieldValue("source", ["1.2.2"]);
       // 500ms before t2 should NOT include t1 (2000ms before)
-      const result = applyTimeDeltaExpansion(matchingTelegrams, allTelegrams, 500, 0);
+      controller.setTimeDelta(500, 0);
+
+      const result = getFiltered();
       expect(result).toHaveLength(1);
-      expect(result).toContain(t2);
+      expect(result[0].sourceAddress).toBe("1.2.2");
     });
   });
 
   describe("After delta only", () => {
     it("should include telegrams within the after window", () => {
-      const t1 = createTelegramRow("2024-01-01T10:00:00.000Z", "1.2.1", "1/2/1");
-      const t2 = createTelegramRow("2024-01-01T10:00:00.300Z", "1.2.2", "1/2/2");
-      const t3 = createTelegramRow("2024-01-01T10:00:02.000Z", "1.2.3", "1/2/3");
+      injectTelegrams([
+        createMockTelegram({ timestamp: "2024-01-01T10:00:00.000Z", source: "1.2.1" }), // t1
+        createMockTelegram({ timestamp: "2024-01-01T10:00:00.300Z", source: "1.2.2" }), // t2
+        createMockTelegram({ timestamp: "2024-01-01T10:00:02.000Z", source: "1.2.3" }), // t3
+      ]);
 
-      const allTelegrams = [t1, t2, t3];
-      const matchingTelegrams = [t1]; // Only t1 matches filters
-
+      controller.setFilterFieldValue("source", ["1.2.1"]);
       // 500ms after t1 should include t2 (300ms after) but not t3 (2000ms after)
-      const result = applyTimeDeltaExpansion(matchingTelegrams, allTelegrams, 0, 500);
+      controller.setTimeDelta(0, 500);
+
+      const result = getFiltered();
       expect(result).toHaveLength(2);
-      expect(result).toContain(t1);
-      expect(result).toContain(t2);
+      expect(result.map((r) => r.sourceAddress).sort()).toEqual(["1.2.1", "1.2.2"]);
     });
   });
 
   describe("Both before and after deltas", () => {
     it("should include telegrams in the full window around matching telegrams", () => {
-      const t1 = createTelegramRow("2024-01-01T10:00:00.000Z", "1.2.1", "1/2/1");
-      const t2 = createTelegramRow("2024-01-01T10:00:00.500Z", "1.2.2", "1/2/2");
-      const t3 = createTelegramRow("2024-01-01T10:00:01.000Z", "1.2.3", "1/2/3"); // Match
-      const t4 = createTelegramRow("2024-01-01T10:00:01.400Z", "1.2.4", "1/2/4");
-      const t5 = createTelegramRow("2024-01-01T10:00:03.000Z", "1.2.5", "1/2/5");
+      injectTelegrams([
+        createMockTelegram({ timestamp: "2024-01-01T10:00:00.000Z", source: "1.2.1" }), // t1 (ex)
+        createMockTelegram({ timestamp: "2024-01-01T10:00:00.500Z", source: "1.2.2" }), // t2 (inc)
+        createMockTelegram({ timestamp: "2024-01-01T10:00:01.000Z", source: "1.2.3" }), // t3 (match)
+        createMockTelegram({ timestamp: "2024-01-01T10:00:01.400Z", source: "1.2.4" }), // t4 (inc)
+        createMockTelegram({ timestamp: "2024-01-01T10:00:03.000Z", source: "1.2.5" }), // t5 (ex)
+      ]);
 
-      const allTelegrams = [t1, t2, t3, t4, t5];
-      const matchingTelegrams = [t3];
+      controller.setFilterFieldValue("source", ["1.2.3"]);
+      controller.setTimeDelta(600, 500);
 
-      // 600ms before and 500ms after t3 (10:00:01.000)
-      // Window: [10:00:00.400, 10:00:01.500]
-      // t2 at 10:00:00.500 → included (within before window)
-      // t3 at 10:00:01.000 → included (matching)
-      // t4 at 10:00:01.400 → included (within after window)
-      // t1 at 10:00:00.000 → excluded (1000ms before, outside 600ms window)
-      // t5 at 10:00:03.000 → excluded (2000ms after, outside 500ms window)
-      const result = applyTimeDeltaExpansion(matchingTelegrams, allTelegrams, 600, 500);
+      const result = getFiltered();
       expect(result).toHaveLength(3);
-      expect(result).toContain(t2);
-      expect(result).toContain(t3);
-      expect(result).toContain(t4);
-      expect(result).not.toContain(t1);
-      expect(result).not.toContain(t5);
+      expect(result.map((r) => r.sourceAddress).sort()).toEqual(["1.2.2", "1.2.3", "1.2.4"]);
     });
   });
 
   describe("Multiple matching telegrams with overlapping windows", () => {
     it("should deduplicate when windows overlap", () => {
-      const t1 = createTelegramRow("2024-01-01T10:00:00.000Z", "1.2.1", "1/2/1"); // Match
-      const t2 = createTelegramRow("2024-01-01T10:00:00.300Z", "1.2.2", "1/2/2"); // Context
-      const t3 = createTelegramRow("2024-01-01T10:00:00.600Z", "1.2.3", "1/2/3"); // Match
+      injectTelegrams([
+        createMockTelegram({ timestamp: "2024-01-01T10:00:00.000Z", source: "1.2.1" }), // Match
+        createMockTelegram({ timestamp: "2024-01-01T10:00:00.300Z", source: "1.2.2" }), // Context
+        createMockTelegram({ timestamp: "2024-01-01T10:00:00.600Z", source: "1.2.3" }), // Match
+      ]);
 
-      const allTelegrams = [t1, t2, t3];
-      const matchingTelegrams = [t1, t3];
+      controller.setFilterFieldValue("source", ["1.2.1", "1.2.3"]);
+      controller.setTimeDelta(400, 400);
 
-      // 400ms after t1 includes t2; 400ms before t3 includes t2
-      // t2 should only appear once in the result
-      const result = applyTimeDeltaExpansion(matchingTelegrams, allTelegrams, 400, 400);
+      const result = getFiltered();
       expect(result).toHaveLength(3);
-      expect(result[0]).toBe(t1);
-      expect(result[1]).toBe(t2);
-      expect(result[2]).toBe(t3);
+      expect(result.map((r) => r.sourceAddress).sort()).toEqual(["1.2.1", "1.2.2", "1.2.3"]);
     });
   });
 
   describe("Edge cases", () => {
     it("should return all telegrams when window covers entire buffer", () => {
-      const t1 = createTelegramRow("2024-01-01T10:00:00.000Z", "1.2.1", "1/2/1");
-      const t2 = createTelegramRow("2024-01-01T10:00:01.000Z", "1.2.2", "1/2/2");
-      const t3 = createTelegramRow("2024-01-01T10:00:02.000Z", "1.2.3", "1/2/3");
+      injectTelegrams([
+        createMockTelegram({ timestamp: "2024-01-01T10:00:00.000Z", source: "1.2.1" }),
+        createMockTelegram({ timestamp: "2024-01-01T10:00:01.000Z", source: "1.2.2" }),
+        createMockTelegram({ timestamp: "2024-01-01T10:00:02.000Z", source: "1.2.3" }),
+      ]);
 
-      const allTelegrams = [t1, t2, t3];
-      const matchingTelegrams = [t2];
+      controller.setFilterFieldValue("source", ["1.2.2"]);
+      controller.setTimeDelta(5000, 5000);
 
-      // 5000ms before and 5000ms after covers everything
-      const result = applyTimeDeltaExpansion(matchingTelegrams, allTelegrams, 5000, 5000);
+      const result = getFiltered();
       expect(result).toHaveLength(3);
     });
 
-    it("should preserve chronological order", () => {
-      const t1 = createTelegramRow("2024-01-01T10:00:00.000Z", "1.2.1", "1/2/1");
-      const t2 = createTelegramRow("2024-01-01T10:00:00.100Z", "1.2.2", "1/2/2");
-      const t3 = createTelegramRow("2024-01-01T10:00:00.200Z", "1.2.3", "1/2/3");
-      const t4 = createTelegramRow("2024-01-01T10:00:00.300Z", "1.2.4", "1/2/4");
+    it("should preserve chronological order when not sorting explicitly", () => {
+      controller.sortColumn = undefined;
 
-      const allTelegrams = [t1, t2, t3, t4];
-      const matchingTelegrams = [t3]; // Match t3
+      injectTelegrams([
+        createMockTelegram({ timestamp: "2024-01-01T10:00:00.000Z", source: "1.2.1" }),
+        createMockTelegram({ timestamp: "2024-01-01T10:00:00.100Z", source: "1.2.2" }),
+        createMockTelegram({ timestamp: "2024-01-01T10:00:00.200Z", source: "1.2.3" }),
+        createMockTelegram({ timestamp: "2024-01-01T10:00:00.300Z", source: "1.2.4" }),
+      ]);
 
-      const result = applyTimeDeltaExpansion(matchingTelegrams, allTelegrams, 150, 150);
-      // Window: [10:00:00.050, 10:00:00.350]
-      // Includes: t2 (100ms), t3 (200ms), t4 (300ms)
+      controller.setFilterFieldValue("source", ["1.2.3"]);
+      controller.setTimeDelta(150, 150);
+
+      const result = getFiltered();
       expect(result).toHaveLength(3);
-      expect(result[0]).toBe(t2);
-      expect(result[1]).toBe(t3);
-      expect(result[2]).toBe(t4);
-    });
-
-    it("should handle when all telegrams already match (skip expansion)", () => {
-      const t1 = createTelegramRow("2024-01-01T10:00:00.000Z", "1.2.1", "1/2/1");
-      const t2 = createTelegramRow("2024-01-01T10:00:01.000Z", "1.2.2", "1/2/2");
-
-      const allTelegrams = [t1, t2];
-      const matchingTelegrams = [t1, t2]; // All match
-
-      const result = applyTimeDeltaExpansion(matchingTelegrams, allTelegrams, 500, 500);
-      expect(result).toEqual(matchingTelegrams);
+      expect(result[0].sourceAddress).toBe("1.2.2");
+      expect(result[1].sourceAddress).toBe("1.2.3");
+      expect(result[2].sourceAddress).toBe("1.2.4");
     });
 
     it("should handle exact boundary inclusion (timestamp equals window edge)", () => {
-      const t1 = createTelegramRow("2024-01-01T10:00:00.000Z", "1.2.1", "1/2/1");
-      const t2 = createTelegramRow("2024-01-01T10:00:00.500Z", "1.2.2", "1/2/2"); // Match
-      const t3 = createTelegramRow("2024-01-01T10:00:01.000Z", "1.2.3", "1/2/3");
+      injectTelegrams([
+        createMockTelegram({ timestamp: "2024-01-01T10:00:00.000Z", source: "1.2.1" }), // Edge
+        createMockTelegram({ timestamp: "2024-01-01T10:00:00.500Z", source: "1.2.2" }), // Match
+        createMockTelegram({ timestamp: "2024-01-01T10:00:01.000Z", source: "1.2.3" }), // Edge
+      ]);
 
-      const allTelegrams = [t1, t2, t3];
-      const matchingTelegrams = [t2];
+      controller.setFilterFieldValue("source", ["1.2.2"]);
+      controller.setTimeDelta(500, 500);
 
-      // Exactly 500ms before and 500ms after
-      // t1 is exactly at the boundary (500ms before t2) → should be included
-      // t3 is exactly at the boundary (500ms after t2) → should be included
-      const result = applyTimeDeltaExpansion(matchingTelegrams, allTelegrams, 500, 500);
+      const result = getFiltered();
       expect(result).toHaveLength(3);
-      expect(result).toContain(t1);
-      expect(result).toContain(t2);
-      expect(result).toContain(t3);
+      expect(result.map((r) => r.sourceAddress).sort()).toEqual(["1.2.1", "1.2.2", "1.2.3"]);
     });
   });
 });

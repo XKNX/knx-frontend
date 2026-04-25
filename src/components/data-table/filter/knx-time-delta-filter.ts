@@ -13,7 +13,6 @@ import type { TemplateResult } from "lit";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 
-import "@ha/components/ha-expansion-panel";
 import "@ha/components/ha-textfield";
 import { fireEvent } from "@ha/common/dom/fire_event";
 
@@ -139,11 +138,12 @@ export class KnxTimeDeltaFilter extends LitElement {
                     `
                   : html`
                       <div class="input-row">
-                        <label class="input-label">
+                        <label class="input-label" for="delta-before">
                           ${this.knx.localize("group_monitor_time_delta_before")}
                         </label>
                         <div class="input-wrapper">
                           <ha-textfield
+                            id="delta-before"
                             type="number"
                             .value=${this.deltaBefore.toString()}
                             .placeholder=${this.knx.localize(
@@ -158,11 +158,12 @@ export class KnxTimeDeltaFilter extends LitElement {
                       </div>
 
                       <div class="input-row">
-                        <label class="input-label">
+                        <label class="input-label" for="delta-after">
                           ${this.knx.localize("group_monitor_time_delta_after")}
                         </label>
                         <div class="input-wrapper">
                           <ha-textfield
+                            id="delta-after"
                             type="number"
                             .value=${this.deltaAfter.toString()}
                             .placeholder=${this.knx.localize(

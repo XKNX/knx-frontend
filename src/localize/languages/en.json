@@ -115,8 +115,8 @@
   "expose_validation_error": "Validation error",
   "group_monitor_time_delta_title": "Time-Delta Context",
   "group_monitor_time_delta_description": "Include telegrams within a window around any filter-matching telegram, even if they don't match the filter.",
-  "group_monitor_time_delta_before": "- Before (MS)",
-  "group_monitor_time_delta_after": "+ After (MS)",
+  "group_monitor_time_delta_before": "- Before (ms)",
+  "group_monitor_time_delta_after": "+ After (ms)",
   "group_monitor_time_delta_placeholder": "0 = off",
   "group_monitor_time_delta_disabled": "Set other filters first to use time-delta context."
 }
