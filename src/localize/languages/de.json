@@ -79,6 +79,11 @@
   "telegram_filter_destination_sort_by_secondaryText": "Name",
   "telegram_filter_destination_sort_by_primaryText": "Zieladresse",
 
+  "telegram_filter_dpt_title": "DPT",
+  "telegram_filter_dpt_sort_by_primaryText": "Nummer",
+  "telegram_filter_dpt_sort_by_secondaryText": "Name",
+  "telegram_filter_dpt_sort_by_badge": "Anzahl",
+
   "telegram_filter_no_results": "Keine Ergebnisse gefunden",
   "telegram_filter_sort_by": "Sortieren nach:",
   "telegram_filter_sort_ascending_tooltip": "Aufsteigend sortiert",
@@ -111,5 +116,11 @@
   "knx_telegram_info_dialog_payload": "Daten",
   "expose_create_loading": "Expose-Konfiguration wird geladen.",
   "expose_create_load_error": "Fehler beim Laden der Expose-Konfiguration.",
-  "expose_validation_error": "Validierungsfehler"
+  "expose_validation_error": "Validierungsfehler",
+  "group_monitor_time_delta_title": "Zeitdelta-Kontext",
+  "group_monitor_time_delta_description": "Telegramme innerhalb eines Zeitfensters um ein filter-passendes Telegramm einbeziehen, auch wenn sie nicht dem Filter entsprechen.",
+  "group_monitor_time_delta_before": "- Vorher (MS)",
+  "group_monitor_time_delta_after": "+ Nachher (MS)",
+  "group_monitor_time_delta_placeholder": "0 = aus",
+  "group_monitor_time_delta_disabled": "Setze zuerst andere Filter, um den Zeitdelta-Kontext zu nutzen."
 }

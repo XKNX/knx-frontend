@@ -80,6 +80,11 @@
   "telegram_filter_destination_sort_by_badge": "Count",
   "telegram_filter_destination_sort_by_secondaryText": "Destination name",
 
+  "telegram_filter_dpt_title": "DPT",
+  "telegram_filter_dpt_sort_by_primaryText": "Number",
+  "telegram_filter_dpt_sort_by_secondaryText": "Name",
+  "telegram_filter_dpt_sort_by_badge": "Count",
+
   "telegram_filter_no_results": "No results found",
   "telegram_filter_sort_by": "Sort by:",
   "telegram_filter_sort_ascending_tooltip": "Sorted ascending",
@@ -112,5 +117,11 @@
   "knx_telegram_info_dialog_payload": "Payload",
   "expose_create_loading": "Loading expose configuration.",
   "expose_create_load_error": "Error loading expose configuration.",
-  "expose_validation_error": "Validation error"
+  "expose_validation_error": "Validation error",
+  "group_monitor_time_delta_title": "Time-Delta Context",
+  "group_monitor_time_delta_description": "Include telegrams within a window around any filter-matching telegram, even if they don't match the filter.",
+  "group_monitor_time_delta_before": "- Before (MS)",
+  "group_monitor_time_delta_after": "+ After (MS)",
+  "group_monitor_time_delta_placeholder": "0 = off",
+  "group_monitor_time_delta_disabled": "Set other filters first to use time-delta context."
 }
