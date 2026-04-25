@@ -778,9 +778,6 @@ export class KNXCreateExpose extends LitElement {
       gap: 16px;
     }
 
-    .config-layout.wide .entity-column {
-    }
-
     .config-layout.wide .entity-info-sticky {
       position: sticky;
       top: 16px;
