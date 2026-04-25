@@ -86,6 +86,11 @@ export class GroupMonitorController implements ReactiveController {
 
   private _connectionError: string | null = null;
 
+  // Time-delta context filter (milliseconds)
+  private _timeDeltaBefore = 0;
+
+  private _timeDeltaAfter = 0;
+
   // Filter data - only stores total counts, filtered counts computed on-the-fly
   private _distinctValues: DistinctValues = {
     source: {},
@@ -196,6 +201,34 @@ export class GroupMonitorController implements ReactiveController {
     return this._connectionError;
   }
 
+  public get timeDeltaBefore(): number {
+    return this._timeDeltaBefore;
+  }
+
+  public set timeDeltaBefore(value: number) {
+    this._timeDeltaBefore = Math.max(0, Math.floor(value));
+    this._bufferVersion++;
+    this.host.requestUpdate();
+  }
+
+  public get timeDeltaAfter(): number {
+    return this._timeDeltaAfter;
+  }
+
+  public set timeDeltaAfter(value: number) {
+    this._timeDeltaAfter = Math.max(0, Math.floor(value));
+    this._bufferVersion++;
+    this.host.requestUpdate();
+  }
+
+  /**
+   * Whether any list-based filters are active
+   * Used by the UI to decide whether to disable the time-delta inputs
+   */
+  public get hasActiveListFilters(): boolean {
+    return Object.values(this._filters).some((f) => Array.isArray(f) && f.length > 0);
+  }
+
   /**
    * Gets both filtered telegrams and distinct values in a single synchronized call
    */
@@ -207,6 +240,8 @@ export class GroupMonitorController implements ReactiveController {
       this._distinctValues,
       this._sortColumn,
       this._sortDirection,
+      this._timeDeltaBefore,
+      this._timeDeltaAfter,
     );
 
     // Check if filtered telegrams have changed and emit event if so
@@ -238,10 +273,20 @@ export class GroupMonitorController implements ReactiveController {
       distinctValues: DistinctValues,
       sortColumn?: string,
       sortDirection?: SortingDirection,
+      timeDeltaBefore?: number,
+      timeDeltaAfter?: number,
     ): FilteredTelegramsResult => {
       // Filter telegrams based on current filters
-      const filteredTelegrams = allTelegrams.filter((telegram) =>
+      const matchingTelegrams = allTelegrams.filter((telegram) =>
         this.matchesActiveFilters(telegram),
+      );
+
+      // Apply time-delta expansion if active
+      const filteredTelegrams = this._applyTimeDeltaExpansion(
+        matchingTelegrams,
+        allTelegrams,
+        timeDeltaBefore || 0,
+        timeDeltaAfter || 0,
       );
 
       // Sort telegrams if a sort column and direction are specified
@@ -391,6 +436,14 @@ export class GroupMonitorController implements ReactiveController {
       this._filters = { ...this._filters, [field]: [...currentFilters, value] };
     }
 
+    if (!this.hasActiveListFilters) {
+      if (this._timeDeltaBefore > 0 || this._timeDeltaAfter > 0) {
+        this._timeDeltaBefore = 0;
+        this._timeDeltaAfter = 0;
+        this._bufferVersion++;
+      }
+    }
+
     this._updateUrlFromFilters(route);
     this._cleanupUnusedFilterValues();
 
@@ -402,6 +455,15 @@ export class GroupMonitorController implements ReactiveController {
    */
   public setFilterFieldValue(field: string, value: string[], route?: Route): void {
     this._filters = { ...this._filters, [field]: value };
+
+    if (!this.hasActiveListFilters) {
+      if (this._timeDeltaBefore > 0 || this._timeDeltaAfter > 0) {
+        this._timeDeltaBefore = 0;
+        this._timeDeltaAfter = 0;
+        this._bufferVersion++;
+      }
+    }
+
     this._updateUrlFromFilters(route);
     this._cleanupUnusedFilterValues();
 
@@ -413,9 +475,29 @@ export class GroupMonitorController implements ReactiveController {
    */
   public clearFilters(route?: Route): void {
     this._filters = {};
+    this._timeDeltaBefore = 0;
+    this._timeDeltaAfter = 0;
     this._updateUrlFromFilters(route);
     this._cleanupUnusedFilterValues();
 
+    this.host.requestUpdate();
+  }
+
+  /**
+   * Updates time-delta values and persists to URL
+   */
+  public setTimeDelta(before: number, after: number, route?: Route): void {
+    const newBefore = Math.max(0, Math.floor(before));
+    const newAfter = Math.max(0, Math.floor(after));
+
+    if (this._timeDeltaBefore === newBefore && this._timeDeltaAfter === newAfter) {
+      return;
+    }
+
+    this._timeDeltaBefore = newBefore;
+    this._timeDeltaAfter = newAfter;
+    this._bufferVersion++;
+    this._updateUrlFromFilters(route);
     this.host.requestUpdate();
   }
 
@@ -516,6 +598,85 @@ export class GroupMonitorController implements ReactiveController {
       default:
         return null;
     }
+  }
+
+  /**
+   * Applies time-delta expansion to include context telegrams around matching ones.
+   * Uses binary search on the already-sorted allTelegrams array for O(n log n) performance.
+   *
+   * @param matchingTelegrams - Telegrams that match the active list filters
+   * @param allTelegrams - All telegrams in the buffer (sorted chronologically by timestamp)
+   * @param deltaBefore - Milliseconds before a matching telegram to include
+   * @param deltaAfter - Milliseconds after a matching telegram to include
+   * @returns Expanded array of telegrams (deduplicated, preserving original order)
+   */
+  private _applyTimeDeltaExpansion(
+    matchingTelegrams: TelegramRow[],
+    allTelegrams: readonly TelegramRow[],
+    deltaBefore: number,
+    deltaAfter: number,
+  ): TelegramRow[] {
+    // No delta active or no matching telegrams → return as-is
+    if ((deltaBefore <= 0 && deltaAfter <= 0) || matchingTelegrams.length === 0) {
+      return matchingTelegrams;
+    }
+
+    // If all telegrams match, no expansion needed
+    if (matchingTelegrams.length === allTelegrams.length) {
+      return matchingTelegrams;
+    }
+
+    // Collect indices into allTelegrams that should be included
+    const includedIndices = new Set<number>();
+
+    // Pre-extract timestamps as milliseconds for binary search
+    const timestamps = allTelegrams.map((t) => t.timestamp.getTime());
+
+    for (const match of matchingTelegrams) {
+      const matchTime = match.timestamp.getTime();
+      const windowStart = matchTime - deltaBefore;
+      const windowEnd = matchTime + deltaAfter;
+
+      // Binary search for lower bound (first telegram >= windowStart)
+      let lo = 0;
+      let hi = timestamps.length;
+      while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (timestamps[mid] < windowStart) {
+          lo = mid + 1;
+        } else {
+          hi = mid;
+        }
+      }
+      const startIdx = lo;
+
+      // Binary search for upper bound (first telegram > windowEnd)
+      lo = startIdx;
+      hi = timestamps.length;
+      while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (timestamps[mid] <= windowEnd) {
+          lo = mid + 1;
+        } else {
+          hi = mid;
+        }
+      }
+      const endIdx = lo;
+
+      // Mark all telegrams in the window
+      for (let i = startIdx; i < endIdx; i++) {
+        includedIndices.add(i);
+      }
+    }
+
+    // Build result preserving original order from allTelegrams
+    // Include: matching telegrams + context telegrams within windows
+    const result: TelegramRow[] = [];
+    for (const idx of Array.from(includedIndices).sort((a, b) => a - b)) {
+      result.push(allTelegrams[idx]);
+    }
+
+    return result;
   }
 
   /**
@@ -770,6 +931,14 @@ export class GroupMonitorController implements ReactiveController {
       }
     });
 
+    // Persist time-delta values in URL
+    if (this._timeDeltaBefore > 0) {
+      params.set("timedelta_before", this._timeDeltaBefore.toString());
+    }
+    if (this._timeDeltaAfter > 0) {
+      params.set("timedelta_after", this._timeDeltaAfter.toString());
+    }
+
     const newPath = params.toString()
       ? `${route.prefix}${route.path}?${params.toString()}`
       : `${route.prefix}${route.path}`;
@@ -786,6 +955,16 @@ export class GroupMonitorController implements ReactiveController {
     const destination = searchParams.get("destination");
     const direction = searchParams.get("direction");
     const telegramtype = searchParams.get("telegramtype");
+    const timeDeltaBefore = searchParams.get("timedelta_before");
+    const timeDeltaAfter = searchParams.get("timedelta_after");
+
+    // Restore time-delta values from URL
+    if (timeDeltaBefore) {
+      this._timeDeltaBefore = Math.max(0, Math.floor(Number(timeDeltaBefore) || 0));
+    }
+    if (timeDeltaAfter) {
+      this._timeDeltaAfter = Math.max(0, Math.floor(Number(timeDeltaAfter) || 0));
+    }
 
     if (!source && !destination && !direction && !telegramtype) {
       return;

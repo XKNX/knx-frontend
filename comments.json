@@ -1,0 +1,554 @@
+[
+  {
+    "url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553493",
+    "pull_request_review_id": 4175180814,
+    "id": 3141553493,
+    "node_id": "PRRC_kwDOHLaAxc67QE1V",
+    "diff_hunk": "@@ -413,12 +469,25 @@ export class GroupMonitorController implements ReactiveController {\n    */\n   public clearFilters(route?: Route): void {\n     this._filters = {};\n+    this._timeDeltaBefore = 0;\n+    this._timeDeltaAfter = 0;\n     this._updateUrlFromFilters(route);\n     this._cleanupUnusedFilterValues();\n \n     this.host.requestUpdate();\n   }\n \n+  /**\n+   * Updates time-delta values and persists to URL\n+   */\n+  public setTimeDelta(before: number, after: number, route?: Route): void {\n+    this._timeDeltaBefore = Math.max(0, Math.floor(before));\n+    this._timeDeltaAfter = Math.max(0, Math.floor(after));\n+    this._bufferVersion++;\n+    this._updateUrlFromFilters(route);\n+    this.host.requestUpdate();\n+  }",
+    "path": "src/features/group-monitor/controller/group-monitor-controller.ts",
+    "commit_id": "24d9d3f675a307e07bfd3d23c3cf3efe4f1e17cc",
+    "original_commit_id": "24d9d3f675a307e07bfd3d23c3cf3efe4f1e17cc",
+    "user": {
+      "login": "Copilot",
+      "id": 175728472,
+      "node_id": "BOT_kgDOCnlnWA",
+      "avatar_url": "https://avatars.githubusercontent.com/in/946600?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Copilot",
+      "html_url": "https://github.com/apps/copilot-pull-request-reviewer",
+      "followers_url": "https://api.github.com/users/Copilot/followers",
+      "following_url": "https://api.github.com/users/Copilot/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Copilot/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Copilot/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Copilot/subscriptions",
+      "organizations_url": "https://api.github.com/users/Copilot/orgs",
+      "repos_url": "https://api.github.com/users/Copilot/repos",
+      "events_url": "https://api.github.com/users/Copilot/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Copilot/received_events",
+      "type": "Bot",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "body": "`setTimeDelta()` always increments `_bufferVersion` and triggers a render even if the new values are identical to the current ones. Since this can be called repeatedly from the UI, add an early-return when `before/after` haven’t changed to avoid unnecessary recomputation and `knx-telegram-list-updated` emissions.",
+    "created_at": "2026-04-25T06:07:00Z",
+    "updated_at": "2026-04-25T06:07:02Z",
+    "html_url": "https://github.com/XKNX/knx-frontend/pull/373#discussion_r3141553493",
+    "pull_request_url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/373",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553493"
+      },
+      "html": {
+        "href": "https://github.com/XKNX/knx-frontend/pull/373#discussion_r3141553493"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/XKNX/knx-frontend/pulls/373"
+      }
+    },
+    "reactions": {
+      "url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553493/reactions",
+      "total_count": 0,
+      "+1": 0,
+      "-1": 0,
+      "laugh": 0,
+      "hooray": 0,
+      "confused": 0,
+      "heart": 0,
+      "rocket": 0,
+      "eyes": 0
+    },
+    "start_line": 483,
+    "original_start_line": 483,
+    "start_side": "RIGHT",
+    "line": 489,
+    "original_line": 489,
+    "side": "RIGHT",
+    "author_association": "CONTRIBUTOR",
+    "original_position": 112,
+    "position": 112,
+    "subject_type": "line"
+  },
+  {
+    "url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553497",
+    "pull_request_review_id": 4175180814,
+    "id": 3141553497,
+    "node_id": "PRRC_kwDOHLaAxc67QE1Z",
+    "diff_hunk": "@@ -770,6 +918,14 @@ export class GroupMonitorController implements ReactiveController {\n       }\n     });\n \n+    // Persist time-delta values in URL\n+    if (this._timeDeltaBefore > 0) {\n+      params.set(\"timedelta_before\", this._timeDeltaBefore.toString());\n+    }\n+    if (this._timeDeltaAfter > 0) {\n+      params.set(\"timedelta_after\", this._timeDeltaAfter.toString());\n+    }",
+    "path": "src/features/group-monitor/controller/group-monitor-controller.ts",
+    "commit_id": "24d9d3f675a307e07bfd3d23c3cf3efe4f1e17cc",
+    "original_commit_id": "24d9d3f675a307e07bfd3d23c3cf3efe4f1e17cc",
+    "user": {
+      "login": "Copilot",
+      "id": 175728472,
+      "node_id": "BOT_kgDOCnlnWA",
+      "avatar_url": "https://avatars.githubusercontent.com/in/946600?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Copilot",
+      "html_url": "https://github.com/apps/copilot-pull-request-reviewer",
+      "followers_url": "https://api.github.com/users/Copilot/followers",
+      "following_url": "https://api.github.com/users/Copilot/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Copilot/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Copilot/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Copilot/subscriptions",
+      "organizations_url": "https://api.github.com/users/Copilot/orgs",
+      "repos_url": "https://api.github.com/users/Copilot/repos",
+      "events_url": "https://api.github.com/users/Copilot/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Copilot/received_events",
+      "type": "Bot",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "body": "Time-delta values are always persisted to the URL when >0, even when no list filters are active (the UI disables the time-delta panel in that case). This can leave `timedelta_before/after` in the URL with no functional effect and no way to edit the values from the disabled UI. Consider clearing/omitting these params when `hasActiveListFilters` is false (or automatically resetting deltas to 0 when the last list filter is removed).",
+    "created_at": "2026-04-25T06:07:01Z",
+    "updated_at": "2026-04-25T06:07:02Z",
+    "html_url": "https://github.com/XKNX/knx-frontend/pull/373#discussion_r3141553497",
+    "pull_request_url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/373",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553497"
+      },
+      "html": {
+        "href": "https://github.com/XKNX/knx-frontend/pull/373#discussion_r3141553497"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/XKNX/knx-frontend/pulls/373"
+      }
+    },
+    "reactions": {
+      "url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553497/reactions",
+      "total_count": 0,
+      "+1": 0,
+      "-1": 0,
+      "laugh": 0,
+      "hooray": 0,
+      "confused": 0,
+      "heart": 0,
+      "rocket": 0,
+      "eyes": 0
+    },
+    "start_line": 921,
+    "original_start_line": 921,
+    "start_side": "RIGHT",
+    "line": 927,
+    "original_line": 927,
+    "side": "RIGHT",
+    "author_association": "CONTRIBUTOR",
+    "original_position": 213,
+    "position": 213,
+    "subject_type": "line"
+  },
+  {
+    "url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553505",
+    "pull_request_review_id": 4175180814,
+    "id": 3141553505,
+    "node_id": "PRRC_kwDOHLaAxc67QE1h",
+    "diff_hunk": "@@ -0,0 +1,242 @@\n+import { describe, it, expect } from \"vitest\";\n+import { TelegramRow } from \"../types/telegram-row\";\n+import type { TelegramDict } from \"../../../types/websocket\";\n+import { GroupMonitorController } from \"./group-monitor-controller\";\n+\n+/**\n+ * Helper function to create mock telegram data for testing\n+ */\n+function createMockTelegram(overrides: Partial<TelegramDict> = {}): TelegramDict {\n+  return {\n+    timestamp: \"2024-01-01T10:00:00.000Z\",\n+    source: \"1.2.3\",\n+    source_name: \"Test Source\",\n+    destination: \"1/2/3\",\n+    destination_name: \"Test Light\",\n+    telegramtype: \"GroupValueWrite\",\n+    direction: \"Outgoing\",\n+    payload: [1],\n+    dpt_main: 1,\n+    dpt_sub: 1,\n+    dpt_name: \"1.001\",\n+    unit: null,\n+    value: \"On\",\n+    ...overrides,\n+  };\n+}\n+\n+/**\n+ * Helper to create TelegramRow with specific timestamp, source and destination\n+ */\n+function createTelegramRow(\n+  timestamp: string,\n+  source = \"1.2.3\",\n+  destination = \"1/2/3\",\n+  telegramtype = \"GroupValueWrite\",\n+  direction = \"Outgoing\",\n+): TelegramRow {\n+  const mockData = createMockTelegram({\n+    timestamp,\n+    source,\n+    destination,\n+    telegramtype,\n+    direction,\n+  });\n+  return new TelegramRow(mockData);\n+}\n+\n+/**\n+ * Test the time-delta expansion logic directly.\n+ * We access the private method via casting to any, since\n+ * it encapsulates the core algorithm we want to verify.\n+ */\n+describe(\"GroupMonitorController - Time-Delta Expansion\", () => {\n+  // Create a controller instance to test the private method\n+  // We need a minimal host mock\n+  const mockHost = {\n+    addController: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function\n+    removeController: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function\n+    requestUpdate: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function\n+    updateComplete: Promise.resolve(true),\n+  };\n+\n+  const controller = new GroupMonitorController(mockHost as any);\n+  const applyTimeDeltaExpansion = (controller as any)._applyTimeDeltaExpansion.bind(controller);\n+",
+    "path": "src/features/group-monitor/controller/group-monitor-controller-time-delta.test.ts",
+    "commit_id": "24d9d3f675a307e07bfd3d23c3cf3efe4f1e17cc",
+    "original_commit_id": "24d9d3f675a307e07bfd3d23c3cf3efe4f1e17cc",
+    "user": {
+      "login": "Copilot",
+      "id": 175728472,
+      "node_id": "BOT_kgDOCnlnWA",
+      "avatar_url": "https://avatars.githubusercontent.com/in/946600?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Copilot",
+      "html_url": "https://github.com/apps/copilot-pull-request-reviewer",
+      "followers_url": "https://api.github.com/users/Copilot/followers",
+      "following_url": "https://api.github.com/users/Copilot/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Copilot/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Copilot/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Copilot/subscriptions",
+      "organizations_url": "https://api.github.com/users/Copilot/orgs",
+      "repos_url": "https://api.github.com/users/Copilot/repos",
+      "events_url": "https://api.github.com/users/Copilot/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Copilot/received_events",
+      "type": "Bot",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "body": "These tests reach into a private controller method via `as any` and `.bind()`, which tightly couples the test suite to internal implementation details (method name/signature) and weakens type safety. Prefer testing the behavior through the public controller API (e.g., by setting filters/deltas and asserting on `getFilteredTelegramsAndDistinctValues()` output) so refactors don’t require rewriting tests.",
+    "created_at": "2026-04-25T06:07:01Z",
+    "updated_at": "2026-04-25T06:07:02Z",
+    "html_url": "https://github.com/XKNX/knx-frontend/pull/373#discussion_r3141553505",
+    "pull_request_url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/373",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553505"
+      },
+      "html": {
+        "href": "https://github.com/XKNX/knx-frontend/pull/373#discussion_r3141553505"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/XKNX/knx-frontend/pulls/373"
+      }
+    },
+    "reactions": {
+      "url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553505/reactions",
+      "total_count": 0,
+      "+1": 0,
+      "-1": 0,
+      "laugh": 0,
+      "hooray": 0,
+      "confused": 0,
+      "heart": 0,
+      "rocket": 0,
+      "eyes": 0
+    },
+    "start_line": 49,
+    "original_start_line": 49,
+    "start_side": "RIGHT",
+    "line": 65,
+    "original_line": 65,
+    "side": "RIGHT",
+    "author_association": "CONTRIBUTOR",
+    "original_position": 65,
+    "position": 65,
+    "subject_type": "line"
+  },
+  {
+    "url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553509",
+    "pull_request_review_id": 4175180814,
+    "id": 3141553509,
+    "node_id": "PRRC_kwDOHLaAxc67QE1l",
+    "diff_hunk": "@@ -0,0 +1,287 @@\n+/**\n+ * KNX Time-Delta Context Filter Component\n+ *\n+ * A filter panel that allows users to specify a time window (in milliseconds)\n+ * around filter-matching telegrams. When active, telegrams within ±delta of\n+ * any matching telegram are included in results, even if they don't match\n+ * the other active filters (source, destination, type, direction).\n+ *\n+ * This is only enabled when at least one other filter is active.\n+ */\n+\n+import type { TemplateResult } from \"lit\";\n+import { css, html, LitElement, nothing } from \"lit\";\n+import { customElement, property } from \"lit/decorators\";\n+\n+import \"@ha/components/ha-expansion-panel\";",
+    "path": "src/components/data-table/filter/knx-time-delta-filter.ts",
+    "commit_id": "24d9d3f675a307e07bfd3d23c3cf3efe4f1e17cc",
+    "original_commit_id": "24d9d3f675a307e07bfd3d23c3cf3efe4f1e17cc",
+    "user": {
+      "login": "Copilot",
+      "id": 175728472,
+      "node_id": "BOT_kgDOCnlnWA",
+      "avatar_url": "https://avatars.githubusercontent.com/in/946600?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Copilot",
+      "html_url": "https://github.com/apps/copilot-pull-request-reviewer",
+      "followers_url": "https://api.github.com/users/Copilot/followers",
+      "following_url": "https://api.github.com/users/Copilot/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Copilot/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Copilot/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Copilot/subscriptions",
+      "organizations_url": "https://api.github.com/users/Copilot/orgs",
+      "repos_url": "https://api.github.com/users/Copilot/repos",
+      "events_url": "https://api.github.com/users/Copilot/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Copilot/received_events",
+      "type": "Bot",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "body": "`@ha/components/ha-expansion-panel` is imported but not used in this component (the render uses `flex-content-expansion-panel`). This will fail lint/typecheck in most setups; remove the unused import (and any other unused symbols) to keep the bundle clean.\n```suggestion\n\n```",
+    "created_at": "2026-04-25T06:07:01Z",
+    "updated_at": "2026-04-25T06:07:02Z",
+    "html_url": "https://github.com/XKNX/knx-frontend/pull/373#discussion_r3141553509",
+    "pull_request_url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/373",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553509"
+      },
+      "html": {
+        "href": "https://github.com/XKNX/knx-frontend/pull/373#discussion_r3141553509"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/XKNX/knx-frontend/pulls/373"
+      }
+    },
+    "reactions": {
+      "url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553509/reactions",
+      "total_count": 0,
+      "+1": 0,
+      "-1": 0,
+      "laugh": 0,
+      "hooray": 0,
+      "confused": 0,
+      "heart": 0,
+      "rocket": 0,
+      "eyes": 0
+    },
+    "start_line": null,
+    "original_start_line": null,
+    "start_side": null,
+    "line": 16,
+    "original_line": 16,
+    "side": "RIGHT",
+    "author_association": "CONTRIBUTOR",
+    "original_position": 16,
+    "position": 16,
+    "subject_type": "line"
+  },
+  {
+    "url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553511",
+    "pull_request_review_id": 4175180814,
+    "id": 3141553511,
+    "node_id": "PRRC_kwDOHLaAxc67QE1n",
+    "diff_hunk": "@@ -0,0 +1,287 @@\n+/**\n+ * KNX Time-Delta Context Filter Component\n+ *\n+ * A filter panel that allows users to specify a time window (in milliseconds)\n+ * around filter-matching telegrams. When active, telegrams within ±delta of\n+ * any matching telegram are included in results, even if they don't match\n+ * the other active filters (source, destination, type, direction).\n+ *\n+ * This is only enabled when at least one other filter is active.\n+ */\n+\n+import type { TemplateResult } from \"lit\";\n+import { css, html, LitElement, nothing } from \"lit\";\n+import { customElement, property } from \"lit/decorators\";\n+\n+import \"@ha/components/ha-expansion-panel\";\n+import \"@ha/components/ha-textfield\";\n+import { fireEvent } from \"@ha/common/dom/fire_event\";\n+\n+import \"../../flex-content-expansion-panel\";\n+import type { KNX } from \"../../../types/knx\";\n+\n+// ============================================================================\n+// Event Interfaces\n+// ============================================================================\n+\n+/**\n+ * Event payload for time-delta value changes\n+ */\n+export interface TimeDeltaChangedEvent {\n+  /** Milliseconds before a matching telegram */\n+  deltaBefore: number;\n+  /** Milliseconds after a matching telegram */\n+  deltaAfter: number;\n+}\n+\n+/**\n+ * Event payload for expansion state changes\n+ */\n+export interface TimeDeltaExpandedChangedEvent {\n+  /** Whether the panel is now expanded */\n+  expanded: boolean;\n+}\n+\n+@customElement(\"knx-time-delta-filter\")\n+export class KnxTimeDeltaFilter extends LitElement {\n+  /**\n+   * KNX integration instance providing localization\n+   */\n+  @property({ attribute: false }) public knx!: KNX;\n+\n+  /**\n+   * Current expansion state of the filter panel\n+   */\n+  @property({ type: Boolean, reflect: true }) public expanded = false;\n+\n+  /**\n+   * Milliseconds before a matching telegram to include\n+   */\n+  @property({ type: Number, attribute: \"delta-before\" }) public deltaBefore = 0;\n+\n+  /**\n+   * Milliseconds after a matching telegram to include\n+   */\n+  @property({ type: Number, attribute: \"delta-after\" }) public deltaAfter = 0;\n+\n+  /**\n+   * Whether the filter is disabled (no other filters active)\n+   */\n+  @property({ type: Boolean }) public disabled = false;\n+\n+  // ============================================================================\n+  // Event Handlers\n+  // ============================================================================\n+\n+  private _expandedChanged(ev: CustomEvent<{ expanded: boolean }>): void {\n+    this.expanded = ev.detail.expanded;\n+    fireEvent(this, \"expanded-changed\", { expanded: this.expanded });\n+  }\n+\n+  private _handleBeforeInput(ev: InputEvent): void {\n+    const target = ev.target as HTMLInputElement;\n+    const value = Math.max(0, Math.floor(Number(target.value) || 0));\n+    if (value !== this.deltaBefore) {\n+      this.deltaBefore = value;\n+      this._fireTimeDeltaChanged();\n+    }\n+  }\n+\n+  private _handleAfterInput(ev: InputEvent): void {\n+    const target = ev.target as HTMLInputElement;\n+    const value = Math.max(0, Math.floor(Number(target.value) || 0));\n+    if (value !== this.deltaAfter) {\n+      this.deltaAfter = value;\n+      this._fireTimeDeltaChanged();\n+    }\n+  }\n+\n+  private _fireTimeDeltaChanged(): void {\n+    fireEvent(this, \"time-delta-changed\", {\n+      deltaBefore: this.deltaBefore,\n+      deltaAfter: this.deltaAfter,\n+    });\n+  }\n+\n+  // ============================================================================\n+  // Render\n+  // ============================================================================\n+\n+  protected render(): TemplateResult {\n+    const headerText = this.knx.localize(\"group_monitor_time_delta_title\");\n+    const hasValues = this.deltaBefore > 0 || this.deltaAfter > 0;\n+\n+    return html`\n+      <flex-content-expansion-panel\n+        leftChevron\n+        .expanded=${this.expanded}\n+        @expanded-changed=${this._expandedChanged}\n+      >\n+        <div slot=\"header\" class=\"header\">\n+          <span class=\"title\">\n+            ${headerText}\n+            ${hasValues && !this.disabled ? html`<div class=\"badge\">●</div>` : nothing}\n+          </span>\n+        </div>\n+\n+        ${this.expanded\n+          ? html`\n+              <div class=\"filter-content\">\n+                <p class=\"description\">\n+                  ${this.knx.localize(\"group_monitor_time_delta_description\")}\n+                </p>\n+\n+                ${this.disabled\n+                  ? html`\n+                      <p class=\"disabled-message\">\n+                        ${this.knx.localize(\"group_monitor_time_delta_disabled\")}\n+                      </p>\n+                    `\n+                  : html`\n+                      <div class=\"input-row\">\n+                        <label class=\"input-label\">\n+                          ${this.knx.localize(\"group_monitor_time_delta_before\")}\n+                        </label>\n+                        <div class=\"input-wrapper\">\n+                          <ha-textfield\n+                            type=\"number\"\n+                            .value=${this.deltaBefore.toString()}\n+                            .placeholder=${this.knx.localize(\n+                              \"group_monitor_time_delta_placeholder\",\n+                            )}\n+                            min=\"0\"\n+                            .disabled=${this.disabled}\n+                            @change=${this._handleBeforeInput}\n+                            suffix=\"ms\"\n+                          ></ha-textfield>",
+    "path": "src/components/data-table/filter/knx-time-delta-filter.ts",
+    "commit_id": "24d9d3f675a307e07bfd3d23c3cf3efe4f1e17cc",
+    "original_commit_id": "24d9d3f675a307e07bfd3d23c3cf3efe4f1e17cc",
+    "user": {
+      "login": "Copilot",
+      "id": 175728472,
+      "node_id": "BOT_kgDOCnlnWA",
+      "avatar_url": "https://avatars.githubusercontent.com/in/946600?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Copilot",
+      "html_url": "https://github.com/apps/copilot-pull-request-reviewer",
+      "followers_url": "https://api.github.com/users/Copilot/followers",
+      "following_url": "https://api.github.com/users/Copilot/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Copilot/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Copilot/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Copilot/subscriptions",
+      "organizations_url": "https://api.github.com/users/Copilot/orgs",
+      "repos_url": "https://api.github.com/users/Copilot/repos",
+      "events_url": "https://api.github.com/users/Copilot/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Copilot/received_events",
+      "type": "Bot",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "body": "The text inputs are preceded by standalone `<label>` elements that are not programmatically associated with the corresponding `<ha-textfield>` (no `for`/`id`, and the label text isn’t set via the textfield’s `label`/`aria-label`). This makes the fields harder to use with screen readers; bind the label to the input (e.g., set the textfield label/aria-label, or wire `for`/`id`).",
+    "created_at": "2026-04-25T06:07:01Z",
+    "updated_at": "2026-04-25T06:07:02Z",
+    "html_url": "https://github.com/XKNX/knx-frontend/pull/373#discussion_r3141553511",
+    "pull_request_url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/373",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553511"
+      },
+      "html": {
+        "href": "https://github.com/XKNX/knx-frontend/pull/373#discussion_r3141553511"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/XKNX/knx-frontend/pulls/373"
+      }
+    },
+    "reactions": {
+      "url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553511/reactions",
+      "total_count": 0,
+      "+1": 0,
+      "-1": 0,
+      "laugh": 0,
+      "hooray": 0,
+      "confused": 0,
+      "heart": 0,
+      "rocket": 0,
+      "eyes": 0
+    },
+    "start_line": 141,
+    "original_start_line": 141,
+    "start_side": "RIGHT",
+    "line": 156,
+    "original_line": 156,
+    "side": "RIGHT",
+    "author_association": "CONTRIBUTOR",
+    "original_position": 156,
+    "position": 156,
+    "subject_type": "line"
+  },
+  {
+    "url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553514",
+    "pull_request_review_id": 4175180814,
+    "id": 3141553514,
+    "node_id": "PRRC_kwDOHLaAxc67QE1q",
+    "diff_hunk": "@@ -112,5 +112,11 @@\n   \"knx_telegram_info_dialog_payload\": \"Payload\",\n   \"expose_create_loading\": \"Loading expose configuration.\",\n   \"expose_create_load_error\": \"Error loading expose configuration.\",\n-  \"expose_validation_error\": \"Validation error\"\n+  \"expose_validation_error\": \"Validation error\",\n+  \"group_monitor_time_delta_title\": \"Time-Delta Context\",\n+  \"group_monitor_time_delta_description\": \"Include telegrams within a window around any filter-matching telegram, even if they don't match the filter.\",\n+  \"group_monitor_time_delta_before\": \"- Before (MS)\",\n+  \"group_monitor_time_delta_after\": \"+ After (MS)\",",
+    "path": "src/localize/languages/en.json",
+    "commit_id": "24d9d3f675a307e07bfd3d23c3cf3efe4f1e17cc",
+    "original_commit_id": "24d9d3f675a307e07bfd3d23c3cf3efe4f1e17cc",
+    "user": {
+      "login": "Copilot",
+      "id": 175728472,
+      "node_id": "BOT_kgDOCnlnWA",
+      "avatar_url": "https://avatars.githubusercontent.com/in/946600?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Copilot",
+      "html_url": "https://github.com/apps/copilot-pull-request-reviewer",
+      "followers_url": "https://api.github.com/users/Copilot/followers",
+      "following_url": "https://api.github.com/users/Copilot/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Copilot/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Copilot/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Copilot/subscriptions",
+      "organizations_url": "https://api.github.com/users/Copilot/orgs",
+      "repos_url": "https://api.github.com/users/Copilot/repos",
+      "events_url": "https://api.github.com/users/Copilot/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Copilot/received_events",
+      "type": "Bot",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "body": "The unit for milliseconds should be written as \"ms\" (lowercase). Using \"MS\" is non-standard and can be misleading in UI text; please update these labels to use \"ms\" consistently.\n```suggestion\n  \"group_monitor_time_delta_before\": \"- Before (ms)\",\n  \"group_monitor_time_delta_after\": \"+ After (ms)\",\n```",
+    "created_at": "2026-04-25T06:07:01Z",
+    "updated_at": "2026-04-25T06:07:02Z",
+    "html_url": "https://github.com/XKNX/knx-frontend/pull/373#discussion_r3141553514",
+    "pull_request_url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/373",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553514"
+      },
+      "html": {
+        "href": "https://github.com/XKNX/knx-frontend/pull/373#discussion_r3141553514"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/XKNX/knx-frontend/pulls/373"
+      }
+    },
+    "reactions": {
+      "url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553514/reactions",
+      "total_count": 0,
+      "+1": 0,
+      "-1": 0,
+      "laugh": 0,
+      "hooray": 0,
+      "confused": 0,
+      "heart": 0,
+      "rocket": 0,
+      "eyes": 0
+    },
+    "start_line": 118,
+    "original_start_line": 118,
+    "start_side": "RIGHT",
+    "line": 119,
+    "original_line": 119,
+    "side": "RIGHT",
+    "author_association": "CONTRIBUTOR",
+    "original_position": 9,
+    "position": 9,
+    "subject_type": "line"
+  },
+  {
+    "url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553518",
+    "pull_request_review_id": 4175180814,
+    "id": 3141553518,
+    "node_id": "PRRC_kwDOHLaAxc67QE1u",
+    "diff_hunk": "@@ -111,5 +111,11 @@\n   \"knx_telegram_info_dialog_payload\": \"Daten\",\n   \"expose_create_loading\": \"Expose-Konfiguration wird geladen.\",\n   \"expose_create_load_error\": \"Fehler beim Laden der Expose-Konfiguration.\",\n-  \"expose_validation_error\": \"Validierungsfehler\"\n+  \"expose_validation_error\": \"Validierungsfehler\",\n+  \"group_monitor_time_delta_title\": \"Zeitdelta-Kontext\",\n+  \"group_monitor_time_delta_description\": \"Telegramme innerhalb eines Zeitfensters um ein filter-passendes Telegramm einbeziehen, auch wenn sie nicht dem Filter entsprechen.\",\n+  \"group_monitor_time_delta_before\": \"- Vorher (MS)\",\n+  \"group_monitor_time_delta_after\": \"+ Nachher (MS)\",",
+    "path": "src/localize/languages/de.json",
+    "commit_id": "24d9d3f675a307e07bfd3d23c3cf3efe4f1e17cc",
+    "original_commit_id": "24d9d3f675a307e07bfd3d23c3cf3efe4f1e17cc",
+    "user": {
+      "login": "Copilot",
+      "id": 175728472,
+      "node_id": "BOT_kgDOCnlnWA",
+      "avatar_url": "https://avatars.githubusercontent.com/in/946600?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Copilot",
+      "html_url": "https://github.com/apps/copilot-pull-request-reviewer",
+      "followers_url": "https://api.github.com/users/Copilot/followers",
+      "following_url": "https://api.github.com/users/Copilot/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Copilot/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Copilot/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Copilot/subscriptions",
+      "organizations_url": "https://api.github.com/users/Copilot/orgs",
+      "repos_url": "https://api.github.com/users/Copilot/repos",
+      "events_url": "https://api.github.com/users/Copilot/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Copilot/received_events",
+      "type": "Bot",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "body": "The unit for milliseconds should be written as \"ms\" (lowercase). Please update these labels to use \"ms\" consistently.\n```suggestion\n  \"group_monitor_time_delta_before\": \"- Vorher (ms)\",\n  \"group_monitor_time_delta_after\": \"+ Nachher (ms)\",\n```",
+    "created_at": "2026-04-25T06:07:02Z",
+    "updated_at": "2026-04-25T06:07:02Z",
+    "html_url": "https://github.com/XKNX/knx-frontend/pull/373#discussion_r3141553518",
+    "pull_request_url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/373",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553518"
+      },
+      "html": {
+        "href": "https://github.com/XKNX/knx-frontend/pull/373#discussion_r3141553518"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/XKNX/knx-frontend/pulls/373"
+      }
+    },
+    "reactions": {
+      "url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553518/reactions",
+      "total_count": 0,
+      "+1": 0,
+      "-1": 0,
+      "laugh": 0,
+      "hooray": 0,
+      "confused": 0,
+      "heart": 0,
+      "rocket": 0,
+      "eyes": 0
+    },
+    "start_line": 117,
+    "original_start_line": 117,
+    "start_side": "RIGHT",
+    "line": 118,
+    "original_line": 118,
+    "side": "RIGHT",
+    "author_association": "CONTRIBUTOR",
+    "original_position": 9,
+    "position": 9,
+    "subject_type": "line"
+  },
+  {
+    "url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553521",
+    "pull_request_review_id": 4175180814,
+    "id": 3141553521,
+    "node_id": "PRRC_kwDOHLaAxc67QE1x",
+    "diff_hunk": "@@ -196,6 +201,45 @@ export class GroupMonitorController implements ReactiveController {\n     return this._connectionError;\n   }\n \n+  public get timeDeltaBefore(): number {\n+    return this._timeDeltaBefore;\n+  }\n+\n+  public set timeDeltaBefore(value: number) {\n+    this._timeDeltaBefore = Math.max(0, Math.floor(value));\n+    this._bufferVersion++;\n+    this.host.requestUpdate();\n+  }\n+\n+  public get timeDeltaAfter(): number {\n+    return this._timeDeltaAfter;\n+  }\n+\n+  public set timeDeltaAfter(value: number) {\n+    this._timeDeltaAfter = Math.max(0, Math.floor(value));\n+    this._bufferVersion++;\n+    this.host.requestUpdate();\n+  }\n+\n+  /**\n+   * Whether the time-delta filter is active\n+   * Only active when at least one list-based filter is set AND a delta > 0\n+   */\n+  public get isTimeDeltaActive(): boolean {\n+    const hasListFilters = Object.values(this._filters).some(\n+      (f) => Array.isArray(f) && f.length > 0,\n+    );\n+    return hasListFilters && (this._timeDeltaBefore > 0 || this._timeDeltaAfter > 0);\n+  }\n+\n+  /**",
+    "path": "src/features/group-monitor/controller/group-monitor-controller.ts",
+    "commit_id": "24d9d3f675a307e07bfd3d23c3cf3efe4f1e17cc",
+    "original_commit_id": "24d9d3f675a307e07bfd3d23c3cf3efe4f1e17cc",
+    "user": {
+      "login": "Copilot",
+      "id": 175728472,
+      "node_id": "BOT_kgDOCnlnWA",
+      "avatar_url": "https://avatars.githubusercontent.com/in/946600?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Copilot",
+      "html_url": "https://github.com/apps/copilot-pull-request-reviewer",
+      "followers_url": "https://api.github.com/users/Copilot/followers",
+      "following_url": "https://api.github.com/users/Copilot/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Copilot/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Copilot/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Copilot/subscriptions",
+      "organizations_url": "https://api.github.com/users/Copilot/orgs",
+      "repos_url": "https://api.github.com/users/Copilot/repos",
+      "events_url": "https://api.github.com/users/Copilot/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Copilot/received_events",
+      "type": "Bot",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "body": "`isTimeDeltaActive` is introduced but isn’t referenced anywhere in the codebase (search shows only its declaration). If it’s not needed, consider removing it to avoid dead/duplicated state (the UI already uses `hasActiveListFilters`, and the expansion logic checks deltas/matches directly).\n```suggestion\n\n```",
+    "created_at": "2026-04-25T06:07:02Z",
+    "updated_at": "2026-04-25T06:07:02Z",
+    "html_url": "https://github.com/XKNX/knx-frontend/pull/373#discussion_r3141553521",
+    "pull_request_url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/373",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553521"
+      },
+      "html": {
+        "href": "https://github.com/XKNX/knx-frontend/pull/373#discussion_r3141553521"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/XKNX/knx-frontend/pulls/373"
+      }
+    },
+    "reactions": {
+      "url": "https://api.github.com/repos/XKNX/knx-frontend/pulls/comments/3141553521/reactions",
+      "total_count": 0,
+      "+1": 0,
+      "-1": 0,
+      "laugh": 0,
+      "hooray": 0,
+      "confused": 0,
+      "heart": 0,
+      "rocket": 0,
+      "eyes": 0
+    },
+    "start_line": 225,
+    "original_start_line": 225,
+    "start_side": "RIGHT",
+    "line": 235,
+    "original_line": 235,
+    "side": "RIGHT",
+    "author_association": "CONTRIBUTOR",
+    "original_position": 47,
+    "position": 47,
+    "subject_type": "line"
+  }
+]

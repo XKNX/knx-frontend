@@ -112,5 +112,11 @@
   "knx_telegram_info_dialog_payload": "Payload",
   "expose_create_loading": "Loading expose configuration.",
   "expose_create_load_error": "Error loading expose configuration.",
-  "expose_validation_error": "Validation error"
+  "expose_validation_error": "Validation error",
+  "group_monitor_time_delta_title": "Time-Delta Context",
+  "group_monitor_time_delta_description": "Include telegrams within a window around any filter-matching telegram, even if they don't match the filter.",
+  "group_monitor_time_delta_before": "- Before (ms)",
+  "group_monitor_time_delta_after": "+ After (ms)",
+  "group_monitor_time_delta_placeholder": "0 = off",
+  "group_monitor_time_delta_disabled": "Set other filters first to use time-delta context."
 }
