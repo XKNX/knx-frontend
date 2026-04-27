@@ -618,23 +618,21 @@ export class GroupMonitorController implements ReactiveController {
       return matchingTelegrams;
     }
 
-    // Collect indices into allTelegrams that should be included
-    const includedIndices = new Set<number>();
-
-    // Pre-extract timestamps as milliseconds for binary search
-    const timestamps = allTelegrams.map((t) => t.timestamp.getTime());
+    const result: TelegramRow[] = [];
+    let lastIncludedIdx = -1;
 
     for (const match of matchingTelegrams) {
       const matchTime = match.timestamp.getTime();
       const windowStart = matchTime - deltaBefore;
       const windowEnd = matchTime + deltaAfter;
 
-      // Binary search for lower bound (first telegram >= windowStart)
-      let lo = 0;
-      let hi = timestamps.length;
+      // Binary search for startIdx (first telegram >= windowStart)
+      // Since windowStart is monotonically increasing, we can start from the previous end
+      let lo = Math.max(0, lastIncludedIdx + 1);
+      let hi = allTelegrams.length;
       while (lo < hi) {
         const mid = Math.floor((lo + hi) / 2);
-        if (timestamps[mid] < windowStart) {
+        if (allTelegrams[mid].timestamp.getTime() < windowStart) {
           lo = mid + 1;
         } else {
           hi = mid;
@@ -642,12 +640,12 @@ export class GroupMonitorController implements ReactiveController {
       }
       const startIdx = lo;
 
-      // Binary search for upper bound (first telegram > windowEnd)
+      // Binary search for endIdx (first telegram > windowEnd)
       lo = startIdx;
-      hi = timestamps.length;
+      hi = allTelegrams.length;
       while (lo < hi) {
         const mid = Math.floor((lo + hi) / 2);
-        if (timestamps[mid] <= windowEnd) {
+        if (allTelegrams[mid].timestamp.getTime() <= windowEnd) {
           lo = mid + 1;
         } else {
           hi = mid;
@@ -655,17 +653,12 @@ export class GroupMonitorController implements ReactiveController {
       }
       const endIdx = lo;
 
-      // Mark all telegrams in the window
-      for (let i = startIdx; i < endIdx; i++) {
-        includedIndices.add(i);
+      // Add telegrams that haven't been added yet (merging overlapping windows)
+      const actualStart = Math.max(startIdx, lastIncludedIdx + 1);
+      for (let i = actualStart; i < endIdx; i++) {
+        result.push(allTelegrams[i]);
       }
-    }
-
-    // Build result preserving original order from allTelegrams
-    // Include: matching telegrams + context telegrams within windows
-    const result: TelegramRow[] = [];
-    for (const idx of Array.from(includedIndices).sort((a, b) => a - b)) {
-      result.push(allTelegrams[idx]);
+      lastIncludedIdx = Math.max(lastIncludedIdx, endIdx - 1);
     }
 
     return result;
@@ -971,12 +964,12 @@ export class GroupMonitorController implements ReactiveController {
     }
 
     // Restore time-delta values from URL only if list filters exist
-    if (timeDeltaBefore) {
-      this._timeDeltaBefore = Math.max(0, Math.floor(Number(timeDeltaBefore) || 0));
-    }
-    if (timeDeltaAfter) {
-      this._timeDeltaAfter = Math.max(0, Math.floor(Number(timeDeltaAfter) || 0));
-    }
+    this._timeDeltaBefore = timeDeltaBefore
+      ? Math.max(0, Math.floor(Number(timeDeltaBefore) || 0))
+      : 0;
+    this._timeDeltaAfter = timeDeltaAfter
+      ? Math.max(0, Math.floor(Number(timeDeltaAfter) || 0))
+      : 0;
 
     this._filters = {
       source: source ? source.split(",") : [],

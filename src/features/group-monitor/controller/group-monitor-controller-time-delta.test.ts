@@ -225,36 +225,49 @@ describe("GroupMonitorController - Time-Delta Expansion", () => {
     });
   });
 
-  describe("Automatic Reset Logic", () => {
-    it("should reset time-delta values when all list filters are removed", async () => {
-      // Setup: List filter + Time Delta
-      controller.setFilterFieldValue("source", ["1.1.1"]);
-      controller.setTimeDelta(100, 100);
+  describe("URL Syncing", () => {
+    it("should reset time-delta values when missing from URL even if list filters exist", () => {
+      // Setup: existing state in controller
+      (controller as any)._timeDeltaBefore = 100;
+      (controller as any)._timeDeltaAfter = 100;
 
-      // Verify initial state
-      expect((controller as any)._timeDeltaBefore).toBe(100);
-      expect((controller as any)._timeDeltaAfter).toBe(100);
+      // Mock URL with ONLY a list filter, no timedelta params
+      const mockSearch = "?source=1.1.1";
+      const originalLocation = window.location;
+      vi.stubGlobal("location", {
+        ...originalLocation,
+        search: mockSearch,
+      });
 
-      // Action: Clear list filter
-      controller.setFilterFieldValue("source", []);
+      try {
+        // Action: restore from URL
+        (controller as any)._setFiltersFromUrl();
 
-      // Verification: Time delta should be reset
-      expect((controller as any)._timeDeltaBefore).toBe(0);
-      expect((controller as any)._timeDeltaAfter).toBe(0);
+        // Verification
+        expect((controller as any)._timeDeltaBefore).toBe(0);
+        expect((controller as any)._timeDeltaAfter).toBe(0);
+        expect(controller.filters.source).toEqual(["1.1.1"]);
+      } finally {
+        vi.unstubAllGlobals();
+      }
     });
 
-    it("should not reset time-delta values if at least one list filter remains", async () => {
-      // Setup: Multiple list filters + Time Delta
-      controller.setFilterFieldValue("source", ["1.1.1"]);
-      controller.setFilterFieldValue("destination", ["1/1/1"]);
-      controller.setTimeDelta(100, 100);
+    it("should restore time-delta values from URL when present", () => {
+      const mockSearch = "?source=1.1.1&timedelta_before=200&timedelta_after=300";
+      const originalLocation = window.location;
+      vi.stubGlobal("location", {
+        ...originalLocation,
+        search: mockSearch,
+      });
 
-      // Action: Clear one list filter
-      controller.setFilterFieldValue("source", []);
+      try {
+        (controller as any)._setFiltersFromUrl();
 
-      // Verification: Time delta should NOT be reset
-      expect((controller as any)._timeDeltaBefore).toBe(100);
-      expect((controller as any)._timeDeltaAfter).toBe(100);
+        expect((controller as any)._timeDeltaBefore).toBe(200);
+        expect((controller as any)._timeDeltaAfter).toBe(300);
+      } finally {
+        vi.unstubAllGlobals();
+      }
     });
   });
 });
