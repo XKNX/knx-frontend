@@ -114,10 +114,9 @@
   "expose_create_load_error": "Error loading expose configuration.",
   "expose_validation_error": "Validation error",
   "group_monitor_time_delta_title": "Context time span",
-  "group_monitor_time_delta_description": "Also shows all telegrams within the defined time span before/after a filtered telegram – regardless of the applied filters.",
+  "group_monitor_time_delta_description": "Also shows all telegrams within the defined time span before/after a filtered telegram – regardless of the applied filters. (0 = off)",
   "group_monitor_time_delta_before": "- Before (ms)",
   "group_monitor_time_delta_after": "+ After (ms)",
-  "group_monitor_time_delta_placeholder": "0 = off",
   "group_monitor_time_delta_disabled": "Set a filter to use the context time span.",
-  "group_monitor_time_delta_summary": "Within -{before} ms +{after} ms"
+  "group_monitor_time_delta_summary": "Within -{before} ms / +{after} ms"
 }

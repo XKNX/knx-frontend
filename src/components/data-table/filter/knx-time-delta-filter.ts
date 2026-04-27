@@ -46,7 +46,7 @@ export interface TimeDeltaExpandedChangedEvent {
 
 @customElement("knx-time-delta-filter")
 export class KnxTimeDeltaFilter extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
+  @property({ attribute: false, hasChanged: () => false }) public hass!: HomeAssistant;
 
   /**
    * KNX integration instance providing localization
@@ -155,6 +155,67 @@ export class KnxTimeDeltaFilter extends LitElement {
         ${this.expanded
           ? html`
               <div class="filter-content">
+                <p class="description">
+                  ${this.knx.localize("group_monitor_time_delta_description")}
+                </p>
+
+                ${this.disabled
+                  ? html`
+                      <p class="disabled-message">
+                        ${this.knx.localize("group_monitor_time_delta_disabled")}
+                      </p>
+                    `
+                  : html`
+                      <div class="input-row">
+                        <div
+                          class="input-wrapper"
+                          title=${this.knx.localize("group_monitor_time_delta_before")}
+                        >
+                          <ha-selector-number
+                            id="delta-before"
+                            .hass=${this.hass}
+                            .value=${this.deltaBefore}
+                            .disabled=${this.disabled}
+                            .required=${false}
+                            .label=${this.knx.localize("group_monitor_time_delta_before")}
+                            .selector=${{
+                              number: {
+                                min: 0,
+                                step: 10,
+                                mode: "box",
+                                unit_of_measurement: "ms",
+                              },
+                            }}
+                            @value-changed=${this._handleBeforeInput}
+                          ></ha-selector-number>
+                        </div>
+                      </div>
+
+                      <div class="input-row">
+                        <div
+                          class="input-wrapper"
+                          title=${this.knx.localize("group_monitor_time_delta_after")}
+                        >
+                          <ha-selector-number
+                            id="delta-after"
+                            .hass=${this.hass}
+                            .value=${this.deltaAfter}
+                            .disabled=${this.disabled}
+                            .required=${false}
+                            .label=${this.knx.localize("group_monitor_time_delta_after")}
+                            .selector=${{
+                              number: {
+                                min: 0,
+                                step: 10,
+                                mode: "box",
+                                unit_of_measurement: "ms",
+                              },
+                            }}
+                            @value-changed=${this._handleAfterInput}
+                          ></ha-selector-number>
+                        </div>
+                      </div>
+                    `}
                 ${hasValues && !this.disabled
                   ? html`
                       <div class="summary-item">
@@ -172,66 +233,6 @@ export class KnxTimeDeltaFilter extends LitElement {
                       </div>
                     `
                   : nothing}
-
-                <p class="description">
-                  ${this.knx.localize("group_monitor_time_delta_description")}
-                </p>
-
-                ${this.disabled
-                  ? html`
-                      <p class="disabled-message">
-                        ${this.knx.localize("group_monitor_time_delta_disabled")}
-                      </p>
-                    `
-                  : html`
-                      <div class="input-row">
-                        <div class="input-label" aria-hidden="true">
-                          ${this.knx.localize("group_monitor_time_delta_before")}
-                        </div>
-                        <div class="input-wrapper">
-                          <ha-selector-number
-                            id="delta-before"
-                            .hass=${this.hass}
-                            .value=${this.deltaBefore}
-                            .disabled=${this.disabled}
-                            .label=${this.knx.localize("group_monitor_time_delta_before")}
-                            .selector=${{
-                              number: {
-                                min: 0,
-                                step: 10,
-                                mode: "box",
-                                unit_of_measurement: "ms",
-                              },
-                            }}
-                            @value-changed=${this._handleBeforeInput}
-                          ></ha-selector-number>
-                        </div>
-                      </div>
-
-                      <div class="input-row">
-                        <div class="input-label" aria-hidden="true">
-                          ${this.knx.localize("group_monitor_time_delta_after")}
-                        </div>
-                        <div class="input-wrapper">
-                          <ha-selector-number
-                            id="delta-after"
-                            .hass=${this.hass}
-                            .value=${this.deltaAfter}
-                            .disabled=${this.disabled}
-                            .label=${this.knx.localize("group_monitor_time_delta_after")}
-                            .selector=${{
-                              number: {
-                                min: 0,
-                                step: 10,
-                                mode: "box",
-                                unit_of_measurement: "ms",
-                              },
-                            }}
-                            @value-changed=${this._handleAfterInput}
-                          ></ha-selector-number>
-                        </div>
-                      </div>
-                    `}
               </div>
             `
           : nothing}
@@ -315,15 +316,6 @@ export class KnxTimeDeltaFilter extends LitElement {
       display: flex;
       flex-direction: column;
       margin-bottom: 8px;
-    }
-
-    .input-label {
-      font-size: 0.8em;
-      font-weight: 500;
-      color: var(--secondary-text-color);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 4px;
     }
 
     .input-wrapper {

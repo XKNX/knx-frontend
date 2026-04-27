@@ -440,13 +440,7 @@ export class GroupMonitorController implements ReactiveController {
       this._filters = { ...this._filters, [field]: [...currentFilters, value] };
     }
 
-    if (!this.hasActiveListFilters) {
-      if (this._timeDeltaBefore > 0 || this._timeDeltaAfter > 0) {
-        this._timeDeltaBefore = 0;
-        this._timeDeltaAfter = 0;
-        this._bufferVersion++;
-      }
-    }
+    this._resetTimeDeltaIfNoListFilters();
 
     this._updateUrlFromFilters(route);
     this._cleanupUnusedFilterValues();
@@ -460,13 +454,7 @@ export class GroupMonitorController implements ReactiveController {
   public setFilterFieldValue(field: string, value: string[], route?: Route): void {
     this._filters = { ...this._filters, [field]: value };
 
-    if (!this.hasActiveListFilters) {
-      if (this._timeDeltaBefore > 0 || this._timeDeltaAfter > 0) {
-        this._timeDeltaBefore = 0;
-        this._timeDeltaAfter = 0;
-        this._bufferVersion++;
-      }
-    }
+    this._resetTimeDeltaIfNoListFilters();
 
     this._updateUrlFromFilters(route);
     this._cleanupUnusedFilterValues();
@@ -823,6 +811,19 @@ export class GroupMonitorController implements ReactiveController {
 
     // Increment buffer version to invalidate memoization cache
     this._bufferVersion++;
+  }
+
+  /**
+   * Resets time-delta values to 0 if no list filters are active
+   */
+  private _resetTimeDeltaIfNoListFilters(): void {
+    if (!this.hasActiveListFilters) {
+      if (this._timeDeltaBefore > 0 || this._timeDeltaAfter > 0) {
+        this._timeDeltaBefore = 0;
+        this._timeDeltaAfter = 0;
+        this._bufferVersion++;
+      }
+    }
   }
 
   // ============================================================================

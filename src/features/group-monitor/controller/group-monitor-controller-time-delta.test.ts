@@ -224,4 +224,37 @@ describe("GroupMonitorController - Time-Delta Expansion", () => {
       expect(result.map((r) => r.sourceAddress).sort()).toEqual(["1.2.1", "1.2.2", "1.2.3"]);
     });
   });
+
+  describe("Automatic Reset Logic", () => {
+    it("should reset time-delta values when all list filters are removed", async () => {
+      // Setup: List filter + Time Delta
+      controller.setFilterFieldValue("source", ["1.1.1"]);
+      controller.setTimeDelta(100, 100);
+
+      // Verify initial state
+      expect((controller as any)._timeDeltaBefore).toBe(100);
+      expect((controller as any)._timeDeltaAfter).toBe(100);
+
+      // Action: Clear list filter
+      controller.setFilterFieldValue("source", []);
+
+      // Verification: Time delta should be reset
+      expect((controller as any)._timeDeltaBefore).toBe(0);
+      expect((controller as any)._timeDeltaAfter).toBe(0);
+    });
+
+    it("should not reset time-delta values if at least one list filter remains", async () => {
+      // Setup: Multiple list filters + Time Delta
+      controller.setFilterFieldValue("source", ["1.1.1"]);
+      controller.setFilterFieldValue("destination", ["1/1/1"]);
+      controller.setTimeDelta(100, 100);
+
+      // Action: Clear one list filter
+      controller.setFilterFieldValue("source", []);
+
+      // Verification: Time delta should NOT be reset
+      expect((controller as any)._timeDeltaBefore).toBe(100);
+      expect((controller as any)._timeDeltaAfter).toBe(100);
+    });
+  });
 });
