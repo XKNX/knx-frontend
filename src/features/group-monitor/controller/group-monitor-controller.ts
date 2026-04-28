@@ -44,7 +44,7 @@ export type DistinctValues = Record<FilterField, Record<string, DistinctValueInf
 export interface FilteredTelegramsResult {
   filteredTelegrams: TelegramRow[];
   distinctValues: DistinctValues;
-  timeDeltaAddedCount?: number;
+  timeDeltaAddedCount: number;
 }
 
 /**
@@ -206,20 +206,8 @@ export class GroupMonitorController implements ReactiveController {
     return this._timeDeltaBefore;
   }
 
-  public set timeDeltaBefore(value: number) {
-    this._timeDeltaBefore = Math.max(0, Math.floor(value));
-    this._bufferVersion++;
-    this.host.requestUpdate();
-  }
-
   public get timeDeltaAfter(): number {
     return this._timeDeltaAfter;
-  }
-
-  public set timeDeltaAfter(value: number) {
-    this._timeDeltaAfter = Math.max(0, Math.floor(value));
-    this._bufferVersion++;
-    this.host.requestUpdate();
   }
 
   /**
@@ -963,13 +951,11 @@ export class GroupMonitorController implements ReactiveController {
       return;
     }
 
-    // Restore time-delta values from URL only if list filters exist
-    this._timeDeltaBefore = timeDeltaBefore
-      ? Math.max(0, Math.floor(Number(timeDeltaBefore) || 0))
-      : 0;
-    this._timeDeltaAfter = timeDeltaAfter
-      ? Math.max(0, Math.floor(Number(timeDeltaAfter) || 0))
-      : 0;
+    // Restore time-delta values from URL when list filters exist.
+    // Missing or invalid query params must reset to 0 so the URL remains
+    // the single source of truth for the controller state.
+    this._timeDeltaBefore = Math.max(0, Math.floor(Number(timeDeltaBefore) || 0));
+    this._timeDeltaAfter = Math.max(0, Math.floor(Number(timeDeltaAfter) || 0));
 
     this._filters = {
       source: source ? source.split(",") : [],

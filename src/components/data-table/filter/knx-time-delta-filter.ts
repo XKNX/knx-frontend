@@ -39,11 +39,6 @@ export interface TimeDeltaChangedEvent {
 /**
  * Event payload for expansion state changes
  */
-export interface TimeDeltaExpandedChangedEvent {
-  /** Whether the panel is now expanded */
-  expanded: boolean;
-}
-
 @customElement("knx-time-delta-filter")
 export class KnxTimeDeltaFilter extends LitElement {
   @property({ attribute: false, hasChanged: () => false }) public hass!: HomeAssistant;

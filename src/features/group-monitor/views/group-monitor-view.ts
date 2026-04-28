@@ -67,6 +67,8 @@ import type { TimeDeltaChangedEvent } from "../../../components/data-table/filte
  * - `?destination=1/2/3,4/5/6` - Filter by destination addresses (comma-separated)
  * - `?direction=Incoming` - Filter by telegram direction (comma-separated)
  * - `?telegramtype=GroupValueWrite,GroupValueRead` - Filter by telegram types (comma-separated)
+ * - `?timedelta_before=100` - Include telegrams up to 100ms before a match (only applies when list filters are active)
+ * - `?timedelta_after=100` - Include telegrams up to 100ms after a match (only applies when list filters are active)
  *
  * **Examples:**
  * ```

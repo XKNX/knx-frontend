@@ -228,8 +228,7 @@ describe("GroupMonitorController - Time-Delta Expansion", () => {
   describe("URL Syncing", () => {
     it("should reset time-delta values when missing from URL even if list filters exist", () => {
       // Setup: existing state in controller
-      (controller as any)._timeDeltaBefore = 100;
-      (controller as any)._timeDeltaAfter = 100;
+      controller.setTimeDelta(100, 100);
 
       // Mock URL with ONLY a list filter, no timedelta params
       const mockSearch = "?source=1.1.1";
@@ -244,8 +243,8 @@ describe("GroupMonitorController - Time-Delta Expansion", () => {
         (controller as any)._setFiltersFromUrl();
 
         // Verification
-        expect((controller as any)._timeDeltaBefore).toBe(0);
-        expect((controller as any)._timeDeltaAfter).toBe(0);
+        expect(controller.timeDeltaBefore).toBe(0);
+        expect(controller.timeDeltaAfter).toBe(0);
         expect(controller.filters.source).toEqual(["1.1.1"]);
       } finally {
         vi.unstubAllGlobals();
@@ -263,8 +262,8 @@ describe("GroupMonitorController - Time-Delta Expansion", () => {
       try {
         (controller as any)._setFiltersFromUrl();
 
-        expect((controller as any)._timeDeltaBefore).toBe(200);
-        expect((controller as any)._timeDeltaAfter).toBe(300);
+        expect(controller.timeDeltaBefore).toBe(200);
+        expect(controller.timeDeltaAfter).toBe(300);
       } finally {
         vi.unstubAllGlobals();
       }
