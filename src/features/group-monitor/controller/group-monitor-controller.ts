@@ -44,6 +44,7 @@ export type DistinctValues = Record<FilterField, Record<string, DistinctValueInf
 export interface FilteredTelegramsResult {
   filteredTelegrams: TelegramRow[];
   distinctValues: DistinctValues;
+  timeDeltaAddedCount: number;
 }
 
 /**
@@ -85,6 +86,11 @@ export class GroupMonitorController implements ReactiveController {
   private _isProjectLoaded: boolean | undefined = undefined;
 
   private _connectionError: string | null = null;
+
+  // Time-delta context filter (milliseconds)
+  private _timeDeltaBefore = 0;
+
+  private _timeDeltaAfter = 0;
 
   // Filter data - only stores total counts, filtered counts computed on-the-fly
   private _distinctValues: DistinctValues = {
@@ -196,6 +202,22 @@ export class GroupMonitorController implements ReactiveController {
     return this._connectionError;
   }
 
+  public get timeDeltaBefore(): number {
+    return this._timeDeltaBefore;
+  }
+
+  public get timeDeltaAfter(): number {
+    return this._timeDeltaAfter;
+  }
+
+  /**
+   * Whether any list-based filters are active
+   * Used by the UI to decide whether to disable the time-delta inputs
+   */
+  public get hasActiveListFilters(): boolean {
+    return Object.values(this._filters).some((f) => Array.isArray(f) && f.length > 0);
+  }
+
   /**
    * Gets both filtered telegrams and distinct values in a single synchronized call
    */
@@ -207,6 +229,8 @@ export class GroupMonitorController implements ReactiveController {
       this._distinctValues,
       this._sortColumn,
       this._sortDirection,
+      this._timeDeltaBefore,
+      this._timeDeltaAfter,
     );
 
     // Check if filtered telegrams have changed and emit event if so
@@ -238,11 +262,23 @@ export class GroupMonitorController implements ReactiveController {
       distinctValues: DistinctValues,
       sortColumn?: string,
       sortDirection?: SortingDirection,
+      timeDeltaBefore?: number,
+      timeDeltaAfter?: number,
     ): FilteredTelegramsResult => {
       // Filter telegrams based on current filters
-      const filteredTelegrams = allTelegrams.filter((telegram) =>
+      const matchingTelegrams = allTelegrams.filter((telegram) =>
         this.matchesActiveFilters(telegram),
       );
+
+      // Apply time-delta expansion if active
+      const filteredTelegrams = this._applyTimeDeltaExpansion(
+        matchingTelegrams,
+        allTelegrams,
+        timeDeltaBefore || 0,
+        timeDeltaAfter || 0,
+      );
+
+      const timeDeltaAddedCount = filteredTelegrams.length - matchingTelegrams.length;
 
       // Sort telegrams if a sort column and direction are specified
       if (sortColumn && sortDirection) {
@@ -351,6 +387,7 @@ export class GroupMonitorController implements ReactiveController {
       return {
         filteredTelegrams,
         distinctValues: distinctValuesWithFilteredCounts,
+        timeDeltaAddedCount,
       };
     },
   );
@@ -391,6 +428,8 @@ export class GroupMonitorController implements ReactiveController {
       this._filters = { ...this._filters, [field]: [...currentFilters, value] };
     }
 
+    this._resetTimeDeltaIfNoListFilters();
+
     this._updateUrlFromFilters(route);
     this._cleanupUnusedFilterValues();
 
@@ -402,6 +441,9 @@ export class GroupMonitorController implements ReactiveController {
    */
   public setFilterFieldValue(field: string, value: string[], route?: Route): void {
     this._filters = { ...this._filters, [field]: value };
+
+    this._resetTimeDeltaIfNoListFilters();
+
     this._updateUrlFromFilters(route);
     this._cleanupUnusedFilterValues();
 
@@ -413,9 +455,29 @@ export class GroupMonitorController implements ReactiveController {
    */
   public clearFilters(route?: Route): void {
     this._filters = {};
+    this._timeDeltaBefore = 0;
+    this._timeDeltaAfter = 0;
     this._updateUrlFromFilters(route);
     this._cleanupUnusedFilterValues();
 
+    this.host.requestUpdate();
+  }
+
+  /**
+   * Updates time-delta values and persists to URL
+   */
+  public setTimeDelta(before: number, after: number, route?: Route): void {
+    const newBefore = Math.max(0, Math.floor(before));
+    const newAfter = Math.max(0, Math.floor(after));
+
+    if (this._timeDeltaBefore === newBefore && this._timeDeltaAfter === newAfter) {
+      return;
+    }
+
+    this._timeDeltaBefore = newBefore;
+    this._timeDeltaAfter = newAfter;
+    this._bufferVersion++;
+    this._updateUrlFromFilters(route);
     this.host.requestUpdate();
   }
 
@@ -516,6 +578,78 @@ export class GroupMonitorController implements ReactiveController {
       default:
         return null;
     }
+  }
+
+  /**
+   * Applies time-delta expansion to include context telegrams around matching ones.
+   * Uses binary search on the already-sorted allTelegrams array for O(n log n) performance.
+   *
+   * @param matchingTelegrams - Telegrams that match the active list filters
+   * @param allTelegrams - All telegrams in the buffer (sorted chronologically by timestamp)
+   * @param deltaBefore - Milliseconds before a matching telegram to include
+   * @param deltaAfter - Milliseconds after a matching telegram to include
+   * @returns Expanded array of telegrams (deduplicated, preserving original order)
+   */
+  private _applyTimeDeltaExpansion(
+    matchingTelegrams: TelegramRow[],
+    allTelegrams: readonly TelegramRow[],
+    deltaBefore: number,
+    deltaAfter: number,
+  ): TelegramRow[] {
+    // No delta active or no matching telegrams → return as-is
+    if ((deltaBefore <= 0 && deltaAfter <= 0) || matchingTelegrams.length === 0) {
+      return matchingTelegrams;
+    }
+
+    // If all telegrams match, no expansion needed
+    if (matchingTelegrams.length === allTelegrams.length) {
+      return matchingTelegrams;
+    }
+
+    const result: TelegramRow[] = [];
+    let lastIncludedIdx = -1;
+
+    for (const match of matchingTelegrams) {
+      const matchTime = match.timestamp.getTime();
+      const windowStart = matchTime - deltaBefore;
+      const windowEnd = matchTime + deltaAfter;
+
+      // Binary search for startIdx (first telegram >= windowStart)
+      // Since windowStart is monotonically increasing, we can start from the previous end
+      let lo = Math.max(0, lastIncludedIdx + 1);
+      let hi = allTelegrams.length;
+      while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (allTelegrams[mid].timestamp.getTime() < windowStart) {
+          lo = mid + 1;
+        } else {
+          hi = mid;
+        }
+      }
+      const startIdx = lo;
+
+      // Binary search for endIdx (first telegram > windowEnd)
+      lo = startIdx;
+      hi = allTelegrams.length;
+      while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (allTelegrams[mid].timestamp.getTime() <= windowEnd) {
+          lo = mid + 1;
+        } else {
+          hi = mid;
+        }
+      }
+      const endIdx = lo;
+
+      // Add telegrams that haven't been added yet (merging overlapping windows)
+      const actualStart = Math.max(startIdx, lastIncludedIdx + 1);
+      for (let i = actualStart; i < endIdx; i++) {
+        result.push(allTelegrams[i]);
+      }
+      lastIncludedIdx = Math.max(lastIncludedIdx, endIdx - 1);
+    }
+
+    return result;
   }
 
   /**
@@ -660,6 +794,19 @@ export class GroupMonitorController implements ReactiveController {
     this._bufferVersion++;
   }
 
+  /**
+   * Resets time-delta values to 0 if no list filters are active
+   */
+  private _resetTimeDeltaIfNoListFilters(): void {
+    if (!this.hasActiveListFilters) {
+      if (this._timeDeltaBefore > 0 || this._timeDeltaAfter > 0) {
+        this._timeDeltaBefore = 0;
+        this._timeDeltaAfter = 0;
+        this._bufferVersion++;
+      }
+    }
+  }
+
   // ============================================================================
   // Private methods
   // ============================================================================
@@ -770,6 +917,15 @@ export class GroupMonitorController implements ReactiveController {
       }
     });
 
+    if (this.hasActiveListFilters) {
+      if (this._timeDeltaBefore > 0) {
+        params.set("timedelta_before", this._timeDeltaBefore.toString());
+      }
+      if (this._timeDeltaAfter > 0) {
+        params.set("timedelta_after", this._timeDeltaAfter.toString());
+      }
+    }
+
     const newPath = params.toString()
       ? `${route.prefix}${route.path}?${params.toString()}`
       : `${route.prefix}${route.path}`;
@@ -786,10 +942,20 @@ export class GroupMonitorController implements ReactiveController {
     const destination = searchParams.get("destination");
     const direction = searchParams.get("direction");
     const telegramtype = searchParams.get("telegramtype");
+    const timeDeltaBefore = searchParams.get("timedelta_before");
+    const timeDeltaAfter = searchParams.get("timedelta_after");
 
     if (!source && !destination && !direction && !telegramtype) {
+      this._timeDeltaBefore = 0;
+      this._timeDeltaAfter = 0;
       return;
     }
+
+    // Restore time-delta values from URL when list filters exist.
+    // Missing or invalid query params must reset to 0 so the URL remains
+    // the single source of truth for the controller state.
+    this._timeDeltaBefore = Math.max(0, Math.floor(Number(timeDeltaBefore) || 0));
+    this._timeDeltaAfter = Math.max(0, Math.floor(Number(timeDeltaAfter) || 0));
 
     this._filters = {
       source: source ? source.split(",") : [],

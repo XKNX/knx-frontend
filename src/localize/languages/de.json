@@ -111,5 +111,11 @@
   "knx_telegram_info_dialog_payload": "Daten",
   "expose_create_loading": "Expose-Konfiguration wird geladen.",
   "expose_create_load_error": "Fehler beim Laden der Expose-Konfiguration.",
-  "expose_validation_error": "Validierungsfehler"
+  "expose_validation_error": "Validierungsfehler",
+  "group_monitor_time_delta_title": "Kontextzeitspanne",
+  "group_monitor_time_delta_description": "Zeigt zusätzlich alle Telegramme innerhalb der definierten Zeitspanne vor/nach einem gefilterten Telegramm – unabhängig von den gesetzten Filtern. (0 = aus)",
+  "group_monitor_time_delta_before": "- Vorher (ms)",
+  "group_monitor_time_delta_after": "+ Nachher (ms)",
+  "group_monitor_time_delta_disabled": "Filter setzen, um die Kontextzeitspanne zu nutzen.",
+  "group_monitor_time_delta_summary": "Innerhalb -{before} ms / +{after} ms"
 }

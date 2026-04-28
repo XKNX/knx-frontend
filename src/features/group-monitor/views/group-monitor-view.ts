@@ -22,6 +22,7 @@ import { isTouch } from "@ha/util/is_touch";
 import "../../../components/data-table/cell/knx-table-cell";
 import "../../../components/data-table/cell/knx-table-cell-filterable";
 import "../../../components/data-table/filter/knx-list-filter";
+import "../../../components/data-table/filter/knx-time-delta-filter";
 
 import { customElement, property, query } from "lit/decorators";
 import { storage } from "@ha/common/decorators/storage";
@@ -43,6 +44,7 @@ import type {
   Config as ListFilterConfig,
   KnxListFilter,
 } from "../../../components/data-table/filter/knx-list-filter";
+import type { TimeDeltaChangedEvent } from "../../../components/data-table/filter/knx-time-delta-filter";
 
 /**
  * KNX Group Monitor Component
@@ -65,6 +67,8 @@ import type {
  * - `?destination=1/2/3,4/5/6` - Filter by destination addresses (comma-separated)
  * - `?direction=Incoming` - Filter by telegram direction (comma-separated)
  * - `?telegramtype=GroupValueWrite,GroupValueRead` - Filter by telegram types (comma-separated)
+ * - `?timedelta_before=100` - Include telegrams up to 100ms before a match (only applies when list filters are active)
+ * - `?timedelta_after=100` - Include telegrams up to 100ms after a match (only applies when list filters are active)
  *
  * **Examples:**
  * ```
@@ -540,6 +544,16 @@ export class KNXGroupMonitor extends LitElement {
     this._onFilterExpansionChange("telegramtype", ev.detail.expanded);
   };
 
+  /** Handles time-delta filter value changes */
+  private _handleTimeDeltaChanged = (ev: HASSDomEvent<TimeDeltaChangedEvent>): void => {
+    this.controller.setTimeDelta(ev.detail.deltaBefore, ev.detail.deltaAfter, this.route);
+  };
+
+  /** Handles time-delta filter panel expansion */
+  private _handleTimeDeltaExpanded = (ev: CustomEvent<{ expanded: boolean }>): void => {
+    this._onFilterExpansionChange("timedelta", ev.detail.expanded);
+  };
+
   // Table cell filter toggle handlers (for quick filtering from table cells)
 
   /** Toggles source address filter from table cell click */
@@ -857,12 +871,19 @@ export class KNXGroupMonitor extends LitElement {
    * @returns The complete template for the group monitor interface
    */
   protected render(): TemplateResult {
-    const activeFilters = Object.values(this.controller.filters).filter(
+    let activeFilters = Object.values(this.controller.filters).filter(
       (f) => Array.isArray(f) && f.length,
     ).length;
 
+    if (
+      activeFilters > 0 &&
+      (this.controller.timeDeltaBefore > 0 || this.controller.timeDeltaAfter > 0)
+    ) {
+      activeFilters++;
+    }
+
     // Get filtered data once to avoid update loops
-    const { filteredTelegrams, distinctValues } = this._getFilteredData();
+    const { filteredTelegrams, distinctValues, timeDeltaAddedCount } = this._getFilteredData();
 
     return html`
       <hass-tabs-subpage-data-table
@@ -1062,6 +1083,20 @@ export class KNXGroupMonitor extends LitElement {
           @selection-changed=${this._handleTelegramTypeFilterChange}
           @expanded-changed=${this._handleTelegramTypeFilterExpanded}
         ></knx-list-filter>
+
+        <!-- Time-Delta Context Filter -->
+        <knx-time-delta-filter
+          slot="filter-pane"
+          .hass=${this.hass}
+          .knx=${this.knx}
+          .deltaBefore=${this.controller.timeDeltaBefore}
+          .deltaAfter=${this.controller.timeDeltaAfter}
+          .addedCount=${timeDeltaAddedCount || 0}
+          .disabled=${!this.controller.hasActiveListFilters}
+          .expanded=${this.controller.expandedFilter === "timedelta"}
+          @time-delta-changed=${this._handleTimeDeltaChanged}
+          @expanded-changed=${this._handleTimeDeltaExpanded}
+        ></knx-time-delta-filter>
       </hass-tabs-subpage-data-table>
     `;
   }
