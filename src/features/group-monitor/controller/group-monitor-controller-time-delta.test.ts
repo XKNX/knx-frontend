@@ -7,6 +7,18 @@ vi.mock("../../../services/websocket.service", () => ({
   getGroupMonitorInfo: vi.fn(),
 }));
 
+vi.mock("../../../tools/knx-logger", () => ({
+  KNXLogger: class {
+    debug = vi.fn();
+
+    info = vi.fn();
+
+    warn = vi.fn();
+
+    error = vi.fn();
+  },
+}));
+
 /**
  * Helper function to create mock telegram data for testing
  */

@@ -36,9 +36,6 @@ export interface TimeDeltaChangedEvent {
   deltaAfter: number;
 }
 
-/**
- * Event payload for expansion state changes
- */
 @customElement("knx-time-delta-filter")
 export class KnxTimeDeltaFilter extends LitElement {
   @property({ attribute: false, hasChanged: () => false }) public hass!: HomeAssistant;
@@ -239,7 +236,7 @@ export class KnxTimeDeltaFilter extends LitElement {
   // Styles
   // ============================================================================
 
-  static readonly styles = css`
+  static styles = css`
     :host {
       display: flex;
       flex-direction: column;
