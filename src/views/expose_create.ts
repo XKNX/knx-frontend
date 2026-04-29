@@ -305,8 +305,9 @@ export class KNXCreateExpose extends LitElement {
         ${this.narrow ? this._renderNotesDialog() : nothing}
         <div class="content config-layout ${this.narrow ? "" : "wide"}">
           <div class="entity-column">
-            <div class="entity-info-sticky">${this._renderEntityInfo()}</div>
-            ${!this.narrow ? this._renderNotesCard() : nothing}
+            <div class="entity-sticky-stack">
+              ${this._renderEntityInfo()} ${!this.narrow ? this._renderNotesCard() : nothing}
+            </div>
           </div>
           <div class="config-column">
             ${this._renderConfigTask()}
@@ -421,12 +422,13 @@ export class KNXCreateExpose extends LitElement {
 
   private _renderNotesCard(): TemplateResult {
     return html`
-      <ha-card outlined class="notes-card">
+      <ha-card outlined>
         <div class="card-header">
           ${this.hass.localize("component.knx.config_panel.expose.create.notes.label")}
         </div>
         <div class="card-content">
           <ha-textarea
+            class="notes-textarea"
             .placeholder=${this.hass.localize(
               "component.knx.config_panel.expose.create.notes.placeholder",
             )}
@@ -449,7 +451,7 @@ export class KNXCreateExpose extends LitElement {
       >
         <ha-textarea
           .rows=${this._getNotesRows()}
-          class="notes-textarea-dialog"
+          class="notes-textarea"
           .placeholder=${this.hass.localize(
             "component.knx.config_panel.expose.create.notes.placeholder",
           )}
@@ -764,6 +766,14 @@ export class KNXCreateExpose extends LitElement {
       min-width: 0;
     }
 
+    .config-layout.wide .entity-column {
+      position: sticky;
+      top: 16px;
+      align-self: start;
+      max-height: calc(100vh - 32px);
+      overflow: auto;
+    }
+
     .config-column {
       min-width: 0;
       display: flex;
@@ -771,9 +781,10 @@ export class KNXCreateExpose extends LitElement {
       gap: 16px;
     }
 
-    .config-layout.wide .entity-info-sticky {
-      position: sticky;
-      top: 16px;
+    .config-layout.wide .entity-sticky-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
     .panel-content {
@@ -874,19 +885,11 @@ export class KNXCreateExpose extends LitElement {
       }
     }
 
-    ha-card .card-content ha-textarea {
-      display: block;
-      width: 100%;
-    }
-
-    .notes-textarea-dialog {
+    .notes-textarea {
       display: block;
       width: 100%;
       max-height: 75vh;
-    }
-
-    .notes-card {
-      margin-top: 16px;
+      overflow: auto;
     }
   `;
 }
