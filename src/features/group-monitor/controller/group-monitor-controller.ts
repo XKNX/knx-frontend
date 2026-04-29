@@ -353,7 +353,7 @@ export class GroupMonitorController implements ReactiveController {
         // Calculate relative time offset only when sorting by timestamp or natrural order
         if ((sortColumn === "timestampIso" && sortDirection) || !sortColumn) {
           // For timestamp sorting, we want to show the time difference since the chronologically previous telegram
-          let previousTelegram: TelegramRow | null = null;
+          let previousTelegram: TelegramRow | null;
 
           if (sortDirection === "desc" && sortColumn) {
             // In descending order (newest first): [10:30, 10:25, 10:20]

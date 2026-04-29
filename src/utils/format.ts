@@ -167,9 +167,11 @@ export function extractMicrosecondsFromIso(iso: string): number {
 
   // -------- microseconds part ------------------------------
   let frac = iso.slice(dotPos + 1, tzPos); // digits after '.'
-  if (frac.length < 6)
+  if (frac.length < 6) {
     frac = frac.padEnd(6, "0"); // e.g. ".27" -> "270000"
-  else if (frac.length > 6) frac = frac.slice(0, 6); // ignore >µs precision
+  } else if (frac.length > 6) {
+    frac = frac.slice(0, 6); // ignore >µs precision
+  }
 
   return msSinceEpoch * 1_000 + Number(frac);
 }
