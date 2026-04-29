@@ -406,11 +406,12 @@ export class GroupMonitorController implements ReactiveController {
     return Object.entries(this._filters).every(([field, values]) => {
       if (!values?.length) return true;
 
-      const fieldMap: Record<string, string> = {
+      const fieldMap: Record<string, string | null> = {
         source: telegram.sourceAddress,
         destination: telegram.destinationAddress,
         direction: telegram.direction,
         telegramtype: telegram.type,
+        dpt: telegram.dptId,
       };
 
       return values.includes(fieldMap[field] || "");
@@ -951,10 +952,11 @@ export class GroupMonitorController implements ReactiveController {
     const destination = searchParams.get("destination");
     const direction = searchParams.get("direction");
     const telegramtype = searchParams.get("telegramtype");
+    const dpt = searchParams.get("dpt");
     const timeDeltaBefore = searchParams.get("timedelta_before");
     const timeDeltaAfter = searchParams.get("timedelta_after");
 
-    if (!source && !destination && !direction && !telegramtype) {
+    if (!source && !destination && !direction && !telegramtype && !dpt) {
       this._timeDeltaBefore = 0;
       this._timeDeltaAfter = 0;
       return;
@@ -971,6 +973,7 @@ export class GroupMonitorController implements ReactiveController {
       destination: destination ? destination.split(",") : [],
       direction: direction ? direction.split(",") : [],
       telegramtype: telegramtype ? telegramtype.split(",") : [],
+      dpt: dpt ? dpt.split(",") : [],
     };
 
     const preserveValues = this._createFilteredDistinctValues();
