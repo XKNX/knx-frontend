@@ -341,7 +341,12 @@ export class KNXCreateExpose extends LitElement {
         </ha-button>
         ${this.narrow && this._entityId
           ? html`
-              <ha-button class="notes-fab" size="large" extended @click=${this._openNotesDialog}>
+              <ha-button
+                class="notes-fab"
+                size="large"
+                variant="neutral"
+                @click=${this._openNotesDialog}
+              >
                 <ha-svg-icon slot="start" .path=${mdiFileDocumentEdit}></ha-svg-icon>
                 ${this.hass.localize("component.knx.config_panel.expose.create.notes.label")}
               </ha-button>
