@@ -97,8 +97,6 @@ export default tseslint.config(
       "symbol-description": "error",
       yoda: "error",
 
-      // TODO: Enable once violations are fixed (43 instances as of 2026-04)
-      // "no-useless-assignment": "error",
       "no-useless-assignment": "error",
 
       // Project rules
