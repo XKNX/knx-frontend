@@ -17,7 +17,7 @@ import memoize from "memoize-one";
 
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-tabs-subpage-data-table";
-import "@ha/components/ha-fab";
+import "@ha/components/ha-button";
 import "@ha/components/ha-icon";
 import "@ha/components/ha-icon-overflow-menu";
 import "@ha/components/ha-state-icon";
@@ -553,14 +553,10 @@ export class KNXExposeView extends LitElement {
           @selection-changed=${this._onFilterSelectionChanged}
           @expanded-changed=${this._onFilterExpandedChanged}
         ></knx-list-filter>
-        <ha-fab
-          slot="fab"
-          .label=${this.hass.localize("ui.common.add")}
-          extended
-          @click=${this._exposeCreate}
-        >
-          <ha-svg-icon slot="icon" .path=${mdiPlus}></ha-svg-icon>
-        </ha-fab>
+        <ha-button slot="fab" size="large" @click=${this._exposeCreate}>
+          <ha-svg-icon slot="start" .path=${mdiPlus}></ha-svg-icon>
+          ${this.hass.localize("ui.common.add")}
+        </ha-button>
       </hass-tabs-subpage-data-table>
     `;
   }
