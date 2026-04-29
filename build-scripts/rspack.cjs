@@ -11,7 +11,7 @@ const TerserPlugin = require("terser-webpack-plugin");
 const { WebpackManifestPlugin } = require("rspack-manifest-plugin");
 const log = require("fancy-log");
 // eslint-disable-next-line @typescript-eslint/naming-convention
-const WebpackBar = require("webpackbar/rspack");
+const SafeWebpackBar = require("./safe-webpackbar.cjs");
 const paths = require("./paths.cjs");
 const bundle = require("./bundle.cjs");
 
@@ -97,7 +97,7 @@ const createRspackConfig = ({
       },
     },
     plugins: [
-      new WebpackBar({ fancy: !isProdBuild }),
+      new SafeWebpackBar({ fancy: !isProdBuild }),
       new WebpackManifestPlugin({
         // Only include the JS of entrypoints
         filter: (file) => file.isInitial && !file.name.endsWith(".map"),
@@ -132,12 +132,8 @@ const createRspackConfig = ({
       }),
       bundle.emptyPackages().length
         ? new rspack.NormalModuleReplacementPlugin(
-            new RegExp(
-              bundle
-                .emptyPackages()
-                .join("|")
-            ),
-            path.resolve(paths.root_dir, "src/util/empty.js")
+            new RegExp(bundle.emptyPackages().join("|")),
+            path.resolve(paths.root_dir, "src/util/empty.js"),
           )
         : false,
       !isProdBuild && new LogStartCompilePlugin(),
@@ -192,22 +188,17 @@ const createRspackConfig = ({
           "@formatjs/intl-getcanonicallocales/should-polyfill.js",
         "@formatjs/intl-getcanonicallocales/polyfill-force":
           "@formatjs/intl-getcanonicallocales/polyfill-force.js",
-        "@formatjs/intl-listformat/should-polyfill":
-          "@formatjs/intl-listformat/should-polyfill.js",
-        "@formatjs/intl-listformat/polyfill-force":
-          "@formatjs/intl-listformat/polyfill-force.js",
-        "@formatjs/intl-locale/should-polyfill":
-          "@formatjs/intl-locale/should-polyfill.js",
-        "@formatjs/intl-locale/polyfill-force":
-          "@formatjs/intl-locale/polyfill-force.js",
+        "@formatjs/intl-listformat/should-polyfill": "@formatjs/intl-listformat/should-polyfill.js",
+        "@formatjs/intl-listformat/polyfill-force": "@formatjs/intl-listformat/polyfill-force.js",
+        "@formatjs/intl-locale/should-polyfill": "@formatjs/intl-locale/should-polyfill.js",
+        "@formatjs/intl-locale/polyfill-force": "@formatjs/intl-locale/polyfill-force.js",
         "@formatjs/intl-numberformat/should-polyfill":
           "@formatjs/intl-numberformat/should-polyfill.js",
         "@formatjs/intl-numberformat/polyfill-force":
           "@formatjs/intl-numberformat/polyfill-force.js",
         "@formatjs/intl-pluralrules/should-polyfill":
           "@formatjs/intl-pluralrules/should-polyfill.js",
-        "@formatjs/intl-pluralrules/polyfill-force":
-          "@formatjs/intl-pluralrules/polyfill-force.js",
+        "@formatjs/intl-pluralrules/polyfill-force": "@formatjs/intl-pluralrules/polyfill-force.js",
         "@formatjs/intl-relativetimeformat/should-polyfill":
           "@formatjs/intl-relativetimeformat/should-polyfill.js",
         "@formatjs/intl-relativetimeformat/polyfill-force":
