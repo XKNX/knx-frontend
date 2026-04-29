@@ -25,9 +25,8 @@
     // Interop with CommonJS and other tools
     "esModuleInterop": true,
     "isolatedModules": true,
-    "baseUrl": "src",
     "paths": {
-      "@ha/*": ["../homeassistant-frontend/src/*"],
+      "@ha/*": ["./homeassistant-frontend/src/*"],
       "lit/static-html": ["./node_modules/lit/static-html.js"],
       "lit/decorators": ["./node_modules/lit/decorators.js"],
       "lit/directive": ["./node_modules/lit/directive.js"],
@@ -135,7 +134,8 @@
         "./node_modules/home-assistant-js-websocket/dist/*"
       ],
       "lit/directives/join": ["./node_modules/lit/directives/join.js"],
-      "lit/directives/ref": ["./node_modules/lit/directives/ref.js"]
+      "lit/directives/ref": ["./node_modules/lit/directives/ref.js"],
+      "*": ["./src/*"]
     },
     "plugins": [
       {
