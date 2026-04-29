@@ -9,7 +9,7 @@ import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-subpage";
 import "@ha/components/ha-alert";
 import "@ha/components/ha-card";
-import "@ha/components/ha-fab";
+import "@ha/components/ha-button";
 import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-navigation-list";
 import { navigate } from "@ha/common/navigate";
@@ -294,16 +294,17 @@ export class KNXCreateEntity extends LitElement {
                 </ha-alert>`
               : nothing}
           </knx-configure-entity>
-          <ha-fab
-            .label=${create
-              ? this.hass.localize("ui.common.create")
-              : this.hass.localize("ui.common.save")}
-            extended
+          <ha-button
+            class="fab"
+            size="large"
             @click=${create ? this._entityCreate : this._entityUpdate}
             ?disabled=${this._config === undefined}
           >
-            <ha-svg-icon slot="icon" .path=${create ? mdiPlus : mdiFloppy}></ha-svg-icon>
-          </ha-fab>
+            <ha-svg-icon slot="start" .path=${create ? mdiPlus : mdiFloppy}></ha-svg-icon>
+            ${create
+              ? this.hass.localize("ui.common.create")
+              : this.hass.localize("ui.common.save")}
+          </ha-button>
         </div>
         ${this._projectData
           ? html` <div class="panel">
@@ -472,7 +473,7 @@ export class KNXCreateEntity extends LitElement {
       }
     }
 
-    ha-fab {
+    ha-button.fab {
       /* not slot="fab" to move out of panel */
       float: right;
       margin-right: calc(16px + env(safe-area-inset-right));

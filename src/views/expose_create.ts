@@ -15,7 +15,6 @@ import "@ha/components/ha-card";
 import "@ha/components/ha-adaptive-dialog";
 import "@ha/components/ha-expansion-panel";
 import "@ha/components/ha-textarea";
-import "@ha/components/ha-fab";
 import "@ha/components/ha-icon-button";
 import "@ha/components/ha-state-icon";
 import "@ha/components/ha-svg-icon";
@@ -330,27 +329,21 @@ export class KNXCreateExpose extends LitElement {
               : nothing}
           </div>
         </div>
-        <ha-fab
+        <ha-button
           slot="fab"
-          .label=${create
-            ? this.hass.localize("ui.common.create")
-            : this.hass.localize("ui.common.save")}
-          extended
+          size="large"
           @click=${this._save}
           ?disabled=${this._config.options.some((e) => !e.ga?.write)}
         >
-          <ha-svg-icon slot="icon" .path=${create ? mdiPlus : mdiFloppy}></ha-svg-icon>
-        </ha-fab>
+          <ha-svg-icon slot="start" .path=${create ? mdiPlus : mdiFloppy}></ha-svg-icon>
+          ${create ? this.hass.localize("ui.common.create") : this.hass.localize("ui.common.save")}
+        </ha-button>
         ${this.narrow && this._entityId
           ? html`
-              <ha-fab
-                class="notes-fab"
-                .label=${this.hass.localize("component.knx.config_panel.expose.create.notes.label")}
-                extended
-                @click=${this._openNotesDialog}
-              >
-                <ha-svg-icon slot="icon" .path=${mdiFileDocumentEdit}></ha-svg-icon>
-              </ha-fab>
+              <ha-button class="notes-fab" size="large" extended @click=${this._openNotesDialog}>
+                <ha-svg-icon slot="start" .path=${mdiFileDocumentEdit}></ha-svg-icon>
+                ${this.hass.localize("component.knx.config_panel.expose.create.notes.label")}
+              </ha-button>
             `
           : nothing}
       </hass-subpage>
