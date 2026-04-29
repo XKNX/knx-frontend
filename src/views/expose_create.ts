@@ -306,7 +306,7 @@ export class KNXCreateExpose extends LitElement {
         <div class="content config-layout ${this.narrow ? "" : "wide"}">
           <div class="entity-column">
             <div class="entity-sticky-stack">
-              ${this._renderEntityInfo()} ${!this.narrow ? this._renderNotesCard() : nothing}
+              ${this._renderEntityInfo()}${!this.narrow ? this._renderNotesCard() : nothing}
             </div>
           </div>
           <div class="config-column">
