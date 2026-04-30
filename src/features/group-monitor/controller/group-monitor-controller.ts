@@ -17,7 +17,7 @@ import { extractMicrosecondsFromIso } from "../../../utils/format";
 const logger = new KNXLogger("group_monitor_controller");
 
 // Filter and distinct values types for type safety
-export type FilterField = "source" | "destination" | "direction" | "telegramtype";
+export type FilterField = "source" | "destination" | "direction" | "telegramtype" | "dpt";
 
 // All filter fields as a constant array
 export const FILTER_FIELDS: readonly FilterField[] = [
@@ -25,6 +25,7 @@ export const FILTER_FIELDS: readonly FilterField[] = [
   "destination",
   "direction",
   "telegramtype",
+  "dpt",
 ] as const;
 
 export type FilterMap = Record<FilterField, ReadonlySet<string>>;
@@ -98,6 +99,7 @@ export class GroupMonitorController implements ReactiveController {
     destination: {},
     direction: {},
     telegramtype: {},
+    dpt: {},
   };
 
   // Buffer version counter for memoization cache invalidation
@@ -331,6 +333,7 @@ export class GroupMonitorController implements ReactiveController {
         destination: {},
         direction: {},
         telegramtype: {},
+        dpt: {},
       };
 
       // Initialize all distinct values with filteredCount = 0
@@ -403,11 +406,12 @@ export class GroupMonitorController implements ReactiveController {
     return Object.entries(this._filters).every(([field, values]) => {
       if (!values?.length) return true;
 
-      const fieldMap: Record<string, string> = {
+      const fieldMap: Record<string, string | null> = {
         source: telegram.sourceAddress,
         destination: telegram.destinationAddress,
         direction: telegram.direction,
         telegramtype: telegram.type,
+        dpt: telegram.dptId,
       };
 
       return values.includes(fieldMap[field] || "");
@@ -575,6 +579,9 @@ export class GroupMonitorController implements ReactiveController {
         return { id: telegram.direction, name: "" };
       case "telegramtype":
         return { id: telegram.type, name: "" };
+      case "dpt":
+        if (!telegram.dptId) return null;
+        return { id: telegram.dptId, name: telegram.dpt || telegram.dptId };
       default:
         return null;
     }
@@ -722,6 +729,7 @@ export class GroupMonitorController implements ReactiveController {
       destination: {},
       direction: {},
       telegramtype: {},
+      dpt: {},
     };
 
     for (const field of FILTER_FIELDS) {
@@ -779,6 +787,7 @@ export class GroupMonitorController implements ReactiveController {
         destination: { ...preserveValues.destination },
         direction: { ...preserveValues.direction },
         telegramtype: { ...preserveValues.telegramtype },
+        dpt: { ...preserveValues.dpt },
       };
     } else {
       // Reset to empty
@@ -787,6 +796,7 @@ export class GroupMonitorController implements ReactiveController {
         destination: {},
         direction: {},
         telegramtype: {},
+        dpt: {},
       };
     }
 
@@ -942,10 +952,11 @@ export class GroupMonitorController implements ReactiveController {
     const destination = searchParams.get("destination");
     const direction = searchParams.get("direction");
     const telegramtype = searchParams.get("telegramtype");
+    const dpt = searchParams.get("dpt");
     const timeDeltaBefore = searchParams.get("timedelta_before");
     const timeDeltaAfter = searchParams.get("timedelta_after");
 
-    if (!source && !destination && !direction && !telegramtype) {
+    if (!source && !destination && !direction && !telegramtype && !dpt) {
       this._timeDeltaBefore = 0;
       this._timeDeltaAfter = 0;
       return;
@@ -962,6 +973,7 @@ export class GroupMonitorController implements ReactiveController {
       destination: destination ? destination.split(",") : [],
       direction: direction ? direction.split(",") : [],
       telegramtype: telegramtype ? telegramtype.split(",") : [],
+      dpt: dpt ? dpt.split(",") : [],
     };
 
     const preserveValues = this._createFilteredDistinctValues();
