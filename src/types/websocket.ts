@@ -62,6 +62,27 @@ export interface TelegramDict {
   value: string | number | boolean | null;
 }
 
+export interface TelegramQueryParameters {
+  sources?: string[];
+  destinations?: string[];
+  telegram_types?: string[];
+  directions?: string[];
+  dpt_mains?: number[];
+  start_time?: string; // ISO format
+  end_time?: string; // ISO format
+  delta_before_ms?: number;
+  delta_after_ms?: number;
+  limit?: number;
+  offset?: number;
+  order_descending?: boolean;
+}
+
+export interface TelegramQueryResult {
+  telegrams: TelegramDict[];
+  total_count: number;
+  limit_reached: boolean;
+}
+
 export interface KNXProject {
   info: KNXProjectInfo;
   group_addresses: Record<string, GroupAddress>;
