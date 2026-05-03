@@ -11,6 +11,9 @@ export interface KNXInfoData {
   version: string;
   connected: boolean;
   current_address: string;
+  telegram_backend: string;
+  telegram_retention: number | null;
+  telegram_max_count: number | null;
 }
 
 export interface DPTMetadata {

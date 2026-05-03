@@ -74,6 +74,32 @@ export class KNXInfo extends LitElement {
           <div>${this.knx.connectionInfo.current_address}</div>
         </div>
 
+        <div class="knx-content-row">
+          <div>${this.knx.localize("info_telegram_storage")}</div>
+          <div>
+            ${this.knx.localize(
+              `backend_${this.knx.connectionInfo.telegram_backend.toLowerCase()}`,
+            )}
+          </div>
+        </div>
+
+        ${this.knx.connectionInfo.telegram_retention
+          ? html`
+              <div class="knx-content-row">
+                <div>${this.knx.localize("info_telegram_retention")}</div>
+                <div>${this.knx.connectionInfo.telegram_retention} days</div>
+              </div>
+            `
+          : nothing}
+        ${this.knx.connectionInfo.telegram_max_count
+          ? html`
+              <div class="knx-content-row">
+                <div>${this.knx.localize("info_telegram_limit")}</div>
+                <div>${this.knx.connectionInfo.telegram_max_count}</div>
+              </div>
+            `
+          : nothing}
+
         <div class="knx-bug-report">
           ${this.knx.localize("info_issue_tracker")}
           <a href="https://github.com/XKNX/knx-integration" target="_blank">xknx/knx-integration</a>
