@@ -87,7 +87,11 @@ export class KNXInfo extends LitElement {
           ? html`
               <div class="knx-content-row">
                 <div>${this.knx.localize("info_telegram_retention")}</div>
-                <div>${this.knx.connectionInfo.telegram_retention} days</div>
+                <div>
+                  ${this.knx.localize("info_telegram_retention_days", {
+                    retention: String(this.knx.connectionInfo.telegram_retention),
+                  })}
+                </div>
               </div>
             `
           : nothing}

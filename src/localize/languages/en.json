@@ -18,6 +18,7 @@
   "info_my_knx": "If you'd like to learn more about the KNX system or ETS, visit",
   "info_telegram_storage": "Telegram storage",
   "info_telegram_retention": "Retention",
+  "info_telegram_retention_days": "{retention} days",
   "info_telegram_limit": "Limit",
   "backend_memory": "Memory",
   "backend_sqlite": "SQLite",
