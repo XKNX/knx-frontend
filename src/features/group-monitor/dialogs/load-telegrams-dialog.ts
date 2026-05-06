@@ -303,7 +303,15 @@ export class LoadTelegramsDialog
       display: flex;
       flex-direction: column;
       gap: 24px;
+      width: 100%;
+      max-width: 400px;
       min-width: 400px;
+    }
+
+    @media all and (max-width: 450px) {
+      .content {
+        min-width: 0;
+      }
     }
 
     .section {
@@ -327,6 +335,12 @@ export class LoadTelegramsDialog
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 8px;
+    }
+
+    @media all and (max-width: 450px) {
+      .quick-range-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
 
     .custom-relative-row {
@@ -353,6 +367,13 @@ export class LoadTelegramsDialog
       display: flex;
       gap: 8px;
       align-items: center;
+    }
+
+    @media all and (max-width: 450px) {
+      .date-time-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
     }
 
     .date-time-row ha-date-input {
