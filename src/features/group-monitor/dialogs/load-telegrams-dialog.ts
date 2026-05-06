@@ -91,7 +91,7 @@ export class LoadTelegramsDialog
 
   private _handleCustomAbsolute() {
     if (!this._startDate) {
-      this._error = "Start date is required";
+      this._error = this._knx.localize("group_monitor_error_start_date_required");
       return;
     }
 
@@ -104,7 +104,7 @@ export class LoadTelegramsDialog
     this._loadTelegrams({ start_time: start, end_time: end });
   }
 
-  private async _loadTelegrams(params: any) {
+  private async _loadTelegrams(params: { start_time: string; end_time?: string }) {
     this._loading = true;
     this._error = undefined;
     this._limitReached = false;
@@ -116,7 +116,7 @@ export class LoadTelegramsDialog
       if (!result.limit_reached) {
         this.closeDialog();
       }
-    } catch (_err: any) {
+    } catch (_err: unknown) {
       this._error = this._knx.localize("group_monitor_error_fetch");
     } finally {
       this._loading = false;
@@ -147,27 +147,27 @@ export class LoadTelegramsDialog
     this._handleQuickRange(7 * 86400);
   }
 
-  private _handleRelValueInput(ev) {
-    this._relValue = Number(ev.target.value);
+  private _handleRelValueInput(ev: InputEvent) {
+    this._relValue = Number((ev.target as HTMLInputElement).value);
   }
 
-  private _handleRelUnitSelected(ev) {
+  private _handleRelUnitSelected(ev: any) {
     this._relUnit = ev.target.value;
   }
 
-  private _handleStartDateChanged(ev) {
+  private _handleStartDateChanged(ev: CustomEvent) {
     this._startDate = ev.detail.value;
   }
 
-  private _handleStartTimeChanged(ev) {
+  private _handleStartTimeChanged(ev: CustomEvent) {
     this._startTime = ev.detail.value;
   }
 
-  private _handleEndDateChanged(ev) {
+  private _handleEndDateChanged(ev: CustomEvent) {
     this._endDate = ev.detail.value;
   }
 
-  private _handleEndTimeChanged(ev) {
+  private _handleEndTimeChanged(ev: CustomEvent) {
     this._endTime = ev.detail.value;
   }
 
@@ -180,7 +180,7 @@ export class LoadTelegramsDialog
       <ha-dialog
         .open=${this._open}
         @closed=${this.closeDialog}
-        heading=${this._knx.localize("group_monitor_load_history")}
+        .headerTitle=${this._knx.localize("group_monitor_load_history")}
       >
         <div class="content">
           ${this._error ? html`<ha-alert alert-type="error">${this._error}</ha-alert>` : nothing}
@@ -196,12 +196,24 @@ export class LoadTelegramsDialog
               <span>${this._knx.localize("group_monitor_quick_range")}</span>
             </div>
             <div class="quick-range-grid">
-              <mwc-button @click=${this._handleQuickRange5m}>5 min</mwc-button>
-              <mwc-button @click=${this._handleQuickRange30m}>30 min</mwc-button>
-              <mwc-button @click=${this._handleQuickRange1h}>1 h</mwc-button>
-              <mwc-button @click=${this._handleQuickRange6h}>6 h</mwc-button>
-              <mwc-button @click=${this._handleQuickRange1d}>1 d</mwc-button>
-              <mwc-button @click=${this._handleQuickRange1w}>1 week</mwc-button>
+              <ha-button @click=${this._handleQuickRange5m}
+                >${this._knx.localize("group_monitor_range_5min")}</ha-button
+              >
+              <ha-button @click=${this._handleQuickRange30m}
+                >${this._knx.localize("group_monitor_range_30min")}</ha-button
+              >
+              <ha-button @click=${this._handleQuickRange1h}
+                >${this._knx.localize("group_monitor_range_1h")}</ha-button
+              >
+              <ha-button @click=${this._handleQuickRange6h}
+                >${this._knx.localize("group_monitor_range_6h")}</ha-button
+              >
+              <ha-button @click=${this._handleQuickRange1d}
+                >${this._knx.localize("group_monitor_range_1d")}</ha-button
+              >
+              <ha-button @click=${this._handleQuickRange1w}
+                >${this._knx.localize("group_monitor_range_1w")}</ha-button
+              >
             </div>
           </div>
 
@@ -279,9 +291,9 @@ export class LoadTelegramsDialog
             </div>
           </div>
         </div>
-        <mwc-button slot="secondaryAction" @click=${this.closeDialog}>
+        <ha-button slot="secondaryAction" @click=${this.closeDialog}>
           ${this.hass.localize("ui.common.cancel")}
-        </mwc-button>
+        </ha-button>
       </ha-dialog>
     `;
   }

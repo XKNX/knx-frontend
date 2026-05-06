@@ -531,7 +531,7 @@ export class GroupMonitorController implements ReactiveController {
     if (telegrams.length === 0) return;
 
     // Calculate dynamic telegram storage limit
-    const telegramsLength = this._telegramBuffer.snapshot.length + telegrams.length;
+    const telegramsLength = this._telegramBuffer.length + telegrams.length;
     const buffer = this._calculateTelegramStorageBuffer(telegramsLength);
     const telegramStorageLimit = Math.max(this._telegramBuffer.maxSize, telegramsLength + buffer);
 

@@ -122,7 +122,7 @@ describe("LoadTelegramsDialog", () => {
 
     // Test missing start date
     await (dialog as any)._handleCustomAbsolute();
-    expect((dialog as any)._error).toBe("Start date is required");
+    expect((dialog as any)._error).toBe("group_monitor_error_start_date_required");
 
     // Test with start date only
     (dialog as any)._startDate = "2026-05-01";
