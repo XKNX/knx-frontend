@@ -5,7 +5,7 @@ import { customElement, property, state } from "lit/decorators";
 import "@ha/components/ha-button";
 import "@ha/components/ha-dialog";
 import "@ha/components/ha-svg-icon";
-import "@ha/components/ha-textfield";
+import "@ha/components/input/ha-input";
 import "@ha/components/ha-select";
 import "@ha/components/ha-list-item";
 import "@ha/components/ha-date-input";
@@ -211,12 +211,12 @@ export class LoadTelegramsDialog
               <span>${this._knx.localize("group_monitor_custom_relative")}</span>
             </div>
             <div class="custom-relative-row">
-              <ha-textfield
+              <ha-input
                 type="number"
                 .value=${String(this._relValue)}
                 @input=${this._handleRelValueInput}
                 min="1"
-              ></ha-textfield>
+              ></ha-input>
               <ha-select
                 .value=${this._relUnit}
                 @selected=${this._handleRelUnitSelected}
@@ -323,7 +323,7 @@ export class LoadTelegramsDialog
       gap: 8px;
     }
 
-    .custom-relative-row ha-textfield {
+    .custom-relative-row ha-input {
       width: 80px;
     }
 
