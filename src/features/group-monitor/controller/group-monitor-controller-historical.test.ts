@@ -170,5 +170,7 @@ describe("GroupMonitorController - Historical Telegrams", () => {
     expect(result.filteredTelegrams).toHaveLength(10);
     expect(result.distinctValues.source["1.2.1"]).toBeDefined();
     expect(Object.keys(result.distinctValues.source)).toHaveLength(10);
+    // Verify the oldest one (1.1.0) is gone
+    expect(result.distinctValues.source["1.1.0"]).toBeUndefined();
   });
 });
