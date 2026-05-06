@@ -48,4 +48,15 @@ describe("KNXGroupMonitor", () => {
 
     expect(mockController.addHistoricalTelegrams).toHaveBeenCalledWith(telegrams);
   });
+
+  it("should clear telegrams when _handleClearRows is called", () => {
+    const mockController = {
+      clearTelegrams: vi.fn(),
+    };
+    (element as any).controller = mockController;
+
+    (element as any)._handleClearRows();
+
+    expect(mockController.clearTelegrams).toHaveBeenCalled();
+  });
 });

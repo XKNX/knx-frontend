@@ -4,6 +4,9 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
   plugins: [tsconfigPaths()],
+  define: {
+    __DEMO__: false,
+  },
   test: {
     alias: [
       { find: /^(lit\/.+?|@lit-labs\/.+?\/.+?)(?<!\.js)$/, replacement: "$1.js" },
