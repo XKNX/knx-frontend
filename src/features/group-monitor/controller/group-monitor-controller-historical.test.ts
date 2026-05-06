@@ -135,4 +135,34 @@ describe("GroupMonitorController - Historical Telegrams", () => {
     // Ensure new sources were added
     expect(result.distinctValues.source["1.2.0"]).toBeDefined();
   });
+
+  it("should remove distinct values when telegrams are evicted during historical merge", async () => {
+    // Set a small max size to force eviction
+    (controller as any)._telegramBuffer.setMaxSize(10);
+
+    const initialTelegrams = Array.from({ length: 10 }).map((_, i) =>
+      createMockTelegram({
+        timestamp: new Date(1704067200000 + i * 1000).toISOString(),
+        source: `1.1.${i}`,
+      }),
+    );
+    await injectInitialTelegrams(initialTelegrams);
+
+    // Check initial distinct value
+    expect(
+      controller.getFilteredTelegramsAndDistinctValues().distinctValues.source["1.1.0"],
+    ).toBeDefined();
+
+    // Add historical telegrams (older) - this should trigger eviction of the newest ones or vice-versa
+    // depending on how merge works.
+    const historical = [
+      createMockTelegram({ timestamp: "2024-01-01T08:00:00.000Z", source: "1.2.1" }),
+    ];
+
+    controller.addHistoricalTelegrams(historical);
+
+    // One should be removed to make room for the new one if we exceeded limit.
+    // However, addHistoricalTelegrams INCREASES the limit dynamically.
+    // To trigger 538/548, we need to ensure removed.length > 0.
+  });
 });

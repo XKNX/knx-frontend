@@ -1,10 +1,10 @@
 import { defineConfig } from "vitest/config";
 import tsconfigPaths from "vite-tsconfig-paths";
 
-
 export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
+    alias: [{ find: /^(lit\/.+?|@lit-labs\/.+?\/.+?)(?<!\.js)$/, replacement: "$1.js" }],
     environment: "jsdom", // to run in browser-like environment
     env: {
       TZ: "Etc/UTC",
