@@ -1,10 +1,17 @@
+import { resolve } from "path";
 import { defineConfig } from "vitest/config";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
-    alias: [{ find: /^(lit\/.+?|@lit-labs\/.+?\/.+?)(?<!\.js)$/, replacement: "$1.js" }],
+    alias: [
+      { find: /^(lit\/.+?|@lit-labs\/.+?\/.+?)(?<!\.js)$/, replacement: "$1.js" },
+      {
+        find: /.*\/build\/mdi\/iconMetadata\.json$/,
+        replacement: resolve(__dirname, "test/mocks/iconMetadata.json"),
+      },
+    ],
     environment: "jsdom", // to run in browser-like environment
     env: {
       TZ: "Etc/UTC",
