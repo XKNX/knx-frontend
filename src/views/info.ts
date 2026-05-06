@@ -83,7 +83,7 @@ export class KNXInfo extends LitElement {
           </div>
         </div>
 
-        ${this.knx.connectionInfo.telegram_retention
+        ${this.knx.connectionInfo.telegram_retention != null
           ? html`
               <div class="knx-content-row">
                 <div>${this.knx.localize("info_telegram_retention")}</div>
@@ -95,7 +95,7 @@ export class KNXInfo extends LitElement {
               </div>
             `
           : nothing}
-        ${this.knx.connectionInfo.telegram_max_count
+        ${this.knx.connectionInfo.telegram_max_count != null
           ? html`
               <div class="knx-content-row">
                 <div>${this.knx.localize("info_telegram_limit")}</div>

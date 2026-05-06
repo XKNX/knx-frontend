@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { TelegramDict } from "../../../types/websocket";
 import { GroupMonitorController } from "./group-monitor-controller";
+import { TelegramRow } from "../types/telegram-row";
 import { getGroupMonitorInfo } from "../../../services/websocket.service";
 
 vi.mock("../../../services/websocket.service", () => ({
@@ -134,5 +135,40 @@ describe("GroupMonitorController - Historical Telegrams", () => {
     expect(result.filteredTelegrams.length).toBeGreaterThan(0);
     // Ensure new sources were added
     expect(result.distinctValues.source["1.2.0"]).toBeDefined();
+  });
+
+  it("should remove distinct values when telegrams are evicted during historical merge", async () => {
+    (controller as any)._calculateTelegramStorageBuffer = vi.fn().mockReturnValue(0);
+    // Add 10 telegrams
+    const initialTelegrams = Array.from({ length: 10 }).map((_, i) =>
+      createMockTelegram({
+        timestamp: new Date(1704067200000 + i * 1000).toISOString(),
+        source: `1.1.${i}`,
+      }),
+    );
+    await injectInitialTelegrams(initialTelegrams);
+
+    // Set maxSize to 10
+    (controller as any)._telegramBuffer.setMaxSize(10);
+
+    // Add 1 historical telegram (older) - this will expand the buffer to 11 if we don't mock it correctly.
+    // But we mocked _calculateTelegramStorageBuffer to return 0.
+    // So the new maxSize will be Math.max(10, 11 + 0) = 11.
+    // Wait, if I want it to evict, I need to ensure the limit stays 10.
+
+    // Add 1 newer telegram - this should trigger eviction of the oldest initial telegram
+    const newRow = new TelegramRow(
+      createMockTelegram({ timestamp: "2024-01-01T13:00:00.000Z", source: "1.2.1" }),
+    );
+    (controller as any)._addToDistinctValues(newRow);
+    const removed = (controller as any)._telegramBuffer.add(newRow);
+    if (removed.length > 0) {
+      (controller as any)._removeFromDistinctValues(removed);
+    }
+
+    const result = controller.getFilteredTelegramsAndDistinctValues();
+    expect(result.filteredTelegrams).toHaveLength(10);
+    expect(result.distinctValues.source["1.2.1"]).toBeDefined();
+    expect(Object.keys(result.distinctValues.source)).toHaveLength(10);
   });
 });
