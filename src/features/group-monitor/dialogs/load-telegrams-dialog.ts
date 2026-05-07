@@ -148,7 +148,8 @@ export class LoadTelegramsDialog
   }
 
   private _handleRelValueInput(ev: InputEvent) {
-    this._relValue = Number((ev.target as HTMLInputElement).value);
+    const value = parseInt((ev.target as HTMLInputElement).value, 10);
+    this._relValue = isNaN(value) || value < 1 ? 1 : value;
   }
 
   private _handleRelUnitSelected(ev: any) {
@@ -196,22 +197,22 @@ export class LoadTelegramsDialog
               <span>${this._knx.localize("group_monitor_quick_range")}</span>
             </div>
             <div class="quick-range-grid">
-              <ha-button @click=${this._handleQuickRange5m}
+              <ha-button @click=${this._handleQuickRange5m} .disabled=${this._loading}
                 >${this._knx.localize("group_monitor_range_5min")}</ha-button
               >
-              <ha-button @click=${this._handleQuickRange30m}
+              <ha-button @click=${this._handleQuickRange30m} .disabled=${this._loading}
                 >${this._knx.localize("group_monitor_range_30min")}</ha-button
               >
-              <ha-button @click=${this._handleQuickRange1h}
+              <ha-button @click=${this._handleQuickRange1h} .disabled=${this._loading}
                 >${this._knx.localize("group_monitor_range_1h")}</ha-button
               >
-              <ha-button @click=${this._handleQuickRange6h}
+              <ha-button @click=${this._handleQuickRange6h} .disabled=${this._loading}
                 >${this._knx.localize("group_monitor_range_6h")}</ha-button
               >
-              <ha-button @click=${this._handleQuickRange1d}
+              <ha-button @click=${this._handleQuickRange1d} .disabled=${this._loading}
                 >${this._knx.localize("group_monitor_range_1d")}</ha-button
               >
-              <ha-button @click=${this._handleQuickRange1w}
+              <ha-button @click=${this._handleQuickRange1w} .disabled=${this._loading}
                 >${this._knx.localize("group_monitor_range_1w")}</ha-button
               >
             </div>
