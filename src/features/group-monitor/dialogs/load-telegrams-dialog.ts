@@ -306,13 +306,7 @@ export class LoadTelegramsDialog
       gap: 24px;
       width: 100%;
       max-width: 400px;
-      min-width: 400px;
-    }
-
-    @media all and (max-width: 450px) {
-      .content {
-        min-width: 0;
-      }
+      box-sizing: border-box;
     }
 
     .section {

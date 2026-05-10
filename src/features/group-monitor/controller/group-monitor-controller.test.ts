@@ -1,6 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { mainWindow } from "@ha/common/dom/get_main_window";
+import { navigate } from "@ha/common/navigate";
 import { GroupMonitorController } from "./group-monitor-controller";
 import { TelegramRow } from "../types/telegram-row";
+
+vi.mock("@ha/common/dom/get_main_window", () => ({
+  mainWindow: {
+    location: {
+      search: "",
+    },
+  },
+}));
+
+vi.mock("@ha/common/navigate", () => ({
+  navigate: vi.fn(),
+}));
 
 describe("GroupMonitorController", () => {
   let controller: GroupMonitorController;
@@ -11,6 +25,8 @@ describe("GroupMonitorController", () => {
       addController: vi.fn(),
       requestUpdate: vi.fn(),
     };
+    (mainWindow.location as any).search = "";
+    vi.clearAllMocks();
     controller = new GroupMonitorController(mockHost);
   });
 
@@ -132,5 +148,39 @@ describe("GroupMonitorController", () => {
 
     // We can't easily check the navigate call here without mocking navigate,
     // but the logic path is exercised.
+  });
+
+  it("should restore filters and timedelta from URL", () => {
+    (mainWindow.location as any).search = "?source=1.1.1&timedelta_before=100&timedelta_after=200";
+
+    (controller as any)._setFiltersFromUrl();
+
+    expect((controller as any)._filters.source).toEqual(["1.1.1"]);
+    expect((controller as any)._timeDeltaBefore).toBe(100);
+    expect((controller as any)._timeDeltaAfter).toBe(200);
+  });
+
+  it("should reset timedelta when no list filters are in URL", () => {
+    (mainWindow.location as any).search = "?timedelta_before=100";
+
+    (controller as any)._setFiltersFromUrl();
+
+    expect((controller as any)._timeDeltaBefore).toBe(0);
+    expect((controller as any)._filters).toEqual({});
+  });
+
+  it("should handle undefined route and timedelta_after in updateUrlFromFilters", () => {
+    (controller as any)._filters = { source: ["1.1.1"] };
+    (controller as any)._timeDeltaAfter = 200;
+
+    // Should not crash when route is undefined
+    (controller as any)._updateUrlFromFilters(undefined);
+    expect(navigate).not.toHaveBeenCalled();
+
+    const route = { prefix: "/knx", path: "/group_monitor" } as any;
+    (controller as any)._updateUrlFromFilters(route);
+    expect(navigate).toHaveBeenCalledWith("/knx/group_monitor?source=1.1.1&timedelta_after=200", {
+      replace: true,
+    });
   });
 });

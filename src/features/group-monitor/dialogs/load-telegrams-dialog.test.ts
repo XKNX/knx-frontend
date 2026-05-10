@@ -196,4 +196,15 @@ describe("LoadTelegramsDialog", () => {
     (dialog as any)._loading = true;
     expect((dialog as any).render()).not.toBeNull();
   });
+
+  it("should clamp relValue input to at least 1", () => {
+    (dialog as any)._handleRelValueInput({ target: { value: "0" } } as any);
+    expect((dialog as any)._relValue).toBe(1);
+
+    (dialog as any)._handleRelValueInput({ target: { value: "abc" } } as any);
+    expect((dialog as any)._relValue).toBe(1);
+
+    (dialog as any)._handleRelValueInput({ target: { value: "10" } } as any);
+    expect((dialog as any)._relValue).toBe(10);
+  });
 });

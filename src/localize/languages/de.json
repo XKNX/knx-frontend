@@ -81,6 +81,7 @@
   "project_view_table_description": "Beschreibung",
   "project_view_table_dpt": "DPT",
   "project_view_table_updated": "Aktualisiert",
+  "project_view_add_switch": "Schalter hinzufügen",
   "project_view_menu_view_telegrams": "Telegramme anzeigen",
   "project_view_menu_create_binary_sensor": "Binärsensor erstellen",
   "project_view_menu_create_sensor": "Sensor erstellen",
