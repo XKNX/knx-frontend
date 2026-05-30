@@ -59,7 +59,7 @@ export interface TelegramDict {
   telegramtype: string;
   timestamp: string; // ISO 8601 eg. "2023-06-21T22:28:45.446257+02:00" from `dt_util.as_local(dt_util.utcnow())`
   unit: string | null;
-  value: string | number | boolean | null;
+  value: string | number | boolean | unknown[] | Record<string, unknown> | null;
 }
 
 export interface TelegramQueryParameters {

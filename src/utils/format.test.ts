@@ -374,6 +374,11 @@ describe("TelegramDictFormatter", () => {
       const telegram = createMockTelegram({ value: 0, unit: "V" });
       expect(TelegramDictFormatter.valueWithUnit(telegram)).toBe("0 V");
     });
+
+    it("should format array values cleanly", () => {
+      const telegram = createMockTelegram({ value: [12, 28] as any });
+      expect(TelegramDictFormatter.valueWithUnit(telegram)).toBe("[12,28]");
+    });
   });
 
   describe("timeWithMilliseconds", () => {
