@@ -61,7 +61,10 @@ class KnxFrontend extends contextMixin(KnxElement) {
       await this._initKnx();
     });
 
-    computeDirectionStyles(computeRTL(this.hass), this.parentElement as LitElement);
+    computeDirectionStyles(
+      computeRTL(this.hass.language, this.hass.translationMetadata.translations),
+      this.parentElement as LitElement,
+    );
 
     document.body.addEventListener("keydown", (ev: KeyboardEvent) => {
       if (ev.ctrlKey || ev.shiftKey || ev.metaKey || ev.altKey) {

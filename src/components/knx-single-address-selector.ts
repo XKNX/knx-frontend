@@ -2,13 +2,14 @@ import { mdiTextSearchVariant } from "@mdi/js";
 
 import type { TemplateResult, HTMLTemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
-import { consume, type ContextType } from "@lit/context";
+import { consume } from "@lit/context";
 import { customElement, property, state } from "lit/decorators";
 
 import "@ha/components/ha-icon-button";
 import "@ha/components/input/ha-input";
 import { fireEvent } from "@ha/common/dom/fire_event";
-import { localizeContext } from "@ha/data/context";
+import { consumeLocalize } from "@ha/common/decorators/consume-context-entry";
+import type { LocalizeFunc } from "@ha/common/translations/localize";
 import type { HaInput } from "@ha/components/input/ha-input";
 
 import type { GroupAddress, KNXProject } from "../types/websocket";
@@ -46,8 +47,8 @@ export class KnxSingleAddressSelector extends LitElement {
   @state() private _currentName?: string;
 
   @state()
-  @consume({ context: localizeContext, subscribe: true })
-  private localize!: ContextType<typeof localizeContext>;
+  @consumeLocalize()
+  private localize!: LocalizeFunc;
 
   private _baseTranslation = (
     key: string,

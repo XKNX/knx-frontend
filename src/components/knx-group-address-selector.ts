@@ -1,14 +1,15 @@
 import { mdiAlertCircleOutline, mdiClose } from "@mdi/js";
 import type { TemplateResult, PropertyValues, HTMLTemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
-import { consume, type ContextType } from "@lit/context";
+import { consume } from "@lit/context";
 import { customElement, property, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 import memoize from "memoize-one";
 
 import "@ha/components/ha-icon-button";
 import { fireEvent } from "@ha/common/dom/fire_event";
-import { localizeContext } from "@ha/data/context";
+import { consumeLocalize } from "@ha/common/decorators/consume-context-entry";
+import type { LocalizeFunc } from "@ha/common/translations/localize";
 
 import "./knx-dpt-option-selector";
 import "./knx-dpt-dialog-selector";
@@ -52,8 +53,8 @@ export class GroupAddressSelector extends LitElement {
   @state() private _showEmptyPassiveField = false;
 
   @state()
-  @consume({ context: localizeContext, subscribe: true })
-  private localize!: ContextType<typeof localizeContext>;
+  @consumeLocalize()
+  private localize!: LocalizeFunc;
 
   private _selectedDPTValue?: string;
 

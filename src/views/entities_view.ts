@@ -646,7 +646,7 @@ export class KNXEntitiesView extends LitElement {
           @selection-changed=${this._onFilterSelectionChanged}
           @expanded-changed=${this._onFilterExpandedChanged}
         ></knx-list-filter>
-        <ha-button slot="fab" size="large" @click=${this._entityCreate}>
+        <ha-button slot="fab" size="l" @click=${this._entityCreate}>
           <ha-svg-icon slot="start" .path=${mdiPlus}></ha-svg-icon>
           ${this.hass.localize("ui.common.add")}
         </ha-button>

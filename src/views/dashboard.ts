@@ -8,7 +8,7 @@ import { fireEvent } from "@ha/common/dom/fire_event";
 import "@ha/components/ha-card";
 import "@ha/components/ha-md-list";
 import "@ha/components/ha-md-list-item";
-import "@ha/components/ha-navigation-list";
+import "@ha/panels/config/components/ha-config-navigation-list";
 import { fetchIntegrationManifest } from "@ha/data/integration";
 import "@ha/layouts/hass-subpage";
 import "@ha/panels/config/ha-config-section";
@@ -136,12 +136,12 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
       <hass-subpage .narrow=${this.narrow} .hass=${this.hass} header="KNX" back-path="/config">
         <ha-config-section .isWide=${this.isWide}>
           <ha-card outlined>
-            <ha-navigation-list
+            <ha-config-navigation-list
               .hass=${this.hass}
               .narrow=${this.narrow}
               .pages=${this._getPages()}
               has-secondary
-            ></ha-navigation-list>
+            ></ha-config-navigation-list>
           </ha-card>
           <ha-card outlined>
             <ha-md-list has-secondary>

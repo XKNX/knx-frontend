@@ -5,10 +5,11 @@ import { customElement, property, state } from "lit/decorators";
 
 import type { HassEntities, UnsubscribeFunc } from "home-assistant-js-websocket";
 
-import { localizeContext, connectionContext, statesContext } from "@ha/data/context";
+import { connectionContext, statesContext } from "@ha/data/context";
+import { consumeLocalize } from "@ha/common/decorators/consume-context-entry";
+import type { LocalizeFunc } from "@ha/common/translations/localize";
 
 import { transform } from "@ha/common/decorators/transform";
-import type { HomeAssistant } from "@ha/types";
 import { subscribeRenderTemplate } from "@ha/data/ws-templates";
 
 import { KNXLogger } from "../tools/knx-logger";
@@ -32,7 +33,7 @@ export class KnxExposeTemplatePreview extends LitElement {
   @state() private _typingIndicator = false;
 
   @consume({ context: connectionContext })
-  private _connection!: HomeAssistant["connection"];
+  private _haConnection!: ContextType<typeof connectionContext>;
 
   @state()
   @consume({ context: statesContext, subscribe: true })
@@ -47,8 +48,8 @@ export class KnxExposeTemplatePreview extends LitElement {
   private _stateOrAttribute?: unknown;
 
   @state()
-  @consume({ context: localizeContext, subscribe: true })
-  private localize!: ContextType<typeof localizeContext>;
+  @consumeLocalize()
+  private localize!: LocalizeFunc;
 
   private _unsubRenderTemplate?: UnsubscribeFunc;
 
@@ -100,7 +101,7 @@ export class KnxExposeTemplatePreview extends LitElement {
     logger.debug("Updating value template", this.valueTemplate, this._stateOrAttribute);
     try {
       const unsubscribe = await subscribeRenderTemplate(
-        this._connection,
+        this._haConnection.connection,
         (result) => {
           if (requestId !== this._updateRequestId) {
             return;

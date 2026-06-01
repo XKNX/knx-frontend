@@ -1,6 +1,6 @@
 import memoize from "memoize-one";
 import { LitElement, html, css, nothing } from "lit";
-import { consume, type ContextType } from "@lit/context";
+import { consume } from "@lit/context";
 import { customElement, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 
@@ -11,7 +11,8 @@ import "@ha/components/ha-md-list";
 import "@ha/components/ha-md-list-item";
 import "@ha/components/input/ha-input-search";
 
-import { localizeContext } from "@ha/data/context";
+import { consumeLocalize } from "@ha/common/decorators/consume-context-entry";
+import type { LocalizeFunc } from "@ha/common/translations/localize";
 import { DialogMixin } from "@ha/dialogs/dialog-mixin";
 import { haStyleDialog } from "@ha/resources/styles";
 import type { HaInputSearch } from "@ha/components/input/ha-input-search";
@@ -48,8 +49,8 @@ export class KnxGaSelectDialog extends DialogMixin<KnxGaSelectDialogParams>(LitE
   @state() private _filter = "";
 
   @state()
-  @consume({ context: localizeContext, subscribe: true })
-  private localize!: ContextType<typeof localizeContext>;
+  @consumeLocalize()
+  private localize!: LocalizeFunc;
 
   public connectedCallback() {
     super.connectedCallback();

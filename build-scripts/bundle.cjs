@@ -3,7 +3,10 @@ const env = require("./env.cjs");
 const paths = require("./paths.cjs");
 const { dependencies } = require("../package.json");
 
-const BABEL_PLUGINS = path.join(paths.root_dir, "homeassistant-frontend/build-scripts/babel-plugins");
+const BABEL_PLUGINS = path.join(
+  paths.root_dir,
+  "homeassistant-frontend/build-scripts/babel-plugins",
+);
 
 // Files from NPM Packages that should not be imported
 module.exports.ignorePackages = () => [];
@@ -13,11 +16,11 @@ module.exports.emptyPackages = () =>
   [
     // Icons in landingpage conflict with icons in HA so we don't load.
     // ... for KNX we seem to need it - probably due to iframe.
-    // 
+    //
     //   require.resolve(
     //     path.resolve(paths.root_dir, "homeassistant-frontend/src/components/ha-icon.ts"),
     //   ),
-    // 
+    //
     //   require.resolve(
     //     path.resolve(paths.root_dir, "homeassistant-frontend/src/components/ha-icon-picker.ts"),
     //   ),
@@ -113,7 +116,7 @@ module.exports.babelOptions = ({ latestBuild, isProdBuild }) => ({
                 { name: "svg", encapsulation: "svg" },
                 { name: "css", encapsulation: "style" },
               ],
-            ])
+            ]),
           ),
           "@polymer/polymer/lib/utils/html-tag.js": ["html"],
         },
@@ -137,10 +140,7 @@ module.exports.babelOptions = ({ latestBuild, isProdBuild }) => ({
       // Add plugin to inject various polyfills, excluding the polyfills
       // themselves to prevent self-injection.
       plugins: [
-        [
-          path.join(BABEL_PLUGINS, "custom-polyfill-plugin.js"),
-          { method: "usage-global" },
-        ],
+        [path.join(BABEL_PLUGINS, "custom-polyfill-plugin.js"), { method: "usage-global" }],
       ],
       exclude: [
         path.join(paths.root_dir, "homeassistant-frontend/src/resources/polyfills"),
@@ -157,11 +157,14 @@ module.exports.babelOptions = ({ latestBuild, isProdBuild }) => ({
     {
       // Use unambiguous for dependencies so that require() is correctly injected into CommonJS files
       // Exclusions are needed in some cases where ES modules have no static imports or exports, such as polyfills
+      // (otherwise babel-plugin-polyfill-corejs3 injects bare require("core-js/modules/...") calls
+      // that rspack does not transform, causing ReferenceError in browsers like Safari 14).
       sourceType: "unambiguous",
       include: /\/node_modules\//,
       exclude: [
         "element-internals-polyfill",
         "@?lit(?:-labs|-element|-html)?",
+        "@formatjs/(?:ecma402-abstract|intl-\\w+)",
       ].map((p) => new RegExp(`/node_modules/${p}/`)),
     },
   ],
