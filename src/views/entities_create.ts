@@ -11,7 +11,7 @@ import "@ha/components/ha-alert";
 import "@ha/components/ha-card";
 import "@ha/components/ha-button";
 import "@ha/components/ha-svg-icon";
-import "@ha/components/ha-navigation-list";
+import "@ha/panels/config/components/ha-config-navigation-list";
 import { navigate } from "@ha/common/navigate";
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
@@ -232,7 +232,7 @@ export class KNXCreateEntity extends LitElement {
             )}
           >
             <!-- <p>Some help text</p> -->
-            <ha-navigation-list
+            <ha-config-navigation-list
               .hass=${this.hass}
               .narrow=${this.narrow}
               .pages=${this.knx.supportedPlatforms.map((platform) => {
@@ -249,7 +249,7 @@ export class KNXCreateEntity extends LitElement {
               .label=${this.hass.localize(
                 "component.knx.config_panel.entities.create.type_selection.header",
               )}
-            ></ha-navigation-list>
+            ></ha-config-navigation-list>
           </ha-card>
         </div>
       </hass-subpage>
@@ -296,7 +296,7 @@ export class KNXCreateEntity extends LitElement {
           </knx-configure-entity>
           <ha-button
             class="fab"
-            size="large"
+            size="l"
             @click=${create ? this._entityCreate : this._entityUpdate}
             ?disabled=${this._config === undefined}
           >

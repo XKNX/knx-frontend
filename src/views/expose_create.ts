@@ -332,7 +332,7 @@ export class KNXCreateExpose extends LitElement {
         </div>
         <ha-button
           slot="fab"
-          size="large"
+          size="l"
           @click=${this._save}
           ?disabled=${this._config.options.some((e) => !e.ga?.write)}
         >
@@ -343,7 +343,7 @@ export class KNXCreateExpose extends LitElement {
           ? html`
               <ha-button
                 class="notes-fab"
-                size="large"
+                size="l"
                 variant="neutral"
                 @click=${this._openNotesDialog}
               >

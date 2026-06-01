@@ -1,8 +1,8 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 
-import "@ha/components/ha-formfield";
-import "@ha/components/ha-radio";
+import "@ha/components/radio/ha-radio-group";
+import "@ha/components/radio/ha-radio-option";
 import { fireEvent } from "@ha/common/dom/fire_event";
 
 import type { DPTOption } from "../types/schema";
@@ -27,34 +27,36 @@ class KnxDptOptionSelector extends LitElement {
   @property({ type: String }) public translation_key?: string;
 
   render() {
-    return html`
-      ${this.label ? html`<div class="title">${this.label}</div>` : nothing}
-      ${this.options.map(
-        (item: DPTOption) => html`
-          <div class="formfield">
-            <ha-radio
+    return html`<ha-radio-group
+        .label=${this.label ?? ""}
+        .disabled=${this.disabled}
+        .value=${this.value ?? null}
+        @change=${this._valueChanged}
+      >
+        ${this.options.map(
+          (item: DPTOption) => html`
+            <ha-radio-option
               .checked=${item.value === this.value}
               .value=${item.value}
               .disabled=${this.disabled}
-              @change=${this._valueChanged}
-            ></ha-radio>
-            <label .value=${item.value} @click=${this._valueChanged}>
-              <p>
-                ${this.localizeValue(this.translation_key + ".options." + item.translation_key)}
-              </p>
-              <p class="secondary">DPT ${item.value}</p>
-            </label>
-          </div>
-        `,
-      )}
-      ${this.invalidMessage ? html`<p class="invalid-message">${this.invalidMessage}</p>` : nothing}
-    `;
+            >
+              <label .value=${item.value} @click=${this._valueChanged}>
+                <p>
+                  ${this.localizeValue(this.translation_key + ".options." + item.translation_key)}
+                </p>
+                <p class="secondary">DPT ${item.value}</p>
+              </label>
+            </ha-radio-option>
+          `,
+        )}
+      </ha-radio-group>
+      ${this.invalidMessage ? html`<p class="invalid-message">${this.invalidMessage}</p>` : nothing} `;
   }
 
   private _valueChanged(ev) {
     ev.stopPropagation();
     const value = ev.target.value;
-    if (this.disabled || value === undefined || value === (this.value ?? "")) {
+    if (this.disabled || value === undefined || value === null || value === (this.value ?? "")) {
       return;
     }
     fireEvent(this, "value-changed", { value: value });
@@ -66,13 +68,8 @@ class KnxDptOptionSelector extends LitElement {
         color: var(--error-color);
       }
 
-      .title {
+      ha-radio-group::part(form-control-label) {
         padding-left: 12px;
-      }
-
-      .formfield {
-        display: flex;
-        align-items: center;
       }
 
       label {
