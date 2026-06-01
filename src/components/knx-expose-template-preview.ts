@@ -1,11 +1,13 @@
 import type { TemplateResult, PropertyValues } from "lit";
 import { LitElement, html, css, nothing } from "lit";
-import { consume, type ContextType } from "@lit/context";
+import { consume } from "@lit/context";
 import { customElement, property, state } from "lit/decorators";
 
 import type { HassEntities, UnsubscribeFunc } from "home-assistant-js-websocket";
 
-import { localizeContext, connectionContext, statesContext } from "@ha/data/context";
+import { connectionContext, statesContext } from "@ha/data/context";
+import { consumeLocalize } from "@ha/common/decorators/consume-context-entry";
+import type { LocalizeFunc } from "@ha/common/translations/localize";
 
 import { transform } from "@ha/common/decorators/transform";
 import type { HomeAssistant } from "@ha/types";
@@ -47,8 +49,8 @@ export class KnxExposeTemplatePreview extends LitElement {
   private _stateOrAttribute?: unknown;
 
   @state()
-  @consume({ context: localizeContext, subscribe: true })
-  private localize!: ContextType<typeof localizeContext>;
+  @consumeLocalize()
+  private localize!: LocalizeFunc;
 
   private _unsubRenderTemplate?: UnsubscribeFunc;
 

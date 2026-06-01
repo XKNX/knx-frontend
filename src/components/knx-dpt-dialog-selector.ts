@@ -1,12 +1,13 @@
+import { mdiClose, mdiMenuOpen } from "@mdi/js";
 import { LitElement, html, css, nothing } from "lit";
 import type { HTMLTemplateResult } from "lit";
-import { consume, type ContextType } from "@lit/context";
 import { customElement, property, state } from "lit/decorators";
 
 import "@ha/components/ha-icon-button";
-import { mdiClose, mdiMenuOpen } from "@mdi/js";
+
+import { consumeLocalize } from "@ha/common/decorators/consume-context-entry";
+import type { LocalizeFunc } from "@ha/common/translations/localize";
 import { fireEvent } from "@ha/common/dom/fire_event";
-import { localizeContext } from "@ha/data/context";
 
 import type { KNX } from "../types/knx";
 
@@ -31,8 +32,8 @@ class KnxDptDialogSelector extends LitElement {
   @property({ type: String }) public translation_key?: string;
 
   @state()
-  @consume({ context: localizeContext, subscribe: true })
-  private localize!: ContextType<typeof localizeContext>;
+  @consumeLocalize()
+  private localize!: LocalizeFunc;
 
   private _baseTranslation = (
     key: string,

@@ -1,6 +1,5 @@
 import type { TemplateResult } from "lit";
 import { css, html, LitElement, nothing } from "lit";
-import { consume, type ContextType } from "@lit/context";
 import { customElement, property, state } from "lit/decorators";
 import { repeat } from "lit/directives/repeat";
 
@@ -11,7 +10,8 @@ import "@ha/components/ha-label";
 
 import { stopPropagation } from "@ha/common/dom/stop_propagation";
 import { navigate } from "@ha/common/navigate";
-import { localizeContext } from "@ha/data/context";
+import { consumeLocalize } from "@ha/common/decorators/consume-context-entry";
+import type { LocalizeFunc } from "@ha/common/translations/localize";
 
 interface GroupAddressParts {
   address: string;
@@ -23,8 +23,8 @@ class KnxDataTableGaLabel extends LitElement {
   @property({ attribute: false }) public groupAddresses: GroupAddressParts[] = [];
 
   @state()
-  @consume({ context: localizeContext, subscribe: true })
-  private localize!: ContextType<typeof localizeContext>;
+  @consumeLocalize()
+  private localize!: LocalizeFunc;
 
   protected render(): TemplateResult {
     const gas = this.groupAddresses;

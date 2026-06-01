@@ -1,7 +1,6 @@
 import type { TemplateResult } from "lit";
 import { css, html, LitElement, nothing, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators";
-import { consume, type ContextType } from "@lit/context";
 import { repeat } from "lit/directives/repeat";
 import type { HassEntity } from "home-assistant-js-websocket";
 
@@ -13,7 +12,8 @@ import "@ha/components/ha-state-icon";
 import "@ha/components/ha-svg-icon";
 
 import { navigate } from "@ha/common/navigate";
-import { localizeContext } from "@ha/data/context";
+import { consumeLocalize } from "@ha/common/decorators/consume-context-entry";
+import type { LocalizeFunc } from "@ha/common/translations/localize";
 import { stopPropagation } from "@ha/common/dom/stop_propagation";
 import type { HomeAssistant } from "@ha/types";
 
@@ -30,8 +30,8 @@ class KnxDataTableRelatedLabel extends LitElement {
   @property({ attribute: false }) public exposes: string[] = [];
 
   @state()
-  @consume({ context: localizeContext, subscribe: true })
-  private localize!: ContextType<typeof localizeContext>;
+  @consumeLocalize()
+  private localize!: LocalizeFunc;
 
   protected render(): TemplateResult | typeof nothing {
     const totalItems = this.entities.length + this.entitiesYaml.length + this.exposes.length;
