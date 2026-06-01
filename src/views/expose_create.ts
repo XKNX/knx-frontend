@@ -5,7 +5,7 @@ import { consume } from "@lit/context";
 import { customElement, property, state, query } from "lit/decorators";
 import { Task } from "@lit/task";
 
-import type { HassEntities, HassEntity } from "home-assistant-js-websocket";
+import type { HassEntity } from "home-assistant-js-websocket";
 
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-subpage";
@@ -22,12 +22,11 @@ import "@ha/components/ha-switch";
 import "@ha/components/entity/ha-entity-picker";
 import "@ha/components/entity/ha-entity-attribute-picker";
 
-import { transform } from "@ha/common/decorators/transform";
+import { consumeEntityState } from "@ha/common/decorators/consume-context-entry";
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { navigate } from "@ha/common/navigate";
 import { throttle } from "@ha/common/util/throttle";
 import type { HomeAssistant, Route } from "@ha/types";
-import { statesContext } from "@ha/data/context";
 
 import "../components/knx-expose-template-preview";
 import "../components/knx-group-address-selector";
@@ -143,13 +142,7 @@ export class KNXCreateExpose extends LitElement {
   private _projectData: KNXProject | null = null;
 
   @state()
-  @consume({ context: statesContext, subscribe: true })
-  @transform({
-    transformer: function (this: KNXCreateExpose, entityStates: HassEntities) {
-      return this._entityId ? entityStates?.[this._entityId] : undefined;
-    },
-    watch: ["_entityId"],
-  })
+  @consumeEntityState({ entityIdPath: ["_entityId"] })
   private _stateObj?: HassEntity;
 
   @consume({ context: exposeGroupsContext, subscribe: false })
