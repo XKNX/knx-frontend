@@ -35,12 +35,8 @@ class KnxDptOptionSelector extends LitElement {
       >
         ${this.options.map(
           (item: DPTOption) => html`
-            <ha-radio-option
-              .checked=${item.value === this.value}
-              .value=${item.value}
-              .disabled=${this.disabled}
-            >
-              <label .value=${item.value} @click=${this._valueChanged}>
+            <ha-radio-option .checked=${item.value === this.value} .value=${item.value}>
+              <label .value=${item.value}>
                 <p>
                   ${this.localizeValue(this.translation_key + ".options." + item.translation_key)}
                 </p>
