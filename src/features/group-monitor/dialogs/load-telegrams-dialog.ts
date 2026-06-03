@@ -59,6 +59,23 @@ export class LoadTelegramsDialog
 
   @state() private _endTime = "23:59:59";
 
+  // Quick-range buttons: localize key -> range length in seconds.
+  private static readonly _QUICK_RANGES: { labelKey: string; seconds: number }[] = [
+    { labelKey: "group_monitor_range_5min", seconds: 5 * 60 },
+    { labelKey: "group_monitor_range_30min", seconds: 30 * 60 },
+    { labelKey: "group_monitor_range_1h", seconds: 3600 },
+    { labelKey: "group_monitor_range_6h", seconds: 6 * 3600 },
+    { labelKey: "group_monitor_range_1d", seconds: 86400 },
+    { labelKey: "group_monitor_range_1w", seconds: 7 * 86400 },
+  ];
+
+  // Seconds per unit for the custom relative range.
+  private static readonly _REL_UNIT_SECONDS: Record<"minutes" | "hours" | "days", number> = {
+    minutes: 60,
+    hours: 3600,
+    days: 86400,
+  };
+
   public async showDialog(params: LoadTelegramsDialogParams): Promise<void> {
     this._knx = params.knx;
     this._params = params;
@@ -74,17 +91,18 @@ export class LoadTelegramsDialog
     return true;
   }
 
+  private _handleQuickRangeClick(ev: Event) {
+    const seconds = Number((ev.currentTarget as HTMLElement).dataset.seconds);
+    this._handleQuickRange(seconds);
+  }
+
   private _handleQuickRange(seconds: number) {
     const startTime = new Date(Date.now() - seconds * 1000).toISOString();
     this._loadTelegrams({ start_time: startTime });
   }
 
   private _handleCustomRelative() {
-    let seconds = this._relValue;
-    if (this._relUnit === "minutes") seconds *= 60;
-    if (this._relUnit === "hours") seconds *= 3600;
-    if (this._relUnit === "days") seconds *= 86400;
-
+    const seconds = this._relValue * LoadTelegramsDialog._REL_UNIT_SECONDS[this._relUnit];
     const startTime = new Date(Date.now() - seconds * 1000).toISOString();
     this._loadTelegrams({ start_time: startTime });
   }
@@ -121,30 +139,6 @@ export class LoadTelegramsDialog
     } finally {
       this._loading = false;
     }
-  }
-
-  private _handleQuickRange5m() {
-    this._handleQuickRange(5 * 60);
-  }
-
-  private _handleQuickRange30m() {
-    this._handleQuickRange(30 * 60);
-  }
-
-  private _handleQuickRange1h() {
-    this._handleQuickRange(3600);
-  }
-
-  private _handleQuickRange6h() {
-    this._handleQuickRange(6 * 3600);
-  }
-
-  private _handleQuickRange1d() {
-    this._handleQuickRange(86400);
-  }
-
-  private _handleQuickRange1w() {
-    this._handleQuickRange(7 * 86400);
   }
 
   private _handleRelValueInput(ev: InputEvent) {
@@ -197,24 +191,16 @@ export class LoadTelegramsDialog
               <span>${this._knx.localize("group_monitor_quick_range")}</span>
             </div>
             <div class="quick-range-grid">
-              <ha-button @click=${this._handleQuickRange5m} .disabled=${this._loading}
-                >${this._knx.localize("group_monitor_range_5min")}</ha-button
-              >
-              <ha-button @click=${this._handleQuickRange30m} .disabled=${this._loading}
-                >${this._knx.localize("group_monitor_range_30min")}</ha-button
-              >
-              <ha-button @click=${this._handleQuickRange1h} .disabled=${this._loading}
-                >${this._knx.localize("group_monitor_range_1h")}</ha-button
-              >
-              <ha-button @click=${this._handleQuickRange6h} .disabled=${this._loading}
-                >${this._knx.localize("group_monitor_range_6h")}</ha-button
-              >
-              <ha-button @click=${this._handleQuickRange1d} .disabled=${this._loading}
-                >${this._knx.localize("group_monitor_range_1d")}</ha-button
-              >
-              <ha-button @click=${this._handleQuickRange1w} .disabled=${this._loading}
-                >${this._knx.localize("group_monitor_range_1w")}</ha-button
-              >
+              ${LoadTelegramsDialog._QUICK_RANGES.map(
+                (range) => html`
+                  <ha-button
+                    data-seconds=${range.seconds}
+                    @click=${this._handleQuickRangeClick}
+                    .disabled=${this._loading}
+                    >${this._knx.localize(range.labelKey)}</ha-button
+                  >
+                `,
+              )}
             </div>
           </div>
 

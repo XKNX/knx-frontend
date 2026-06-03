@@ -43,35 +43,33 @@ describe("LoadTelegramsDialog", () => {
       limit_reached: false,
     });
 
-    await (dialog as any)._handleQuickRange5m();
-    expect(mockedQuery).toHaveBeenCalledWith(mockHass, {
-      start_time: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-    });
+    const quickRanges = (LoadTelegramsDialog as any)._QUICK_RANGES as {
+      labelKey: string;
+      seconds: number;
+    }[];
+    expect(quickRanges.map((r) => r.seconds)).toEqual([
+      5 * 60,
+      30 * 60,
+      3600,
+      6 * 3600,
+      86400,
+      7 * 86400,
+    ]);
 
-    await (dialog as any)._handleQuickRange30m();
-    expect(mockedQuery).toHaveBeenCalledWith(mockHass, {
-      start_time: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    });
-
-    await (dialog as any)._handleQuickRange1h();
-    expect(mockedQuery).toHaveBeenCalledWith(mockHass, {
-      start_time: new Date(Date.now() - 3600 * 1000).toISOString(),
-    });
-
-    await (dialog as any)._handleQuickRange6h();
-    expect(mockedQuery).toHaveBeenCalledWith(mockHass, {
-      start_time: new Date(Date.now() - 6 * 3600 * 1000).toISOString(),
-    });
-
-    await (dialog as any)._handleQuickRange1d();
-    expect(mockedQuery).toHaveBeenCalledWith(mockHass, {
-      start_time: new Date(Date.now() - 86400 * 1000).toISOString(),
-    });
-
-    await (dialog as any)._handleQuickRange1w();
-    expect(mockedQuery).toHaveBeenCalledWith(mockHass, {
-      start_time: new Date(Date.now() - 7 * 86400 * 1000).toISOString(),
-    });
+    // Drive each range through the click handler (reads data-seconds) to
+    // cover both _handleQuickRangeClick and _handleQuickRange.
+    await Promise.all(
+      quickRanges.map((range) =>
+        (dialog as any)._handleQuickRangeClick({
+          currentTarget: { dataset: { seconds: String(range.seconds) } },
+        }),
+      ),
+    );
+    for (const range of quickRanges) {
+      expect(mockedQuery).toHaveBeenCalledWith(mockHass, {
+        start_time: new Date(Date.now() - range.seconds * 1000).toISOString(),
+      });
+    }
 
     vi.useRealTimers();
   });
