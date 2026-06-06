@@ -16,6 +16,16 @@ export interface KNXInfoData {
   telegram_max_count: number | null;
 }
 
+export interface DPTComplexFieldSchema {
+  name: string;
+  type: "integer" | "string" | "float" | "boolean" | "enum";
+  required: boolean;
+  default?: number | boolean | string;
+  options?: string[];
+  value_min?: number;
+  value_max?: number;
+}
+
 export interface DPTMetadata {
   dpt_class: "numeric" | "enum" | "complex" | "string";
   main: number;
@@ -24,6 +34,11 @@ export interface DPTMetadata {
   unit: string | null;
   sensor_device_class: string | null;
   sensor_state_class: string | null;
+  min?: number;
+  max?: number;
+  step?: number;
+  options?: string[];
+  schema?: DPTComplexFieldSchema[];
 }
 
 export interface KNXEntityIdentifier {

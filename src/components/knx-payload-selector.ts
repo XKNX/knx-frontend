@@ -1,0 +1,563 @@
+import { LitElement, css, html, nothing } from "lit";
+import type { PropertyValues, TemplateResult } from "lit";
+import { customElement, property, state } from "lit/decorators";
+
+import "@ha/components/ha-control-select";
+import "@ha/components/ha-selector/ha-selector";
+
+import { fireEvent } from "@ha/common/dom/fire_event";
+import type { NumberSelector, SelectSelector, StringSelector } from "@ha/data/selector";
+import type { HomeAssistant } from "@ha/types";
+import type { ControlSelectOption } from "@ha/components/ha-control-select";
+
+import { getValidationError } from "../utils/validation";
+import { numberRangeHelper } from "../utils/format";
+import type { ErrorDescription } from "../types/entity_data";
+import type { KNX } from "../types/knx";
+import type { DPTComplexFieldSchema, DPTMetadata } from "../types/websocket";
+import { KNXLogger } from "../tools/knx-logger";
+import "./knx-selector-row";
+import type { KnxHaSelector } from "../types/schema";
+
+const logger = new KNXLogger("knx-payload-selector");
+
+interface PayloadConfigValue {
+  value?: boolean | number | string | Record<string, unknown>;
+  payload?: number;
+  payload_length?: number;
+}
+
+@customElement("knx-payload-selector")
+export class KnxPayloadSelector extends LitElement {
+  @property({ attribute: false }) public hass!: HomeAssistant;
+
+  @property({ attribute: false }) public knx!: KNX;
+
+  @property() public key!: string;
+
+  @property({ attribute: false }) public gaKey?: string;
+
+  @property({ attribute: false }) public dpt?: string;
+
+  @property({ type: Boolean }) public required?: boolean;
+
+  @property({ type: Boolean, attribute: "disable-raw" }) public disableRaw?: boolean;
+
+  @property({ attribute: false }) public value?: PayloadConfigValue;
+
+  @property({ attribute: false }) public validationErrors?: ErrorDescription[];
+
+  @property({ attribute: false }) public localizeFunction: (key: string) => string = (
+    key: string,
+  ) => key;
+
+  @state() private _mode: "typed" | "raw" = "raw";
+
+  @state() private _typedValue?: boolean | number | string | Record<string, unknown>;
+
+  @state() private _rawPayload?: number;
+
+  @state() private _rawLength = 1;
+
+  @state() private _linkedDpt?: string;
+
+  // Caches survive mode switches so values are restored when switching back.
+  private _cachedTypedValue?: boolean | number | string | Record<string, unknown>;
+
+  private _cachedRawPayload?: number;
+
+  private _cachedRawLength = 1;
+
+  private _initialized = false;
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    // Listen globally so payload selector reacts immediately to DPT changes,
+    // even before a group-address config object exists (standalone/decoupled selectors).
+    window.addEventListener(
+      "knx-dpt-selector-changed",
+      this._handleGroupAddressChanged as EventListener,
+    );
+  }
+
+  disconnectedCallback(): void {
+    window.removeEventListener(
+      "knx-dpt-selector-changed",
+      this._handleGroupAddressChanged as EventListener,
+    );
+    super.disconnectedCallback();
+  }
+
+  protected willUpdate(changedProperties: PropertyValues): void {
+    if (!this._initialized && changedProperties.has("value")) {
+      this._mode = this._inferMode();
+      this._typedValue = this.value?.value;
+      this._rawPayload = this.value?.payload;
+      const rawLength = this.value?.payload_length ?? 1;
+      this._rawLength = this._clampRawLength(rawLength);
+      this._initialized = true;
+    } else if (changedProperties.has("dpt") || changedProperties.has("_linkedDpt")) {
+      this._mode = this._inferMode();
+      this._typedValue = undefined;
+      this._rawPayload = undefined;
+      this._rawLength = 1;
+    }
+  }
+
+  protected render(): TemplateResult {
+    const invalid = getValidationError(this.validationErrors);
+    const dpt = this._effectiveDpt();
+    const dptMeta = dpt ? this.knx.dptMetadata[dpt] : undefined;
+
+    return html`
+      <div class="body">
+        <div class="text">
+          <p class="heading ${invalid ? "invalid" : ""}">${this._label("label", "Payload")}</p>
+          <p class="description">${this._label("description", "Configure the payload value")}</p>
+          ${dpt
+            ? html`<p class="description dpt-line">DPT: ${dpt}</p>`
+            : html`<p class="description dpt-line">
+                ${this._label("dpt_missing", "No DPT selected - Typed mode not available")}
+              </p>`}
+        </div>
+      </div>
+
+      <ha-control-select
+        .label=${this._label("mode.label", "Payload format")}
+        .options=${this._modeOptions}
+        .value=${this._mode}
+        .disabled=${!dpt}
+        @value-changed=${this._modeChanged}
+      ></ha-control-select>
+      ${this._mode === "raw" ? this._renderRawMode() : this._renderTypedModeOrRawFallback(dptMeta)}
+      ${invalid ? html`<p class="invalid-message">${invalid.error_message}</p>` : nothing}
+    `;
+  }
+
+  private get _modeOptions(): ControlSelectOption[] {
+    const options: ControlSelectOption[] = [
+      {
+        value: "typed",
+        label: this._label("mode.typed", "Typed payload"),
+      },
+    ];
+    if (!(this.disableRaw ?? false)) {
+      options.push({
+        value: "raw",
+        label: this._label("mode.raw", "Raw payload"),
+      });
+    }
+    return options;
+  }
+
+  private _renderTypedUnavailable(): TemplateResult {
+    return html`<p class="description">
+      ${this._label("typed_unavailable", "Typed payload is available once a valid DPT is set")}
+    </p>`;
+  }
+
+  private _typedValueAsEnumString(): string | undefined {
+    if (typeof this._typedValue === "string") return this._typedValue;
+    if (typeof this._typedValue === "number") return String(this._typedValue);
+    if (typeof this._typedValue === "boolean") return this._typedValue ? "true" : "false";
+    return undefined;
+  }
+
+  private _renderTypedMode(dptMeta?: DPTMetadata): TemplateResult {
+    const dpt = this._effectiveDpt();
+    if (!dpt || !dptMeta) {
+      return this._renderTypedUnavailable();
+    }
+
+    if (dptMeta.dpt_class === "numeric") {
+      const numberSelector: NumberSelector = {
+        number: {
+          mode: "box",
+          min: dptMeta.min,
+          max: dptMeta.max,
+          step: dptMeta.step,
+          unit_of_measurement: dptMeta.unit ?? undefined,
+        },
+      };
+      return html`<ha-selector
+        .hass=${this.hass}
+        .selector=${numberSelector}
+        .helper=${numberRangeHelper(dptMeta.min, dptMeta.max)}
+        .value=${typeof this._typedValue === "number" ? this._typedValue : undefined}
+        @value-changed=${this._typedValueChanged}
+      ></ha-selector>`;
+    }
+
+    if (dptMeta.dpt_class === "string") {
+      const textSelector: StringSelector = { text: {} };
+      return html`<ha-selector
+        .hass=${this.hass}
+        .selector=${textSelector}
+        .value=${typeof this._typedValue === "string" ? this._typedValue : undefined}
+        @value-changed=${this._typedValueChanged}
+      ></ha-selector>`;
+    }
+
+    if (dptMeta.dpt_class === "complex") {
+      if (!dptMeta.schema?.length) {
+        throw new Error(`Typed mode not implemented for DPT ${dpt}`);
+      }
+      logger.debug(`Rendering complex fields for DPT ${dpt}:`, dptMeta.schema);
+      return this._renderComplexFields(dptMeta.schema);
+    }
+
+    if (dptMeta.dpt_class === "enum") {
+      // DPT 1.x are binary; all other enums use backend-provided options.
+      const enumOptions: { value: string; label: string }[] = dpt.startsWith("1.")
+        ? [
+            { value: "true", label: this._label("enum.on", "On / true") },
+            { value: "false", label: this._label("enum.off", "Off / false") },
+          ]
+        : (dptMeta.options?.map((optionValue) => ({
+            value: optionValue,
+            label: this._label(`enum.${optionValue}`, optionValue),
+          })) ?? []);
+
+      if (enumOptions.length === 0) {
+        return this._renderTypedUnavailable();
+      }
+
+      const selectSelector: SelectSelector = {
+        select: { options: enumOptions, mode: "dropdown" },
+      };
+      return html`<ha-selector
+        .hass=${this.hass}
+        .selector=${selectSelector}
+        .value=${this._typedValueAsEnumString()}
+        @value-changed=${this._enumValueChanged}
+      ></ha-selector>`;
+    }
+
+    return this._renderTypedUnavailable();
+  }
+
+  private _renderTypedModeOrRawFallback(dptMeta?: DPTMetadata): TemplateResult {
+    try {
+      return this._renderTypedMode(dptMeta);
+    } catch (err) {
+      logger.warn("Falling back to raw mode:", err);
+      return this._renderRawMode();
+    }
+  }
+
+  private _complexFieldLocalizeFunction = (key: string): string =>
+    key.endsWith(".label") ? key.slice(0, -6).replace(/_/g, " ") : "";
+
+  private _knxHaSelector(
+    field: DPTComplexFieldSchema,
+    selector: KnxHaSelector["selector"],
+  ): KnxHaSelector {
+    return {
+      type: "ha_selector",
+      name: field.name,
+      required: field.required,
+      default: field.default,
+      selector,
+    };
+  }
+
+  private _fieldToKnxHaSelector(field: DPTComplexFieldSchema): KnxHaSelector {
+    if (field.type === "integer" || field.type === "float") {
+      return this._knxHaSelector(field, {
+        number: {
+          mode: "box",
+          min: field.value_min,
+          max: field.value_max,
+          step: field.type === "float" ? 0.01 : 1,
+        },
+      });
+    }
+    if (field.type === "enum") {
+      const options = (field.options ?? []).map((opt) => ({ value: opt, label: opt }));
+      return this._knxHaSelector(field, { select: { options, mode: "dropdown" } });
+    }
+    if (field.type === "boolean") {
+      return this._knxHaSelector(field, { boolean: {} });
+    }
+    if (field.type === "string") {
+      return this._knxHaSelector(field, { text: {} });
+    }
+    throw new Error(`Unsupported complex field type: ${field.type}`);
+  }
+
+  private get _typedRecord(): Record<string, unknown> {
+    return this._typedValue !== null && typeof this._typedValue === "object"
+      ? (this._typedValue as Record<string, unknown>)
+      : {};
+  }
+
+  private _renderComplexFields(schema: DPTComplexFieldSchema[]): TemplateResult {
+    const currentValue = this._typedRecord;
+
+    return html`
+      ${schema.map(
+        (field) => html`
+          <knx-selector-row
+            .hass=${this.hass}
+            .key=${field.name}
+            .selector=${this._fieldToKnxHaSelector(field)}
+            .value=${currentValue[field.name]}
+            .localizeFunction=${this._complexFieldLocalizeFunction}
+            @value-changed=${this._complexFieldChanged}
+          ></knx-selector-row>
+        `,
+      )}
+    `;
+  }
+
+  private _complexFieldChanged = (ev: CustomEvent<{ value: unknown }>) => {
+    ev.stopPropagation();
+    const fieldName = (ev.currentTarget as unknown as { key: string }).key;
+    if (!fieldName) return;
+    const current = this._typedRecord;
+    if (ev.detail.value === undefined) {
+      const updated = { ...current };
+      delete updated[fieldName];
+      this._typedValue = Object.keys(updated).length ? updated : undefined;
+    } else {
+      this._typedValue = { ...current, [fieldName]: ev.detail.value };
+    }
+    this._emitValue();
+  };
+
+  private _renderRawMode(): TemplateResult {
+    const maxPayload = this._rawPayloadMax();
+    const maxLength = this._rawMaxLength();
+    const rawPayloadSelector: NumberSelector = {
+      number: { mode: "box", min: 0, max: maxPayload, step: 1 },
+    };
+    const rawLengthSelector: NumberSelector = {
+      number: { mode: "box", min: 0, max: maxLength, step: 1 },
+    };
+
+    return html`
+      <div class="raw-grid">
+        <ha-selector
+          .hass=${this.hass}
+          .selector=${rawPayloadSelector}
+          .label=${this._label("raw_payload", "Raw payload (number)")}
+          .helper=${numberRangeHelper(0, maxPayload)}
+          .value=${this._rawPayload}
+          @value-changed=${this._rawPayloadChanged}
+        ></ha-selector>
+        <ha-selector
+          .hass=${this.hass}
+          .selector=${rawLengthSelector}
+          .label=${this._label("raw_length", "Payload length (bytes)")}
+          .helper=${numberRangeHelper(0, maxLength)}
+          .value=${this._rawLength}
+          @value-changed=${this._rawLengthChanged}
+        ></ha-selector>
+      </div>
+    `;
+  }
+
+  private _modeChanged(ev: CustomEvent<{ value: string }>) {
+    ev.stopPropagation();
+    const nextMode = ev.detail.value === "raw" && !(this.disableRaw ?? false) ? "raw" : "typed";
+    if (nextMode === this._mode) return;
+    if (nextMode === "raw") {
+      this._cachedTypedValue = this._typedValue;
+      this._typedValue = undefined;
+      this._rawPayload = this._cachedRawPayload;
+      this._rawLength = this._cachedRawLength;
+    } else {
+      this._cachedRawPayload = this._rawPayload;
+      this._cachedRawLength = this._rawLength;
+      this._rawPayload = undefined;
+      this._rawLength = 1;
+      this._typedValue = this._cachedTypedValue;
+    }
+    this._mode = nextMode;
+    this._emitValue();
+  }
+
+  private _typedValueChanged(ev: CustomEvent<{ value: unknown }>) {
+    ev.stopPropagation();
+    const next = ev.detail.value;
+    this._typedValue =
+      typeof next === "number" || typeof next === "string" || typeof next === "boolean"
+        ? next
+        : undefined;
+    this._emitValue();
+  }
+
+  private _enumValueChanged(ev: CustomEvent<{ value: string }>) {
+    ev.stopPropagation();
+    const value = ev.detail.value;
+    if (value === "true") {
+      this._typedValue = true;
+    } else if (value === "false") {
+      this._typedValue = false;
+    } else {
+      this._typedValue = value;
+    }
+    this._emitValue();
+  }
+
+  private _rawPayloadChanged(ev: CustomEvent<{ value: number }>) {
+    ev.stopPropagation();
+    const payload = Number.isFinite(ev.detail.value)
+      ? Math.floor(Number(ev.detail.value))
+      : undefined;
+    this._rawPayload = this._clampRawPayload(payload);
+    this._emitValue();
+  }
+
+  private _rawLengthChanged(ev: CustomEvent<{ value: number }>) {
+    ev.stopPropagation();
+    const length = Math.floor(Number(ev.detail.value));
+    this._rawLength = this._clampRawLength(Number.isFinite(length) ? length : 0);
+    this._rawPayload = this._clampRawPayload(this._rawPayload);
+    this._emitValue();
+  }
+
+  private _rawMaxLength(): number {
+    const dpt = this._effectiveDpt();
+    if (!dpt) {
+      return 14;
+    }
+    const main = Number.parseInt(dpt.split(".")[0], 10);
+    if (main === 1 || main === 2 || main === 3) {
+      return 0;
+    }
+    return 14;
+  }
+
+  private _clampRawLength(length: number): number {
+    const max = this._rawMaxLength();
+    return Math.min(max, Math.max(0, length));
+  }
+
+  private _rawPayloadMax(): number | undefined {
+    return this._rawLength === 0 ? 63 : 2 ** (this._rawLength * 8) - 1;
+  }
+
+  private _clampRawPayload(payload: number | undefined): number | undefined {
+    if (payload === undefined) {
+      return undefined;
+    }
+    return Math.min(this._rawPayloadMax()!, Math.max(0, payload));
+  }
+
+  private _emitValue() {
+    let value: PayloadConfigValue | undefined;
+    if (this._mode === "raw") {
+      value =
+        this._rawPayload !== undefined
+          ? { payload: this._rawPayload, payload_length: this._rawLength }
+          : undefined;
+    } else {
+      value =
+        this._typedValue !== undefined && this._typedValue !== ""
+          ? { value: this._typedValue }
+          : undefined;
+    }
+    fireEvent(this, "value-changed", { value });
+  }
+
+  private _inferMode(): "typed" | "raw" {
+    if (this.value?.payload !== undefined || this.value?.payload_length !== undefined) {
+      return "raw";
+    }
+    if (this.value?.value !== undefined) {
+      return "typed";
+    }
+    // No stored value yet: derive from DPT availability
+    if (!this._effectiveDpt()) {
+      return "raw";
+    }
+    return "typed";
+  }
+
+  private _effectiveDpt(): string | undefined {
+    return this.dpt ?? this._linkedDpt;
+  }
+
+  private _handleGroupAddressChanged = (ev: CustomEvent<{ key: string; dpt?: string }>) => {
+    if (!this.gaKey || ev.detail.key !== this.gaKey) {
+      return;
+    }
+    this._linkedDpt = ev.detail.dpt;
+  };
+
+  private _label(suffix: string, fallback: string): string {
+    const key = `${this.key}.${suffix}`;
+    const translated = this.localizeFunction(key);
+    return translated === key || translated === "" ? fallback : translated;
+  }
+
+  static styles = css`
+    :host {
+      display: block;
+      padding: 8px 16px 8px 0;
+      border-top: 1px solid var(--divider-color);
+    }
+
+    .body {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .heading {
+      margin: 0;
+    }
+
+    .description {
+      margin: 0;
+      padding-top: 4px;
+      color: var(--secondary-text-color);
+      font-size: var(--ha-font-size-s);
+    }
+
+    .dpt-line {
+      font-family:
+        ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+    }
+
+    .raw-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .invalid {
+      color: var(--error-color);
+    }
+
+    .invalid-message {
+      font-size: 0.75rem;
+      color: var(--error-color);
+      padding-left: 16px;
+      margin: 6px 0 0;
+    }
+
+    ha-control-select {
+      padding: 0;
+      margin-left: 0;
+      margin-right: 0;
+      margin-bottom: 16px;
+    }
+
+    knx-selector-row:first-child {
+      border: 0;
+    }
+  `;
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "knx-payload-selector": KnxPayloadSelector;
+  }
+}

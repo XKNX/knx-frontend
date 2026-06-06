@@ -482,7 +482,11 @@ export class GroupAddressSelector extends LitElement {
     if (index < committedLen) {
       // Update existing committed entry
       const newPassive = [...(newConfig.passive ?? [])];
-      newPassive[index] = value;
+      if (value === undefined) {
+        newPassive.splice(index, 1);
+      } else {
+        newPassive[index] = value;
+      }
       newConfig.passive = newPassive.filter((ga) => !!ga);
       if (newConfig.passive.length === 0) {
         delete newConfig.passive;
@@ -504,14 +508,18 @@ export class GroupAddressSelector extends LitElement {
   };
 
   private _dragOverHandler(ev: DragEvent) {
+    const dataTransfer = ev.dataTransfer;
+    if (!dataTransfer) {
+      return;
+    }
     // dragEnter is immediately followed by dragLeave for unknown reason
     // (I think some pointer events in the selectors shadow-dom)
     // so we debounce dragOver to fake it
-    if (![...ev.dataTransfer.types].includes("text/group-address")) {
+    if (![...dataTransfer.types].includes("text/group-address")) {
       return;
     }
     ev.preventDefault();
-    ev.dataTransfer.dropEffect = "move";
+    dataTransfer.dropEffect = "move";
 
     const target = ev.target as any;
     if (this._dragOverTimeout[target.key]) {
@@ -537,9 +545,13 @@ export class GroupAddressSelector extends LitElement {
   }
 
   private _dropHandler(ev: DragEvent) {
+    const dataTransfer = ev.dataTransfer;
+    if (!dataTransfer) {
+      return;
+    }
     ev.stopPropagation();
     ev.preventDefault();
-    const ga = ev.dataTransfer.getData("text/group-address");
+    const ga = dataTransfer.getData("text/group-address");
     if (!ga) {
       return;
     }

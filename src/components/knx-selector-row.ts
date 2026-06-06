@@ -10,6 +10,7 @@ import "@ha/components/ha-switch";
 
 import type { HomeAssistant } from "@ha/types";
 import { getValidationError } from "../utils/validation";
+import { numberRangeHelper } from "../utils/format";
 import type { ErrorDescription } from "../types/entity_data";
 import type { KnxHaSelector } from "../types/schema";
 
@@ -37,6 +38,8 @@ export class KnxSelectorRow extends LitElement {
 
   private _optionalBooleanSelector = false;
 
+  private _selectorHelper?: string;
+
   protected willUpdate(_changedProperties: PropertyValues): void {
     if (_changedProperties.has("selector") || _changedProperties.has("key")) {
       const isRequired = !!this.selector.required;
@@ -63,6 +66,15 @@ export class KnxSelectorRow extends LitElement {
         // TODO: consider also using suggested_value ?
         this._haSelectorValue = this.value ?? this.selector.default ?? null;
       }
+
+      // selector specific helper text
+      this._selectorHelper =
+        isNumber && this.selector.selector.number?.mode === "box"
+          ? numberRangeHelper(
+              this.selector.selector.number?.min,
+              this.selector.selector.number?.max,
+            )
+          : undefined;
     }
   }
 
@@ -78,6 +90,7 @@ export class KnxSelectorRow extends LitElement {
           .placeholder=${this.selector.placeholder}
           .value=${this._haSelectorValue}
           .localizeValue=${this.hass.localize}
+          .helper=${this._selectorHelper}
           @value-changed=${this._valueChange}
         ></ha-selector>`;
 

@@ -82,6 +82,7 @@ class KnxDptDialogSelector extends LitElement {
   private _clearSelection(): void {
     if (!this.value) return;
     this.value = undefined;
+    this._emitDptChanged();
     fireEvent(this, "value-changed", { value: this.value });
   }
 
@@ -109,11 +110,17 @@ class KnxDptDialogSelector extends LitElement {
             if (!dpt) return;
             if (dpt === this.value) return;
             this.value = dpt;
+            this._emitDptChanged(dpt);
             fireEvent(this, "value-changed", { value: this.value });
           },
         };
       })(),
     });
+  }
+
+  private _emitDptChanged(dpt?: string): void {
+    const key = this.translation_key ?? this.key;
+    fireEvent(this, "knx-dpt-selector-changed", { key, dpt });
   }
 
   static styles = [
@@ -200,5 +207,9 @@ class KnxDptDialogSelector extends LitElement {
 declare global {
   interface HTMLElementTagNameMap {
     "knx-dpt-dialog-selector": KnxDptDialogSelector;
+  }
+
+  interface HASSDomEvents {
+    "knx-dpt-selector-changed": { key: string; dpt?: string };
   }
 }

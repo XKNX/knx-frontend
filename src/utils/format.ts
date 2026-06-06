@@ -129,6 +129,22 @@ export const formatIsoTimestampWithMicroseconds = (timestampIso: string): string
   );
 };
 
+/**
+ * Returns a helper string describing a numeric range for display below a number input.
+ * Returns undefined if no bounds are available.
+ */
+export const numberRangeHelper = (
+  min: number | null | undefined,
+  max: number | null | undefined,
+): string | undefined => {
+  if (min !== null && min !== undefined && max !== null && max !== undefined) {
+    return `${min} \u2026 ${max}`;
+  }
+  if (min !== null && min !== undefined) return `\u2265 ${min}`;
+  if (max !== null && max !== undefined) return `\u2264 ${max}`;
+  return undefined;
+};
+
 // Time conversion constants
 export const MICROSECONDS_PER_MILLISECOND = 1_000;
 export const MILLISECONDS_PER_SECOND = 1_000;
