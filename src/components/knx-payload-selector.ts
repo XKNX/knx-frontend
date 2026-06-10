@@ -10,10 +10,9 @@ import { fireEvent } from "@ha/common/dom/fire_event";
 import type { NumberSelector, SelectSelector, StringSelector } from "@ha/data/selector";
 import type { HomeAssistant } from "@ha/types";
 import type { ControlSelectOption } from "@ha/components/ha-control-select";
-import { titleCase } from "@ha/common/string/title-case";
 
 import { getValidationError } from "../utils/validation";
-import { numberRangeHelper } from "../utils/format";
+import { numberRangeHelper, snakeToTitleCase } from "../utils/format";
 import type { ErrorDescription } from "../types/entity_data";
 import type { KNX } from "../types/knx";
 import type { DPTComplexFieldSchema, DPTMetadata } from "../types/websocket";
@@ -22,15 +21,6 @@ import "./knx-selector-row";
 import type { KnxHaSelector } from "../types/schema";
 
 const logger = new KNXLogger("knx-payload-selector");
-
-/**
- * Format xknx / HA internal keys to user-friendly labels for
- * complex field selector labels or enum options.
- * e.g. "field_name" to "Field Name".
- */
-const _formatInternalLabel = (name: string): string => {
-  return titleCase(name.replace(/_/g, " "));
-};
 
 interface PayloadConfigValue {
   value?: boolean | number | string | Record<string, unknown>;
@@ -220,7 +210,7 @@ export class KnxPayloadSelector extends LitElement {
       const enumOptions: { value: string; label: string }[] =
         dptMeta.options?.map((optionValue) => ({
           value: optionValue,
-          label: _formatInternalLabel(optionValue),
+          label: snakeToTitleCase(optionValue),
         })) ?? [];
 
       if (enumOptions.length === 0) {
@@ -268,7 +258,7 @@ export class KnxPayloadSelector extends LitElement {
     if (field.type === "enum") {
       const options = (field.options ?? []).map((opt) => ({
         value: opt,
-        label: _formatInternalLabel(opt),
+        label: snakeToTitleCase(opt),
       }));
       return this._knxHaSelector(field, { select: { options, mode: "dropdown" } });
     }
@@ -308,7 +298,7 @@ export class KnxPayloadSelector extends LitElement {
 
   private _complexFieldLocalizeFunction = (key: string): string => {
     // use xknx field names as labels for selectors
-    return key.endsWith(".label") ? _formatInternalLabel(key.slice(0, -6)) : "";
+    return key.endsWith(".label") ? snakeToTitleCase(key.slice(0, -6)) : "";
   };
 
   private _complexFieldChanged = (ev: CustomEvent<{ value: unknown }>) => {

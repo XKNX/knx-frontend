@@ -1,4 +1,7 @@
 import { dump } from "js-yaml";
+
+import { titleCase } from "@ha/common/string/title-case";
+
 import type { TelegramDict } from "../types/websocket";
 import type { TimePrecision } from "../features/group-monitor";
 
@@ -128,6 +131,13 @@ export const formatIsoTimestampWithMicroseconds = (timestampIso: string): string
     microseconds
   );
 };
+
+/**
+ * Format snake_case strings to title case.
+ * For complex field selector labels or enum options.
+ * e.g. "field_name" to "Field name".
+ */
+export const snakeToTitleCase = (name: string): string => titleCase(name.replace(/_/g, " "));
 
 /**
  * Returns a helper string describing a numeric range for display below a number input.

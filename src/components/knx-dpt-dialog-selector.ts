@@ -10,6 +10,7 @@ import type { LocalizeFunc } from "@ha/common/translations/localize";
 import { fireEvent } from "@ha/common/dom/fire_event";
 
 import type { KNX } from "../types/knx";
+import { snakeToTitleCase } from "../utils/format";
 
 @customElement("knx-dpt-dialog-selector")
 class KnxDptDialogSelector extends LitElement {
@@ -61,7 +62,10 @@ class KnxDptDialogSelector extends LitElement {
                 <div class="dpt-name">
                   ${this.localize(
                     `component.knx.config_panel.dpt.options.${this.value.replace(".", "_")}`,
-                  ) || this.knx.dptMetadata[this.value]?.name}
+                  ) ||
+                  (this.knx.dptMetadata[this.value]?.name
+                    ? snakeToTitleCase(this.knx.dptMetadata[this.value].name)
+                    : this.localize("state.default.unknown"))}
                 </div>
                 <div class="dpt-unit">${this.knx.dptMetadata[this.value]?.unit ?? ""}</div>
               </div>

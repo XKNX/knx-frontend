@@ -17,6 +17,7 @@ import { haStyleDialog } from "@ha/resources/styles";
 import type { HaInputSearch } from "@ha/components/input/ha-input-search";
 
 import { stringToDpt, compareDpt } from "../utils/dpt";
+import { snakeToTitleCase } from "../utils/format";
 import type { DPTMetadata } from "../types/websocket";
 
 export interface KnxDptSelectDialogParams {
@@ -163,9 +164,8 @@ export class KnxDptSelectDialog extends DialogMixin<KnxDptSelectDialogParams>(Li
     const meta = this.dpts[dpt];
     return {
       label:
-        this.localize(`component.knx.config_panel.dpt.options.${dpt.replace(".", "_")}`) ??
-        meta?.name ??
-        this.localize("state.default.unknown"),
+        this.localize(`component.knx.config_panel.dpt.options.${dpt.replace(".", "_")}`) ||
+        (meta?.name ? snakeToTitleCase(meta.name) : this.localize("state.default.unknown")),
       unit: meta?.unit ?? "",
     };
   }
