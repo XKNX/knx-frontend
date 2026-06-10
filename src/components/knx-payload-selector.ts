@@ -23,8 +23,14 @@ import type { KnxHaSelector } from "../types/schema";
 
 const logger = new KNXLogger("knx-payload-selector");
 
-const _ENUM_FLAG_TRUE = "__true";
-const _ENUM_FLAG_FALSE = "__false";
+/**
+ * Format xknx / HA internal keys to user-friendly labels for
+ * complex field selector labels or enum options.
+ * e.g. "field_name" to "Field Name".
+ */
+const _formatInternalLabel = (name: string): string => {
+  return titleCase(name.replace(/_/g, " "));
+};
 
 interface PayloadConfigValue {
   value?: boolean | number | string | Record<string, unknown>;
@@ -157,14 +163,13 @@ export class KnxPayloadSelector extends LitElement {
     return options;
   }
 
-  private _typedValueAsEnumString(): string | undefined {
-    if (typeof this._typedValue === "string") return this._typedValue;
-    if (typeof this._typedValue === "boolean") {
-      return this._typedValue ? _ENUM_FLAG_TRUE : _ENUM_FLAG_FALSE;
+  private _renderTypedModeOrRawFallback(dptMeta?: DPTMetadata): TemplateResult {
+    try {
+      return this._renderTypedMode(dptMeta);
+    } catch (err) {
+      logger.warn("Falling back to raw mode:", err);
+      return this._renderRawMode();
     }
-    // I'm not sure if number enmum values are actually a thing in xknx, but handle them just in case
-    if (typeof this._typedValue === "number") return String(this._typedValue);
-    return undefined;
   }
 
   private _renderTypedMode(dptMeta?: DPTMetadata): TemplateResult {
@@ -212,15 +217,11 @@ export class KnxPayloadSelector extends LitElement {
 
     if (dptMeta.dpt_class === "enum") {
       // DPT 1.x are binary; all other enums use backend-provided options.
-      const enumOptions: { value: string; label: string }[] = dpt.startsWith("1.")
-        ? [
-            { value: _ENUM_FLAG_TRUE, label: "On / True" },
-            { value: _ENUM_FLAG_FALSE, label: "Off / False" },
-          ]
-        : (dptMeta.options?.map((optionValue) => ({
-            value: optionValue,
-            label: this._formatInternalLabel(optionValue),
-          })) ?? []);
+      const enumOptions: { value: string; label: string }[] =
+        dptMeta.options?.map((optionValue) => ({
+          value: optionValue,
+          label: _formatInternalLabel(optionValue),
+        })) ?? [];
 
       if (enumOptions.length === 0) {
         throw new Error(`No enum options available for DPT ${dpt}`);
@@ -232,21 +233,12 @@ export class KnxPayloadSelector extends LitElement {
       return html`<ha-selector
         .hass=${this.hass}
         .selector=${selectSelector}
-        .value=${this._typedValueAsEnumString()}
-        @value-changed=${this._enumValueChanged}
+        .value=${this._typedValue}
+        @value-changed=${this._typedValueChanged}
       ></ha-selector>`;
     }
 
     throw new Error(`Typed mode not implemented for dpt_class ${dptMeta.dpt_class} of DPT ${dpt}`);
-  }
-
-  private _renderTypedModeOrRawFallback(dptMeta?: DPTMetadata): TemplateResult {
-    try {
-      return this._renderTypedMode(dptMeta);
-    } catch (err) {
-      logger.warn("Falling back to raw mode:", err);
-      return this._renderRawMode();
-    }
   }
 
   private _knxHaSelector(
@@ -276,7 +268,7 @@ export class KnxPayloadSelector extends LitElement {
     if (field.type === "enum") {
       const options = (field.options ?? []).map((opt) => ({
         value: opt,
-        label: this._formatInternalLabel(opt),
+        label: _formatInternalLabel(opt),
       }));
       return this._knxHaSelector(field, { select: { options, mode: "dropdown" } });
     }
@@ -316,16 +308,7 @@ export class KnxPayloadSelector extends LitElement {
 
   private _complexFieldLocalizeFunction = (key: string): string => {
     // use xknx field names as labels for selectors
-    return key.endsWith(".label") ? this._formatInternalLabel(key.slice(0, -6)) : "";
-  };
-
-  /*
-   * Format xknx / HA internal keys to user-friendly labels for
-   * complex field selector labels or enum options.
-   * e.g. "field_name" to "Field Name".
-   */
-  private _formatInternalLabel = (name: string): string => {
-    return titleCase(name.replace(/_/g, " "));
+    return key.endsWith(".label") ? _formatInternalLabel(key.slice(0, -6)) : "";
   };
 
   private _complexFieldChanged = (ev: CustomEvent<{ value: unknown }>) => {
@@ -408,19 +391,6 @@ export class KnxPayloadSelector extends LitElement {
       typeof next === "number" || typeof next === "string" || typeof next === "boolean"
         ? next
         : undefined;
-    this._emitValue();
-  }
-
-  private _enumValueChanged(ev: CustomEvent<{ value: string }>) {
-    ev.stopPropagation();
-    const value = ev.detail.value;
-    if (value === _ENUM_FLAG_TRUE) {
-      this._typedValue = true;
-    } else if (value === _ENUM_FLAG_FALSE) {
-      this._typedValue = false;
-    } else {
-      this._typedValue = value;
-    }
     this._emitValue();
   }
 
