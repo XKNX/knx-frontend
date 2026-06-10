@@ -1,6 +1,7 @@
 import { LitElement, css, html, nothing } from "lit";
 import type { PropertyValues, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators";
+import { classMap } from "lit/directives/class-map";
 
 import "@ha/components/ha-control-select";
 import "@ha/components/ha-selector/ha-selector";
@@ -100,7 +101,9 @@ export class KnxPayloadSelector extends LitElement {
       this._mode = this._inferMode();
       this._typedValue = undefined;
       this._rawPayload = undefined;
-      this._rawLength = 1;
+      const dpt = this._effectiveDpt();
+      const dptPayloadLength = dpt ? this.knx.dptMetadata[dpt]?.payload_length : undefined;
+      this._rawLength = this._clampRawLength(dptPayloadLength ?? this._rawLength);
     }
   }
 
@@ -112,18 +115,18 @@ export class KnxPayloadSelector extends LitElement {
     return html`
       <div class="body">
         <div class="text">
-          <p class="heading ${invalid ? "invalid" : ""}">${this._label("label", "Payload")}</p>
-          <p class="description">${this._label("description", "Configure the payload value")}</p>
+          <p class="heading ${classMap({ invalid: !!invalid })}">
+            ${this.localizeFunction(this.key + ".label")}
+          </p>
+          <p class="description">${this.localizeFunction(this.key + ".description")}</p>
           ${dpt
             ? html`<p class="description dpt-line">DPT: ${dpt}</p>`
-            : html`<p class="description dpt-line">
-                ${this._label("dpt_missing", "No DPT selected - Typed mode not available")}
-              </p>`}
+            : html`<p class="description dpt-line">${this._localizeSelector("dpt_missing")}</p>`}
         </div>
       </div>
 
       <ha-control-select
-        .label=${this._label("mode.label", "Payload format")}
+        .label=${this._localizeSelector("mode.label")}
         .options=${this._modeOptions}
         .value=${this._mode}
         .disabled=${!dpt}
@@ -138,22 +141,16 @@ export class KnxPayloadSelector extends LitElement {
     const options: ControlSelectOption[] = [
       {
         value: "typed",
-        label: this._label("mode.typed", "Typed payload"),
+        label: this._localizeSelector("mode.typed"),
       },
     ];
     if (!(this.disableRaw ?? false)) {
       options.push({
         value: "raw",
-        label: this._label("mode.raw", "Raw payload"),
+        label: this._localizeSelector("mode.raw"),
       });
     }
     return options;
-  }
-
-  private _renderTypedUnavailable(): TemplateResult {
-    return html`<p class="description">
-      ${this._label("typed_unavailable", "Typed payload is available once a valid DPT is set")}
-    </p>`;
   }
 
   private _typedValueAsEnumString(): string | undefined {
@@ -166,7 +163,7 @@ export class KnxPayloadSelector extends LitElement {
   private _renderTypedMode(dptMeta?: DPTMetadata): TemplateResult {
     const dpt = this._effectiveDpt();
     if (!dpt || !dptMeta) {
-      return this._renderTypedUnavailable();
+      throw new Error(`No DPT metadata available for ${dpt}`);
     }
 
     if (dptMeta.dpt_class === "numeric") {
@@ -210,16 +207,16 @@ export class KnxPayloadSelector extends LitElement {
       // DPT 1.x are binary; all other enums use backend-provided options.
       const enumOptions: { value: string; label: string }[] = dpt.startsWith("1.")
         ? [
-            { value: "true", label: this._label("enum.on", "On / true") },
-            { value: "false", label: this._label("enum.off", "Off / false") },
+            { value: "true", label: "On / true" },
+            { value: "false", label: "Off / false" },
           ]
         : (dptMeta.options?.map((optionValue) => ({
             value: optionValue,
-            label: this._label(`enum.${optionValue}`, optionValue),
+            label: optionValue,
           })) ?? []);
 
       if (enumOptions.length === 0) {
-        return this._renderTypedUnavailable();
+        throw new Error(`No enum options available for DPT ${dpt}`);
       }
 
       const selectSelector: SelectSelector = {
@@ -233,7 +230,7 @@ export class KnxPayloadSelector extends LitElement {
       ></ha-selector>`;
     }
 
-    return this._renderTypedUnavailable();
+    throw new Error(`Typed mode not implemented for dpt_class ${dptMeta.dpt_class} of DPT ${dpt}`);
   }
 
   private _renderTypedModeOrRawFallback(dptMeta?: DPTMetadata): TemplateResult {
@@ -334,24 +331,26 @@ export class KnxPayloadSelector extends LitElement {
     const rawLengthSelector: NumberSelector = {
       number: { mode: "box", min: 0, max: maxLength, step: 1 },
     };
+    const disableLength = this._effectiveDpt() !== undefined;
 
     return html`
       <div class="raw-grid">
         <ha-selector
           .hass=${this.hass}
           .selector=${rawPayloadSelector}
-          .label=${this._label("raw_payload", "Raw payload (number)")}
-          .helper=${numberRangeHelper(0, maxPayload)}
+          .label=${this._localizeSelector("raw_payload")}
+          .helper=${`${numberRangeHelper(0, maxPayload)} ${this._localizeSelector("raw_payload_description")}`}
           .value=${this._rawPayload}
           @value-changed=${this._rawPayloadChanged}
         ></ha-selector>
         <ha-selector
           .hass=${this.hass}
           .selector=${rawLengthSelector}
-          .label=${this._label("raw_length", "Payload length (bytes)")}
-          .helper=${numberRangeHelper(0, maxLength)}
+          .label=${this._localizeSelector("raw_length")}
+          .helper=${`${disableLength ? "" : numberRangeHelper(0, maxLength) + " "}${this._localizeSelector("raw_length_description")}`}
           .value=${this._rawLength}
           @value-changed=${this._rawLengthChanged}
+          .disabled=${disableLength}
         ></ha-selector>
       </div>
     `;
@@ -361,16 +360,20 @@ export class KnxPayloadSelector extends LitElement {
     ev.stopPropagation();
     const nextMode = ev.detail.value === "raw" && !(this.disableRaw ?? false) ? "raw" : "typed";
     if (nextMode === this._mode) return;
+
     if (nextMode === "raw") {
       this._cachedTypedValue = this._typedValue;
       this._typedValue = undefined;
       this._rawPayload = this._cachedRawPayload;
-      this._rawLength = this._cachedRawLength;
+      const dpt = this._effectiveDpt();
+      const dptPayloadLength = dpt
+        ? (this.knx.dptMetadata[dpt]?.payload_length ?? this._cachedRawLength)
+        : this._cachedRawLength;
+      this._rawLength = this._clampRawLength(dptPayloadLength);
     } else {
       this._cachedRawPayload = this._rawPayload;
       this._cachedRawLength = this._rawLength;
       this._rawPayload = undefined;
-      this._rawLength = 1;
       this._typedValue = this._cachedTypedValue;
     }
     this._mode = nextMode;
@@ -424,9 +427,10 @@ export class KnxPayloadSelector extends LitElement {
     }
     const main = Number.parseInt(dpt.split(".")[0], 10);
     if (main === 1 || main === 2 || main === 3) {
+      // DPT 1.x, 2.x, and 3.x use payload_length 0 to indicate payload integrated in APDU header
       return 0;
     }
-    return 14;
+    return this.knx.dptMetadata[dpt]?.payload_length ?? 14;
   }
 
   private _clampRawLength(length: number): number {
@@ -435,6 +439,14 @@ export class KnxPayloadSelector extends LitElement {
   }
 
   private _rawPayloadMax(): number | undefined {
+    const dpt = this._effectiveDpt();
+    if (dpt) {
+      const main = Number.parseInt(dpt.split(".")[0], 10);
+      if (main === 1 || main === 2 || main === 3) {
+        // DPT 1.x, 2.x, and 3.x use payload_length 0 to indicate payload integrated in APDU header
+        return this.knx.dptMetadata[dpt]?.payload_length ?? 63;
+      }
+    }
     return this._rawLength === 0 ? 63 : 2 ** (this._rawLength * 8) - 1;
   }
 
@@ -486,11 +498,8 @@ export class KnxPayloadSelector extends LitElement {
     this._linkedDpt = ev.detail.dpt;
   };
 
-  private _label(suffix: string, fallback: string): string {
-    const key = `${this.key}.${suffix}`;
-    const translated = this.localizeFunction(key);
-    return translated === key || translated === "" ? fallback : translated;
-  }
+  private _localizeSelector = (key: string): string =>
+    this.hass.localize(`component.knx.config_panel.selectors.knx-payload-selector.${key}`);
 
   static styles = css`
     :host {

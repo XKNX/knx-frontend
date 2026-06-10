@@ -34,6 +34,7 @@ export interface DPTMetadata {
   unit: string | null;
   sensor_device_class: string | null;
   sensor_state_class: string | null;
+  payload_length: number;
   min?: number;
   max?: number;
   step?: number;
