@@ -10,6 +10,7 @@ import { fireEvent } from "@ha/common/dom/fire_event";
 import type { NumberSelector, SelectSelector, StringSelector } from "@ha/data/selector";
 import type { HomeAssistant } from "@ha/types";
 import type { ControlSelectOption } from "@ha/components/ha-control-select";
+import { titleCase } from "@ha/common/string/title-case";
 
 import { getValidationError } from "../utils/validation";
 import { numberRangeHelper } from "../utils/format";
@@ -21,6 +22,9 @@ import "./knx-selector-row";
 import type { KnxHaSelector } from "../types/schema";
 
 const logger = new KNXLogger("knx-payload-selector");
+
+const _ENUM_FLAG_TRUE = "__true";
+const _ENUM_FLAG_FALSE = "__false";
 
 interface PayloadConfigValue {
   value?: boolean | number | string | Record<string, unknown>;
@@ -155,8 +159,11 @@ export class KnxPayloadSelector extends LitElement {
 
   private _typedValueAsEnumString(): string | undefined {
     if (typeof this._typedValue === "string") return this._typedValue;
+    if (typeof this._typedValue === "boolean") {
+      return this._typedValue ? _ENUM_FLAG_TRUE : _ENUM_FLAG_FALSE;
+    }
+    // I'm not sure if number enmum values are actually a thing in xknx, but handle them just in case
     if (typeof this._typedValue === "number") return String(this._typedValue);
-    if (typeof this._typedValue === "boolean") return this._typedValue ? "true" : "false";
     return undefined;
   }
 
@@ -207,12 +214,12 @@ export class KnxPayloadSelector extends LitElement {
       // DPT 1.x are binary; all other enums use backend-provided options.
       const enumOptions: { value: string; label: string }[] = dpt.startsWith("1.")
         ? [
-            { value: "true", label: "On / true" },
-            { value: "false", label: "Off / false" },
+            { value: _ENUM_FLAG_TRUE, label: "On / True" },
+            { value: _ENUM_FLAG_FALSE, label: "Off / False" },
           ]
         : (dptMeta.options?.map((optionValue) => ({
             value: optionValue,
-            label: optionValue,
+            label: this._formatInternalLabel(optionValue),
           })) ?? []);
 
       if (enumOptions.length === 0) {
@@ -242,9 +249,6 @@ export class KnxPayloadSelector extends LitElement {
     }
   }
 
-  private _complexFieldLocalizeFunction = (key: string): string =>
-    key.endsWith(".label") ? key.slice(0, -6).replace(/_/g, " ") : "";
-
   private _knxHaSelector(
     field: DPTComplexFieldSchema,
     selector: KnxHaSelector["selector"],
@@ -270,7 +274,10 @@ export class KnxPayloadSelector extends LitElement {
       });
     }
     if (field.type === "enum") {
-      const options = (field.options ?? []).map((opt) => ({ value: opt, label: opt }));
+      const options = (field.options ?? []).map((opt) => ({
+        value: opt,
+        label: this._formatInternalLabel(opt),
+      }));
       return this._knxHaSelector(field, { select: { options, mode: "dropdown" } });
     }
     if (field.type === "boolean") {
@@ -306,6 +313,20 @@ export class KnxPayloadSelector extends LitElement {
       )}
     `;
   }
+
+  private _complexFieldLocalizeFunction = (key: string): string => {
+    // use xknx field names as labels for selectors
+    return key.endsWith(".label") ? this._formatInternalLabel(key.slice(0, -6)) : "";
+  };
+
+  /*
+   * Format xknx / HA internal keys to user-friendly labels for
+   * complex field selector labels or enum options.
+   * e.g. "field_name" to "Field Name".
+   */
+  private _formatInternalLabel = (name: string): string => {
+    return titleCase(name.replace(/_/g, " "));
+  };
 
   private _complexFieldChanged = (ev: CustomEvent<{ value: unknown }>) => {
     ev.stopPropagation();
@@ -393,9 +414,9 @@ export class KnxPayloadSelector extends LitElement {
   private _enumValueChanged(ev: CustomEvent<{ value: string }>) {
     ev.stopPropagation();
     const value = ev.detail.value;
-    if (value === "true") {
+    if (value === _ENUM_FLAG_TRUE) {
       this._typedValue = true;
-    } else if (value === "false") {
+    } else if (value === _ENUM_FLAG_FALSE) {
       this._typedValue = false;
     } else {
       this._typedValue = value;
