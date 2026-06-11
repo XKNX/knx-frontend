@@ -187,7 +187,8 @@ export class KnxForm extends LitElement {
           ></knx-group-address-selector>
         `;
       case "knx_payload": {
-        const gaPath = pathAdd(path, selector.ga_path ?? "ga");
+        // gaPath is undefined for fixed dpt (selector.dpt)
+        const gaPath = selector.ga_path ? pathAdd(path, selector.ga_path) : undefined;
         return html`
           <knx-payload-selector
             .hass=${this.hass}
@@ -196,7 +197,7 @@ export class KnxForm extends LitElement {
             .gaKey=${gaPath}
             .required=${selector.required}
             .disableRaw=${selector.disable_raw}
-            .dpt=${selector.dpt ?? getNestedValue(this.config!, gaPath)?.dpt}
+            .dpt=${gaPath ? getNestedValue(this.config!, gaPath)?.dpt : selector.dpt}
             .value=${getNestedValue(this.config!, selectorPath)}
             .validationErrors=${selectorErrors}
             .localizeFunction=${this.backendLocalize}

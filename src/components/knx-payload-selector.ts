@@ -99,11 +99,20 @@ export class KnxPayloadSelector extends LitElement {
       this._initialized = true;
     } else if (changedProperties.has("dpt") || changedProperties.has("_linkedDpt")) {
       this._mode = this._inferMode();
-      this._typedValue = undefined;
-      this._rawPayload = undefined;
       const dpt = this._effectiveDpt();
-      const dptPayloadLength = dpt ? this.knx.dptMetadata[dpt]?.payload_length : undefined;
-      this._rawLength = this._clampRawLength(dptPayloadLength ?? this._rawLength);
+      const dptMeta = dpt ? this.knx.dptMetadata[dpt] : undefined;
+      if (dptMeta?.dpt_class === "numeric" && typeof this._typedValue === "number") {
+        this._typedValue = Math.min(
+          dptMeta.max ?? this._typedValue,
+          Math.max(dptMeta.min ?? this._typedValue, this._typedValue),
+        );
+      } else {
+        this._typedValue = undefined;
+      }
+      const dptPayloadLength = dptMeta ? dptMeta.payload_length : undefined;
+      this._rawLength = dptPayloadLength ?? this._clampRawLength(this._rawLength);
+      this._rawPayload = this._clampRawPayload(this._rawPayload);
+      this._emitValue();
     }
   }
 
