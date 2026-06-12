@@ -106,6 +106,12 @@ export class KnxPayloadSelector extends LitElement {
           dptMeta.max ?? this._typedValue,
           Math.max(dptMeta.min ?? this._typedValue, this._typedValue),
         );
+      } else if (
+        dptMeta?.dpt_class === "enum" &&
+        dptMeta.options &&
+        !dptMeta.options.includes(this._typedValue as string)
+      ) {
+        this._typedValue = dptMeta.options[0];
       } else {
         this._typedValue = undefined;
       }
