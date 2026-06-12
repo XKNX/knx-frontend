@@ -340,20 +340,20 @@ export class KnxPayloadSelector extends LitElement {
       <div class="raw-grid">
         <ha-selector
           .hass=${this.hass}
-          .selector=${rawPayloadSelector}
-          .label=${this._localizeSelector("raw_payload")}
-          .helper=${`${numberRangeHelper(0, maxPayload)} ${this._localizeSelector("raw_payload_description")}`}
-          .value=${this._rawPayload}
-          @value-changed=${this._rawPayloadChanged}
-        ></ha-selector>
-        <ha-selector
-          .hass=${this.hass}
           .selector=${rawLengthSelector}
           .label=${this._localizeSelector("raw_length")}
           .helper=${`${disableLength ? "" : numberRangeHelper(0, maxLength) + " "}${this._localizeSelector("raw_length_description")}`}
           .value=${this._rawLength}
           @value-changed=${this._rawLengthChanged}
           .disabled=${disableLength}
+        ></ha-selector>
+        <ha-selector
+          .hass=${this.hass}
+          .selector=${rawPayloadSelector}
+          .label=${this._localizeSelector("raw_payload")}
+          .helper=${`${numberRangeHelper(0, maxPayload)} ${this._localizeSelector("raw_payload_description")}`}
+          .value=${this._rawPayload}
+          @value-changed=${this._rawPayloadChanged}
         ></ha-selector>
       </div>
     `;
@@ -527,7 +527,7 @@ export class KnxPayloadSelector extends LitElement {
 
     .raw-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 2fr 5fr;
       gap: 12px;
     }
 
