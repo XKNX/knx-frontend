@@ -16,11 +16,22 @@ import type {
   GroupMonitorInfoData,
   KNXBaseData,
   KNXEntityIdentifier,
+  TelegramQueryParameters,
+  TelegramQueryResult,
 } from "../types/websocket";
 
 export const getKnxBaseData = (hass: HomeAssistant): Promise<KNXBaseData> =>
   hass.callWS({
     type: "knx/get_base_data",
+  });
+
+export const queryTelegrams = (
+  hass: HomeAssistant,
+  params: TelegramQueryParameters,
+): Promise<TelegramQueryResult> =>
+  hass.callWS({
+    type: "knx/query_telegrams",
+    ...params,
   });
 
 export const processProjectFile = (

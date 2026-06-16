@@ -19,7 +19,14 @@ export const TelegramDictFormatter = {
     ) {
       return telegram.value.toString() + (telegram.unit ? " " + telegram.unit : "");
     }
-    return dump(telegram.value);
+    if (Array.isArray(telegram.value)) {
+      return JSON.stringify(telegram.value) + (telegram.unit ? " " + telegram.unit : "");
+    }
+    try {
+      return dump(telegram.value).trim();
+    } catch {
+      return JSON.stringify(telegram.value);
+    }
   },
 
   timeWithMilliseconds: (telegram: TelegramDict): string => {

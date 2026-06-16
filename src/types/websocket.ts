@@ -11,6 +11,9 @@ export interface KNXInfoData {
   version: string;
   connected: boolean;
   current_address: string;
+  telegram_backend: string;
+  telegram_retention: number | null;
+  telegram_max_count: number | null;
 }
 
 export interface DPTMetadata {
@@ -56,7 +59,28 @@ export interface TelegramDict {
   telegramtype: string;
   timestamp: string; // ISO 8601 eg. "2023-06-21T22:28:45.446257+02:00" from `dt_util.as_local(dt_util.utcnow())`
   unit: string | null;
-  value: string | number | boolean | null;
+  value: string | number | boolean | unknown[] | Record<string, unknown> | null;
+}
+
+export interface TelegramQueryParameters {
+  sources?: string[];
+  destinations?: string[];
+  telegram_types?: string[];
+  directions?: string[];
+  dpt_mains?: number[];
+  start_time?: string; // ISO format
+  end_time?: string; // ISO format
+  delta_before_ms?: number;
+  delta_after_ms?: number;
+  limit?: number;
+  offset?: number;
+  order_descending?: boolean;
+}
+
+export interface TelegramQueryResult {
+  telegrams: TelegramDict[];
+  total_count: number;
+  limit_reached: boolean;
 }
 
 export interface KNXProject {

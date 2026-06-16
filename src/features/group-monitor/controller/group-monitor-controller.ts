@@ -524,6 +524,44 @@ export class GroupMonitorController implements ReactiveController {
   }
 
   /**
+   * Adds historical telegrams fetched from the backend.
+   * Merges them with existing telegrams and updates the buffer size.
+   */
+  public addHistoricalTelegrams(telegrams: TelegramDict[]): void {
+    if (telegrams.length === 0) return;
+
+    // Calculate dynamic telegram storage limit
+    const telegramsLength = this._telegramBuffer.length + telegrams.length;
+    const buffer = this._calculateTelegramStorageBuffer(telegramsLength);
+    const telegramStorageLimit = Math.max(this._telegramBuffer.maxSize, telegramsLength + buffer);
+
+    // Update max telegram count if needed
+    if (this._telegramBuffer.maxSize !== telegramStorageLimit) {
+      const removedTelegrams = this._telegramBuffer.setMaxSize(telegramStorageLimit);
+      if (removedTelegrams.length > 0) {
+        this._removeFromDistinctValues(removedTelegrams);
+      }
+    }
+
+    // Merge new telegrams with existing ones, avoiding duplicates
+    const newTelegramRows = telegrams.map((t) => new TelegramRow(t));
+    const { added, removed } = this._telegramBuffer.merge(newTelegramRows);
+
+    // Update distinct values incrementally
+    if (removed.length > 0) {
+      this._removeFromDistinctValues(removed);
+    }
+
+    if (added.length > 0) {
+      for (const telegram of added) {
+        this._addToDistinctValues(telegram);
+      }
+    }
+
+    this.host.requestUpdate();
+  }
+
+  /**
    * Clears all telegrams from the display and resets filter data
    */
   public clearTelegrams(): void {

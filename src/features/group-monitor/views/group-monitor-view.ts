@@ -26,9 +26,10 @@ import "../../../components/data-table/filter/knx-time-delta-filter";
 
 import { customElement, property, query } from "lit/decorators";
 import { storage } from "@ha/common/decorators/storage";
-import { mdiDeleteSweep, mdiFastForward, mdiPause, mdiRefresh } from "@mdi/js";
+import { mdiDeleteSweep, mdiFastForward, mdiHistory, mdiPause, mdiRefresh } from "@mdi/js";
 
 import { showTelegramInfoDialog } from "../dialogs/show-telegram-info-dialog";
+import { showLoadTelegramsDialog } from "../dialogs/show-load-telegrams-dialog";
 import type { TelegramInfoDialogParams } from "../dialogs/telegram-info-dialog";
 import { formatTimeWithMilliseconds, formatTimeDelta } from "../../../utils/format";
 import type { TelegramRow, TelegramRowKeys } from "../types/telegram-row";
@@ -556,6 +557,15 @@ export class KNXGroupMonitor extends LitElement {
    */
   private _handleClearRows(): void {
     this.controller.clearTelegrams();
+  }
+
+  private _handleLoadHistory(): void {
+    showLoadTelegramsDialog(this, {
+      knx: this.knx,
+      onLoad: (telegrams) => {
+        this.controller.addHistoricalTelegrams(telegrams);
+      },
+    });
   }
 
   // ============================================================================
@@ -1086,6 +1096,14 @@ export class KNXGroupMonitor extends LitElement {
             ?disabled=${!this.controller.isReloadEnabled}
             data-testid="reload-button"
             .title=${this.knx.localize("group_monitor_reload")}
+          >
+          </ha-icon-button>
+          <ha-icon-button
+            .label=${this.knx.localize("group_monitor_load_history")}
+            .path=${mdiHistory}
+            @click=${this._handleLoadHistory}
+            data-testid="load-history-button"
+            .title=${this.knx.localize("group_monitor_load_history")}
           >
           </ha-icon-button>
         </div>
