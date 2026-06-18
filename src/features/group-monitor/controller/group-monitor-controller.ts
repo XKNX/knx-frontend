@@ -6,8 +6,9 @@ import { fireEvent } from "@ha/common/dom/fire_event";
 import memoize from "memoize-one";
 import type { SortingDirection } from "@ha/components/data-table/ha-data-table";
 
-import { getGroupMonitorInfo } from "../../../services/websocket.service";
+import { getGroupMonitorInfo, queryTelegrams } from "../../../services/websocket.service";
 import { TelegramBufferService } from "../services/telegram-buffer-service";
+import { TelegramCoverageService } from "../services/telegram-coverage-service";
 import { ConnectionService } from "../services/connection-service";
 import { KNXLogger } from "../../../tools/knx-logger";
 import { TelegramRow, type OffsetMicros } from "../types/telegram-row";
@@ -48,6 +49,15 @@ export interface FilteredTelegramsResult {
   timeDeltaAddedCount: number;
 }
 
+/** Active time-range filter (epoch milliseconds). `endMs` undefined means open-ended/live. */
+export interface TimeRangeFilter {
+  startMs: number;
+  endMs?: number;
+}
+
+/** Non-fatal outcome of a history load, surfaced to the user. */
+export type HistoryWarning = "retention_clamped" | "partial_load";
+
 /**
  * GroupMonitor ReactiveController
  *
@@ -62,6 +72,12 @@ export class GroupMonitorController implements ReactiveController {
   /** Minimum buffer size for telegram storage beyond recent telegrams length */
   private static readonly MIN_TELEGRAM_STORAGE_BUFFER = 1000;
 
+  /** Page size for paginated history queries. */
+  private static readonly HISTORY_PAGE_SIZE = 10000;
+
+  /** Safety cap on telegrams fetched for a single time-range request. */
+  private static readonly MAX_HISTORY_ROWS = 100000;
+
   private host: ReactiveControllerHost;
 
   // Connection service for WebSocket telegram subscriptions
@@ -69,6 +85,9 @@ export class GroupMonitorController implements ReactiveController {
 
   // Telegram buffer service
   private _telegramBuffer = new TelegramBufferService(2000);
+
+  // Tracks which time ranges are fully loaded into the buffer
+  private _coverage = new TelegramCoverageService();
 
   // UI state
   private _filters: Record<string, string[]> = {};
@@ -92,6 +111,19 @@ export class GroupMonitorController implements ReactiveController {
   private _timeDeltaBefore = 0;
 
   private _timeDeltaAfter = 0;
+
+  // Time-range display filter (epoch milliseconds); undefined end means open-ended/live
+  private _filterStartMs?: number;
+
+  private _filterEndMs?: number;
+
+  // History loading state
+  private _historyLoading = false;
+
+  private _historyWarning: HistoryWarning | null = null;
+
+  // Monotonic id to discard results of superseded history requests
+  private _historyRequestId = 0;
 
   // Filter data - only stores total counts, filtered counts computed on-the-fly
   private _distinctValues: DistinctValues = {
@@ -212,6 +244,29 @@ export class GroupMonitorController implements ReactiveController {
     return this._timeDeltaAfter;
   }
 
+  /** The active time-range display filter, or null when none is set. */
+  public get timeRangeFilter(): TimeRangeFilter | null {
+    if (this._filterStartMs === undefined) return null;
+    return { startMs: this._filterStartMs, endMs: this._filterEndMs };
+  }
+
+  public get hasTimeRangeFilter(): boolean {
+    return this._filterStartMs !== undefined;
+  }
+
+  /** Whether the active range is an absolute (bounded) past range. */
+  public get hasAbsoluteTimeRange(): boolean {
+    return this._filterStartMs !== undefined && this._filterEndMs !== undefined;
+  }
+
+  public get historyLoading(): boolean {
+    return this._historyLoading;
+  }
+
+  public get historyWarning(): HistoryWarning | null {
+    return this._historyWarning;
+  }
+
   /**
    * Whether any list-based filters are active
    * Used by the UI to decide whether to disable the time-delta inputs
@@ -233,6 +288,8 @@ export class GroupMonitorController implements ReactiveController {
       this._sortDirection,
       this._timeDeltaBefore,
       this._timeDeltaAfter,
+      this._filterStartMs,
+      this._filterEndMs,
     );
 
     // Check if filtered telegrams have changed and emit event if so
@@ -266,11 +323,18 @@ export class GroupMonitorController implements ReactiveController {
       sortDirection?: SortingDirection,
       timeDeltaBefore?: number,
       timeDeltaAfter?: number,
+      filterStartMs?: number,
+      filterEndMs?: number,
     ): FilteredTelegramsResult => {
-      // Filter telegrams based on current filters
-      const matchingTelegrams = allTelegrams.filter((telegram) =>
-        this.matchesActiveFilters(telegram),
-      );
+      // Filter telegrams based on the active list filters and time range
+      const matchingTelegrams = allTelegrams.filter((telegram) => {
+        if (filterStartMs !== undefined || filterEndMs !== undefined) {
+          const ts = telegram.timestamp.getTime();
+          if (filterStartMs !== undefined && ts < filterStartMs) return false;
+          if (filterEndMs !== undefined && ts > filterEndMs) return false;
+        }
+        return this.matchesActiveFilters(telegram);
+      });
 
       // Apply time-delta expansion if active
       const filteredTelegrams = this._applyTimeDeltaExpansion(
@@ -461,6 +525,7 @@ export class GroupMonitorController implements ReactiveController {
     this._filters = {};
     this._timeDeltaBefore = 0;
     this._timeDeltaAfter = 0;
+    this.clearTimeRangeFilter();
     this._updateUrlFromFilters(route);
     this._cleanupUnusedFilterValues();
 
@@ -486,6 +551,152 @@ export class GroupMonitorController implements ReactiveController {
   }
 
   /**
+   * Applies a time-range display filter and transparently loads any history that
+   * is not yet covered.
+   *
+   * Open-ended ranges (`endMs` undefined, or in the future) keep the live stream
+   * running and filter `timestamp >= start`. Absolute past ranges filter
+   * `[start, end]` and switch to pause mode so newer telegrams don't appear on
+   * top of the historical view.
+   *
+   * @param hass - Home Assistant instance for backend queries
+   * @param startMs - Range start in epoch milliseconds
+   * @param endMs - Range end in epoch milliseconds, or undefined for "until now"
+   * @param retentionDays - Backend telegram retention in days (null = unknown)
+   */
+  public async applyTimeRangeFilter(
+    hass: HomeAssistant,
+    startMs: number,
+    endMs: number | undefined,
+    retentionDays: number | null,
+  ): Promise<void> {
+    const now = Date.now();
+    this._historyWarning = null;
+
+    // Clamp the start to the retention window (plus a day of slack) and warn.
+    if (retentionDays != null) {
+      const minMs = now - (retentionDays + 1) * 86400_000;
+      this._coverage.trim(minMs);
+      if (startMs < minMs) {
+        startMs = minMs;
+        this._historyWarning = "retention_clamped";
+      }
+    }
+
+    const live = endMs === undefined || endMs >= now;
+    const queryEnd = live ? now : endMs;
+
+    if (queryEnd < startMs) {
+      // Nothing sensible to load or show.
+      return;
+    }
+
+    const requestId = ++this._historyRequestId;
+    this._historyLoading = true;
+    this.host.requestUpdate();
+
+    try {
+      let fetchedTotal = 0;
+      for (const [gapStart, gapEnd] of this._coverage.gaps(startMs, queryEnd)) {
+        // eslint-disable-next-line no-await-in-loop
+        const { complete, lastTs, fetched } = await this._loadGap(
+          hass,
+          gapStart,
+          gapEnd,
+          requestId,
+          fetchedTotal,
+        );
+        if (requestId !== this._historyRequestId) return; // superseded
+        fetchedTotal += fetched;
+
+        if (complete) {
+          this._coverage.addCovered(gapStart, gapEnd);
+        } else {
+          if (lastTs !== null) this._coverage.addCovered(gapStart, lastTs);
+          this._historyWarning = "partial_load";
+          break;
+        }
+      }
+    } catch (err) {
+      logger.error("applyTimeRangeFilter failed", err);
+    } finally {
+      if (requestId === this._historyRequestId) {
+        this._historyLoading = false;
+      }
+    }
+
+    if (requestId !== this._historyRequestId) return; // superseded
+
+    this._filterStartMs = startMs;
+    this._filterEndMs = live ? undefined : endMs;
+    if (!live) {
+      this._isPaused = true;
+      this._coverage.closeLive();
+    }
+    this._bufferVersion++;
+    this.host.requestUpdate();
+  }
+
+  /**
+   * Loads a single gap with paginated queries until it is fully fetched, the
+   * backend stops returning rows, or the global safety cap is reached.
+   */
+  private async _loadGap(
+    hass: HomeAssistant,
+    gapStart: number,
+    gapEnd: number,
+    requestId: number,
+    fetchedBefore: number,
+  ): Promise<{ complete: boolean; lastTs: number | null; fetched: number }> {
+    let offset = 0;
+    let lastTs: number | null = null;
+    let fetched = 0;
+
+    for (;;) {
+      // eslint-disable-next-line no-await-in-loop
+      const result = await queryTelegrams(hass, {
+        start_time: new Date(gapStart).toISOString(),
+        end_time: new Date(gapEnd).toISOString(),
+        order_descending: false,
+        limit: GroupMonitorController.HISTORY_PAGE_SIZE,
+        offset,
+      });
+      if (requestId !== this._historyRequestId) {
+        return { complete: false, lastTs, fetched };
+      }
+
+      const batch = result.telegrams;
+      if (batch.length > 0) {
+        this.addHistoricalTelegrams(batch);
+        lastTs = new Date(batch[batch.length - 1].timestamp).getTime();
+        offset += batch.length;
+        fetched += batch.length;
+      }
+
+      if (batch.length === 0 || offset >= result.total_count) {
+        return { complete: true, lastTs, fetched };
+      }
+      if (fetchedBefore + fetched >= GroupMonitorController.MAX_HISTORY_ROWS) {
+        return { complete: false, lastTs, fetched };
+      }
+    }
+  }
+
+  /**
+   * Releases the time-range display filter and resumes the live view.
+   * The already-loaded telegrams remain in the buffer.
+   */
+  public clearTimeRangeFilter(): void {
+    if (this._filterStartMs === undefined && !this._historyWarning) return;
+    this._filterStartMs = undefined;
+    this._filterEndMs = undefined;
+    this._historyWarning = null;
+    this._isPaused = false;
+    this._bufferVersion++;
+    this.host.requestUpdate();
+  }
+
+  /**
    * Updates which filter panel is currently expanded
    */
   public updateExpandedFilter(id: string, expanded: boolean): void {
@@ -506,6 +717,10 @@ export class GroupMonitorController implements ReactiveController {
    */
   public async togglePause(): Promise<void> {
     this._isPaused = !this._isPaused;
+    // A pause window has no data; close the live interval so it becomes a gap.
+    if (this._isPaused) {
+      this._coverage.closeLive();
+    }
     this.host.requestUpdate();
   }
 
@@ -907,6 +1122,21 @@ export class GroupMonitorController implements ReactiveController {
         }
       }
 
+      // Seed coverage for the recent window: the backend returns every telegram
+      // since the recent-load horizon, so `[oldestRecent, now]` is fully loaded.
+      const nowMs = Date.now();
+      if (newTelegramRows.length > 0) {
+        const oldestMs = newTelegramRows.reduce(
+          (min, t) => Math.min(min, t.timestamp.getTime()),
+          nowMs,
+        );
+        this._coverage.addCovered(oldestMs, nowMs);
+      }
+      if (!this._isPaused) {
+        // Anchor the live interval so streaming telegrams extend from now on.
+        this._coverage.extendLive(nowMs);
+      }
+
       if (this._connectionError !== null) {
         this._connectionError = null;
       }
@@ -940,6 +1170,9 @@ export class GroupMonitorController implements ReactiveController {
 
       // Add new telegram to distinct values
       this._addToDistinctValues(telegramRow);
+
+      // Extend live coverage up to this telegram's timestamp
+      this._coverage.extendLive(telegramRow.timestamp.getTime());
 
       this.host.requestUpdate();
     } else if (!this._isReloadEnabled) {
