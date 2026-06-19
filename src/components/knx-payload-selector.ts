@@ -313,7 +313,7 @@ export class KnxPayloadSelector extends LitElement {
 
   private _renderComplexFields(schema: DPTComplexFieldSchema[]): TemplateResult {
     const currentValue = this._typedRecord;
-
+    // For complex fields no validation errors can be provided as this isn't voluptuous-based
     return html`
       ${schema.map(
         (field) => html`
