@@ -1261,6 +1261,25 @@ export class GroupMonitorController implements ReactiveController {
    * Loads recent telegrams from the server
    */
   private async _loadRecentTelegrams(hass: HomeAssistant): Promise<boolean> {
+    // Load the previously-covered range from IDB non-blocking so cached
+    // telegrams appear instantly while the server request is in flight.
+    const covered = this._coverage.covered;
+    if (covered.length > 0) {
+      const minMs = covered[0][0];
+      const maxMs = covered[covered.length - 1][1];
+      this._cache
+        .loadRange(minMs, maxMs)
+        .then((cached) => {
+          if (cached.length > 0) {
+            this.addHistoricalTelegrams(
+              cached.map((e) => e.dict),
+              false,
+            );
+          }
+        })
+        .catch((err) => logger.warn("Startup cache load failed", err));
+    }
+
     try {
       const info = await getGroupMonitorInfo(hass);
       this._isProjectLoaded = info.project_loaded;
