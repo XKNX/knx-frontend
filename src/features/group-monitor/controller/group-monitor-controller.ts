@@ -892,11 +892,13 @@ export class GroupMonitorController implements ReactiveController {
       // Persist newly-added dicts (skip when caller is the cache restore path).
       if (persist) {
         const addedIds = new Set(added.map((r) => r.id));
-        const batch = telegrams
-          .map((dict) => {
-            const row = newTelegramRows.find((r) => addedIds.has(r.id));
-            return row ? { id: row.id, ts: row.timestamp.getTime(), dict } : null;
-          })
+        // newTelegramRows[i] is the TelegramRow for telegrams[i] — use index to pair them.
+        const batch = newTelegramRows
+          .map((row, i) =>
+            addedIds.has(row.id)
+              ? { id: row.id, ts: row.timestamp.getTime(), dict: telegrams[i] }
+              : null,
+          )
           .filter((x): x is { id: string; ts: number; dict: TelegramDict } => x !== null);
         this._cacheStore(batch);
       }
