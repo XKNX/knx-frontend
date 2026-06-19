@@ -719,7 +719,7 @@ export class GroupMonitorController implements ReactiveController {
 
       const batch = result.telegrams;
       if (batch.length > 0) {
-        this.addHistoricalTelegrams(batch);
+        this.addHistoricalTelegrams(batch, false);
         lastTs = new Date(batch[batch.length - 1].timestamp).getTime();
         offset += batch.length;
         fetched += batch.length;

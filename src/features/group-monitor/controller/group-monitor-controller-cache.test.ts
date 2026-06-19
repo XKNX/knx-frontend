@@ -176,19 +176,13 @@ describe("GroupMonitorController - cache persistence", () => {
   });
 
   describe("addHistoricalTelegrams", () => {
-    it("stores historical telegrams in IDB when persist=true", async () => {
+    it("does not store history-query telegrams in IDB (persist=false)", async () => {
+      // History query results (_loadGap) always pass persist=false to avoid
+      // evicting newer cached entries when loading old ranges.
       const telegrams = [
         makeTelegram({ timestamp: "2024-01-01T08:00:00.000Z", source: "3.3.1" }),
         makeTelegram({ timestamp: "2024-01-01T08:00:01.000Z", source: "3.3.2" }),
       ];
-      controller.addHistoricalTelegrams(telegrams);
-      await flush();
-
-      expect(_idbStore.size).toBe(2);
-    });
-
-    it("does not store telegrams when persist=false (cache restore path)", async () => {
-      const telegrams = [makeTelegram({ timestamp: "2024-01-01T08:00:00.000Z", source: "3.3.1" })];
       controller.addHistoricalTelegrams(telegrams, false);
       await flush();
 
