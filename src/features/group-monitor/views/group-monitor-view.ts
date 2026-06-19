@@ -1312,21 +1312,6 @@ export class KNXGroupMonitor extends LitElement {
           @sort-changed=${this._handleFilterSortChanged}
         ></knx-list-filter>
 
-        <!-- Time-Range Filter -->
-        <knx-time-range-filter
-          slot="filter-pane"
-          .hass=${this.hass}
-          .knx=${this.knx}
-          .startMs=${this.controller.timeRangeFilter?.startMs}
-          .endMs=${this.controller.timeRangeFilter?.endMs}
-          .loading=${this.controller.historyLoading}
-          .warning=${this._historyWarningText(this.controller.historyWarning)}
-          .expanded=${this.controller.expandedFilter === "timerange"}
-          @time-range-changed=${this._handleTimeRangeChanged}
-          @time-range-cleared=${this._handleTimeRangeCleared}
-          @expanded-changed=${this._handleTimeRangeExpanded}
-        ></knx-time-range-filter>
-
         <!-- Time-Delta Context Filter -->
         <knx-time-delta-filter
           slot="filter-pane"
@@ -1340,6 +1325,21 @@ export class KNXGroupMonitor extends LitElement {
           @time-delta-changed=${this._handleTimeDeltaChanged}
           @expanded-changed=${this._handleTimeDeltaExpanded}
         ></knx-time-delta-filter>
+
+        <!-- Time-Range Filter (below context time span – it behaves differently from list filters) -->
+        <knx-time-range-filter
+          slot="filter-pane"
+          .hass=${this.hass}
+          .knx=${this.knx}
+          .startMs=${this.controller.timeRangeFilter?.startMs}
+          .endMs=${this.controller.timeRangeFilter?.endMs}
+          .loading=${this.controller.historyLoading}
+          .warning=${this._historyWarningText(this.controller.historyWarning)}
+          .expanded=${this.controller.expandedFilter === "timerange"}
+          @time-range-changed=${this._handleTimeRangeChanged}
+          @time-range-cleared=${this._handleTimeRangeCleared}
+          @expanded-changed=${this._handleTimeRangeExpanded}
+        ></knx-time-range-filter>
       </hass-tabs-subpage-data-table>
     `;
   }
