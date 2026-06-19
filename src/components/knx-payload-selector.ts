@@ -168,12 +168,17 @@ export class KnxPayloadSelector extends LitElement {
     return options;
   }
 
-  private _renderTypedModeOrRawFallback(dptMeta?: DPTMetadata): TemplateResult {
+  private _renderTypedModeOrRawFallback(dptMeta?: DPTMetadata): TemplateResult | typeof nothing {
     try {
       return this._renderTypedMode(dptMeta);
     } catch (err) {
       logger.warn("Falling back to raw mode:", err);
-      return this._renderRawMode();
+      this._mode = "raw";
+      this._cachedTypedValue = undefined; // clear typed value in case of error
+      this._typedValue = undefined;
+      this._setRawPayloadAndLengthFromCache();
+      // triggers a re-render with raw mode so ne need to render anything here
+      return nothing;
     }
   }
 
@@ -373,12 +378,7 @@ export class KnxPayloadSelector extends LitElement {
     if (nextMode === "raw") {
       this._cachedTypedValue = this._typedValue;
       this._typedValue = undefined;
-      this._rawPayload = this._cachedRawPayload;
-      const dpt = this._effectiveDpt();
-      const dptPayloadLength = dpt
-        ? (this.knx.dptMetadata[dpt]?.payload_length ?? this._cachedRawLength)
-        : this._cachedRawLength;
-      this._rawLength = this._clampRawLength(dptPayloadLength);
+      this._setRawPayloadAndLengthFromCache();
     } else {
       this._cachedRawPayload = this._rawPayload;
       this._cachedRawLength = this._rawLength;
@@ -387,6 +387,15 @@ export class KnxPayloadSelector extends LitElement {
     }
     this._mode = nextMode;
     this._emitValue();
+  }
+
+  private _setRawPayloadAndLengthFromCache(): void {
+    this._rawPayload = this._cachedRawPayload;
+    const dpt = this._effectiveDpt();
+    const dptPayloadLength = dpt
+      ? (this.knx.dptMetadata[dpt]?.payload_length ?? this._cachedRawLength)
+      : this._cachedRawLength;
+    this._rawLength = this._clampRawLength(dptPayloadLength);
   }
 
   private _typedValueChanged(ev: CustomEvent<{ value: unknown }>) {
@@ -470,14 +479,12 @@ export class KnxPayloadSelector extends LitElement {
   }
 
   private _inferMode(): "typed" | "raw" {
-    if (this.value?.payload !== undefined || this.value?.payload_length !== undefined) {
+    // No DPT -> only raw mode is possible
+    if (!this._effectiveDpt()) {
       return "raw";
     }
-    if (this.value?.value !== undefined) {
-      return "typed";
-    }
-    // No stored value yet: derive from DPT availability
-    if (!this._effectiveDpt()) {
+    // if raw is in config, don't switch to typed mode
+    if (this.value?.payload !== undefined || this.value?.payload_length !== undefined) {
       return "raw";
     }
     return "typed";
