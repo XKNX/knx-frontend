@@ -224,16 +224,8 @@ export class GroupMonitorController implements ReactiveController {
       this._cache.evictBefore(minMs).catch((err) => logger.warn("Cache evict failed", err));
     }
 
-    // --- 3. Restore cached telegram dicts ---
-    try {
-      const cached = await this._cache.loadAll();
-      if (cached.length > 0) {
-        const dicts = cached.map((e) => e.dict);
-        this.addHistoricalTelegrams(dicts, false);
-      }
-    } catch {
-      // IDB unavailable or corrupt — proceed without cached data
-    }
+    // IDB data is loaded on-demand via loadRange when a time-range filter is
+    // applied, not pre-loaded here, so the startup view stays clean.
   }
 
   // ============================================================================
@@ -646,6 +638,30 @@ export class GroupMonitorController implements ReactiveController {
     this._historyLoading = true;
     this.host.requestUpdate();
 
+    // Load already-covered sub-ranges from IDB immediately so the user sees
+    // cached data while server queries fill in the remaining gaps.
+    try {
+      const gaps = this._coverage.gaps(startMs, queryEnd);
+      const coveredSubRanges = this._coveredSubRanges(startMs, queryEnd, gaps);
+      for (const [covStart, covEnd] of coveredSubRanges) {
+        // eslint-disable-next-line no-await-in-loop
+        const cached = await this._cache.loadRange(covStart, covEnd);
+        if (cached.length > 0) {
+          this.addHistoricalTelegrams(
+            cached.map((e) => e.dict),
+            false,
+          );
+        }
+      }
+      if (coveredSubRanges.length > 0) {
+        this._filterStartMs = startMs;
+        this._filterEndMs = live ? undefined : endMs;
+        this.host.requestUpdate();
+      }
+    } catch (err) {
+      logger.warn("Cache range load failed", err);
+    }
+
     try {
       let fetchedTotal = 0;
       for (const [gapStart, gapEnd] of this._coverage.gaps(startMs, queryEnd)) {
@@ -687,6 +703,25 @@ export class GroupMonitorController implements ReactiveController {
     }
     this._bufferVersion++;
     this.host.requestUpdate();
+  }
+
+  /**
+   * Returns the sub-ranges within [startMs, endMs] that are NOT gaps —
+   * i.e. the portions already covered that can be served from IDB.
+   */
+  private _coveredSubRanges(
+    startMs: number,
+    endMs: number,
+    gaps: [number, number][],
+  ): [number, number][] {
+    const result: [number, number][] = [];
+    let cursor = startMs;
+    for (const [gapStart, gapEnd] of gaps) {
+      if (cursor < gapStart) result.push([cursor, gapStart]);
+      cursor = gapEnd;
+    }
+    if (cursor < endMs) result.push([cursor, endMs]);
+    return result;
   }
 
   /**
@@ -761,7 +796,15 @@ export class GroupMonitorController implements ReactiveController {
     if (batch.length === 0) return;
     this._cache
       .store(batch)
-      .then(() => this._cache.evictToSize(MAX_CACHE_SIZE))
+      .then(async () => {
+        const oldestSurviving = await this._cache.evictToSize(MAX_CACHE_SIZE);
+        if (oldestSurviving !== null) {
+          // Size eviction dropped old entries — trim coverage to match so we
+          // don't claim those ranges are loaded when the data is gone.
+          this._coverage.trim(oldestSurviving);
+          this._saveCoverage();
+        }
+      })
       .catch((err) => logger.warn("Cache write failed", err));
   }
 

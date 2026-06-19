@@ -132,10 +132,49 @@ describe("TelegramCacheService", () => {
       expect(loaded.map((e) => e.id).sort()).toEqual(["c", "d", "e"]);
     });
 
-    it("is a no-op when at or below maxCount", async () => {
+    it("returns the oldest surviving timestamp when eviction occurs", async () => {
+      await svc.store([
+        { id: "a", ts: 100, dict: makeDict("2024-01-01T00:00:00.000Z") },
+        { id: "b", ts: 200, dict: makeDict("2024-01-01T00:00:01.000Z") },
+        { id: "c", ts: 300, dict: makeDict("2024-01-01T00:00:02.000Z") },
+      ]);
+      const oldest = await svc.evictToSize(2);
+      expect(oldest).toBe(200); // entry "b" is now the oldest surviving
+    });
+
+    it("returns null when at or below maxCount", async () => {
       await svc.store("a", 100, makeDict("2024-01-01T00:00:00.000Z"));
-      await svc.evictToSize(3);
+      const result = await svc.evictToSize(3);
+      expect(result).toBeNull();
       expect(await svc.count()).toBe(1);
+    });
+  });
+
+  describe("loadRange", () => {
+    it("returns only entries within [startMs, endMs]", async () => {
+      await svc.store([
+        { id: "a", ts: 100, dict: makeDict("2024-01-01T00:00:00.000Z") },
+        { id: "b", ts: 200, dict: makeDict("2024-01-01T00:00:01.000Z") },
+        { id: "c", ts: 300, dict: makeDict("2024-01-01T00:00:02.000Z") },
+        { id: "d", ts: 400, dict: makeDict("2024-01-01T00:00:03.000Z") },
+      ]);
+      const result = await svc.loadRange(200, 300);
+      expect(result.map((e) => e.id).sort()).toEqual(["b", "c"]);
+    });
+
+    it("returns entries sorted newest first", async () => {
+      await svc.store([
+        { id: "a", ts: 100, dict: makeDict("2024-01-01T00:00:00.000Z") },
+        { id: "b", ts: 200, dict: makeDict("2024-01-01T00:00:01.000Z") },
+        { id: "c", ts: 300, dict: makeDict("2024-01-01T00:00:02.000Z") },
+      ]);
+      const result = await svc.loadRange(100, 300);
+      expect(result.map((e) => e.ts)).toEqual([300, 200, 100]);
+    });
+
+    it("returns empty array when no entries match the range", async () => {
+      await svc.store("a", 100, makeDict("2024-01-01T00:00:00.000Z"));
+      expect(await svc.loadRange(500, 1000)).toEqual([]);
     });
   });
 
