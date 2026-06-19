@@ -825,9 +825,8 @@ export class KNXGroupMonitor extends LitElement {
           }
           return html`
             <knx-table-cell>
-              <div class="primary" slot="primary">
-                <span>+</span>
-                <span>${this._formatOffsetWithPrecision(row.offset)}</span>
+              <div class="secondary" slot="secondary">
+                <span>+${this._formatOffsetWithPrecision(row.offset)}</span>
               </div>
             </knx-table-cell>
           `;

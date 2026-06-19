@@ -13,18 +13,14 @@
 
 import type { TemplateResult } from "lit";
 import { css, html, LitElement, nothing } from "lit";
-import { customElement, property, query, state } from "lit/decorators";
-import { mdiCalendar, mdiFilterVariantRemove } from "@mdi/js";
+import { customElement, property } from "lit/decorators";
+import { mdiFilterVariantRemove } from "@mdi/js";
 
-import "@ha/components/ha-dialog";
 import "@ha/components/ha-icon-button";
 import "@ha/components/ha-alert";
 import "@ha/components/ha-spinner";
 import "@ha/components/date-picker/ha-date-range-picker";
-import type {
-  DateRangePickerRanges,
-  HaDateRangePicker,
-} from "@ha/components/date-picker/ha-date-range-picker";
+import type { DateRangePickerRanges } from "@ha/components/date-picker/ha-date-range-picker";
 import { formatShortDateTime } from "@ha/common/datetime/format_date_time";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import type { HomeAssistant } from "@ha/types";
@@ -71,27 +67,6 @@ export class KnxTimeRangeFilter extends LitElement {
 
   /** Set when a sidebar preset was clicked, read on the following value-changed. */
   private _presetSelected = false;
-
-  @state() private _pickerDialogOpen = false;
-
-  @query("ha-date-range-picker") private _datePicker?: HaDateRangePicker;
-
-  private _openPickerDialog(): void {
-    this._pickerDialogOpen = true;
-  }
-
-  private _closePickerDialog(): void {
-    this._pickerDialogOpen = false;
-  }
-
-  private _onDialogOpened(): void {
-    // Open the calendar picker immediately once the dialog is fully shown.
-    requestAnimationFrame(() => this._datePicker?.open());
-  }
-
-  private _onPickerClosed(): void {
-    this._pickerDialogOpen = false;
-  }
 
   private _expandedChanged(ev: CustomEvent<{ expanded: boolean }>): void {
     this.expanded = ev.detail.expanded;
@@ -183,43 +158,28 @@ export class KnxTimeRangeFilter extends LitElement {
                   ? html`<ha-alert alert-type="warning">${this.warning}</ha-alert>`
                   : nothing}
                 <div class="picker-row">
-                  <span class="summary" title=${this._summary}>${this._summary}</span>
                   ${this.loading
                     ? html`<ha-spinner size="small"></ha-spinner>`
                     : html`
-                        <ha-icon-button
-                          .path=${mdiCalendar}
-                          .label=${this.knx.localize("group_monitor_time_range_select")}
-                          @click=${this._openPickerDialog}
-                        ></ha-icon-button>
+                        <ha-date-range-picker
+                          minimal
+                          .ranges=${this._ranges}
+                          .startDate=${startDate}
+                          .endDate=${endDate}
+                          .popoverPlacement=${"right"}
+                          time-picker
+                          @preset-selected=${this._onPresetSelected}
+                          @value-changed=${this._onValueChanged}
+                        ></ha-date-range-picker>
                       `}
                 </div>
+                ${hasValue
+                  ? html`<p class="summary" title=${this._summary}>${this._summary}</p>`
+                  : nothing}
               </div>
             `
           : nothing}
       </flex-content-expansion-panel>
-
-      ${this._pickerDialogOpen
-        ? html`
-            <ha-dialog
-              open
-              header-title=${this.knx.localize("group_monitor_time_range_title")}
-              @opened=${this._onDialogOpened}
-              @closed=${this._closePickerDialog}
-            >
-              <ha-date-range-picker
-                minimal
-                .ranges=${this._ranges}
-                .startDate=${startDate}
-                .endDate=${endDate}
-                time-picker
-                @preset-selected=${this._onPresetSelected}
-                @value-changed=${this._onValueChanged}
-                @picker-closed=${this._onPickerClosed}
-              ></ha-date-range-picker>
-            </ha-dialog>
-          `
-        : nothing}
     `;
   }
 
@@ -288,27 +248,14 @@ export class KnxTimeRangeFilter extends LitElement {
 
     .picker-row {
       display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 8px;
     }
 
     .summary {
-      flex: 1;
-      min-width: 0;
-      /* Wrap to at most two lines; full text is available via the title tooltip. */
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+      color: var(--secondary-text-color);
+      font-size: 0.85em;
+      margin: 4px 0 0;
+      line-height: 1.4;
       overflow-wrap: anywhere;
-      font-size: 0.9em;
-      line-height: 1.3;
-      padding-top: 10px;
-    }
-
-    .picker-row ha-spinner {
-      margin-top: 10px;
     }
   `;
 }
