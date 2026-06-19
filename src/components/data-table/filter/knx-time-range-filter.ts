@@ -13,14 +13,17 @@
 
 import type { TemplateResult } from "lit";
 import { css, html, LitElement, nothing } from "lit";
-import { customElement, property } from "lit/decorators";
+import { customElement, property, query } from "lit/decorators";
 import { mdiFilterVariantRemove } from "@mdi/js";
 
 import "@ha/components/ha-icon-button";
 import "@ha/components/ha-alert";
 import "@ha/components/ha-spinner";
 import "@ha/components/date-picker/ha-date-range-picker";
-import type { DateRangePickerRanges } from "@ha/components/date-picker/ha-date-range-picker";
+import type {
+  DateRangePickerRanges,
+  HaDateRangePicker,
+} from "@ha/components/date-picker/ha-date-range-picker";
 import { formatShortDateTime } from "@ha/common/datetime/format_date_time";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import type { HomeAssistant } from "@ha/types";
@@ -65,8 +68,14 @@ export class KnxTimeRangeFilter extends LitElement {
   /** Localized warning text to display, if any. */
   @property({ attribute: false }) public warning?: string;
 
+  @query("ha-date-range-picker") private _datePicker?: HaDateRangePicker;
+
   /** Set when a sidebar preset was clicked, read on the following value-changed. */
   private _presetSelected = false;
+
+  private _openPicker(): void {
+    this._datePicker?.open();
+  }
 
   private _expandedChanged(ev: CustomEvent<{ expanded: boolean }>): void {
     this.expanded = ev.detail.expanded;
@@ -157,7 +166,7 @@ export class KnxTimeRangeFilter extends LitElement {
                 ${this.warning
                   ? html`<ha-alert alert-type="warning">${this.warning}</ha-alert>`
                   : nothing}
-                <div class="picker-row">
+                <div class="picker-row" @click=${this._openPicker}>
                   ${this.loading
                     ? html`<ha-spinner size="small"></ha-spinner>`
                     : html`
@@ -171,11 +180,13 @@ export class KnxTimeRangeFilter extends LitElement {
                           @preset-selected=${this._onPresetSelected}
                           @value-changed=${this._onValueChanged}
                         ></ha-date-range-picker>
+                        <span class="picker-label">
+                          ${hasValue
+                            ? this._summary
+                            : this.knx.localize("group_monitor_time_range_select")}
+                        </span>
                       `}
                 </div>
-                ${hasValue
-                  ? html`<p class="summary" title=${this._summary}>${this._summary}</p>`
-                  : nothing}
               </div>
             `
           : nothing}
@@ -248,14 +259,22 @@ export class KnxTimeRangeFilter extends LitElement {
 
     .picker-row {
       display: flex;
+      align-items: center;
+      cursor: pointer;
+      border-radius: 4px;
+      margin: 0 -8px;
+      padding: 0 8px;
     }
 
-    .summary {
-      color: var(--secondary-text-color);
-      font-size: 0.85em;
-      margin: 4px 0 0;
+    .picker-row:hover {
+      background: var(--secondary-background-color);
+    }
+
+    .picker-label {
+      font-size: 0.9em;
       line-height: 1.4;
       overflow-wrap: anywhere;
+      color: var(--primary-text-color);
     }
   `;
 }
