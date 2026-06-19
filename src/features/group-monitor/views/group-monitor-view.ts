@@ -31,7 +31,7 @@ import { mdiDeleteSweep, mdiFastForward, mdiPause, mdiRefresh } from "@mdi/js";
 
 import { showTelegramInfoDialog } from "../dialogs/show-telegram-info-dialog";
 import type { TelegramInfoDialogParams } from "../dialogs/telegram-info-dialog";
-import { formatTimeWithMilliseconds, formatTimeDelta } from "../../../utils/format";
+import { formatTimeWithMilliseconds, formatTimeDelta, formatDate } from "../../../utils/format";
 import type { TelegramRow, TelegramRowKeys } from "../types/telegram-row";
 import type { ToggleFilterEvent } from "../../../components/data-table/cell/knx-table-cell-filterable";
 import { GroupMonitorController } from "../controller/group-monitor-controller";
@@ -51,6 +51,50 @@ import type {
 } from "../../../components/data-table/filter/knx-list-filter";
 import type { TimeDeltaChangedEvent } from "../../../components/data-table/filter/knx-time-delta-filter";
 import type { TimeRangeChangedEvent } from "../../../components/data-table/filter/knx-time-range-filter";
+
+/** Persisted column layout (order + hidden columns) for one breakpoint. */
+interface StoredColumnLayout {
+  columnOrder?: string[];
+  hiddenColumns?: string[];
+}
+
+/** Persisted column settings, keyed by layout breakpoint. */
+interface StoredColumns {
+  wide?: StoredColumnLayout;
+  narrow?: StoredColumnLayout;
+}
+
+/**
+ * Migrates persisted column settings to include columns added after the
+ * setting was first stored. The "offset" (Delta) column was split out of the
+ * "timestampIso" (Time/Date) column, so existing column orders predate it and
+ * would otherwise append it at the end. Insert it right after "timestampIso".
+ *
+ * @returns The migrated settings, or the original reference if nothing changed.
+ */
+export function migrateStoredColumns(stored: StoredColumns | undefined): StoredColumns | undefined {
+  if (!stored) return stored;
+
+  let changed = false;
+  const migrateLayout = (layout?: StoredColumnLayout): StoredColumnLayout | undefined => {
+    const order = layout?.columnOrder;
+    if (!order || order.includes("offset") || !order.includes("timestampIso")) {
+      return layout;
+    }
+    const nextOrder = [...order];
+    nextOrder.splice(nextOrder.indexOf("timestampIso") + 1, 0, "offset");
+    changed = true;
+    return { ...layout, columnOrder: nextOrder };
+  };
+
+  const migrated: StoredColumns = {
+    ...stored,
+    wide: migrateLayout(stored.wide),
+    narrow: migrateLayout(stored.narrow),
+  };
+
+  return changed ? migrated : stored;
+}
 
 /**
  * KNX Group Monitor Component
@@ -145,10 +189,7 @@ export class KNXGroupMonitor extends LitElement {
     state: false,
     subscribe: false,
   })
-  private _storedColumns?: {
-    wide?: { columnOrder?: string[]; hiddenColumns?: string[] };
-    narrow?: { columnOrder?: string[]; hiddenColumns?: string[] };
-  };
+  private _storedColumns?: StoredColumns;
 
   /** GroupMonitor controller instance */
   private controller = new GroupMonitorController(this);
@@ -223,6 +264,10 @@ export class KNXGroupMonitor extends LitElement {
    * Called once when the component is first rendered
    */
   public async firstUpdated(): Promise<void> {
+    const migrated = migrateStoredColumns(this._storedColumns);
+    if (migrated !== this._storedColumns) {
+      this._storedColumns = migrated;
+    }
     await this.controller.setup(this.hass);
   }
 
@@ -737,31 +782,50 @@ export class KNXGroupMonitor extends LitElement {
       projectLoaded: boolean,
       _language: string,
     ): DataTableColumnContainer<TelegramRow> => ({
-      // Timestamp column with relative time offsets when sorting by time
+      // Time/date column: time with milliseconds (primary) and date (secondary)
       ["timestampIso" as TelegramRowKeys]: {
         showNarrow: true,
         defaultHidden: narrow,
         filterable: true,
         sortable: true,
         direction: "desc",
-        title: this.knx.localize("group_monitor_time"),
+        title: this.knx.localize("group_monitor_time_date"),
         minWidth: "110px",
         maxWidth: "122px",
         template: (row) => html`
           <knx-table-cell>
             <div class="primary" slot="primary">${formatTimeWithMilliseconds(row.timestamp)}</div>
-            ${row.offset !== null &&
-            (this.controller.sortColumn === ("timestampIso" as TelegramRowKeys) ||
-              this.controller.sortColumn === undefined)
-              ? html`
-                  <div class="secondary" slot="secondary">
-                    <span>+</span>
-                    <span>${this._formatOffsetWithPrecision(row.offset)}</span>
-                  </div>
-                `
-              : nothing}
+            <div class="secondary" slot="secondary">${formatDate(row.timestamp)}</div>
           </knx-table-cell>
         `,
+      },
+
+      // Time delta column: relative offset to the previous telegram when sorting by time
+      ["offset" as TelegramRowKeys]: {
+        showNarrow: true,
+        defaultHidden: narrow,
+        filterable: false,
+        sortable: false,
+        title: this.knx.localize("group_monitor_delta"),
+        minWidth: "90px",
+        maxWidth: "100px",
+        template: (row) => {
+          if (
+            row.offset === null ||
+            (this.controller.sortColumn !== ("timestampIso" as TelegramRowKeys) &&
+              this.controller.sortColumn !== undefined)
+          ) {
+            return nothing;
+          }
+          return html`
+            <knx-table-cell>
+              <div class="primary" slot="primary">
+                <span>+</span>
+                <span>${this._formatOffsetWithPrecision(row.offset)}</span>
+              </div>
+            </knx-table-cell>
+          `;
+        },
       },
 
       // Main source address column with filterable cell

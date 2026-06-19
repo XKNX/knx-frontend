@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { KNXGroupMonitor } from "./group-monitor-view";
+import { KNXGroupMonitor, migrateStoredColumns } from "./group-monitor-view";
 
 vi.mock("@lit-labs/virtualizer", () => ({}));
 
@@ -84,5 +84,56 @@ describe("KNXGroupMonitor", () => {
     (element as any)._handleClearRows();
 
     expect(mockController.clearTelegrams).toHaveBeenCalled();
+  });
+
+  describe("migrateStoredColumns", () => {
+    it("inserts the offset column right after timestampIso for both layouts", () => {
+      const migrated = migrateStoredColumns({
+        wide: { columnOrder: ["timestampIso", "sourceAddress", "value"] },
+        narrow: { columnOrder: ["sourceAddress", "timestampIso", "type"] },
+      });
+
+      expect(migrated?.wide?.columnOrder).toEqual([
+        "timestampIso",
+        "offset",
+        "sourceAddress",
+        "value",
+      ]);
+      expect(migrated?.narrow?.columnOrder).toEqual([
+        "sourceAddress",
+        "timestampIso",
+        "offset",
+        "type",
+      ]);
+    });
+
+    it("preserves hiddenColumns while migrating the order", () => {
+      const migrated = migrateStoredColumns({
+        wide: { columnOrder: ["timestampIso", "value"], hiddenColumns: ["payload"] },
+      });
+
+      expect(migrated?.wide?.hiddenColumns).toEqual(["payload"]);
+    });
+
+    it("does not add offset again if it is already present", () => {
+      const stored = { wide: { columnOrder: ["timestampIso", "offset", "sourceAddress"] } };
+
+      const migrated = migrateStoredColumns(stored);
+
+      // Unchanged input is returned by reference (no rewrite to storage).
+      expect(migrated).toBe(stored);
+    });
+
+    it("leaves a column order without timestampIso untouched", () => {
+      const stored = { wide: { columnOrder: ["sourceAddress", "value"] } };
+
+      const migrated = migrateStoredColumns(stored);
+
+      expect(migrated).toBe(stored);
+    });
+
+    it("is a no-op when nothing is stored", () => {
+      expect(migrateStoredColumns(undefined)).toBeUndefined();
+    });
   });
 });
