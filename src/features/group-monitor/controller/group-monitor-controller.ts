@@ -1251,6 +1251,17 @@ export class GroupMonitorController implements ReactiveController {
         for (const telegram of added) {
           this._addToDistinctValues(telegram);
         }
+
+        // Persist newly-added recent telegrams to IndexedDB.
+        const addedIds = new Set(added.map((r) => r.id));
+        const batch = newTelegramRows
+          .map((row, i) =>
+            addedIds.has(row.id)
+              ? { id: row.id, ts: row.timestamp.getTime(), dict: info.recent_telegrams[i] }
+              : null,
+          )
+          .filter((x): x is { id: string; ts: number; dict: TelegramDict } => x !== null);
+        this._cacheStore(batch);
       }
 
       // Seed coverage for the recent window: the backend returns every telegram
@@ -1302,6 +1313,11 @@ export class GroupMonitorController implements ReactiveController {
 
       // Add new telegram to distinct values
       this._addToDistinctValues(telegramRow);
+
+      // Persist live telegram to IndexedDB cache.
+      this._cacheStore([
+        { id: telegramRow.id, ts: telegramRow.timestamp.getTime(), dict: telegram },
+      ]);
 
       // Extend live coverage up to this telegram's timestamp
       this._coverage.extendLive(telegramRow.timestamp.getTime());
