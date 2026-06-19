@@ -111,7 +111,16 @@ export class KnxPayloadSelector extends LitElement {
         dptMeta.options &&
         !dptMeta.options.includes(this._typedValue as string)
       ) {
+        // set initial value for enum selector
         this._typedValue = dptMeta.options[0];
+      } else if (dptMeta?.dpt_class === "complex" && dptMeta.schema) {
+        this._typedValue = {};
+        // set initial values for enum fields in complex DPTs
+        for (const field of dptMeta.schema) {
+          if (field.type === "enum" && field.required && field.options) {
+            this._typedValue[field.name] = field.options[0];
+          }
+        }
       } else {
         this._typedValue = undefined;
       }
