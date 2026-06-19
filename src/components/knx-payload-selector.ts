@@ -89,6 +89,11 @@ export class KnxPayloadSelector extends LitElement {
     super.disconnectedCallback();
   }
 
+  shouldUpdate(changedProperties: Map<string, any>) {
+    // Omit rerender when only hass changed
+    return !(changedProperties.has("hass") && changedProperties.size === 1);
+  }
+
   protected willUpdate(changedProperties: PropertyValues): void {
     if (!this._initialized && changedProperties.has("value")) {
       this._mode = this._inferMode();
