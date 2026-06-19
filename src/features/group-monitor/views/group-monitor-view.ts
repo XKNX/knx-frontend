@@ -27,7 +27,7 @@ import "../../../components/data-table/filter/knx-time-range-filter";
 
 import { customElement, property, query } from "lit/decorators";
 import { storage } from "@ha/common/decorators/storage";
-import { mdiDeleteSweep, mdiFastForward, mdiPause, mdiRefresh } from "@mdi/js";
+import { mdiDatabaseRemove, mdiDeleteSweep, mdiFastForward, mdiPause, mdiRefresh } from "@mdi/js";
 
 import { showTelegramInfoDialog } from "../dialogs/show-telegram-info-dialog";
 import type { TelegramInfoDialogParams } from "../dialogs/telegram-info-dialog";
@@ -268,7 +268,7 @@ export class KNXGroupMonitor extends LitElement {
     if (migrated !== this._storedColumns) {
       this._storedColumns = migrated;
     }
-    await this.controller.setup(this.hass);
+    await this.controller.setup(this.hass, this.knx.connectionInfo.telegram_retention);
   }
 
   /**
@@ -601,6 +601,12 @@ export class KNXGroupMonitor extends LitElement {
   /** Attempts to reconnect after a connection error */
   private async _retryConnection(): Promise<void> {
     await this.controller.retryConnection(this.hass);
+  }
+
+  /** Clears the persistent cache (IndexedDB + coverage), then reloads */
+  private async _handleClearCache(): Promise<void> {
+    await this.controller.clearCache();
+    await this.controller.reload(this.hass);
   }
 
   /** Clears all active filters */
@@ -1199,6 +1205,14 @@ export class KNXGroupMonitor extends LitElement {
             ?disabled=${!this.controller.isReloadEnabled}
             data-testid="reload-button"
             .title=${this.knx.localize("group_monitor_reload")}
+          >
+          </ha-icon-button>
+          <ha-icon-button
+            .label=${this.knx.localize("group_monitor_clear_cache")}
+            .path=${mdiDatabaseRemove}
+            @click=${this._handleClearCache}
+            data-testid="clear-cache-button"
+            .title=${this.knx.localize("group_monitor_clear_cache")}
           >
           </ha-icon-button>
         </div>

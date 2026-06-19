@@ -9,6 +9,7 @@ import type { SortingDirection } from "@ha/components/data-table/ha-data-table";
 import { getGroupMonitorInfo, queryTelegrams } from "../../../services/websocket.service";
 import { TelegramBufferService } from "../services/telegram-buffer-service";
 import { TelegramCoverageService } from "../services/telegram-coverage-service";
+import { TelegramCacheService, MAX_CACHE_SIZE } from "../services/telegram-cache-service";
 import { ConnectionService } from "../services/connection-service";
 import { KNXLogger } from "../../../tools/knx-logger";
 import { TelegramRow, type OffsetMicros } from "../types/telegram-row";
@@ -78,6 +79,9 @@ export class GroupMonitorController implements ReactiveController {
   /** Safety cap on telegrams fetched for a single time-range request. */
   private static readonly MAX_HISTORY_ROWS = 100000;
 
+  /** localStorage key for persisted coverage intervals. */
+  private static readonly COVERAGE_KEY = "knx-group-monitor-coverage";
+
   private host: ReactiveControllerHost;
 
   // Connection service for WebSocket telegram subscriptions
@@ -88,6 +92,9 @@ export class GroupMonitorController implements ReactiveController {
 
   // Tracks which time ranges are fully loaded into the buffer
   private _coverage = new TelegramCoverageService();
+
+  // Persistent IndexedDB cache for raw telegram dicts
+  private _cache = new TelegramCacheService();
 
   // UI state
   private _filters: Record<string, string[]> = {};
@@ -170,10 +177,15 @@ export class GroupMonitorController implements ReactiveController {
   // ============================================================================
 
   /**
-   * Setup method to be called from the host's firstUpdated
+   * Setup method to be called from the host's firstUpdated.
+   *
+   * @param retentionDays - Backend telegram retention in days; used to trim the
+   *   coverage cache to the available window before restoring persisted data.
    */
-  public async setup(hass: HomeAssistant): Promise<void> {
+  public async setup(hass: HomeAssistant, retentionDays: number | null = null): Promise<void> {
     if (this._connectionService.isConnected) return;
+
+    await this._restoreFromCache(retentionDays);
 
     if (!(await this._loadRecentTelegrams(hass))) return;
 
@@ -183,6 +195,44 @@ export class GroupMonitorController implements ReactiveController {
       logger.error("Failed to setup connection", err);
       this._connectionError = err instanceof Error ? err.message : String(err);
       this.host.requestUpdate();
+    }
+  }
+
+  /**
+   * Restores persisted coverage intervals and telegram dicts from local storage
+   * and IndexedDB before the first server round-trip.  All operations are
+   * advisory: errors are silently suppressed so a cache miss never breaks startup.
+   */
+  private async _restoreFromCache(retentionDays: number | null): Promise<void> {
+    // --- 1. Restore coverage intervals ---
+    try {
+      const raw = localStorage.getItem(GroupMonitorController.COVERAGE_KEY);
+      if (raw) {
+        const intervals: [number, number][] = JSON.parse(raw);
+        for (const [s, e] of intervals) {
+          this._coverage.addCovered(s, e);
+        }
+      }
+    } catch {
+      // malformed JSON or unavailable storage — start with empty coverage
+    }
+
+    // --- 2. Apply retention trim to coverage (and evict old IDB entries) ---
+    if (retentionDays != null) {
+      const minMs = Date.now() - (retentionDays + 1) * 86400_000;
+      this._coverage.trim(minMs);
+      this._cache.evictBefore(minMs).catch((err) => logger.warn("Cache evict failed", err));
+    }
+
+    // --- 3. Restore cached telegram dicts ---
+    try {
+      const cached = await this._cache.loadAll();
+      if (cached.length > 0) {
+        const dicts = cached.map((e) => e.dict);
+        this.addHistoricalTelegrams(dicts, false);
+      }
+    } catch {
+      // IDB unavailable or corrupt — proceed without cached data
     }
   }
 
@@ -577,6 +627,7 @@ export class GroupMonitorController implements ReactiveController {
     if (retentionDays != null) {
       const minMs = now - (retentionDays + 1) * 86400_000;
       this._coverage.trim(minMs);
+      this._saveCoverage();
       if (startMs < minMs) {
         startMs = minMs;
         this._historyWarning = "retention_clamped";
@@ -616,6 +667,7 @@ export class GroupMonitorController implements ReactiveController {
           this._historyWarning = "partial_load";
           break;
         }
+        this._saveCoverage();
       }
     } catch (err) {
       logger.error("applyTimeRangeFilter failed", err);
@@ -682,6 +734,62 @@ export class GroupMonitorController implements ReactiveController {
     }
   }
 
+  // ============================================================================
+  // Persistence helpers
+  // ============================================================================
+
+  /**
+   * Serialises the current covered intervals to localStorage.
+   * Call after every `addCovered` / `trim` that should persist.
+   */
+  private _saveCoverage(): void {
+    try {
+      localStorage.setItem(
+        GroupMonitorController.COVERAGE_KEY,
+        JSON.stringify(this._coverage.covered),
+      );
+    } catch {
+      // Ignore quota or unavailability.
+    }
+  }
+
+  /**
+   * Stores a batch of raw telegram dicts to IndexedDB and trims the cache to
+   * the configured size cap.  Fire-and-forget — errors are logged but not thrown.
+   */
+  private _cacheStore(batch: { id: string; ts: number; dict: TelegramDict }[]): void {
+    if (batch.length === 0) return;
+    this._cache
+      .store(batch)
+      .then(() => this._cache.evictToSize(MAX_CACHE_SIZE))
+      .catch((err) => logger.warn("Cache write failed", err));
+  }
+
+  /**
+   * Clears the persistent cache (IndexedDB + coverage localStorage), resets
+   * in-memory coverage, and wipes the telegram buffer.
+   */
+  public async clearCache(): Promise<void> {
+    try {
+      await this._cache.clear();
+    } catch (err) {
+      logger.warn("Cache clear failed", err);
+    }
+    this._coverage.clear();
+    try {
+      localStorage.removeItem(GroupMonitorController.COVERAGE_KEY);
+    } catch {
+      // ignore
+    }
+    const cleared = this._telegramBuffer.clear();
+    if (cleared.length > 0) {
+      this._resetDistinctValues();
+    }
+    this._isReloadEnabled = true;
+    this._bufferVersion++;
+    this.host.requestUpdate();
+  }
+
   /**
    * Releases the time-range display filter and resumes the live view.
    * The already-loaded telegrams remain in the buffer.
@@ -742,7 +850,16 @@ export class GroupMonitorController implements ReactiveController {
    * Adds historical telegrams fetched from the backend.
    * Merges them with existing telegrams and updates the buffer size.
    */
-  public addHistoricalTelegrams(telegrams: TelegramDict[]): void {
+  /**
+   * Adds historical telegrams fetched from the backend (or restored from the
+   * persistent cache) into the in-memory buffer.
+   *
+   * @param telegrams - Raw telegram dicts to merge.
+   * @param persist - When `true` (default) the dicts are also written to the
+   *   IndexedDB cache so they survive a page reload.  Pass `false` when the
+   *   dicts already came *from* the cache to avoid a pointless round-trip.
+   */
+  public addHistoricalTelegrams(telegrams: TelegramDict[], persist = true): void {
     if (telegrams.length === 0) return;
 
     // Calculate dynamic telegram storage limit
@@ -770,6 +887,18 @@ export class GroupMonitorController implements ReactiveController {
     if (added.length > 0) {
       for (const telegram of added) {
         this._addToDistinctValues(telegram);
+      }
+
+      // Persist newly-added dicts (skip when caller is the cache restore path).
+      if (persist) {
+        const addedIds = new Set(added.map((r) => r.id));
+        const batch = telegrams
+          .map((dict) => {
+            const row = newTelegramRows.find((r) => addedIds.has(r.id));
+            return row ? { id: row.id, ts: row.timestamp.getTime(), dict } : null;
+          })
+          .filter((x): x is { id: string; ts: number; dict: TelegramDict } => x !== null);
+        this._cacheStore(batch);
       }
     }
 
@@ -1131,6 +1260,7 @@ export class GroupMonitorController implements ReactiveController {
           nowMs,
         );
         this._coverage.addCovered(oldestMs, nowMs);
+        this._saveCoverage();
       }
       if (!this._isPaused) {
         // Anchor the live interval so streaming telegrams extend from now on.

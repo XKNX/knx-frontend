@@ -45,6 +45,7 @@
   "group_monitor_resume": "Fortsetzen",
   "group_monitor_clear": "Löschen",
   "group_monitor_reload": "Synchronisieren",
+  "group_monitor_clear_cache": "Cache leeren",
   "group_monitor_time_range_title": "Zeitraum",
   "group_monitor_time_range_select": "Zeitraum auswählen",
   "group_monitor_time_range_now": "jetzt",

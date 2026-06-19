@@ -45,6 +45,7 @@
   "group_monitor_resume": "Resume",
   "group_monitor_clear": "Clear",
   "group_monitor_reload": "Sync",
+  "group_monitor_clear_cache": "Clear cache",
   "group_monitor_time_range_title": "Time range",
   "group_monitor_time_range_select": "Select a time range",
   "group_monitor_time_range_now": "now",
