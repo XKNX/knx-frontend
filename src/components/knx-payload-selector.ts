@@ -5,8 +5,10 @@ import { classMap } from "lit/directives/class-map";
 
 import "@ha/components/ha-control-select";
 import "@ha/components/ha-selector/ha-selector";
+import "@ha/components/input/ha-input";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
+import type { HaInput } from "@ha/components/input/ha-input";
 import type { NumberSelector, SelectSelector, StringSelector } from "@ha/data/selector";
 import type { HomeAssistant } from "@ha/types";
 import type { ControlSelectOption } from "@ha/components/ha-control-select";
@@ -24,7 +26,7 @@ const logger = new KNXLogger("knx-payload-selector");
 
 interface PayloadConfigValue {
   value?: boolean | number | string | Record<string, unknown>;
-  payload?: number;
+  payload?: string;
   payload_length?: number;
 }
 
@@ -56,7 +58,7 @@ export class KnxPayloadSelector extends LitElement {
 
   @state() private _typedValue?: boolean | number | string | Record<string, unknown>;
 
-  @state() private _rawPayload?: number;
+  @state() private _rawPayload?: string;
 
   @state() private _rawLength = 1;
 
@@ -65,7 +67,7 @@ export class KnxPayloadSelector extends LitElement {
   // Caches survive mode switches so values are restored when switching back.
   private _cachedTypedValue?: boolean | number | string | Record<string, unknown>;
 
-  private _cachedRawPayload?: number;
+  private _cachedRawPayload?: string;
 
   private _cachedRawLength = 1;
 
@@ -265,6 +267,16 @@ export class KnxPayloadSelector extends LitElement {
     throw new Error(`Typed mode not implemented for dpt_class ${dptMeta.dpt_class} of DPT ${dpt}`);
   }
 
+  private _typedValueChanged(ev: CustomEvent<{ value: unknown }>) {
+    ev.stopPropagation();
+    const next = ev.detail.value;
+    this._typedValue =
+      typeof next === "number" || typeof next === "string" || typeof next === "boolean"
+        ? next
+        : undefined;
+    this._emitValue();
+  }
+
   private _knxHaSelector(
     field: DPTComplexFieldSchema,
     selector: KnxHaSelector["selector"],
@@ -351,11 +363,7 @@ export class KnxPayloadSelector extends LitElement {
   };
 
   private _renderRawMode(): TemplateResult {
-    const maxPayload = this._rawPayloadMax();
     const maxLength = this._rawMaxLength();
-    const rawPayloadSelector: NumberSelector = {
-      number: { mode: "box", min: 0, max: maxPayload, step: 1 },
-    };
     const rawLengthSelector: NumberSelector = {
       number: { mode: "box", min: 0, max: maxLength, step: 1 },
     };
@@ -372,16 +380,35 @@ export class KnxPayloadSelector extends LitElement {
           @value-changed=${this._rawLengthChanged}
           .disabled=${disableLength}
         ></ha-selector>
-        <ha-selector
-          .hass=${this.hass}
-          .selector=${rawPayloadSelector}
-          .label=${this._localizeSelector("raw_payload")}
-          .helper=${`${numberRangeHelper(0, maxPayload)} ${this._localizeSelector("raw_payload_description")}`}
-          .value=${this._rawPayload}
-          @value-changed=${this._rawPayloadChanged}
-        ></ha-selector>
+        ${this._renderRawPayloadValueHex()}
       </div>
     `;
+  }
+
+  private _renderRawPayloadValueHex(): TemplateResult {
+    let payloadValue = this._rawPayload?.toLowerCase();
+    // selector works without 0x prefix - value-changed adds it back
+    payloadValue = payloadValue?.startsWith("0x") ? payloadValue.slice(2) : payloadValue;
+    let rawInvalidMessage: string | undefined;
+    if (this._rawPayload && !/^0x[0-9a-fA-F]*$/.test(this._rawPayload)) {
+      rawInvalidMessage = "Invalid hex string";
+    } else if (this._clampRawPayload(this._rawPayload) !== this._rawPayload) {
+      rawInvalidMessage = "Value out of range for selected payload length";
+    }
+    return html`<ha-input
+      .value=${payloadValue}
+      .hint=${`${`0x0 \u2026 0x${this._rawPayloadMax().toString(16)}`} ${this._localizeSelector("raw_payload_description")}`}
+      .type=${"text"}
+      @input=${this._rawPayloadChanged}
+      @change=${this._rawPayloadChanged}
+      .label=${this._localizeSelector("raw_payload")}
+      .required=${true}
+      .maxlength=${(this._rawLength || 1) * 2}
+      .invalid=${!!rawInvalidMessage}
+      .validationMessage=${rawInvalidMessage}
+    >
+      <span slot="start">0x</span>
+    </ha-input>`;
   }
 
   private _modeChanged(ev: CustomEvent<{ value: string }>) {
@@ -412,22 +439,16 @@ export class KnxPayloadSelector extends LitElement {
     this._rawLength = this._clampRawLength(dptPayloadLength);
   }
 
-  private _typedValueChanged(ev: CustomEvent<{ value: unknown }>) {
+  private _rawPayloadChanged(ev: CustomEvent<{ value: string }>) {
     ev.stopPropagation();
-    const next = ev.detail.value;
-    this._typedValue =
-      typeof next === "number" || typeof next === "string" || typeof next === "boolean"
-        ? next
-        : undefined;
-    this._emitValue();
-  }
+    // add 0x prefix, trim whitespace, lower case for matching with clamp. Exact validation is done in backend.
+    const payloadRaw = (ev.target as HaInput).value?.trim().toLowerCase();
+    if (!payloadRaw) {
+      this._rawPayload = undefined;
+    } else {
+      this._rawPayload = `0x${payloadRaw}`;
+    }
 
-  private _rawPayloadChanged(ev: CustomEvent<{ value: number }>) {
-    ev.stopPropagation();
-    const payload = Number.isFinite(ev.detail.value)
-      ? Math.floor(Number(ev.detail.value))
-      : undefined;
-    this._rawPayload = this._clampRawPayload(payload);
     this._emitValue();
   }
 
@@ -457,23 +478,39 @@ export class KnxPayloadSelector extends LitElement {
     return Math.min(max, Math.max(0, length));
   }
 
-  private _rawPayloadMax(): number | undefined {
+  private _rawPayloadMax(): bigint {
     const dpt = this._effectiveDpt();
     if (dpt) {
       const main = Number.parseInt(dpt.split(".")[0], 10);
       if (main === 1 || main === 2 || main === 3) {
         // DPT 1.x, 2.x, and 3.x use payload_length 0 to indicate payload integrated in APDU header
-        return this.knx.dptMetadata[dpt]?.payload_length ?? 63;
+        const dptLength = this.knx.dptMetadata[dpt]?.payload_length;
+        if (dptLength !== undefined) {
+          return BigInt(dptLength);
+        }
+        return 63n;
       }
     }
-    return this._rawLength === 0 ? 63 : 2 ** (this._rawLength * 8) - 1;
+    return this._rawLength === 0 ? 63n : 2n ** BigInt(this._rawLength * 8) - 1n;
   }
 
-  private _clampRawPayload(payload: number | undefined): number | undefined {
+  private _clampRawPayload(payload: string | undefined): string | undefined {
     if (payload === undefined) {
       return undefined;
     }
-    return Math.min(this._rawPayloadMax()!, Math.max(0, payload));
+    if (!payload.startsWith("0x")) {
+      logger.warn(`Invalid raw payload input: ${payload}`);
+      return payload;
+    }
+    const payloadBigInt = BigInt(payload); // throws if not a valid hex number
+    if (payloadBigInt < 0n) {
+      return "0x0";
+    }
+    const payloadMax = this._rawPayloadMax();
+    if (payloadBigInt > payloadMax) {
+      return `0x${payloadMax.toString(16)}`;
+    }
+    return `0x${payloadBigInt.toString(16)}`;
   }
 
   private _emitValue() {
