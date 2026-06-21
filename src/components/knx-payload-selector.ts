@@ -64,6 +64,8 @@ export class KnxPayloadSelector extends LitElement {
 
   @state() private _linkedDpt?: string;
 
+  @state() private _rawPayloadBase: "dec" | "hex" = "hex";
+
   // Caches survive mode switches so values are restored when switching back.
   private _cachedTypedValue?: boolean | number | string | Record<string, unknown>;
 
@@ -380,9 +382,28 @@ export class KnxPayloadSelector extends LitElement {
           @value-changed=${this._rawLengthChanged}
           .disabled=${disableLength}
         ></ha-selector>
-        ${this._renderRawPayloadValueHex()}
+        <div class="raw-payload">
+          <ha-control-select
+            .label=${this._localizeSelector("raw_payload_base_label")}
+            .options=${[
+              { value: "dec", label: "Dec" },
+              { value: "hex", label: "Hex" },
+            ]}
+            .value=${this._rawPayloadBase}
+            @value-changed=${this._rawPayloadBaseChanged}
+            vertical
+          ></ha-control-select>
+          ${this._rawPayloadBase === "hex"
+            ? this._renderRawPayloadValueHex()
+            : this._renderRawPayloadValueDec()}
+        </div>
       </div>
     `;
+  }
+  private _rawPayloadBaseChanged(ev: CustomEvent<{ value: string }>) {
+    ev.stopPropagation();
+    const nextBase = ev.detail.value === "dec" ? "dec" : "hex";
+    this._rawPayloadBase = nextBase;
   }
 
   private _renderRawPayloadValueHex(): TemplateResult {
@@ -397,7 +418,7 @@ export class KnxPayloadSelector extends LitElement {
     }
     return html`<ha-input
       .value=${payloadValue}
-      .hint=${`${`0x0 \u2026 0x${this._rawPayloadMax().toString(16)}`} ${this._localizeSelector("raw_payload_description")}`}
+      .hint=${`0 \u2026 ${this._rawPayloadMax().toString(16)}`}
       .type=${"text"}
       @input=${this._rawPayloadChanged}
       @change=${this._rawPayloadChanged}
@@ -407,7 +428,29 @@ export class KnxPayloadSelector extends LitElement {
       .invalid=${!!rawInvalidMessage}
       .validationMessage=${rawInvalidMessage}
     >
-      <span slot="start">0x</span>
+    </ha-input>`;
+  }
+
+  private _renderRawPayloadValueDec(): TemplateResult {
+    const decPayload = this._rawPayload ? BigInt(this._rawPayload).toString(10) : undefined;
+    let rawInvalidMessage: string | undefined;
+    if (this._clampRawPayload(this._rawPayload) !== this._rawPayload) {
+      rawInvalidMessage = "Value out of range for selected payload length";
+    }
+    const maxValue = this._rawPayloadMax();
+    return html`<ha-input
+      .value=${decPayload}
+      .hint=${numberRangeHelper(0, Number(maxValue))}
+      .type=${"number"}
+      @input=${this._rawPayloadChanged}
+      @change=${this._rawPayloadChanged}
+      .label=${this._localizeSelector("raw_payload")}
+      .required=${true}
+      .invalid=${!!rawInvalidMessage}
+      .validationMessage=${rawInvalidMessage}
+      .min=${0}
+      .max=${Number(maxValue)}
+    >
     </ha-input>`;
   }
 
@@ -445,6 +488,8 @@ export class KnxPayloadSelector extends LitElement {
     const payloadRaw = (ev.target as HaInput).value?.trim().toLowerCase();
     if (!payloadRaw) {
       this._rawPayload = undefined;
+    } else if (this._rawPayloadBase === "dec") {
+      this._rawPayload = `0x${BigInt(payloadRaw).toString(16)}`;
     } else {
       this._rawPayload = `0x${payloadRaw}`;
     }
@@ -593,6 +638,17 @@ export class KnxPayloadSelector extends LitElement {
       display: grid;
       grid-template-columns: 2fr 5fr;
       gap: 12px;
+    }
+
+    .raw-payload {
+      display: flex;
+      gap: 4px;
+    }
+    .raw-payload > ha-control-select {
+      height: 56px;
+    }
+    .raw-payload > ha-input {
+      flex: 1;
     }
 
     .invalid {
