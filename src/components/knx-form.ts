@@ -13,6 +13,7 @@ import type { HomeAssistant, ValueChangedEvent } from "@ha/types";
 import type { ControlSelectOption } from "@ha/components/ha-control-select";
 
 import "./knx-group-address-selector";
+import "./knx-payload-selector";
 import "./knx-selector-row";
 import "./knx-sync-state-selector-row";
 
@@ -174,7 +175,6 @@ export class KnxForm extends LitElement {
       case "knx_group_address":
         return html`
           <knx-group-address-selector
-            .hass=${this.hass}
             .knx=${this.knx}
             .key=${selectorPath}
             .required=${selector.required}
@@ -186,6 +186,25 @@ export class KnxForm extends LitElement {
             @value-changed=${this._updateConfig}
           ></knx-group-address-selector>
         `;
+      case "knx_payload": {
+        // gaPath is undefined for fixed dpt (selector.dpt)
+        const gaPath = selector.ga_path ? pathAdd(path, selector.ga_path) : undefined;
+        return html`
+          <knx-payload-selector
+            .hass=${this.hass}
+            .knx=${this.knx}
+            .key=${selectorPath}
+            .gaKey=${gaPath}
+            .required=${selector.required}
+            .disableRaw=${selector.disable_raw}
+            .dpt=${gaPath ? getNestedValue(this.config!, gaPath)?.dpt : selector.dpt}
+            .value=${getNestedValue(this.config!, selectorPath)}
+            .validationErrors=${selectorErrors}
+            .localizeFunction=${this.backendLocalize}
+            @value-changed=${this._updateConfig}
+          ></knx-payload-selector>
+        `;
+      }
       case "knx_sync_state":
         return html`
           <ha-expansion-panel
@@ -433,6 +452,7 @@ export class KnxForm extends LitElement {
     }
 
     knx-group-address-selector,
+    knx-payload-selector,
     ha-selector,
     ha-selector-text,
     ha-selector-select,

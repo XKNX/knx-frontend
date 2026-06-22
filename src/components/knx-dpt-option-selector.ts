@@ -55,6 +55,9 @@ class KnxDptOptionSelector extends LitElement {
     if (this.disabled || value === undefined || value === null || value === (this.value ?? "")) {
       return;
     }
+    if (this.translation_key) {
+      fireEvent(this, "knx-dpt-selector-changed", { key: this.translation_key, dpt: value });
+    }
     fireEvent(this, "value-changed", { value: value });
   }
 
@@ -103,5 +106,9 @@ class KnxDptOptionSelector extends LitElement {
 declare global {
   interface HTMLElementTagNameMap {
     "knx-dpt-option-selector": KnxDptOptionSelector;
+  }
+
+  interface HASSDomEvents {
+    "knx-dpt-selector-changed": { key: string; dpt?: string };
   }
 }

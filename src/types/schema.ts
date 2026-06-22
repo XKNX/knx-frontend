@@ -7,6 +7,7 @@ export type SelectorSchema =
   | GroupSelect
   | GASelector
   | SyncStateSelector
+  | PayloadSelector
   | KnxHaSelector;
 
 interface BaseSection {
@@ -41,6 +42,27 @@ export interface SyncStateSelector {
   name: string;
   allow_false?: boolean; // allow false to be sent to the state machine
 }
+
+interface PayloadSelectorBase {
+  type: "knx_payload";
+  name: string;
+  required?: boolean;
+  disable_raw?: boolean;
+}
+
+export interface PayloadSelectorWithGaPath extends PayloadSelectorBase {
+  // Relative path to the group address object in the same section, defaults to "ga"
+  ga_path: string;
+  dpt?: never;
+}
+
+export interface PayloadSelectorWithDpt extends PayloadSelectorBase {
+  // Fixed DPT string for this payload selector
+  dpt: string;
+  ga_path?: never;
+}
+
+export type PayloadSelector = PayloadSelectorWithGaPath | PayloadSelectorWithDpt;
 
 export interface KnxHaSelector {
   type: "ha_selector";

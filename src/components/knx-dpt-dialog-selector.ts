@@ -10,6 +10,7 @@ import type { LocalizeFunc } from "@ha/common/translations/localize";
 import { fireEvent } from "@ha/common/dom/fire_event";
 
 import type { KNX } from "../types/knx";
+import { snakeToTitleCase } from "../utils/format";
 
 @customElement("knx-dpt-dialog-selector")
 class KnxDptDialogSelector extends LitElement {
@@ -61,7 +62,10 @@ class KnxDptDialogSelector extends LitElement {
                 <div class="dpt-name">
                   ${this.localize(
                     `component.knx.config_panel.dpt.options.${this.value.replace(".", "_")}`,
-                  ) || this.knx.dptMetadata[this.value]?.name}
+                  ) ||
+                  (this.knx.dptMetadata[this.value]?.name
+                    ? snakeToTitleCase(this.knx.dptMetadata[this.value].name)
+                    : this.localize("state.default.unknown"))}
                 </div>
                 <div class="dpt-unit">${this.knx.dptMetadata[this.value]?.unit ?? ""}</div>
               </div>
@@ -82,6 +86,7 @@ class KnxDptDialogSelector extends LitElement {
   private _clearSelection(): void {
     if (!this.value) return;
     this.value = undefined;
+    this._emitDptChanged();
     fireEvent(this, "value-changed", { value: this.value });
   }
 
@@ -109,11 +114,17 @@ class KnxDptDialogSelector extends LitElement {
             if (!dpt) return;
             if (dpt === this.value) return;
             this.value = dpt;
+            this._emitDptChanged(dpt);
             fireEvent(this, "value-changed", { value: this.value });
           },
         };
       })(),
     });
+  }
+
+  private _emitDptChanged(dpt?: string): void {
+    const key = this.translation_key ?? this.key;
+    fireEvent(this, "knx-dpt-selector-changed", { key, dpt });
   }
 
   static styles = [
@@ -200,5 +211,9 @@ class KnxDptDialogSelector extends LitElement {
 declare global {
   interface HTMLElementTagNameMap {
     "knx-dpt-dialog-selector": KnxDptDialogSelector;
+  }
+
+  interface HASSDomEvents {
+    "knx-dpt-selector-changed": { key: string; dpt?: string };
   }
 }
