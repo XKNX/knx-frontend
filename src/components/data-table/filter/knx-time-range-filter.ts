@@ -73,7 +73,8 @@ export class KnxTimeRangeFilter extends LitElement {
   /** Set when a sidebar preset was clicked, read on the following value-changed. */
   private _presetSelected = false;
 
-  private _openPicker(): void {
+  private _openPicker(ev: MouseEvent): void {
+    ev.stopPropagation();
     this._datePicker?.open();
   }
 
