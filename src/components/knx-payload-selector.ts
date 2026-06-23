@@ -24,7 +24,7 @@ import type { KnxHaSelector } from "../types/schema";
 
 const logger = new KNXLogger("knx-payload-selector");
 
-interface PayloadConfigValue {
+export interface PayloadConfigValue {
   value?: boolean | number | string | Record<string, unknown>;
   payload?: string;
   payload_length?: number;
@@ -38,6 +38,7 @@ export class KnxPayloadSelector extends LitElement {
 
   @property() public key!: string;
 
+  // Used for direct event communication with knx-group-address-selector selector
   @property({ attribute: false }) public gaKey?: string;
 
   @property({ attribute: false }) public dpt?: string;
