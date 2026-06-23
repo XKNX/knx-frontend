@@ -173,7 +173,7 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
       serviceData["payload"] = this._data.data.value;
       serviceData["type"] = this._data.ga.dpt;
     } else {
-      serviceData["payload"] = this._rawPayloadArray(this._data.data);
+      serviceData["payload"] = this._rawPayloadForSendService(this._data.data);
     }
     if (serviceData["payload"] === undefined) {
       logger.warn("No payload to send", this._data);
@@ -184,12 +184,18 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
     this.closeDialog();
   }
 
-  private _rawPayloadArray({ payload, payload_length }: PayloadConfigValue): number[] | undefined {
+  private _rawPayloadForSendService({
+    payload,
+    payload_length,
+  }: PayloadConfigValue): number | number[] | undefined {
     if (payload === undefined) return undefined;
     if (payload_length === undefined) return undefined;
     if (typeof payload !== "string" || !payload.startsWith("0x")) return undefined;
 
     const hexString = payload.slice(2); // Remove the "0x" prefix
+    if (payload_length === 0) {
+      return parseInt(hexString, 16);
+    }
     const byteArray: number[] = [];
     for (let i = 0; i < hexString.length; i += 2) {
       byteArray.push(parseInt(hexString.slice(i, i + 2), 16));
