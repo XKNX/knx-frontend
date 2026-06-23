@@ -23,19 +23,23 @@ import "../../../components/data-table/cell/knx-table-cell";
 import "../../../components/data-table/cell/knx-table-cell-filterable";
 import "../../../components/data-table/filter/knx-list-filter";
 import "../../../components/data-table/filter/knx-time-delta-filter";
+import "../../../components/data-table/filter/knx-time-range-filter";
 
 import { customElement, property, query } from "lit/decorators";
 import { storage } from "@ha/common/decorators/storage";
-import { mdiDeleteSweep, mdiFastForward, mdiHistory, mdiPause, mdiRefresh } from "@mdi/js";
+import { mdiDatabaseRemove, mdiDeleteSweep, mdiFastForward, mdiPause, mdiRefresh } from "@mdi/js";
 
 import { showTelegramInfoDialog } from "../dialogs/show-telegram-info-dialog";
-import { showLoadTelegramsDialog } from "../dialogs/show-load-telegrams-dialog";
 import type { TelegramInfoDialogParams } from "../dialogs/telegram-info-dialog";
-import { formatTimeWithMilliseconds, formatTimeDelta } from "../../../utils/format";
+import { formatTimeWithMilliseconds, formatTimeDelta, formatDate } from "../../../utils/format";
 import type { TelegramRow, TelegramRowKeys } from "../types/telegram-row";
 import type { ToggleFilterEvent } from "../../../components/data-table/cell/knx-table-cell-filterable";
 import { GroupMonitorController } from "../controller/group-monitor-controller";
-import type { DistinctValueInfo, DistinctValues } from "../controller/group-monitor-controller";
+import type {
+  DistinctValueInfo,
+  DistinctValues,
+  HistoryWarning,
+} from "../controller/group-monitor-controller";
 import { groupMonitorTab } from "../../../knx-router";
 
 import type { KNX } from "../../../types/knx";
@@ -46,6 +50,51 @@ import type {
   KnxListFilter,
 } from "../../../components/data-table/filter/knx-list-filter";
 import type { TimeDeltaChangedEvent } from "../../../components/data-table/filter/knx-time-delta-filter";
+import type { TimeRangeChangedEvent } from "../../../components/data-table/filter/knx-time-range-filter";
+
+/** Persisted column layout (order + hidden columns) for one breakpoint. */
+interface StoredColumnLayout {
+  columnOrder?: string[];
+  hiddenColumns?: string[];
+}
+
+/** Persisted column settings, keyed by layout breakpoint. */
+interface StoredColumns {
+  wide?: StoredColumnLayout;
+  narrow?: StoredColumnLayout;
+}
+
+/**
+ * Migrates persisted column settings to include columns added after the
+ * setting was first stored. The "offset" (Delta) column was split out of the
+ * "timestampIso" (Time/Date) column, so existing column orders predate it and
+ * would otherwise append it at the end. Insert it right after "timestampIso".
+ *
+ * @returns The migrated settings, or the original reference if nothing changed.
+ */
+export function migrateStoredColumns(stored: StoredColumns | undefined): StoredColumns | undefined {
+  if (!stored) return stored;
+
+  let changed = false;
+  const migrateLayout = (layout?: StoredColumnLayout): StoredColumnLayout | undefined => {
+    const order = layout?.columnOrder;
+    if (!order || order.includes("offset") || !order.includes("timestampIso")) {
+      return layout;
+    }
+    const nextOrder = [...order];
+    nextOrder.splice(nextOrder.indexOf("timestampIso") + 1, 0, "offset");
+    changed = true;
+    return { ...layout, columnOrder: nextOrder };
+  };
+
+  const migrated: StoredColumns = {
+    ...stored,
+    wide: migrateLayout(stored.wide),
+    narrow: migrateLayout(stored.narrow),
+  };
+
+  return changed ? migrated : stored;
+}
 
 /**
  * KNX Group Monitor Component
@@ -140,10 +189,7 @@ export class KNXGroupMonitor extends LitElement {
     state: false,
     subscribe: false,
   })
-  private _storedColumns?: {
-    wide?: { columnOrder?: string[]; hiddenColumns?: string[] };
-    narrow?: { columnOrder?: string[]; hiddenColumns?: string[] };
-  };
+  private _storedColumns?: StoredColumns;
 
   /** GroupMonitor controller instance */
   private controller = new GroupMonitorController(this);
@@ -218,7 +264,11 @@ export class KNXGroupMonitor extends LitElement {
    * Called once when the component is first rendered
    */
   public async firstUpdated(): Promise<void> {
-    await this.controller.setup(this.hass);
+    const migrated = migrateStoredColumns(this._storedColumns);
+    if (migrated !== this._storedColumns) {
+      this._storedColumns = migrated;
+    }
+    await this.controller.setup(this.hass, this.knx.connectionInfo.telegram_retention);
   }
 
   /**
@@ -533,6 +583,13 @@ export class KNXGroupMonitor extends LitElement {
 
   /** Toggles the pause state of telegram monitoring */
   private async _handlePauseToggle(): Promise<void> {
+    // While an absolute time range is active the view is paused to freeze the
+    // historical view. In that state the pause button releases the time-range
+    // filter (keeping the loaded data) and resumes the live stream instead.
+    if (this.controller.hasAbsoluteTimeRange) {
+      this.controller.clearTimeRangeFilter();
+      return;
+    }
     await this.controller.togglePause();
   }
 
@@ -544,6 +601,12 @@ export class KNXGroupMonitor extends LitElement {
   /** Attempts to reconnect after a connection error */
   private async _retryConnection(): Promise<void> {
     await this.controller.retryConnection(this.hass);
+  }
+
+  /** Clears the persistent cache (IndexedDB + coverage), then reloads */
+  private async _handleClearCache(): Promise<void> {
+    await this.controller.clearCache();
+    await this.controller.reload(this.hass);
   }
 
   /** Clears all active filters */
@@ -559,14 +622,37 @@ export class KNXGroupMonitor extends LitElement {
     this.controller.clearTelegrams();
   }
 
-  private _handleLoadHistory(): void {
-    showLoadTelegramsDialog(this, {
-      knx: this.knx,
-      onLoad: (telegrams) => {
-        this.controller.addHistoricalTelegrams(telegrams);
-      },
-    });
+  /** Applies a selected time range, transparently loading any missing history */
+  private _handleTimeRangeChanged = (ev: HASSDomEvent<TimeRangeChangedEvent>): void => {
+    this.controller.applyTimeRangeFilter(
+      this.hass,
+      ev.detail.startMs,
+      ev.detail.endMs,
+      this.knx.connectionInfo.telegram_retention,
+    );
+  };
+
+  /** Releases the time-range filter (keeps loaded data) */
+  private _handleTimeRangeCleared = (): void => {
+    this.controller.clearTimeRangeFilter();
+  };
+
+  /** Maps a history warning code to localized text for display */
+  private _historyWarningText(warning: HistoryWarning | null): string | undefined {
+    switch (warning) {
+      case "retention_clamped":
+        return this.knx.localize("group_monitor_time_range_retention_clamped");
+      case "partial_load":
+        return this.knx.localize("group_monitor_time_range_partial");
+      default:
+        return undefined;
+    }
   }
+
+  /** Handles expansion of the time-range filter panel */
+  private _handleTimeRangeExpanded = (ev: CustomEvent<{ expanded: boolean }>): void => {
+    this.controller.updateExpandedFilter("timerange", ev.detail.expanded);
+  };
 
   // ============================================================================
   // Filter Event Handlers
@@ -702,31 +788,49 @@ export class KNXGroupMonitor extends LitElement {
       projectLoaded: boolean,
       _language: string,
     ): DataTableColumnContainer<TelegramRow> => ({
-      // Timestamp column with relative time offsets when sorting by time
+      // Time/date column: time with milliseconds (primary) and date (secondary)
       ["timestampIso" as TelegramRowKeys]: {
         showNarrow: true,
         defaultHidden: narrow,
         filterable: true,
         sortable: true,
         direction: "desc",
-        title: this.knx.localize("group_monitor_time"),
+        title: this.knx.localize("group_monitor_time_date"),
         minWidth: "110px",
         maxWidth: "122px",
         template: (row) => html`
           <knx-table-cell>
             <div class="primary" slot="primary">${formatTimeWithMilliseconds(row.timestamp)}</div>
-            ${row.offset !== null &&
-            (this.controller.sortColumn === ("timestampIso" as TelegramRowKeys) ||
-              this.controller.sortColumn === undefined)
-              ? html`
-                  <div class="secondary" slot="secondary">
-                    <span>+</span>
-                    <span>${this._formatOffsetWithPrecision(row.offset)}</span>
-                  </div>
-                `
-              : nothing}
+            <div class="secondary" slot="secondary">${formatDate(row.timestamp)}</div>
           </knx-table-cell>
         `,
+      },
+
+      // Time delta column: relative offset to the previous telegram when sorting by time
+      ["offset" as TelegramRowKeys]: {
+        showNarrow: true,
+        defaultHidden: narrow,
+        filterable: false,
+        sortable: false,
+        title: this.knx.localize("group_monitor_delta"),
+        minWidth: "90px",
+        maxWidth: "100px",
+        template: (row) => {
+          if (
+            row.offset === null ||
+            (this.controller.sortColumn !== ("timestampIso" as TelegramRowKeys) &&
+              this.controller.sortColumn !== undefined)
+          ) {
+            return nothing;
+          }
+          return html`
+            <knx-table-cell>
+              <div class="secondary" slot="secondary">
+                <span>+${this._formatOffsetWithPrecision(row.offset)}</span>
+              </div>
+            </knx-table-cell>
+          `;
+        },
       },
 
       // Main source address column with filterable cell
@@ -984,6 +1088,10 @@ export class KNXGroupMonitor extends LitElement {
       activeFilters++;
     }
 
+    if (this.controller.hasTimeRangeFilter) {
+      activeFilters++;
+    }
+
     // Get filtered data once to avoid update loops
     const { filteredTelegrams, distinctValues, timeDeltaAddedCount } = this._getFilteredData();
 
@@ -1099,11 +1207,11 @@ export class KNXGroupMonitor extends LitElement {
           >
           </ha-icon-button>
           <ha-icon-button
-            .label=${this.knx.localize("group_monitor_load_history")}
-            .path=${mdiHistory}
-            @click=${this._handleLoadHistory}
-            data-testid="load-history-button"
-            .title=${this.knx.localize("group_monitor_load_history")}
+            .label=${this.knx.localize("group_monitor_clear_cache")}
+            .path=${mdiDatabaseRemove}
+            @click=${this._handleClearCache}
+            data-testid="clear-cache-button"
+            .title=${this.knx.localize("group_monitor_clear_cache")}
           >
           </ha-icon-button>
         </div>
@@ -1230,6 +1338,21 @@ export class KNXGroupMonitor extends LitElement {
           @time-delta-changed=${this._handleTimeDeltaChanged}
           @expanded-changed=${this._handleTimeDeltaExpanded}
         ></knx-time-delta-filter>
+
+        <!-- Time-Range Filter (below context time span – it behaves differently from list filters) -->
+        <knx-time-range-filter
+          slot="filter-pane"
+          .hass=${this.hass}
+          .knx=${this.knx}
+          .startMs=${this.controller.timeRangeFilter?.startMs}
+          .endMs=${this.controller.timeRangeFilter?.endMs}
+          .loading=${this.controller.historyLoading}
+          .warning=${this._historyWarningText(this.controller.historyWarning)}
+          .expanded=${this.controller.expandedFilter === "timerange"}
+          @time-range-changed=${this._handleTimeRangeChanged}
+          @time-range-cleared=${this._handleTimeRangeCleared}
+          @expanded-changed=${this._handleTimeRangeExpanded}
+        ></knx-time-range-filter>
       </hass-tabs-subpage-data-table>
     `;
   }

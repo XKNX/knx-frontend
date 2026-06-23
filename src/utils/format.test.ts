@@ -3,6 +3,7 @@ import {
   formatTimeDelta,
   TelegramDictFormatter,
   formatTimeWithMilliseconds,
+  formatDate,
   formatDateTimeWithMilliseconds,
   formatIsoTimestampWithMicroseconds,
   extractMicrosecondsFromIso,
@@ -252,6 +253,20 @@ describe("formatTimeDelta", () => {
       const date = new Date("2024-01-01T14:30:25Z");
       const result = formatTimeWithMilliseconds(date);
       expect(result).toMatch(/^\d{2}:\d{2}:\d{2}[,.]\d{3}$/);
+    });
+  });
+
+  describe("formatDate", () => {
+    it("should format a date without time", () => {
+      const date = new Date("2024-01-01T14:30:25.123Z");
+      const result = formatDate(date);
+      expect(result).toMatch(/^\d+[./]\d+[./]\d+$/);
+    });
+
+    it("should handle leap year date", () => {
+      const date = new Date("2024-02-29T12:00:00.500Z");
+      const result = formatDate(date);
+      expect(result).toMatch(/^\d+[./]\d+[./]\d+$/);
     });
   });
 

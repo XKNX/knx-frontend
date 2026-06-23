@@ -83,14 +83,20 @@ export const formatTimeWithMilliseconds = (date: Date): string =>
   });
 
 /**
- * Format a Date object to a date and time string with milliseconds.
+ * Format a Date object to a date string (year/month/day, 2-digit).
  */
-export const formatDateTimeWithMilliseconds = (date: Date): string =>
+export const formatDate = (date: Date): string =>
   date.toLocaleDateString(undefined, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }) +
+  });
+
+/**
+ * Format a Date object to a date and time string with milliseconds.
+ */
+export const formatDateTimeWithMilliseconds = (date: Date): string =>
+  formatDate(date) +
   ", " +
   date.toLocaleTimeString(undefined, {
     hour12: false,

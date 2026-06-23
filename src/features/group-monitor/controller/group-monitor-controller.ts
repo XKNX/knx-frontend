@@ -6,8 +6,10 @@ import { fireEvent } from "@ha/common/dom/fire_event";
 import memoize from "memoize-one";
 import type { SortingDirection } from "@ha/components/data-table/ha-data-table";
 
-import { getGroupMonitorInfo } from "../../../services/websocket.service";
+import { getGroupMonitorInfo, queryTelegrams } from "../../../services/websocket.service";
 import { TelegramBufferService } from "../services/telegram-buffer-service";
+import { TelegramCoverageService } from "../services/telegram-coverage-service";
+import { TelegramCacheService, MAX_CACHE_SIZE } from "../services/telegram-cache-service";
 import { ConnectionService } from "../services/connection-service";
 import { KNXLogger } from "../../../tools/knx-logger";
 import { TelegramRow, type OffsetMicros } from "../types/telegram-row";
@@ -48,6 +50,15 @@ export interface FilteredTelegramsResult {
   timeDeltaAddedCount: number;
 }
 
+/** Active time-range filter (epoch milliseconds). `endMs` undefined means open-ended/live. */
+export interface TimeRangeFilter {
+  startMs: number;
+  endMs?: number;
+}
+
+/** Non-fatal outcome of a history load, surfaced to the user. */
+export type HistoryWarning = "retention_clamped" | "partial_load";
+
 /**
  * GroupMonitor ReactiveController
  *
@@ -62,6 +73,15 @@ export class GroupMonitorController implements ReactiveController {
   /** Minimum buffer size for telegram storage beyond recent telegrams length */
   private static readonly MIN_TELEGRAM_STORAGE_BUFFER = 1000;
 
+  /** Page size for paginated history queries. */
+  private static readonly HISTORY_PAGE_SIZE = 10000;
+
+  /** Safety cap on telegrams fetched for a single time-range request. */
+  private static readonly MAX_HISTORY_ROWS = 100000;
+
+  /** localStorage key for persisted coverage intervals. */
+  private static readonly COVERAGE_KEY = "knx-group-monitor-coverage";
+
   private host: ReactiveControllerHost;
 
   // Connection service for WebSocket telegram subscriptions
@@ -69,6 +89,12 @@ export class GroupMonitorController implements ReactiveController {
 
   // Telegram buffer service
   private _telegramBuffer = new TelegramBufferService(2000);
+
+  // Tracks which time ranges are fully loaded into the buffer
+  private _coverage = new TelegramCoverageService();
+
+  // Persistent IndexedDB cache for raw telegram dicts
+  private _cache = new TelegramCacheService();
 
   // UI state
   private _filters: Record<string, string[]> = {};
@@ -92,6 +118,19 @@ export class GroupMonitorController implements ReactiveController {
   private _timeDeltaBefore = 0;
 
   private _timeDeltaAfter = 0;
+
+  // Time-range display filter (epoch milliseconds); undefined end means open-ended/live
+  private _filterStartMs?: number;
+
+  private _filterEndMs?: number;
+
+  // History loading state
+  private _historyLoading = false;
+
+  private _historyWarning: HistoryWarning | null = null;
+
+  // Monotonic id to discard results of superseded history requests
+  private _historyRequestId = 0;
 
   // Filter data - only stores total counts, filtered counts computed on-the-fly
   private _distinctValues: DistinctValues = {
@@ -138,10 +177,15 @@ export class GroupMonitorController implements ReactiveController {
   // ============================================================================
 
   /**
-   * Setup method to be called from the host's firstUpdated
+   * Setup method to be called from the host's firstUpdated.
+   *
+   * @param retentionDays - Backend telegram retention in days; used to trim the
+   *   coverage cache to the available window before restoring persisted data.
    */
-  public async setup(hass: HomeAssistant): Promise<void> {
+  public async setup(hass: HomeAssistant, retentionDays: number | null = null): Promise<void> {
     if (this._connectionService.isConnected) return;
+
+    await this._restoreFromCache(retentionDays);
 
     if (!(await this._loadRecentTelegrams(hass))) return;
 
@@ -152,6 +196,36 @@ export class GroupMonitorController implements ReactiveController {
       this._connectionError = err instanceof Error ? err.message : String(err);
       this.host.requestUpdate();
     }
+  }
+
+  /**
+   * Restores persisted coverage intervals and telegram dicts from local storage
+   * and IndexedDB before the first server round-trip.  All operations are
+   * advisory: errors are silently suppressed so a cache miss never breaks startup.
+   */
+  private async _restoreFromCache(retentionDays: number | null): Promise<void> {
+    // --- 1. Restore coverage intervals ---
+    try {
+      const raw = localStorage.getItem(GroupMonitorController.COVERAGE_KEY);
+      if (raw) {
+        const intervals: [number, number][] = JSON.parse(raw);
+        for (const [s, e] of intervals) {
+          this._coverage.addCovered(s, e);
+        }
+      }
+    } catch {
+      // malformed JSON or unavailable storage — start with empty coverage
+    }
+
+    // --- 2. Apply retention trim to coverage (and evict old IDB entries) ---
+    if (retentionDays != null) {
+      const minMs = Date.now() - (retentionDays + 1) * 86400_000;
+      this._coverage.trim(minMs);
+      this._cache.evictBefore(minMs).catch((err) => logger.warn("Cache evict failed", err));
+    }
+
+    // IDB data is loaded on-demand via loadRange when a time-range filter is
+    // applied, not pre-loaded here, so the startup view stays clean.
   }
 
   // ============================================================================
@@ -212,6 +286,29 @@ export class GroupMonitorController implements ReactiveController {
     return this._timeDeltaAfter;
   }
 
+  /** The active time-range display filter, or null when none is set. */
+  public get timeRangeFilter(): TimeRangeFilter | null {
+    if (this._filterStartMs === undefined) return null;
+    return { startMs: this._filterStartMs, endMs: this._filterEndMs };
+  }
+
+  public get hasTimeRangeFilter(): boolean {
+    return this._filterStartMs !== undefined;
+  }
+
+  /** Whether the active range is an absolute (bounded) past range. */
+  public get hasAbsoluteTimeRange(): boolean {
+    return this._filterStartMs !== undefined && this._filterEndMs !== undefined;
+  }
+
+  public get historyLoading(): boolean {
+    return this._historyLoading;
+  }
+
+  public get historyWarning(): HistoryWarning | null {
+    return this._historyWarning;
+  }
+
   /**
    * Whether any list-based filters are active
    * Used by the UI to decide whether to disable the time-delta inputs
@@ -233,6 +330,8 @@ export class GroupMonitorController implements ReactiveController {
       this._sortDirection,
       this._timeDeltaBefore,
       this._timeDeltaAfter,
+      this._filterStartMs,
+      this._filterEndMs,
     );
 
     // Check if filtered telegrams have changed and emit event if so
@@ -266,11 +365,18 @@ export class GroupMonitorController implements ReactiveController {
       sortDirection?: SortingDirection,
       timeDeltaBefore?: number,
       timeDeltaAfter?: number,
+      filterStartMs?: number,
+      filterEndMs?: number,
     ): FilteredTelegramsResult => {
-      // Filter telegrams based on current filters
-      const matchingTelegrams = allTelegrams.filter((telegram) =>
-        this.matchesActiveFilters(telegram),
-      );
+      // Filter telegrams based on the active list filters and time range
+      const matchingTelegrams = allTelegrams.filter((telegram) => {
+        if (filterStartMs !== undefined || filterEndMs !== undefined) {
+          const ts = telegram.timestamp.getTime();
+          if (filterStartMs !== undefined && ts < filterStartMs) return false;
+          if (filterEndMs !== undefined && ts > filterEndMs) return false;
+        }
+        return this.matchesActiveFilters(telegram);
+      });
 
       // Apply time-delta expansion if active
       const filteredTelegrams = this._applyTimeDeltaExpansion(
@@ -461,6 +567,7 @@ export class GroupMonitorController implements ReactiveController {
     this._filters = {};
     this._timeDeltaBefore = 0;
     this._timeDeltaAfter = 0;
+    this.clearTimeRangeFilter();
     this._updateUrlFromFilters(route);
     this._cleanupUnusedFilterValues();
 
@@ -486,6 +593,261 @@ export class GroupMonitorController implements ReactiveController {
   }
 
   /**
+   * Applies a time-range display filter and transparently loads any history that
+   * is not yet covered.
+   *
+   * Open-ended ranges (`endMs` undefined, or in the future) keep the live stream
+   * running and filter `timestamp >= start`. Absolute past ranges filter
+   * `[start, end]` and switch to pause mode so newer telegrams don't appear on
+   * top of the historical view.
+   *
+   * @param hass - Home Assistant instance for backend queries
+   * @param startMs - Range start in epoch milliseconds
+   * @param endMs - Range end in epoch milliseconds, or undefined for "until now"
+   * @param retentionDays - Backend telegram retention in days (null = unknown)
+   */
+  public async applyTimeRangeFilter(
+    hass: HomeAssistant,
+    startMs: number,
+    endMs: number | undefined,
+    retentionDays: number | null,
+  ): Promise<void> {
+    const now = Date.now();
+    this._historyWarning = null;
+
+    // Clamp the start to the retention window (plus a day of slack) and warn.
+    if (retentionDays != null) {
+      const minMs = now - (retentionDays + 1) * 86400_000;
+      this._coverage.trim(minMs);
+      this._saveCoverage();
+      if (startMs < minMs) {
+        startMs = minMs;
+        this._historyWarning = "retention_clamped";
+      }
+    }
+
+    const live = endMs === undefined || endMs >= now;
+    const queryEnd = live ? now : endMs;
+
+    if (queryEnd < startMs) {
+      // Nothing sensible to load or show.
+      return;
+    }
+
+    const requestId = ++this._historyRequestId;
+    this._historyLoading = true;
+    this.host.requestUpdate();
+
+    // Load already-covered sub-ranges from IDB immediately so the user sees
+    // cached data while server queries fill in the remaining gaps.
+    try {
+      const gaps = this._coverage.gaps(startMs, queryEnd);
+      const coveredSubRanges = this._coveredSubRanges(startMs, queryEnd, gaps);
+      for (const [covStart, covEnd] of coveredSubRanges) {
+        // eslint-disable-next-line no-await-in-loop
+        const cached = await this._cache.loadRange(covStart, covEnd);
+        if (cached.length > 0) {
+          this.addHistoricalTelegrams(
+            cached.map((e) => e.dict),
+            false,
+          );
+        }
+      }
+      if (coveredSubRanges.length > 0) {
+        this._filterStartMs = startMs;
+        this._filterEndMs = live ? undefined : endMs;
+        this.host.requestUpdate();
+      }
+    } catch (err) {
+      logger.warn("Cache range load failed", err);
+    }
+
+    try {
+      let fetchedTotal = 0;
+      for (const [gapStart, gapEnd] of this._coverage.gaps(startMs, queryEnd)) {
+        // eslint-disable-next-line no-await-in-loop
+        const { complete, lastTs, fetched } = await this._loadGap(
+          hass,
+          gapStart,
+          gapEnd,
+          requestId,
+          fetchedTotal,
+        );
+        if (requestId !== this._historyRequestId) return; // superseded
+        fetchedTotal += fetched;
+
+        if (complete) {
+          this._coverage.addCovered(gapStart, gapEnd);
+        } else {
+          if (lastTs !== null) this._coverage.addCovered(gapStart, lastTs);
+          this._historyWarning = "partial_load";
+          break;
+        }
+        this._saveCoverage();
+      }
+    } catch (err) {
+      logger.error("applyTimeRangeFilter failed", err);
+    } finally {
+      if (requestId === this._historyRequestId) {
+        this._historyLoading = false;
+      }
+    }
+
+    if (requestId !== this._historyRequestId) return; // superseded
+
+    this._filterStartMs = startMs;
+    this._filterEndMs = live ? undefined : endMs;
+    if (!live) {
+      this._isPaused = true;
+      this._coverage.closeLive();
+    }
+    this._bufferVersion++;
+    this.host.requestUpdate();
+  }
+
+  /**
+   * Returns the sub-ranges within [startMs, endMs] that are NOT gaps —
+   * i.e. the portions already covered that can be served from IDB.
+   */
+  private _coveredSubRanges(
+    startMs: number,
+    endMs: number,
+    gaps: [number, number][],
+  ): [number, number][] {
+    const result: [number, number][] = [];
+    let cursor = startMs;
+    for (const [gapStart, gapEnd] of gaps) {
+      if (cursor < gapStart) result.push([cursor, gapStart]);
+      cursor = gapEnd;
+    }
+    if (cursor < endMs) result.push([cursor, endMs]);
+    return result;
+  }
+
+  /**
+   * Loads a single gap with paginated queries until it is fully fetched, the
+   * backend stops returning rows, or the global safety cap is reached.
+   */
+  private async _loadGap(
+    hass: HomeAssistant,
+    gapStart: number,
+    gapEnd: number,
+    requestId: number,
+    fetchedBefore: number,
+  ): Promise<{ complete: boolean; lastTs: number | null; fetched: number }> {
+    let offset = 0;
+    let lastTs: number | null = null;
+    let fetched = 0;
+
+    for (;;) {
+      // eslint-disable-next-line no-await-in-loop
+      const result = await queryTelegrams(hass, {
+        start_time: new Date(gapStart).toISOString(),
+        end_time: new Date(gapEnd).toISOString(),
+        order_descending: false,
+        limit: GroupMonitorController.HISTORY_PAGE_SIZE,
+        offset,
+      });
+      if (requestId !== this._historyRequestId) {
+        return { complete: false, lastTs, fetched };
+      }
+
+      const batch = result.telegrams;
+      if (batch.length > 0) {
+        this.addHistoricalTelegrams(batch, false);
+        lastTs = new Date(batch[batch.length - 1].timestamp).getTime();
+        offset += batch.length;
+        fetched += batch.length;
+      }
+
+      if (batch.length === 0 || offset >= result.total_count) {
+        return { complete: true, lastTs, fetched };
+      }
+      if (fetchedBefore + fetched >= GroupMonitorController.MAX_HISTORY_ROWS) {
+        return { complete: false, lastTs, fetched };
+      }
+    }
+  }
+
+  // ============================================================================
+  // Persistence helpers
+  // ============================================================================
+
+  /**
+   * Serialises the current covered intervals to localStorage.
+   * Call after every `addCovered` / `trim` that should persist.
+   */
+  private _saveCoverage(): void {
+    try {
+      localStorage.setItem(
+        GroupMonitorController.COVERAGE_KEY,
+        JSON.stringify(this._coverage.covered),
+      );
+    } catch {
+      // Ignore quota or unavailability.
+    }
+  }
+
+  /**
+   * Stores a batch of raw telegram dicts to IndexedDB and trims the cache to
+   * the configured size cap.  Fire-and-forget — errors are logged but not thrown.
+   */
+  private _cacheStore(batch: { id: string; ts: number; dict: TelegramDict }[]): void {
+    if (batch.length === 0) return;
+    this._cache
+      .store(batch)
+      .then(async () => {
+        const oldestSurviving = await this._cache.evictToSize(MAX_CACHE_SIZE);
+        if (oldestSurviving !== null) {
+          // Size eviction dropped old entries — trim coverage to match so we
+          // don't claim those ranges are loaded when the data is gone.
+          this._coverage.trim(oldestSurviving);
+          this._saveCoverage();
+        }
+      })
+      .catch((err) => logger.warn("Cache write failed", err));
+  }
+
+  /**
+   * Clears the persistent cache (IndexedDB + coverage localStorage), resets
+   * in-memory coverage, and wipes the telegram buffer.
+   */
+  public async clearCache(): Promise<void> {
+    try {
+      await this._cache.clear();
+    } catch (err) {
+      logger.warn("Cache clear failed", err);
+    }
+    this._coverage.clear();
+    try {
+      localStorage.removeItem(GroupMonitorController.COVERAGE_KEY);
+    } catch {
+      // ignore
+    }
+    const cleared = this._telegramBuffer.clear();
+    if (cleared.length > 0) {
+      this._resetDistinctValues();
+    }
+    this._isReloadEnabled = true;
+    this._bufferVersion++;
+    this.host.requestUpdate();
+  }
+
+  /**
+   * Releases the time-range display filter and resumes the live view.
+   * The already-loaded telegrams remain in the buffer.
+   */
+  public clearTimeRangeFilter(): void {
+    if (this._filterStartMs === undefined && !this._historyWarning) return;
+    this._filterStartMs = undefined;
+    this._filterEndMs = undefined;
+    this._historyWarning = null;
+    this._isPaused = false;
+    this._bufferVersion++;
+    this.host.requestUpdate();
+  }
+
+  /**
    * Updates which filter panel is currently expanded
    */
   public updateExpandedFilter(id: string, expanded: boolean): void {
@@ -506,6 +868,10 @@ export class GroupMonitorController implements ReactiveController {
    */
   public async togglePause(): Promise<void> {
     this._isPaused = !this._isPaused;
+    // A pause window has no data; close the live interval so it becomes a gap.
+    if (this._isPaused) {
+      this._coverage.closeLive();
+    }
     this.host.requestUpdate();
   }
 
@@ -527,7 +893,16 @@ export class GroupMonitorController implements ReactiveController {
    * Adds historical telegrams fetched from the backend.
    * Merges them with existing telegrams and updates the buffer size.
    */
-  public addHistoricalTelegrams(telegrams: TelegramDict[]): void {
+  /**
+   * Adds historical telegrams fetched from the backend (or restored from the
+   * persistent cache) into the in-memory buffer.
+   *
+   * @param telegrams - Raw telegram dicts to merge.
+   * @param persist - When `true` (default) the dicts are also written to the
+   *   IndexedDB cache so they survive a page reload.  Pass `false` when the
+   *   dicts already came *from* the cache to avoid a pointless round-trip.
+   */
+  public addHistoricalTelegrams(telegrams: TelegramDict[], persist = true): void {
     if (telegrams.length === 0) return;
 
     // Calculate dynamic telegram storage limit
@@ -555,6 +930,20 @@ export class GroupMonitorController implements ReactiveController {
     if (added.length > 0) {
       for (const telegram of added) {
         this._addToDistinctValues(telegram);
+      }
+
+      // Persist newly-added dicts (skip when caller is the cache restore path).
+      if (persist) {
+        const addedIds = new Set(added.map((r) => r.id));
+        // newTelegramRows[i] is the TelegramRow for telegrams[i] — use index to pair them.
+        const batch = newTelegramRows
+          .map((row, i) =>
+            addedIds.has(row.id)
+              ? { id: row.id, ts: row.timestamp.getTime(), dict: telegrams[i] }
+              : null,
+          )
+          .filter((x): x is { id: string; ts: number; dict: TelegramDict } => x !== null);
+        this._cacheStore(batch);
       }
     }
 
@@ -872,6 +1261,25 @@ export class GroupMonitorController implements ReactiveController {
    * Loads recent telegrams from the server
    */
   private async _loadRecentTelegrams(hass: HomeAssistant): Promise<boolean> {
+    // Load the previously-covered range from IDB non-blocking so cached
+    // telegrams appear instantly while the server request is in flight.
+    const covered = this._coverage.covered;
+    if (covered.length > 0) {
+      const minMs = covered[0][0];
+      const maxMs = covered[covered.length - 1][1];
+      this._cache
+        .loadRange(minMs, maxMs)
+        .then((cached) => {
+          if (cached.length > 0) {
+            this.addHistoricalTelegrams(
+              cached.map((e) => e.dict),
+              false,
+            );
+          }
+        })
+        .catch((err) => logger.warn("Startup cache load failed", err));
+    }
+
     try {
       const info = await getGroupMonitorInfo(hass);
       this._isProjectLoaded = info.project_loaded;
@@ -905,6 +1313,33 @@ export class GroupMonitorController implements ReactiveController {
         for (const telegram of added) {
           this._addToDistinctValues(telegram);
         }
+
+        // Persist newly-added recent telegrams to IndexedDB.
+        const addedIds = new Set(added.map((r) => r.id));
+        const batch = newTelegramRows
+          .map((row, i) =>
+            addedIds.has(row.id)
+              ? { id: row.id, ts: row.timestamp.getTime(), dict: info.recent_telegrams[i] }
+              : null,
+          )
+          .filter((x): x is { id: string; ts: number; dict: TelegramDict } => x !== null);
+        this._cacheStore(batch);
+      }
+
+      // Seed coverage for the recent window: the backend returns every telegram
+      // since the recent-load horizon, so `[oldestRecent, now]` is fully loaded.
+      const nowMs = Date.now();
+      if (newTelegramRows.length > 0) {
+        const oldestMs = newTelegramRows.reduce(
+          (min, t) => Math.min(min, t.timestamp.getTime()),
+          nowMs,
+        );
+        this._coverage.addCovered(oldestMs, nowMs);
+        this._saveCoverage();
+      }
+      if (!this._isPaused) {
+        // Anchor the live interval so streaming telegrams extend from now on.
+        this._coverage.extendLive(nowMs);
       }
 
       if (this._connectionError !== null) {
@@ -940,6 +1375,14 @@ export class GroupMonitorController implements ReactiveController {
 
       // Add new telegram to distinct values
       this._addToDistinctValues(telegramRow);
+
+      // Persist live telegram to IndexedDB cache.
+      this._cacheStore([
+        { id: telegramRow.id, ts: telegramRow.timestamp.getTime(), dict: telegram },
+      ]);
+
+      // Extend live coverage up to this telegram's timestamp
+      this._coverage.extendLive(telegramRow.timestamp.getTime());
 
       this.host.requestUpdate();
     } else if (!this._isReloadEnabled) {
