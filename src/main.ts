@@ -17,6 +17,7 @@ import type { HomeAssistant, Route } from "@ha/types";
 
 import { KnxElement } from "./knx";
 import "./knx-router";
+import { showKnxSendDialog } from "./dialogs/show-knx-send-dialog";
 import type { KNX } from "./types/knx";
 import type { LocationChangedEvent } from "./types/navigation";
 
@@ -66,6 +67,7 @@ class KnxFrontend extends contextMixin(KnxElement) {
       this.parentElement as LitElement,
     );
 
+    window.focus(); // set focus to ensure custom knx hotkey fires when (re)loading the page
     document.body.addEventListener("keydown", (ev: KeyboardEvent) => {
       if (ev.ctrlKey || ev.shiftKey || ev.metaKey || ev.altKey) {
         // Ignore if modifier keys are pressed
@@ -75,6 +77,13 @@ class KnxFrontend extends contextMixin(KnxElement) {
         // @ts-ignore
         fireEvent(mainWindow, "hass-quick-bar-trigger", ev, {
           bubbles: false,
+        });
+      }
+      // Open KNX send dialog with "s" hotkey
+      if (ev.key === "s") {
+        showKnxSendDialog(this, {
+          hass: this.hass,
+          knx: this.knx,
         });
       }
     });
