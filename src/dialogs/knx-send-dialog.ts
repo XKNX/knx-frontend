@@ -5,7 +5,7 @@ import "@ha/components/ha-alert";
 import "@ha/components/ha-button";
 import "@ha/components/ha-dialog-footer";
 import "@ha/components/ha-markdown";
-import "@ha/components/ha-dialog";
+import "@ha/components/ha-adaptive-dialog";
 import "@ha/layouts/hass-loading-screen";
 
 import { DialogMixin } from "@ha/dialogs/dialog-mixin";
@@ -58,7 +58,11 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
     }
 
     return html`
-      <ha-dialog open @closed=${this.closeDialog} .headerTitle=${this._backendLocalize("title")}>
+      <ha-adaptive-dialog
+        open
+        @closed=${this.closeDialog}
+        .headerTitle=${this._backendLocalize("title")}
+      >
         <ha-markdown
           class="description"
           breaks
@@ -122,7 +126,7 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
             ${this._backendLocalize("write_button")}
           </ha-button>
         </ha-dialog-footer>
-      </ha-dialog>
+      </ha-adaptive-dialog>
     `;
   }
 
