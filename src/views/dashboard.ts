@@ -1,4 +1,10 @@
-import { mdiCogOutline, mdiLanConnect, mdiFileImportOutline, mdiClockOutline } from "@mdi/js";
+import {
+  mdiCogOutline,
+  mdiEmailArrowRight,
+  mdiLanConnect,
+  mdiFileImportOutline,
+  mdiClockOutline,
+} from "@mdi/js";
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { map } from "lit/directives/map";
@@ -20,6 +26,7 @@ import type { UnsubscribeFunc } from "home-assistant-js-websocket";
 
 import { showKnxProjectUploadDialog } from "../dialogs/show-knx-project-upload-dialog";
 import { showKnxTimeServerDialog } from "../dialogs/show-knx-time-server-dialog";
+import { showKnxSendDialog } from "../dialogs/show-knx-send-dialog";
 import type { KnxPageNavigation } from "../types/navigation";
 import type { KNX } from "../types/knx";
 import { knxMainTabs } from "../knx-router";
@@ -72,6 +79,13 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
 
   private _buttonItems = [
     {
+      translationKey: "component.knx.config_panel.dashboard.send",
+      click: this._openSendDialog,
+      iconPath: mdiEmailArrowRight,
+      iconColor: "var(--blue-color)",
+      validConfigEntryStates: new Set(["loaded"]),
+    },
+    {
       translationKey: "component.knx.config_panel.dashboard.options_flow",
       iconPath: mdiCogOutline,
       iconColor: "var(--purple-color)",
@@ -100,6 +114,10 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
       validConfigEntryStates: new Set(["loaded", "not_loaded"]),
     },
   ];
+
+  private _openSendDialog() {
+    showKnxSendDialog(this, { hass: this.hass, knx: this.knx });
+  }
 
   private async _openOptionFlow() {
     // ensure translations are loaded - showOptionsFlowDialog does it too, but sometimes seems to not work
