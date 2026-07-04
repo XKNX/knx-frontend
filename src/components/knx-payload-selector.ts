@@ -24,7 +24,7 @@ import type { KnxHaSelector } from "../types/schema";
 
 const logger = new KNXLogger("knx-payload-selector");
 
-interface PayloadConfigValue {
+export interface PayloadConfigValue {
   value?: boolean | number | string | Record<string, unknown>;
   payload?: string;
   payload_length?: number;
@@ -38,6 +38,7 @@ export class KnxPayloadSelector extends LitElement {
 
   @property() public key!: string;
 
+  // Used for direct event communication with knx-group-address-selector selector
   @property({ attribute: false }) public gaKey?: string;
 
   @property({ attribute: false }) public dpt?: string;
@@ -195,7 +196,8 @@ export class KnxPayloadSelector extends LitElement {
       this._cachedTypedValue = undefined; // clear typed value in case of error
       this._typedValue = undefined;
       this._setRawPayloadAndLengthFromCache();
-      // triggers a re-render with raw mode so ne need to render anything here
+      // triggers a re-render with raw mode so no need to render anything here
+      this._emitValue();
       return nothing;
     }
   }
@@ -474,7 +476,7 @@ export class KnxPayloadSelector extends LitElement {
   }
 
   private _setRawPayloadAndLengthFromCache(): void {
-    this._rawPayload = this._cachedRawPayload;
+    this._rawPayload = this._cachedRawPayload ?? "0x1"; // set default so fallback works properly
     const dpt = this._effectiveDpt();
     const dptPayloadLength = dpt
       ? (this.knx.dptMetadata[dpt]?.payload_length ?? this._cachedRawLength)

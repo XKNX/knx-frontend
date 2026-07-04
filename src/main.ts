@@ -3,6 +3,7 @@ import { css, html } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
 import { applyThemesOnElement } from "@ha/common/dom/apply_themes_on_element";
+import { canOverrideAlphanumericInput } from "@ha/common/dom/can-override-input";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { listenMediaQuery } from "@ha/common/dom/media_query";
@@ -17,6 +18,7 @@ import type { HomeAssistant, Route } from "@ha/types";
 
 import { KnxElement } from "./knx";
 import "./knx-router";
+import { showKnxSendDialog } from "./dialogs/show-knx-send-dialog";
 import type { KNX } from "./types/knx";
 import type { LocationChangedEvent } from "./types/navigation";
 
@@ -66,6 +68,7 @@ class KnxFrontend extends contextMixin(KnxElement) {
       this.parentElement as LitElement,
     );
 
+    window.focus(); // set focus to ensure custom knx hotkey fires when (re)loading the page
     document.body.addEventListener("keydown", (ev: KeyboardEvent) => {
       if (ev.ctrlKey || ev.shiftKey || ev.metaKey || ev.altKey) {
         // Ignore if modifier keys are pressed
@@ -75,6 +78,21 @@ class KnxFrontend extends contextMixin(KnxElement) {
         // @ts-ignore
         fireEvent(mainWindow, "hass-quick-bar-trigger", ev, {
           bubbles: false,
+        });
+      }
+      // Open KNX send dialog with "s" hotkey
+      if (ev.key === "s") {
+        if (
+          !this.hass?.enableShortcuts ||
+          !canOverrideAlphanumericInput(ev.composedPath()) ||
+          ev.defaultPrevented
+        ) {
+          return;
+        }
+        ev.preventDefault();
+        showKnxSendDialog(this, {
+          hass: this.hass,
+          knx: this.knx,
         });
       }
     });
