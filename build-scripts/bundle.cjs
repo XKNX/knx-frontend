@@ -76,7 +76,7 @@ module.exports.swcOptions = () => ({
   },
 });
 
-module.exports.babelOptions = ({ latestBuild, isProdBuild }) => ({
+module.exports.babelOptions = ({ latestBuild }) => ({
   babelrc: false,
   compact: false,
   assumptions: {
@@ -89,14 +89,22 @@ module.exports.babelOptions = ({ latestBuild, isProdBuild }) => ({
     [
       "@babel/preset-env",
       {
-        useBuiltIns: "usage",
-        corejs: dependencies["core-js"],
-        bugfixes: true,
         shippedProposals: true,
       },
     ],
   ],
   plugins: [
+    // Inject Core-JS polyfills on demand. Babel 8 removed preset-env's
+    // `useBuiltIns`/`corejs` options, so the equivalent polyfill provider is
+    // configured directly here (`usage-global` matches the old `useBuiltIns: "usage"`).
+    [
+      "babel-plugin-polyfill-corejs3",
+      {
+        method: "usage-global",
+        version: dependencies["core-js"],
+        shippedProposals: true,
+      },
+    ],
     [
       path.join(BABEL_PLUGINS, "inline-constants-plugin.cjs"),
       {
@@ -104,29 +112,15 @@ module.exports.babelOptions = ({ latestBuild, isProdBuild }) => ({
         ignoreModuleNotFound: true,
       },
     ],
-    isProdBuild && [
-      "template-html-minifier",
-      {
-        modules: {
-          ...Object.fromEntries(
-            ["lit", "lit-element", "lit-html"].map((m) => [
-              m,
-              [
-                "html",
-                { name: "svg", encapsulation: "svg" },
-                { name: "css", encapsulation: "style" },
-              ],
-            ]),
-          ),
-          "@polymer/polymer/lib/utils/html-tag.js": ["html"],
-        },
-        strictCSS: true,
-        htmlMinifier: module.exports.htmlMinifierOptions,
-        failOnError: false, // we can turn this off in case of false positives
-      },
+    // Import helpers and regenerator from runtime package.
+    // `moduleName` is pinned so helpers resolve from `@babel/runtime`: the
+    // corejs3 polyfill provider above otherwise redirects them to the
+    // (uninstalled) `@babel/runtime-corejs3`, which preset-env used to suppress
+    // internally when it owned the polyfill injection via `useBuiltIns`.
+    [
+      "@babel/plugin-transform-runtime",
+      { version: dependencies["@babel/runtime"], moduleName: "@babel/runtime" },
     ],
-    // Import helpers and regenerator from runtime package
-    ["@babel/plugin-transform-runtime", { version: dependencies["@babel/runtime"] }],
     "@babel/plugin-transform-class-properties",
     "@babel/plugin-transform-private-methods",
   ].filter(Boolean),
