@@ -117,6 +117,7 @@
   "group_monitor_search_label": "Search {count} telegrams",
   "group_monitor_search_label_singular": "Search {count} telegram",
   "group_monitor_search_label_narrow": "Search",
+  "dpt_reference_search_label": "Search {count} items",
   "knx_sort_menu_item_ascending": "Ascending",
   "knx_sort_menu_item_descending": "Descending",
   "knx_sort_menu_sort_by": "Sort by:",

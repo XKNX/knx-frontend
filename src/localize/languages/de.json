@@ -117,6 +117,7 @@
   "group_monitor_search_label": "{count} Telegramme durchsuchen",
   "group_monitor_search_label_singular": "{count} Telegramm durchsuchen",
   "group_monitor_search_label_narrow": "Suchen",
+  "dpt_reference_search_label": "{count} Einträge durchsuchen",
   "knx_sort_menu_item_ascending": "Aufsteigend",
   "knx_sort_menu_item_descending": "Absteigend",
   "knx_sort_menu_sort_by": "Sortieren nach:",
