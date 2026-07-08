@@ -1,4 +1,5 @@
 import {
+  mdiFormatListNumbered,
   mdiInformationOutline,
   mdiLan,
   mdiFileDocumentOutline,
@@ -69,12 +70,19 @@ export const exposeTab = _knxPageNavigationFactory({
   iconPath: mdiExport,
   iconColor: "var(--cyan-color)",
 });
+export const dptReferenceTab = _knxPageNavigationFactory({
+  baseTranslationKey: "component.knx.config_panel.dpt_reference",
+  path: `${BASE_URL}/dpt_reference`,
+  iconPath: mdiFormatListNumbered,
+  iconColor: "var(--light-green-color)",
+});
 
 export const knxMainTabs = (hasProject: boolean): KnxPageNavigation[] => [
   entitiesTab,
   exposeTab,
   ...(hasProject ? [projectTab] : []),
   groupMonitorTab,
+  dptReferenceTab,
   infoTab,
 ];
 
@@ -129,6 +137,13 @@ export class KnxRouter extends HassRouterPage {
         load: () => {
           logger.debug("Importing knx-expose-router");
           return import("./views/expose_router");
+        },
+      },
+      dpt_reference: {
+        tag: "knx-dpt-reference",
+        load: () => {
+          logger.debug("Importing knx-dpt-reference");
+          return import("./views/dpt_reference");
         },
       },
       error: {

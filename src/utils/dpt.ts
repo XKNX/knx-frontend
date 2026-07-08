@@ -123,6 +123,14 @@ export const compareDpt = (left: DPT, right: DPT): number => {
   return leftSub - rightSub;
 };
 
+/**
+ * DPT 1.x, 2.x, and 3.x are packed into the APCI header instead of extra payload
+ * bytes, so their effective payload length is always 0 regardless of what the
+ * backend reports.
+ */
+export const isApciPackedDptMain = (main: number): boolean =>
+  main === 1 || main === 2 || main === 3;
+
 export const dptInClasses = (
   dpt: DPT,
   dptClasses: string[],

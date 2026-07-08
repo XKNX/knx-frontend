@@ -14,6 +14,7 @@ import type { HomeAssistant } from "@ha/types";
 import type { ControlSelectOption } from "@ha/components/ha-control-select";
 
 import { getValidationError } from "../utils/validation";
+import { isApciPackedDptMain } from "../utils/dpt";
 import { numberRangeHelper, snakeToTitleCase } from "../utils/format";
 import type { ErrorDescription } from "../types/entity_data";
 import type { KNX } from "../types/knx";
@@ -513,7 +514,7 @@ export class KnxPayloadSelector extends LitElement {
       return 14;
     }
     const main = Number.parseInt(dpt.split(".")[0], 10);
-    if (main === 1 || main === 2 || main === 3) {
+    if (isApciPackedDptMain(main)) {
       // DPT 1.x, 2.x, and 3.x use payload_length 0 to indicate payload integrated in APDU header
       return 0;
     }
@@ -529,7 +530,7 @@ export class KnxPayloadSelector extends LitElement {
     const dpt = this._effectiveDpt();
     if (dpt) {
       const main = Number.parseInt(dpt.split(".")[0], 10);
-      if (main === 1 || main === 2 || main === 3) {
+      if (isApciPackedDptMain(main)) {
         // DPT 1.x, 2.x, and 3.x use payload_length 0 to indicate payload integrated in APDU header
         const dptLength = this.knx.dptMetadata[dpt]?.payload_length;
         if (dptLength !== undefined) {
