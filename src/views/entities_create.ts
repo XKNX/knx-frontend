@@ -276,6 +276,7 @@ export class KNXCreateEntity extends LitElement {
       .hass=${this.hass}
       .narrow=${this.narrow!}
       .back-path=${this.backPath}
+      .scrollable=${this._mode === "gui"}
       .header=${create
         ? this.hass.localize("component.knx.config_panel.entities.create.title")
         : `${this.hass.localize("ui.common.edit")}: ${this.entityId}`}
@@ -582,7 +583,7 @@ export class KNXCreateEntity extends LitElement {
     }
 
     .yaml-mode ha-alert {
-      margin: 20px 16px 0;
+      margin: 20px 16px 16px;
       max-width: none;
     }
 
