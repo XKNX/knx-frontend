@@ -1,4 +1,4 @@
-import { mdiPlus, mdiFloppy } from "@mdi/js";
+import { mdiPlus, mdiFloppy, mdiPlaylistEdit } from "@mdi/js";
 import type { TemplateResult, PropertyValues } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state, query } from "lit/decorators";
@@ -11,11 +11,15 @@ import "@ha/components/ha-alert";
 import "@ha/components/ha-card";
 import "@ha/components/ha-button";
 import "@ha/components/ha-svg-icon";
+import "@ha/components/ha-icon-button";
+import "@ha/components/ha-yaml-editor";
+import type { HaYamlEditor } from "@ha/components/ha-yaml-editor";
 import "@ha/panels/config/components/ha-config-navigation-list";
 import { navigate } from "@ha/common/navigate";
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import { throttle } from "@ha/common/util/throttle";
+import { showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 import type { HomeAssistant, Route } from "@ha/types";
 
 import "../components/knx-configure-entity";
@@ -64,7 +68,13 @@ export class KNXCreateEntity extends LitElement {
 
   @state() private _validationBaseError?: string;
 
+  @state() private _mode: "gui" | "yaml" = "gui";
+
+  @state() private _yamlErrors?: string;
+
   @query("ha-alert") private _alertElement!: HTMLDivElement;
+
+  @query("ha-yaml-editor") private _yamlEditor?: HaYamlEditor;
 
   private _intent?: "create" | "edit";
 
@@ -119,6 +129,8 @@ export class KNXCreateEntity extends LitElement {
       this._config = undefined; // clear config - eg. when `back` was used
       this._validationErrors = undefined; // clear validation errors - eg. when `back` was used
       this._validationBaseError = undefined;
+      this._mode = "gui";
+      this._yamlErrors = undefined;
 
       if (intent === "create") {
         // knx/entities/create -> path: ""; knx/entities/create/ -> path: "/"
@@ -264,41 +276,52 @@ export class KNXCreateEntity extends LitElement {
       .hass=${this.hass}
       .narrow=${this.narrow!}
       .back-path=${this.backPath}
+      .scrollable=${this._mode === "gui"}
       .header=${create
         ? this.hass.localize("component.knx.config_panel.entities.create.title")
         : `${this.hass.localize("ui.common.edit")}: ${this.entityId}`}
     >
+      <ha-icon-button
+        slot="toolbar-icon"
+        .label=${this.hass.localize(
+          this._mode === "gui"
+            ? "ui.panel.config.automation.editor.edit_yaml"
+            : "ui.panel.config.automation.editor.edit_ui",
+        )}
+        .path=${mdiPlaylistEdit}
+        @click=${this._toggleMode}
+      ></ha-icon-button>
       <div class="content">
-        <div class="entity-config">
-          <knx-configure-entity
-            .hass=${this.hass}
-            .knx=${this.knx}
-            .platform=${platform}
-            .config=${this._config}
-            .schema=${schema}
-            .validationErrors=${this._validationErrors}
-            @knx-entity-configuration-changed=${this._configChanged}
-          >
-            ${this._validationBaseError
-              ? html`<ha-alert slot="knx-validation-error" alert-type="error">
-                  <details>
-                    <summary><b>Validation error</b></summary>
-                    <p>Base error: ${this._validationBaseError}</p>
-                    ${this._validationErrors?.map(
-                      (err) =>
-                        html`<p>
-                          ${err.error_class}: ${err.error_message} in ${err.path?.join(" / ")}
-                        </p>`,
-                    ) ?? nothing}
-                  </details>
-                </ha-alert>`
-              : nothing}
-          </knx-configure-entity>
+        <div class="entity-config ${this._mode === "yaml" ? "yaml-mode" : ""}">
+          ${this._renderValidationAlert()}
+          ${this._mode === "gui"
+            ? html`
+                <knx-configure-entity
+                  .hass=${this.hass}
+                  .knx=${this.knx}
+                  .platform=${platform}
+                  .config=${this._config}
+                  .schema=${schema}
+                  .validationErrors=${this._validationErrors}
+                  @knx-entity-configuration-changed=${this._configChanged}
+                ></knx-configure-entity>
+              `
+            : html`
+                <ha-yaml-editor
+                  .defaultValue=${this._config}
+                  @value-changed=${this._yamlChanged}
+                  @dragover=${this._yamlDragOver}
+                  @drop=${this._yamlDrop}
+                ></ha-yaml-editor>
+                <p class="yaml-hint">
+                  ${this.hass.localize("component.knx.config_panel.entities.create.yaml.mode_hint")}
+                </p>
+              `}
           <ha-button
             class="fab"
             size="l"
             @click=${create ? this._entityCreate : this._entityUpdate}
-            ?disabled=${this._config === undefined}
+            ?disabled=${this._config === undefined || !!this._yamlErrors}
           >
             <ha-svg-icon slot="start" .path=${create ? mdiPlus : mdiFloppy}></ha-svg-icon>
             ${create
@@ -318,6 +341,22 @@ export class KNXCreateEntity extends LitElement {
     </hass-subpage>`;
   }
 
+  private _renderValidationAlert(): TemplateResult | typeof nothing {
+    if (!this._validationBaseError) {
+      return nothing;
+    }
+    return html`<ha-alert alert-type="error">
+      <details>
+        <summary><b>Validation error</b></summary>
+        <p>Base error: ${this._validationBaseError}</p>
+        ${this._validationErrors?.map(
+          (err) =>
+            html`<p>${err.error_class}: ${err.error_message} in ${err.path?.join(" / ")}</p>`,
+        ) ?? nothing}
+      </details>
+    </ha-alert>`;
+  }
+
   private _configChanged(ev) {
     ev.stopPropagation();
     logger.debug("configChanged", ev.detail);
@@ -326,6 +365,54 @@ export class KNXCreateEntity extends LitElement {
       this._entityValidate();
     }
   }
+
+  private _toggleMode = async () => {
+    if (this._mode === "yaml") {
+      if (this._yamlErrors) {
+        const confirmed = await showConfirmationDialog(this, {
+          text: `${this.hass.localize("component.knx.config_panel.entities.create.yaml.yaml_error")} ${this._yamlErrors}`,
+          confirmText: this.hass.localize("ui.common.continue"),
+          destructive: true,
+          dismissText: this.hass.localize("ui.common.cancel"),
+        });
+        if (!confirmed) return;
+      }
+      this._yamlErrors = undefined;
+    }
+    this._mode = this._mode === "gui" ? "yaml" : "gui";
+  };
+
+  private _yamlChanged(ev: CustomEvent) {
+    ev.stopPropagation();
+    if (!ev.detail.isValid) {
+      this._yamlErrors = ev.detail.errorMsg;
+      return;
+    }
+    this._yamlErrors = undefined;
+    this._config = ev.detail.value as EntityData;
+    if (this._validationErrors) {
+      this._entityValidate();
+    }
+  }
+
+  private _yamlDragOver = (ev: DragEvent) => {
+    if (!ev.dataTransfer?.types.includes("text/group-address")) return;
+    ev.preventDefault(); // required for `drop` to fire
+    ev.dataTransfer.dropEffect = "copy";
+  };
+
+  private _yamlDrop = (ev: DragEvent) => {
+    const ga = ev.dataTransfer?.getData("text/group-address");
+    if (!ga) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    const view = this._yamlEditor?.codemirror;
+    if (!view) return;
+    const pos =
+      view.posAtCoords({ x: ev.clientX, y: ev.clientY }) ?? view.state.selection.main.head;
+    view.dispatch({ changes: { from: pos, insert: ga }, selection: { anchor: pos + ga.length } });
+    view.focus();
+  };
 
   private _entityValidate = throttle(() => {
     logger.debug("validate", this._config);
@@ -449,6 +536,13 @@ export class KNXCreateEntity extends LitElement {
         overflow-y: scroll;
       }
 
+      & > .entity-config.yaml-mode {
+        display: flex;
+        flex-direction: column;
+        overflow-y: hidden;
+        position: relative;
+      }
+
       & > .panel {
         flex-grow: 0;
         flex-shrink: 3;
@@ -463,6 +557,21 @@ export class KNXCreateEntity extends LitElement {
       max-width: 720px;
     }
 
+    ha-yaml-editor {
+      flex-grow: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      --code-mirror-height: 100%;
+    }
+
+    .yaml-hint {
+      margin: 8px 16px;
+      padding-right: 140px; /* keep every wrapped line clear of the floating fab */
+      color: var(--secondary-text-color);
+      font-size: var(--ha-font-size-s, 12px);
+    }
+
     ha-alert {
       display: block;
       margin: 20px auto;
@@ -473,12 +582,26 @@ export class KNXCreateEntity extends LitElement {
       }
     }
 
+    .yaml-mode ha-alert {
+      margin: 20px 16px 16px;
+      max-width: none;
+    }
+
     ha-button.fab {
       /* not slot="fab" to move out of panel */
       float: right;
       margin-right: calc(16px + env(safe-area-inset-right));
       margin-bottom: 40px;
       z-index: 1;
+    }
+
+    .yaml-mode ha-button.fab {
+      /* floats above the yaml editor; .yaml-hint reserves a right-side gutter so it's never covered */
+      float: none;
+      position: absolute;
+      right: calc(16px + env(safe-area-inset-right));
+      bottom: 16px;
+      margin: 0;
     }
   `;
 }
