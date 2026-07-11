@@ -8,5 +8,17 @@
   "error_headline": "Bitte noch einmal versuchen",
   "error_description": "Die Anfrage ist fehlgeschlagen. Meist reicht ein zweiter Versuch. Bleibt der Fehler, kopiere die Meldung unten und melde das Problem.",
   "error_message": "Fehlermeldung",
-  "error_report": "Problem melden"
+  "error_report": "Problem melden",
+  "suggestions_title": "Aus ETS-Projekt erstellen",
+  "suggestions_type_selection_description": "Entitäten automatisch aus den Funktionsblock-Informationen des importierten ETS-Projekts erstellen.",
+  "suggestions_backend_unsupported": "Diese Home-Assistant-Version unterstützt noch keine Entitätsvorschläge. Bitte aktualisiere Home Assistant.",
+  "suggestions_no_project": "Keine ETS-Projektdaten verfügbar. Importiere deine ETS-Projektdatei, um Entitätsvorschläge zu erhalten.",
+  "suggestions_open_info_view": "Info-Seite öffnen",
+  "suggestions_outdated_parser": "Dein ETS-Projekt wurde mit einer älteren Parser-Version ({version}) importiert. Importiere die Projektdatei erneut, um Entitätsvorschläge zu erhalten.",
+  "suggestions_no_semantics": "Die Applikationsprogramme der Geräte in diesem ETS-Projekt enthalten keine Funktionsblock-Informationen, daher können keine Entitäten vorgeschlagen werden. Diese Informationen sind Teil neuerer KNX-Applikationsprogramme.",
+  "suggestions_no_supported_blocks": "Keine unterstützten Funktionsblöcke in diesem ETS-Projekt gefunden. Gefundene Funktionsblöcke: {functional_blocks}",
+  "suggestions_platform": "Entitätstyp",
+  "suggestions_already_configured": "Gruppenadressen bereits verwendet von: {entities}",
+  "suggestions_open_in_editor": "Im Editor öffnen",
+  "suggestions_create_selected": "{count, plural, one {# Entität anlegen} other {# Entitäten anlegen}}"
 }
