@@ -13,6 +13,7 @@ import type { SelectorSchema } from "../types/schema";
 import type {
   TelegramDict,
   KNXProject,
+  EntitySuggestionsResult,
   GroupMonitorInfoData,
   KNXBaseData,
   KNXEntityIdentifier,
@@ -71,6 +72,11 @@ export const subscribeKnxTelegrams = (
 export const getKnxProject = (hass: HomeAssistant): Promise<KNXProject | null> =>
   hass.callWS({
     type: "knx/get_knx_project",
+  });
+
+export const getEntitySuggestions = (hass: HomeAssistant): Promise<EntitySuggestionsResult> =>
+  hass.callWS({
+    type: "knx/get_entity_suggestions",
   });
 
 /**

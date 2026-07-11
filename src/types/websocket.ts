@@ -56,6 +56,52 @@ export interface KNXProjectInfo {
   xknxproject_version: string;
 }
 
+// this has to match `EntitySuggestionsResult` and related types in
+// the integrations `storage/entity_suggestions/const.py`
+export interface SuggestedGroupAddress {
+  address: string;
+  name: string;
+}
+
+export interface PlatformSuggestion {
+  // `knx` options of EntityData
+  knx: Record<string, unknown>;
+  matched_group_addresses: SuggestedGroupAddress[];
+  unmatched_dpas: string[];
+}
+
+export interface EntitySuggestion {
+  id: string;
+  // provider id this suggestion originates from - eg. "fb" for functional blocks
+  source: string;
+  suggested_name: string;
+  // group suggestions are rendered in, eg. a device
+  group_id: string;
+  group_name: string;
+  // additional info for the suggestion, eg. a channel name
+  secondary_info: string;
+  // platforms able to represent this suggestion - first item is the default
+  platform_options: SupportedPlatform[];
+  suggestions: Record<SupportedPlatform, PlatformSuggestion>;
+  existing_entity_ids: string[];
+  // provider specific details about where the suggestion comes from
+  metadata: Record<string, unknown>;
+}
+
+export interface FunctionalBlockProviderHints {
+  state: "ok" | "no_project" | "outdated_parser" | "no_semantics";
+  parser_version?: string;
+  functional_blocks_found?: string[];
+}
+
+export interface EntitySuggestionsResult {
+  suggestions: EntitySuggestion[];
+  // key: provider id
+  providers: {
+    fb: FunctionalBlockProviderHints;
+  };
+}
+
 export interface GroupMonitorInfoData {
   project_loaded: boolean;
   recent_telegrams: TelegramDict[];

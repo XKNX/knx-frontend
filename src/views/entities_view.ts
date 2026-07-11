@@ -1,4 +1,5 @@
 import {
+  mdiAutoFix,
   mdiDelete,
   mdiInformationOffOutline,
   mdiInformationSlabCircleOutline,
@@ -18,6 +19,7 @@ import "@ha/components/data-table/ha-data-table-labels";
 import "@ha/components/ha-alert";
 import "@ha/components/ha-button";
 import "@ha/components/ha-icon";
+import "@ha/components/ha-icon-button";
 import "@ha/components/ha-icon-overflow-menu";
 import "@ha/components/ha-state-icon";
 import "@ha/components/ha-svg-icon";
@@ -650,6 +652,16 @@ export class KNXEntitiesView extends LitElement {
           @selection-changed=${this._onFilterSelectionChanged}
           @expanded-changed=${this._onFilterExpandedChanged}
         ></knx-list-filter>
+        ${
+          this.knx.projectInfo
+            ? html`<ha-icon-button
+                slot="toolbar-icon"
+                .label=${this.knx.localize("suggestions_title")}
+                .path=${mdiAutoFix}
+                @click=${this._entitySuggestions}
+              ></ha-icon-button>`
+            : nothing
+        }
         <ha-button slot="fab" size="l" @click=${this._entityCreate}>
           <ha-svg-icon slot="start" .path=${mdiPlus}></ha-svg-icon>
           ${this.hass.localize("ui.common.add")}
@@ -660,6 +672,10 @@ export class KNXEntitiesView extends LitElement {
 
   private _entityCreate() {
     navigate("/knx/entities/create");
+  }
+
+  private _entitySuggestions() {
+    navigate("/knx/entities/suggestions");
   }
 
   private _handleGroupingChanged(ev: CustomEvent) {
