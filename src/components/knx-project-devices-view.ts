@@ -1,7 +1,13 @@
-import { mdiMapMarkerOutline, mdiNetworkOutline, mdiSwapHorizontalCircle } from "@mdi/js";
+import {
+  mdiChevronDown,
+  mdiMapMarkerOutline,
+  mdiNetworkOutline,
+  mdiSwapHorizontalCircle,
+} from "@mdi/js";
 import type { PropertyValues, TemplateResult } from "lit";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
+import { ifDefined } from "lit/directives/if-defined";
 import { repeat } from "lit/directives/repeat";
 
 import memoize from "memoize-one";
@@ -365,17 +371,28 @@ export class KNXProjectDevicesView extends LitElement {
     relatedByScope: Record<string, ScopeRelated>,
   ): TemplateResult {
     const hasContent = !!device.noChannelComObjects.length || !!device.channels.length;
+    const expanded = hasContent && this._isExpanded(device.ia);
     const location = this.locationByDevice?.[device.ia];
     const line = this.lineByDevice?.[device.ia];
     const noChannelRelated = relatedByScope[device.ia];
-    return html`<ha-expansion-panel
-      outlined
-      left-chevron
-      .noCollapse=${!hasContent}
-      .expanded=${hasContent && this._isExpanded(device.ia)}
-      data-panel-key=${device.ia}
-    >
-      <div slot="header" class="device-header">
+    // devices use a custom card with a sticky header instead of ha-expansion-panel,
+    // so the device stays identifiable while scrolling through its group objects
+    return html`<div class="device-card">
+      <div
+        class="device-header ${expanded ? "expanded" : ""}"
+        role=${ifDefined(hasContent ? "button" : undefined)}
+        tabindex=${ifDefined(hasContent ? "0" : undefined)}
+        aria-expanded=${expanded}
+        data-panel-key=${device.ia}
+        @click=${hasContent ? this._deviceHeaderToggled : nothing}
+        @keydown=${hasContent ? this._deviceHeaderToggled : nothing}
+      >
+        ${hasContent
+          ? html`<ha-svg-icon
+              class="device-chevron ${expanded ? "expanded" : ""}"
+              .path=${mdiChevronDown}
+            ></ha-svg-icon>`
+          : nothing}
         <span class="icon ia">
           <ha-svg-icon .path=${mdiNetworkOutline}></ha-svg-icon>
           <span>${device.ia}</span>
@@ -398,34 +415,48 @@ export class KNXProjectDevicesView extends LitElement {
           ${line ? html`<span class="pill" title=${line.mediumType}>${line.label}</span>` : nothing}
         </div>
       </div>
-      ${hasContent
-        ? html`${hasRelatedRefs(noChannelRelated?.aggregated)
-            ? this._renderAggregatedRelated(noChannelRelated!.aggregated!)
-            : nothing}
-          ${this._renderComObjects(device.noChannelComObjects, noChannelRelated)}
-          ${repeat(
-            device.channels,
-            (channel) => channelKey(device.ia, channel.id),
-            (channel) => {
-              const scopeKey = channelKey(device.ia, channel.id);
-              const channelRelated = relatedByScope[scopeKey];
-              return html`<ha-expansion-panel
-                class="channel"
-                outlined
-                left-chevron
-                .header=${channel.name}
-                .expanded=${this._isExpanded(scopeKey)}
-                data-panel-key=${scopeKey}
-              >
-                ${hasRelatedRefs(channelRelated?.aggregated)
-                  ? this._renderAggregatedRelated(channelRelated!.aggregated!)
-                  : nothing}
-                ${this._renderComObjects(channel.comObjects, channelRelated)}
-              </ha-expansion-panel>`;
-            },
-          )}`
+      ${expanded
+        ? html`<div class="device-content">
+            ${hasRelatedRefs(noChannelRelated?.aggregated)
+              ? this._renderAggregatedRelated(noChannelRelated!.aggregated!)
+              : nothing}
+            ${this._renderComObjects(device.noChannelComObjects, noChannelRelated)}
+            ${repeat(
+              device.channels,
+              (channel) => channelKey(device.ia, channel.id),
+              (channel) => {
+                const scopeKey = channelKey(device.ia, channel.id);
+                const channelRelated = relatedByScope[scopeKey];
+                return html`<ha-expansion-panel
+                  class="channel"
+                  outlined
+                  left-chevron
+                  .header=${channel.name}
+                  .expanded=${this._isExpanded(scopeKey)}
+                  data-panel-key=${scopeKey}
+                >
+                  ${hasRelatedRefs(channelRelated?.aggregated)
+                    ? this._renderAggregatedRelated(channelRelated!.aggregated!)
+                    : nothing}
+                  ${this._renderComObjects(channel.comObjects, channelRelated)}
+                </ha-expansion-panel>`;
+              },
+            )}
+          </div>`
         : nothing}
-    </ha-expansion-panel>`;
+    </div>`;
+  }
+
+  private _deviceHeaderToggled(ev: Event): void {
+    if (ev.type === "keydown") {
+      const key = (ev as KeyboardEvent).key;
+      if (key !== "Enter" && key !== " ") {
+        return;
+      }
+    }
+    ev.preventDefault();
+    const panelKey = (ev.currentTarget as HTMLElement).dataset.panelKey!;
+    this._setPanelExpanded(panelKey, !this._isExpanded(panelKey));
   }
 
   private _renderAggregatedRelated(refs: RelatedRefs): TemplateResult {
@@ -542,9 +573,14 @@ export class KNXProjectDevicesView extends LitElement {
       margin-top: 8px;
     }
 
-    ha-expansion-panel {
+    .device-card {
       margin-top: 8px;
+      border: 1px solid var(--outline-color);
+      border-radius: var(--ha-card-border-radius, var(--ha-border-radius-lg, 12px));
       background-color: var(--card-background-color);
+      /* clip scrolling content at the rounded corners; unlike "hidden"
+         this does not create a scroll container, so sticky keeps working */
+      overflow: clip;
     }
 
     ha-expansion-panel.channel {
@@ -555,11 +591,46 @@ export class KNXProjectDevicesView extends LitElement {
     }
 
     .device-header {
+      position: sticky;
+      top: 0;
+      z-index: 2;
       display: flex;
       align-items: center;
       min-width: 0;
-      width: 100%;
-      padding: 4px 0;
+      min-height: 48px;
+      box-sizing: border-box;
+      padding: 4px 8px;
+      /* no border-radius: the card clips it; rounded corners would let
+         scrolling content shine through while the header is stuck */
+      background-color: var(--card-background-color);
+    }
+
+    .device-header[role="button"] {
+      cursor: pointer;
+      outline: none;
+    }
+
+    .device-header.expanded {
+      border-bottom: 1px solid var(--divider-color);
+    }
+
+    .device-header:focus-visible {
+      background-color: var(--input-fill-color, var(--secondary-background-color));
+    }
+
+    .device-chevron {
+      flex: 0 0 auto;
+      margin-right: 8px;
+      color: var(--secondary-text-color);
+      transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .device-chevron.expanded {
+      transform: rotate(180deg);
+    }
+
+    .device-content {
+      padding: 0 8px 4px;
     }
 
     .device-pills {
