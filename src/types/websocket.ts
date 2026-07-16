@@ -105,6 +105,36 @@ export interface KNXProject {
   group_ranges: Record<string, GroupRange>;
   devices: Record<string, Device>;
   communication_objects: Record<string, CommunicationObject>;
+  // optional: not provided by projects stored with old xknxproject versions
+  topology?: Record<string, KNXTopologyArea>; // keyed by area address
+  locations?: Record<string, KNXSpace>; // keyed by space name
+}
+
+export interface KNXTopologyArea {
+  name: string;
+  description: string | null;
+  lines: Record<string, KNXTopologyLine>; // keyed by line address within the area
+}
+
+export interface KNXTopologyLine {
+  name: string;
+  medium_type: string;
+  description: string | null;
+  devices: string[]; // individual addresses
+}
+
+export interface KNXSpace {
+  type: string; // "Building" | "BuildingPart" | "Floor" | "Room" | "Corridor" | ...
+  identifier: string;
+  name: string;
+  usage_id: string | null;
+  usage_text: string;
+  number: string;
+  description: string;
+  project_uid: number | null;
+  devices: string[]; // individual addresses
+  spaces: Record<string, KNXSpace>;
+  functions: string[];
 }
 
 export interface GroupRange {

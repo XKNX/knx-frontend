@@ -1115,29 +1115,27 @@ export class KnxListFilter<T = any> extends LitElement {
         @click=${this._handleOptionItemClick}
         data-value=${option.idField}
       >
-        <div class="option-content">
-          ${option.icon
-            ? html`<ha-icon class="option-icon" .icon=${option.icon}></ha-icon>`
-            : option.iconPath
-              ? html`<ha-svg-icon class="option-icon" .path=${option.iconPath}></ha-svg-icon>`
-              : nothing}
-          <div class="option-text">
-            <div class="option-primary">
-              <span class="option-label" title=${option.primaryField}>${option.primaryField}</span>
-              ${option.badgeField
-                ? html`<span class="option-badge">${option.badgeField}</span>`
-                : nothing}
-            </div>
-
-            ${option.secondaryField
-              ? html`
-                  <div class="option-secondary" title=${option.secondaryField}>
-                    ${option.secondaryField}
-                  </div>
-                `
-              : nothing}
+        ${option.icon
+          ? html`<ha-icon class="option-icon" .icon=${option.icon}></ha-icon>`
+          : option.iconPath
+            ? html`<ha-svg-icon class="option-icon" .path=${option.iconPath}></ha-svg-icon>`
+            : nothing}
+        <div class="option-text">
+          <div class="option-primary">
+            <span class="option-label" title=${option.primaryField}>${option.primaryField}</span>
           </div>
+
+          ${option.secondaryField
+            ? html`
+                <div class="option-secondary" title=${option.secondaryField}>
+                  ${option.secondaryField}
+                </div>
+              `
+            : nothing}
         </div>
+        ${option.badgeField
+          ? html`<span class="option-badge">${option.badgeField}</span>`
+          : nothing}
 
         <ha-checkbox
           .checked=${option.selected}
@@ -1321,7 +1319,7 @@ export class KnxListFilter<T = any> extends LitElement {
         .option-item {
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          gap: 2px;
           padding-left: 16px;
           min-height: 48px;
           cursor: pointer;
@@ -1337,18 +1335,10 @@ export class KnxListFilter<T = any> extends LitElement {
           background-color: var(--mdc-theme-surface-variant, rgba(var(--rgb-primary-color), 0.06));
         }
 
-        .option-content {
-          display: flex;
-          align-items: center;
-          width: 100%;
-          min-width: 0;
-          height: 100%;
-          gap: 8px;
-        }
-
         .option-icon {
           flex-shrink: 0;
           color: var(--secondary-text-color);
+          margin-inline-end: 6px;
         }
 
         .option-text {
