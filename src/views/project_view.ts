@@ -410,15 +410,16 @@ export class KNXProjectView extends LitElement {
       : this._renderTable(this._projectData);
   }
 
-  private _viewToggleButtons = memoize((_language: string): ToggleButton[] => [
+  private _viewToggleButtons = memoize((narrow: boolean, _language: string): ToggleButton[] => [
     {
       value: "group_addresses",
-      iconPath: mdiTableLarge,
+      // ha-button-toggle-group renders either the icon or the label text
+      ...(narrow ? { iconPath: mdiTableLarge } : {}),
       label: this.hass.localize("component.knx.config_panel.common.group_addresses"),
     },
     {
       value: "devices",
-      iconPath: mdiNetworkOutline,
+      ...(narrow ? { iconPath: mdiNetworkOutline } : {}),
       label: this.hass.localize("component.knx.config_panel.project.devices.title"),
     },
   ]);
@@ -428,7 +429,7 @@ export class KNXProjectView extends LitElement {
       slot="toolbar-icon"
       size="s"
       variant="neutral"
-      .buttons=${this._viewToggleButtons(this.hass.language)}
+      .buttons=${this._viewToggleButtons(this.narrow, this.hass.language)}
       .active=${this._viewMode}
       @value-changed=${this._viewModeChanged}
     ></ha-button-toggle-group>`;
@@ -895,6 +896,11 @@ export class KNXProjectView extends LitElement {
       /* same as hass-tabs-subpage-data-table so the search field
          doesn't jump when switching between the two view modes */
       --main-title-margin: 0;
+    }
+
+    :host([narrow]) ha-button-toggle-group {
+      /* small gap between the search field and the view toggle */
+      margin-inline-start: 4px;
     }
 
     .search-toolbar {
