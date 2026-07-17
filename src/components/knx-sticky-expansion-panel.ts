@@ -1,5 +1,5 @@
 import { mdiChevronDown } from "@mdi/js";
-import type { TemplateResult } from "lit";
+import type { PropertyValues, TemplateResult } from "lit";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 import { ifDefined } from "lit/directives/if-defined";
@@ -20,6 +20,10 @@ import { fireEvent } from "@ha/common/dom/fire_event";
  * The card clips its content at the rounded corners with `overflow: clip`,
  * which - unlike `hidden` - does not create a scroll container, so the
  * sticky header keeps working.
+ *
+ * Collapsing a panel that is scrolled past would drop its header above the
+ * scrollport and yank the following panels upwards, so on collapse the card
+ * scrolls itself back to the top edge - see `_anchorAfterCollapse`.
  *
  * @slot header - Header content, always visible, sticky while scrolling.
  * @slot - Panel content, rendered when expanded.
@@ -66,6 +70,59 @@ export class KnxStickyExpansionPanel extends LitElement {
     fireEvent(this, "expanded-changed", { expanded: !this.expanded });
   }
 
+  protected updated(changedProperties: PropertyValues): void {
+    // the parent owns `expanded`, but the transition is still observable here,
+    // so anchoring works no matter who collapsed the panel
+    if (changedProperties.get("expanded") === true && !this.expanded) {
+      this._anchorAfterCollapse();
+    }
+  }
+
+  /**
+   * Keeps a collapsed card in place instead of letting it fall out of view.
+   *
+   * Collapsing only removes height below the card's top edge, so a card that
+   * was scrolled into keeps its top above the scrollport: its header is gone
+   * from view and everything below slides up. Pulling the scroll offset back
+   * by that overshoot lands the header at the top edge, where the reader left
+   * it. A card whose top is already visible does not move, so it is left alone.
+   */
+  private _anchorAfterCollapse(): void {
+    const scroller = this._scrollParent();
+    if (!scroller) {
+      return;
+    }
+    // clientTop skips the border, leaving the padding box - the edge sticky
+    // headers pin to, and the one the card top should line up with
+    const scrollportTop = scroller.getBoundingClientRect().top + scroller.clientTop;
+    const overshoot = this.getBoundingClientRect().top - scrollportTop;
+    if (overshoot < 0) {
+      scroller.scrollTop += overshoot;
+    }
+  }
+
+  /** Nearest scrollable ancestor, crossing shadow boundaries on the way up. */
+  private _scrollParent(): Element | null {
+    let node: Node | null = this.parentNode;
+    while (node) {
+      const host = (node as ShadowRoot).host;
+      if (host) {
+        node = host;
+        continue;
+      }
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const element = node as Element;
+        // no scrollHeight check: a scroller that is not overflowing right now
+        // is still the element that owns this card's scroll offset
+        if (/^(auto|scroll|overlay)$/.test(getComputedStyle(element).overflowY)) {
+          return element;
+        }
+      }
+      node = node.parentNode;
+    }
+    return null;
+  }
+
   static styles = css`
     :host {
       display: block;
@@ -98,7 +155,10 @@ export class KnxStickyExpansionPanel extends LitElement {
     }
 
     .header.expanded {
-      border-bottom: 1px solid var(--divider-color);
+      /* drawn as a shadow, not a border: it takes no layout space and is
+         clipped by the card once the header is pushed onto the bottom edge,
+         so it cannot stack with the card border into a 2px line */
+      box-shadow: 0 1px 0 var(--divider-color);
     }
 
     .header:focus-visible {
