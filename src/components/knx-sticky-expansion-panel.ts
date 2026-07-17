@@ -8,18 +8,20 @@ import "@ha/components/ha-svg-icon";
 import { fireEvent } from "@ha/common/dom/fire_event";
 
 /**
- * A controlled expansion panel card whose header sticks to the top of the
- * nearest scroll container while its content is scrolled.
+ * An expansion panel card whose header sticks to the top of the nearest
+ * scroll container while its content is scrolled.
  *
- * Unlike ha-expansion-panel it never toggles itself: a header click or
- * Enter/Space key press only fires `expanded-changed` with the requested
- * state; the parent owns the `expanded` property. Content is only rendered
- * while expanded, and without a height animation stale inline heights
- * cannot occur when nested or dynamic content grows.
+ * It exists because ha-expansion-panel animates its height by measuring the
+ * content once and writing an inline height, which goes stale when nested or
+ * dynamic content grows afterwards. This panel renders content while expanded
+ * instead, and clips the card with `overflow: clip`, which - unlike `hidden` -
+ * does not create a scroll container, so the sticky header keeps pinning to
+ * the list rather than to the card.
  *
- * The card clips its content at the rounded corners with `overflow: clip`,
- * which - unlike `hidden` - does not create a scroll container, so the
- * sticky header keeps working.
+ * Expansion behaves like ha-expansion-panel: the panel toggles itself and
+ * reports it, so it works with no wiring at all. A parent that owns the
+ * state can take over by calling `preventDefault()` on the click/keydown in
+ * the capture phase and setting `expanded` itself.
  *
  * Collapsing a panel that is scrolled past would drop its header above the
  * scrollport and yank the following panels upwards, so on collapse the card
@@ -27,7 +29,8 @@ import { fireEvent } from "@ha/common/dom/fire_event";
  *
  * @slot header - Header content, always visible, sticky while scrolling.
  * @slot - Panel content, rendered when expanded.
- * @fires expanded-changed - Requested state as `{ expanded: boolean }`.
+ * @fires expanded-will-change - Upcoming state as `{ expanded: boolean }`.
+ * @fires expanded-changed - New state as `{ expanded: boolean }`.
  */
 @customElement("knx-sticky-expansion-panel")
 export class KnxStickyExpansionPanel extends LitElement {
@@ -40,12 +43,14 @@ export class KnxStickyExpansionPanel extends LitElement {
     const collapsible = !this.noCollapse;
     return html`
       <div
+        id="summary"
+        part="summary"
         class="header ${this.expanded ? "expanded" : ""}"
         role=${ifDefined(collapsible ? "button" : undefined)}
         tabindex=${ifDefined(collapsible ? "0" : undefined)}
         aria-expanded=${this.expanded}
-        @click=${collapsible ? this._toggleRequested : nothing}
-        @keydown=${collapsible ? this._toggleRequested : nothing}
+        @click=${collapsible ? this._toggle : nothing}
+        @keydown=${collapsible ? this._toggle : nothing}
       >
         ${collapsible
           ? html`<ha-svg-icon
@@ -59,7 +64,12 @@ export class KnxStickyExpansionPanel extends LitElement {
     `;
   }
 
-  private _toggleRequested(ev: Event): void {
+  private _toggle(ev: Event): void {
+    // a parent that owns `expanded` suppresses the self-toggle from the
+    // capture phase, the same way ha-expansion-panel can be controlled
+    if (ev.defaultPrevented) {
+      return;
+    }
     if (ev.type === "keydown") {
       const key = (ev as KeyboardEvent).key;
       if (key !== "Enter" && key !== " ") {
@@ -67,12 +77,15 @@ export class KnxStickyExpansionPanel extends LitElement {
       }
     }
     ev.preventDefault();
-    fireEvent(this, "expanded-changed", { expanded: !this.expanded });
+    const expanded = !this.expanded;
+    fireEvent(this, "expanded-will-change", { expanded });
+    this.expanded = expanded;
+    fireEvent(this, "expanded-changed", { expanded });
   }
 
   protected updated(changedProperties: PropertyValues): void {
-    // the parent owns `expanded`, but the transition is still observable here,
-    // so anchoring works no matter who collapsed the panel
+    // observing the property rather than the click covers both the self-toggle
+    // and a parent that owns `expanded`, so anchoring works either way
     if (changedProperties.get("expanded") === true && !this.expanded) {
       this._anchorAfterCollapse();
     }
