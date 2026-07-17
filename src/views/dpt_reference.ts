@@ -3,12 +3,12 @@ import { customElement, property, state } from "lit/decorators";
 import type { TemplateResult } from "lit";
 
 import "@ha/components/ha-alert";
-import "@ha/components/ha-expansion-panel";
 import "@ha/components/input/ha-input-search";
 import "@ha/layouts/hass-tabs-subpage";
 import type { HaInputSearch } from "@ha/components/input/ha-input-search";
 import type { HomeAssistant, Route } from "@ha/types";
 
+import "../components/knx-sticky-expansion-panel";
 import { dptReferenceTab } from "../knx-router";
 import type { KNX } from "../types/knx";
 import type { DPTComplexFieldSchema } from "../types/websocket";
@@ -33,6 +33,8 @@ export class KnxDptReference extends LitElement {
   @property({ type: Object }) public route?: Route;
 
   @state() private _filter = "";
+
+  @state() private _expandedGroups = new Set<number>();
 
   private _onFilterChanged(ev: InputEvent): void {
     this._filter = (ev.target as HaInputSearch).value ?? "";
@@ -174,31 +176,46 @@ export class KnxDptReference extends LitElement {
     return payloadLabel ? `${countLabel} · ${payloadLabel}` : countLabel;
   }
 
+  private _renderGroupHeader(group: DptReferenceGroup, includeCount: boolean): TemplateResult {
+    return html`
+      <div slot="header" class="group-header">
+        <span class="group-title">DPT ${group.main}.x</span>
+        <span class="group-secondary">${this._groupSecondary(group, includeCount)}</span>
+      </div>
+    `;
+  }
+
   private _renderNoCollapseGroup(group: DptReferenceGroup): TemplateResult {
     return html`
-      <ha-expansion-panel
-        outlined
-        no-collapse
-        expanded
-        .header=${`DPT ${group.main}.x`}
-        .secondary=${this._groupSecondary(group, false)}
-      >
+      <knx-sticky-expansion-panel no-collapse expanded>
+        ${this._renderGroupHeader(group, false)}
         <div class="expanded-grid">${group.items.map((item) => this._renderEntry(item))}</div>
-      </ha-expansion-panel>
+      </knx-sticky-expansion-panel>
     `;
   }
 
   private _renderExpandableGroup(group: DptReferenceGroup): TemplateResult {
     return html`
-      <ha-expansion-panel
-        outlined
-        left-chevron
-        .header=${`DPT ${group.main}.x`}
-        .secondary=${this._groupSecondary(group, true)}
+      <knx-sticky-expansion-panel
+        .expanded=${this._expandedGroups.has(group.main)}
+        data-group=${group.main}
+        @expanded-changed=${this._groupPanelToggled}
       >
+        ${this._renderGroupHeader(group, true)}
         <div class="expanded-grid">${group.items.map((item) => this._renderEntry(item))}</div>
-      </ha-expansion-panel>
+      </knx-sticky-expansion-panel>
     `;
+  }
+
+  private _groupPanelToggled(ev: CustomEvent<{ expanded: boolean }>): void {
+    const groupKey = Number((ev.currentTarget as HTMLElement).dataset.group);
+    const expanded = new Set(this._expandedGroups);
+    if (ev.detail.expanded) {
+      expanded.add(groupKey);
+    } else {
+      expanded.delete(groupKey);
+    }
+    this._expandedGroups = expanded;
   }
 
   private _searchLabel(count: number): string {
@@ -295,9 +312,42 @@ export class KnxDptReference extends LitElement {
       display: flex;
       flex-direction: column;
       gap: 12px;
-      margin: 8px;
       overflow-y: auto;
       flex: 1;
+      padding: 0 8px 8px;
+      /* establish a stacking context so the sticky group headers (z-index: 2)
+         stay contained here; otherwise an ancestor paints them above this
+         scroller and they hide the overlay scrollbar, which has no layout
+         width of its own and floats over the cards' right edge */
+      isolation: isolate;
+    }
+
+    /* spacing above the first card as a child margin rather than container
+       padding: it scrolls away, so sticky group headers still pin flush to
+       the top edge instead of leaving a strip of content above them */
+    .list-content > *:first-child {
+      margin-top: 8px;
+    }
+
+    knx-sticky-expansion-panel {
+      --sticky-expansion-panel-header-padding: 4px 16px;
+      --sticky-expansion-panel-content-padding: 0;
+    }
+
+    .group-header {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    .group-title {
+      font-weight: var(--ha-font-weight-medium, 500);
+    }
+
+    .group-secondary {
+      font-size: 0.85rem;
+      color: var(--secondary-text-color);
     }
 
     .expanded-grid {
@@ -401,7 +451,7 @@ export class KnxDptReference extends LitElement {
 
     @media (max-width: 600px) {
       .list-content {
-        margin: 0;
+        padding: 0 0 8px;
       }
     }
   `;
