@@ -21,7 +21,13 @@ export default defineConfig({
       IS_TEST: "true",
     },
     include: ["**/*.test.ts", "**/*.spec.ts"], // Include tests in any directory
-    exclude: ["homeassistant-frontend/**/*", "**/node_modules/**", "knx-frontend/**/*", ".git/**"],
+    exclude: [
+      "homeassistant-frontend/**/*",
+      "**/node_modules/**",
+      "knx-frontend/**/*",
+      ".git/**",
+      ".claude/**",
+    ],
     bail: 0, // Don't stop after first failure, run all tests
     coverage: {
       include: ["src/**/*.ts"],
