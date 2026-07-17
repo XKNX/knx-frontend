@@ -1,7 +1,8 @@
 import { mdiChevronDown } from "@mdi/js";
 import type { PropertyValues, TemplateResult } from "lit";
 import { css, html, LitElement, nothing } from "lit";
-import { customElement, property, state } from "lit/decorators";
+import { customElement, property, query, state } from "lit/decorators";
+import { classMap } from "lit/directives/class-map";
 import { ifDefined } from "lit/directives/if-defined";
 
 import "@ha/components/ha-svg-icon";
@@ -53,15 +54,28 @@ export class KnxStickyExpansionPanel extends LitElement {
    */
   @state() private _showContent = this.expanded;
 
+  /** Whether the header is pinned, with content running underneath it. */
+  @state() private _stuck = false;
+
+  @query(".sentinel") private _sentinel?: HTMLDivElement;
+
   private _unmountTimeout?: number;
+
+  private _stuckObserver?: IntersectionObserver;
 
   protected render(): TemplateResult {
     const collapsible = !this.noCollapse;
     return html`
+      <div class="sentinel"></div>
       <div
         id="summary"
         part="summary"
-        class="header ${this._showContent ? "with-content" : ""}"
+        class=${classMap({
+          header: true,
+          "with-content": this._showContent,
+          // only content can be covered, so a collapsed card never lifts
+          stuck: this._stuck && this._showContent,
+        })}
         role=${ifDefined(collapsible ? "button" : undefined)}
         tabindex=${ifDefined(collapsible ? "0" : undefined)}
         aria-expanded=${this.expanded}
@@ -124,9 +138,53 @@ export class KnxStickyExpansionPanel extends LitElement {
     }
   }
 
+  protected firstUpdated(): void {
+    this._observeStuck();
+  }
+
+  public connectedCallback(): void {
+    super.connectedCallback();
+    // keyed lists move their items rather than rebuild them, and a move is a
+    // disconnect plus a connect - so re-observe here or the shadow would go
+    // dead the first time a filter reorders the list
+    if (this.hasUpdated) {
+      this._observeStuck();
+    }
+  }
+
   public disconnectedCallback(): void {
     super.disconnectedCallback();
     this._clearUnmount();
+    this._stuckObserver?.disconnect();
+    this._stuckObserver = undefined;
+  }
+
+  /**
+   * Watches a sentinel pinned to the card's top edge, which is where the
+   * header sits until it starts sticking. Once the sentinel has left the
+   * scrollport the header is holding position over content, which is when
+   * it should lift. CSS cannot express this on its own - there is no
+   * `:stuck`, and scroll-driven animations are not broadly supported yet.
+   */
+  private _observeStuck(): void {
+    this._stuckObserver?.disconnect();
+    const scroller = this._scrollParent();
+    const sentinel = this._sentinel;
+    if (!scroller || !sentinel) {
+      // nothing scrolls, so nothing can be covered
+      return;
+    }
+    this._stuckObserver = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[entries.length - 1];
+        // leaving upwards means pinned; leaving downwards just means the card
+        // is below the fold, which must not light up every card underneath
+        const rootTop = entry.rootBounds?.top ?? 0;
+        this._stuck = !entry.isIntersecting && entry.boundingClientRect.top < rootTop;
+      },
+      { root: scroller, threshold: 0 },
+    );
+    this._stuckObserver.observe(sentinel);
   }
 
   private _handleTransitionEnd(ev: TransitionEvent): void {
@@ -218,6 +276,8 @@ export class KnxStickyExpansionPanel extends LitElement {
   static styles = css`
     :host {
       display: block;
+      /* anchors the sentinel to the card's top edge */
+      position: relative;
       border: 1px solid var(--outline-color);
       border-radius: var(--ha-card-border-radius, var(--ha-border-radius-lg, 12px));
       background-color: var(--card-background-color);
@@ -226,10 +286,22 @@ export class KnxStickyExpansionPanel extends LitElement {
       overflow: clip;
     }
 
+    .sentinel {
+      /* out of flow, so it cannot shift the header it reports on. it is only
+         ever measured, never seen */
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1px;
+      height: 1px;
+      pointer-events: none;
+    }
+
     .header {
       position: sticky;
       top: 0;
       z-index: 2;
+      transition: box-shadow var(--ha-animation-duration-fast, 150ms) linear;
       display: flex;
       align-items: center;
       min-width: 0;
@@ -256,6 +328,15 @@ export class KnxStickyExpansionPanel extends LitElement {
          clipped by the card once the header is pushed onto the bottom edge,
          so it cannot stack with the card border into a 2px line */
       box-shadow: 0 1px 0 var(--divider-color);
+    }
+
+    .header.with-content.stuck {
+      /* lifts only while the header actually holds position over content, so
+         the shadow reads as depth rather than as decoration. the card clips
+         it away again at the end of the sticky run */
+      box-shadow:
+        0 1px 0 var(--divider-color),
+        var(--ha-box-shadow-s);
     }
 
     .header:focus-visible {
