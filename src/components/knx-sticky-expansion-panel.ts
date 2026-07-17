@@ -1,29 +1,43 @@
 import { mdiChevronDown } from "@mdi/js";
-import type { TemplateResult } from "lit";
+import type { PropertyValues, TemplateResult } from "lit";
 import { css, html, LitElement, nothing } from "lit";
-import { customElement, property } from "lit/decorators";
+import { customElement, property, query, state } from "lit/decorators";
+import { classMap } from "lit/directives/class-map";
 import { ifDefined } from "lit/directives/if-defined";
 
 import "@ha/components/ha-svg-icon";
 import { fireEvent } from "@ha/common/dom/fire_event";
 
+/** Longer than the collapse, so it only ever fires when the transition did not. */
+const UNMOUNT_FALLBACK_MS = 1000;
+
 /**
- * A controlled expansion panel card whose header sticks to the top of the
- * nearest scroll container while its content is scrolled.
+ * An expansion panel card whose header sticks to the top of the nearest
+ * scroll container while its content is scrolled.
  *
- * Unlike ha-expansion-panel it never toggles itself: a header click or
- * Enter/Space key press only fires `expanded-changed` with the requested
- * state; the parent owns the `expanded` property. Content is only rendered
- * while expanded, and without a height animation stale inline heights
- * cannot occur when nested or dynamic content grows.
+ * It exists because ha-expansion-panel animates its height by measuring the
+ * content once and writing an inline height, which goes stale when nested or
+ * dynamic content grows afterwards. This panel animates an `0fr`/`1fr` grid
+ * track instead: the browser keeps deriving the size, so there is nothing to
+ * measure and nothing to go stale.
  *
- * The card clips its content at the rounded corners with `overflow: clip`,
- * which - unlike `hidden` - does not create a scroll container, so the
- * sticky header keeps working.
+ * The card clips itself with `overflow: clip`, which - unlike `hidden` - does
+ * not create a scroll container, so the sticky header keeps pinning to the
+ * list rather than to the card.
+ *
+ * Expansion behaves like ha-expansion-panel: the panel toggles itself and
+ * reports it, so it works with no wiring at all. A parent that owns the
+ * state can take over by calling `preventDefault()` on the click/keydown in
+ * the capture phase and setting `expanded` itself.
+ *
+ * Collapsing a panel that is scrolled past would drop its header above the
+ * scrollport and yank the following panels upwards, so the card scrolls back
+ * to the top edge as the collapse starts - see `_anchorOnCollapse`.
  *
  * @slot header - Header content, always visible, sticky while scrolling.
- * @slot - Panel content, rendered when expanded.
- * @fires expanded-changed - Requested state as `{ expanded: boolean }`.
+ * @slot - Panel content, rendered while expanded and during the collapse.
+ * @fires expanded-will-change - Upcoming state as `{ expanded: boolean }`.
+ * @fires expanded-changed - New state as `{ expanded: boolean }`.
  */
 @customElement("knx-sticky-expansion-panel")
 export class KnxStickyExpansionPanel extends LitElement {
@@ -32,16 +46,41 @@ export class KnxStickyExpansionPanel extends LitElement {
   @property({ attribute: "no-collapse", type: Boolean, reflect: true })
   public noCollapse = false;
 
+  /**
+   * Content stays rendered for the length of the collapse, so there is
+   * something to animate away. It is not rendered while collapsed: the
+   * devices view has a card per device, and mounting every one of them
+   * would cost far more than the animation is worth.
+   */
+  @state() private _showContent = this.expanded;
+
+  /** Whether the header is pinned, with content running underneath it. */
+  @state() private _stuck = false;
+
+  @query(".sentinel") private _sentinel?: HTMLDivElement;
+
+  private _unmountTimeout?: number;
+
+  private _stuckObserver?: IntersectionObserver;
+
   protected render(): TemplateResult {
     const collapsible = !this.noCollapse;
     return html`
+      <div class="sentinel"></div>
       <div
-        class="header ${this.expanded ? "expanded" : ""}"
+        id="summary"
+        part="summary"
+        class=${classMap({
+          header: true,
+          "with-content": this._showContent,
+          // only content can be covered, so a collapsed card never lifts
+          stuck: this._stuck && this._showContent,
+        })}
         role=${ifDefined(collapsible ? "button" : undefined)}
         tabindex=${ifDefined(collapsible ? "0" : undefined)}
         aria-expanded=${this.expanded}
-        @click=${collapsible ? this._toggleRequested : nothing}
-        @keydown=${collapsible ? this._toggleRequested : nothing}
+        @click=${collapsible ? this._toggle : nothing}
+        @keydown=${collapsible ? this._toggle : nothing}
       >
         ${collapsible
           ? html`<ha-svg-icon
@@ -51,11 +90,23 @@ export class KnxStickyExpansionPanel extends LitElement {
           : nothing}
         <slot name="header"></slot>
       </div>
-      ${this.expanded ? html`<div class="content"><slot></slot></div>` : nothing}
+      <div
+        class="expander ${this.expanded ? "expanded" : ""}"
+        @transitionend=${this._handleTransitionEnd}
+      >
+        <div class="clip">
+          ${this._showContent ? html`<div class="content"><slot></slot></div>` : nothing}
+        </div>
+      </div>
     `;
   }
 
-  private _toggleRequested(ev: Event): void {
+  private _toggle(ev: Event): void {
+    // a parent that owns `expanded` suppresses the self-toggle from the
+    // capture phase, the same way ha-expansion-panel can be controlled
+    if (ev.defaultPrevented) {
+      return;
+    }
     if (ev.type === "keydown") {
       const key = (ev as KeyboardEvent).key;
       if (key !== "Enter" && key !== " ") {
@@ -63,12 +114,170 @@ export class KnxStickyExpansionPanel extends LitElement {
       }
     }
     ev.preventDefault();
-    fireEvent(this, "expanded-changed", { expanded: !this.expanded });
+    const expanded = !this.expanded;
+    fireEvent(this, "expanded-will-change", { expanded });
+    this.expanded = expanded;
+    fireEvent(this, "expanded-changed", { expanded });
+  }
+
+  protected willUpdate(changedProperties: PropertyValues): void {
+    if (changedProperties.has("expanded") && this.expanded) {
+      // mount in the same update that starts the track towards 1fr, so the
+      // content is there to give the track a size to grow into
+      this._showContent = true;
+      this._clearUnmount();
+    }
+  }
+
+  protected updated(changedProperties: PropertyValues): void {
+    // observing the property rather than the click covers both the self-toggle
+    // and a parent that owns `expanded`, so this works either way
+    if (changedProperties.get("expanded") === true && !this.expanded) {
+      this._anchorOnCollapse();
+      this._scheduleUnmount();
+    }
+  }
+
+  protected firstUpdated(): void {
+    this._observeStuck();
+  }
+
+  public connectedCallback(): void {
+    super.connectedCallback();
+    // keyed lists move their items rather than rebuild them, and a move is a
+    // disconnect plus a connect - so re-observe here or the shadow would go
+    // dead the first time a filter reorders the list
+    if (this.hasUpdated) {
+      this._observeStuck();
+    }
+  }
+
+  public disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._clearUnmount();
+    this._stuckObserver?.disconnect();
+    this._stuckObserver = undefined;
+  }
+
+  /**
+   * Watches a sentinel pinned to the card's top edge, which is where the
+   * header sits until it starts sticking. Once the sentinel has left the
+   * scrollport the header is holding position over content, which is when
+   * it should lift. CSS cannot express this on its own - there is no
+   * `:stuck`, and scroll-driven animations are not broadly supported yet.
+   */
+  private _observeStuck(): void {
+    this._stuckObserver?.disconnect();
+    const scroller = this._scrollParent();
+    const sentinel = this._sentinel;
+    if (!scroller || !sentinel) {
+      // nothing scrolls, so nothing can be covered
+      return;
+    }
+    this._stuckObserver = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[entries.length - 1];
+        // leaving upwards means pinned; leaving downwards just means the card
+        // is below the fold, which must not light up every card underneath
+        const rootTop = entry.rootBounds?.top ?? 0;
+        this._stuck = !entry.isIntersecting && entry.boundingClientRect.top < rootTop;
+      },
+      { root: scroller, threshold: 0 },
+    );
+    this._stuckObserver.observe(sentinel);
+  }
+
+  private _handleTransitionEnd(ev: TransitionEvent): void {
+    // transitions from the content bubble up here too - a nested
+    // ha-expansion-panel animates its height inside this very card - so only
+    // this card's own track may unmount it
+    if (ev.propertyName !== "grid-template-rows" || ev.target !== ev.currentTarget) {
+      return;
+    }
+    if (!this.expanded) {
+      this._clearUnmount();
+      this._showContent = false;
+    }
+  }
+
+  /**
+   * A collapse that never animates never ends: a card hidden by a filter
+   * mid-collapse gets no transitionend, and its content would stay mounted
+   * for good. Unmount on a timer as well and take whichever comes first.
+   */
+  private _scheduleUnmount(): void {
+    this._clearUnmount();
+    this._unmountTimeout = window.setTimeout(() => {
+      this._unmountTimeout = undefined;
+      if (!this.expanded) {
+        this._showContent = false;
+      }
+    }, UNMOUNT_FALLBACK_MS);
+  }
+
+  private _clearUnmount(): void {
+    if (this._unmountTimeout !== undefined) {
+      clearTimeout(this._unmountTimeout);
+      this._unmountTimeout = undefined;
+    }
+  }
+
+  /**
+   * Keeps a collapsing card in place instead of letting it fall out of view.
+   *
+   * Collapsing only removes height below the card's top edge, so a card that
+   * was scrolled into keeps its top above the scrollport: its header is gone
+   * from view and everything below slides up. Pulling the scroll offset back
+   * by that overshoot lands the header at the top edge, where the reader left
+   * it. A card whose top is already visible does not move, so it is left alone.
+   *
+   * The overshoot does not depend on the card's height, so this runs as the
+   * collapse starts rather than after it: the card top reaches the scrollport
+   * edge while the content is still at full height, and the shrinking that
+   * follows moves nothing. Anchoring afterwards, or midway, would mean
+   * chasing the scroll offset for every frame of the animation instead.
+   */
+  private _anchorOnCollapse(): void {
+    const scroller = this._scrollParent();
+    if (!scroller) {
+      return;
+    }
+    // clientTop skips the border, leaving the padding box - the edge sticky
+    // headers pin to, and the one the card top should line up with
+    const scrollportTop = scroller.getBoundingClientRect().top + scroller.clientTop;
+    const overshoot = this.getBoundingClientRect().top - scrollportTop;
+    if (overshoot < 0) {
+      scroller.scrollTop += overshoot;
+    }
+  }
+
+  /** Nearest scrollable ancestor, crossing shadow boundaries on the way up. */
+  private _scrollParent(): Element | null {
+    let node: Node | null = this.parentNode;
+    while (node) {
+      const host = (node as ShadowRoot).host;
+      if (host) {
+        node = host;
+        continue;
+      }
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const element = node as Element;
+        // no scrollHeight check: a scroller that is not overflowing right now
+        // is still the element that owns this card's scroll offset
+        if (/^(auto|scroll|overlay)$/.test(getComputedStyle(element).overflowY)) {
+          return element;
+        }
+      }
+      node = node.parentNode;
+    }
+    return null;
   }
 
   static styles = css`
     :host {
       display: block;
+      /* anchors the sentinel to the card's top edge */
+      position: relative;
       border: 1px solid var(--outline-color);
       border-radius: var(--ha-card-border-radius, var(--ha-border-radius-lg, 12px));
       background-color: var(--card-background-color);
@@ -77,10 +286,22 @@ export class KnxStickyExpansionPanel extends LitElement {
       overflow: clip;
     }
 
+    .sentinel {
+      /* out of flow, so it cannot shift the header it reports on. it is only
+         ever measured, never seen */
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1px;
+      height: 1px;
+      pointer-events: none;
+    }
+
     .header {
       position: sticky;
       top: 0;
       z-index: 2;
+      transition: box-shadow var(--ha-animation-duration-fast, 150ms) linear;
       display: flex;
       align-items: center;
       min-width: 0;
@@ -97,8 +318,28 @@ export class KnxStickyExpansionPanel extends LitElement {
       outline: none;
     }
 
-    .header.expanded {
-      border-bottom: 1px solid var(--divider-color);
+    .header.with-content {
+      /* follows the content rather than the expanded state, so the divider
+         lasts exactly as long as there is content to divide - it would
+         otherwise vanish at the start of the collapse, with content still
+         on screen.
+
+         drawn as a shadow, not a border: it takes no layout space and is
+         clipped by the card once the header is pushed onto the bottom edge,
+         so it cannot stack with the card border into a 2px line */
+      box-shadow: 0 1px 0 var(--divider-color);
+    }
+
+    .header.with-content.stuck {
+      /* lifts only while the header actually holds position over content, so
+         the shadow reads as depth rather than as decoration. the card clips
+         it away again at the end of the sticky run.
+
+         the shadow replaces the divider instead of joining it: the line and
+         the lift together read heavier than the separation calls for, and a
+         header that casts a shadow does not need a rule to say it sits on
+         top of something */
+      box-shadow: var(--ha-box-shadow-s);
     }
 
     .header:focus-visible {
@@ -116,7 +357,31 @@ export class KnxStickyExpansionPanel extends LitElement {
       transform: rotate(180deg);
     }
 
+    .expander {
+      /* an fr track animates without anyone measuring the content, so nested
+         panels and late values can resize it mid-animation and it still lands
+         on the right height - the whole reason this is not an inline height */
+      display: grid;
+      grid-template-rows: 0fr;
+      /* the duration collapses to 1ms under prefers-reduced-motion */
+      transition: grid-template-rows var(--ha-animation-duration-normal, 250ms)
+        cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .expander.expanded {
+      grid-template-rows: 1fr;
+    }
+
+    .clip {
+      /* clips the content to the track while it animates, and lets the track
+         reach 0fr at all by taking the grid item's min-height off "auto".
+         it can stay on at rest: the card already clips itself anyway */
+      overflow: hidden;
+    }
+
     .content {
+      /* padding belongs inside the clip, not on the grid item: a stretched
+         item keeps its padding in a 0fr track, leaving the card propped open */
       padding: var(--sticky-expansion-panel-content-padding, 0 8px 4px);
     }
   `;

@@ -856,6 +856,11 @@ export class KNXProjectView extends LitElement {
       flex: 1;
       min-height: 0;
       overflow-y: auto;
+      /* establish a stacking context so the sticky device headers (z-index: 2)
+         stay contained here; otherwise an ancestor paints them above this
+         scroller and they hide the overlay scrollbar, which has no layout
+         width of its own and floats over the cards' right edge */
+      isolation: isolate;
     }
 
     /* mirrors the .table-header of hass-tabs-subpage-data-table */

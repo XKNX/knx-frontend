@@ -280,11 +280,14 @@ export class KNXProjectDevicesView extends LitElement {
   }
 
   /**
-   * Intercept summary clicks / key presses of the expansion panels in capture
-   * phase and toggle the controlled expansion state instead. Calling
-   * preventDefault makes ha-expansion-panel skip its internal toggle, whose
-   * height animation leaves stale inline heights when nested panels or
-   * dynamic content change the content size afterwards.
+   * Intercept summary clicks / key presses of both the device and channel
+   * panels in capture phase and toggle the expansion state here instead:
+   * it is derived from the active filters, not just from what was clicked.
+   *
+   * Both panel types skip their own toggle once preventDefault is called.
+   * For ha-expansion-panel that also avoids its height animation, which
+   * leaves stale inline heights when nested panels or dynamic content
+   * change the content size afterwards.
    */
   private _summaryInterceptor = (ev: Event): void => {
     if (ev.type === "keydown") {
@@ -376,7 +379,6 @@ export class KNXProjectDevicesView extends LitElement {
       .expanded=${expanded}
       .noCollapse=${!hasContent}
       data-panel-key=${device.ia}
-      @expanded-changed=${this._devicePanelToggled}
     >
       <div slot="header" class="device-header">
         <span class="icon ia">
@@ -429,15 +431,6 @@ export class KNXProjectDevicesView extends LitElement {
           )}`
         : nothing}
     </knx-sticky-expansion-panel>`;
-  }
-
-  private _devicePanelToggled(ev: CustomEvent<{ expanded: boolean }>): void {
-    if (ev.target !== ev.currentTarget) {
-      // ignore events bubbling up from nested channel panels
-      return;
-    }
-    const panelKey = (ev.currentTarget as HTMLElement).dataset.panelKey!;
-    this._setPanelExpanded(panelKey, ev.detail.expanded);
   }
 
   private _renderAggregatedRelated(refs: RelatedRefs): TemplateResult {

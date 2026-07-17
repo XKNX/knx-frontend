@@ -1,5 +1,6 @@
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
+import { repeat } from "lit/directives/repeat";
 import type { TemplateResult } from "lit";
 
 import "@ha/components/ha-alert";
@@ -33,8 +34,6 @@ export class KnxDptReference extends LitElement {
   @property({ type: Object }) public route?: Route;
 
   @state() private _filter = "";
-
-  @state() private _expandedGroups = new Set<number>();
 
   private _onFilterChanged(ev: InputEvent): void {
     this._filter = (ev.target as HaInputSearch).value ?? "";
@@ -195,27 +194,14 @@ export class KnxDptReference extends LitElement {
   }
 
   private _renderExpandableGroup(group: DptReferenceGroup): TemplateResult {
+    // the panel owns its expansion; keying the list by group keeps it with
+    // the group it belongs to when filtering rebuilds the list
     return html`
-      <knx-sticky-expansion-panel
-        .expanded=${this._expandedGroups.has(group.main)}
-        data-group=${group.main}
-        @expanded-changed=${this._groupPanelToggled}
-      >
+      <knx-sticky-expansion-panel>
         ${this._renderGroupHeader(group, true)}
         <div class="expanded-grid">${group.items.map((item) => this._renderEntry(item))}</div>
       </knx-sticky-expansion-panel>
     `;
-  }
-
-  private _groupPanelToggled(ev: CustomEvent<{ expanded: boolean }>): void {
-    const groupKey = Number((ev.currentTarget as HTMLElement).dataset.group);
-    const expanded = new Set(this._expandedGroups);
-    if (ev.detail.expanded) {
-      expanded.add(groupKey);
-    } else {
-      expanded.delete(groupKey);
-    }
-    this._expandedGroups = expanded;
   }
 
   private _searchLabel(count: number): string {
@@ -255,10 +241,13 @@ export class KnxDptReference extends LitElement {
                   >No datapoint types match the current search.</ha-alert
                 >`
               : nothing}
-            ${groupedEntries.map((group) =>
-              shouldRenderDptGroupAsCards(group)
-                ? this._renderNoCollapseGroup(group)
-                : this._renderExpandableGroup(group),
+            ${repeat(
+              groupedEntries,
+              (group) => group.main,
+              (group) =>
+                shouldRenderDptGroupAsCards(group)
+                  ? this._renderNoCollapseGroup(group)
+                  : this._renderExpandableGroup(group),
             )}
           </div>
         </div>
