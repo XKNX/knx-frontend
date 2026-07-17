@@ -13,7 +13,8 @@ import type {
   RowClickedEvent,
   SortingChangedEvent,
 } from "@ha/components/data-table/ha-data-table";
-import "@ha/components/ha-icon-button";
+import "@ha/components/ha-icon-overflow-menu";
+import type { IconOverflowMenuItem } from "@ha/components/ha-icon-overflow-menu";
 import type { HomeAssistant, Route } from "@ha/types";
 import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import { isMobileClient } from "@ha/util/is_mobile";
@@ -138,10 +139,6 @@ export class KNXGroupMonitor extends LitElement {
           --table-row-alternative-background-color: var(--primary-background-color);
         }
 
-        ha-icon-button.active {
-          color: var(--primary-color);
-        }
-
         .table-header {
           border-bottom: 1px solid var(--divider-color);
           padding-bottom: 12px;
@@ -157,13 +154,6 @@ export class KNXGroupMonitor extends LitElement {
         .filter-wrapper {
           display: flex;
           flex-direction: column;
-        }
-
-        .toolbar-actions {
-          padding-left: 8px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
         }
       `,
     ];
@@ -1067,6 +1057,39 @@ export class KNXGroupMonitor extends LitElement {
     return formatTimeDelta(offsetMicros, "milliseconds");
   }
 
+  /**
+   * Toolbar actions, rendered by ha-icon-overflow-menu as individual icon
+   * buttons when wide and as menu entries when narrow.
+   */
+  private get _toolbarActions(): IconOverflowMenuItem[] {
+    return [
+      {
+        path: this.controller.isPaused ? mdiFastForward : mdiPause,
+        label: this.controller.isPaused
+          ? this.knx.localize("group_monitor_resume")
+          : this.knx.localize("group_monitor_pause"),
+        action: () => this._handlePauseToggle(),
+      },
+      {
+        path: mdiDeleteSweep,
+        label: this.knx.localize("group_monitor_clear"),
+        disabled: this.controller.telegrams.length === 0,
+        action: () => this._handleClearRows(),
+      },
+      {
+        path: mdiRefresh,
+        label: this.knx.localize("group_monitor_reload"),
+        disabled: !this.controller.isReloadEnabled,
+        action: () => this._handleReload(),
+      },
+      {
+        path: mdiDatabaseRemove,
+        label: this.knx.localize("group_monitor_clear_cache"),
+        action: () => this._handleClearCache(),
+      },
+    ];
+  }
+
   // ============================================================================
   // Main Render Method
   // ============================================================================
@@ -1173,48 +1196,13 @@ export class KNXGroupMonitor extends LitElement {
             `
           : nothing}
 
-        <!-- Toolbar actions -->
-        <div slot="toolbar-icon" class="toolbar-actions">
-          <ha-icon-button
-            .label=${this.controller.isPaused
-              ? this.knx.localize("group_monitor_resume")
-              : this.knx.localize("group_monitor_pause")}
-            .path=${this.controller.isPaused ? mdiFastForward : mdiPause}
-            class=${this.controller.isPaused ? "active" : ""}
-            @click=${this._handlePauseToggle}
-            data-testid="pause-button"
-            .title=${this.controller.isPaused
-              ? this.knx.localize("group_monitor_resume")
-              : this.knx.localize("group_monitor_pause")}
-          >
-          </ha-icon-button>
-          <ha-icon-button
-            .label=${this.knx.localize("group_monitor_clear")}
-            .path=${mdiDeleteSweep}
-            @click=${this._handleClearRows}
-            ?disabled=${this.controller.telegrams.length === 0}
-            data-testid="clean-button"
-            .title=${this.knx.localize("group_monitor_clear")}
-          >
-          </ha-icon-button>
-          <ha-icon-button
-            .label=${this.knx.localize("group_monitor_reload")}
-            .path=${mdiRefresh}
-            @click=${this._handleReload}
-            ?disabled=${!this.controller.isReloadEnabled}
-            data-testid="reload-button"
-            .title=${this.knx.localize("group_monitor_reload")}
-          >
-          </ha-icon-button>
-          <ha-icon-button
-            .label=${this.knx.localize("group_monitor_clear_cache")}
-            .path=${mdiDatabaseRemove}
-            @click=${this._handleClearCache}
-            data-testid="clear-cache-button"
-            .title=${this.knx.localize("group_monitor_clear_cache")}
-          >
-          </ha-icon-button>
-        </div>
+        <!-- Toolbar actions: individual icon buttons when wide, collapsed into
+             an overflow menu when narrow so they don't overlap the search field -->
+        <ha-icon-overflow-menu
+          slot="toolbar-icon"
+          .narrow=${this.narrow}
+          .items=${this._toolbarActions}
+        ></ha-icon-overflow-menu>
 
         <!-- Filter for Source Address -->
         <knx-list-filter

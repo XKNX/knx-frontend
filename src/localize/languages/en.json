@@ -61,7 +61,7 @@
   "group_monitor_connection_error_title": "Connection error",
   "group_monitor_retry_connection": "Retry",
   "group_monitor_paused_title": "Monitoring paused",
-  "group_monitor_paused_message": "Telegram monitoring is paused. New telegrams will not be displayed until you resume monitoring.",
+  "group_monitor_paused_message": "New telegrams will not be displayed until you resume monitoring.",
   "group_monitor_telegram": "KNX telegram",
   "group_monitor_project_not_loaded_title": "ETS project not loaded",
   "group_monitor_project_not_loaded_message": "For richer context like names and values, upload your ETS project on the Info tab.",
