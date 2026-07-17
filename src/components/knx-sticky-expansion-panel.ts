@@ -333,10 +333,13 @@ export class KnxStickyExpansionPanel extends LitElement {
     .header.with-content.stuck {
       /* lifts only while the header actually holds position over content, so
          the shadow reads as depth rather than as decoration. the card clips
-         it away again at the end of the sticky run */
-      box-shadow:
-        0 1px 0 var(--divider-color),
-        var(--ha-box-shadow-s);
+         it away again at the end of the sticky run.
+
+         the shadow replaces the divider instead of joining it: the line and
+         the lift together read heavier than the separation calls for, and a
+         header that casts a shadow does not need a rule to say it sits on
+         top of something */
+      box-shadow: var(--ha-box-shadow-s);
     }
 
     .header:focus-visible {
