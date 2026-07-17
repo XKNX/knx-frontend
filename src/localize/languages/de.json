@@ -61,7 +61,7 @@
   "group_monitor_connection_error_title": "Verbindungsfehler",
   "group_monitor_retry_connection": "Wiederholen",
   "group_monitor_paused_title": "Monitoring pausiert",
-  "group_monitor_paused_message": "Die Telegramm-Überwachung ist pausiert. Neue Telegramme werden erst nach dem Fortsetzen der Überwachung angezeigt.",
+  "group_monitor_paused_message": "Neue Telegramme werden erst nach dem Fortsetzen der Überwachung angezeigt.",
   "group_monitor_telegram": "KNX Telegramm",
   "group_monitor_project_not_loaded_title": "Kein ETS Projekt geladen",
   "group_monitor_project_not_loaded_message": "Für zusätzliche Informationen wie Namen und Werte lade bitte dein ETS Projekt im Info-Tab hoch.",

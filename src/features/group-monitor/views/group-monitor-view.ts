@@ -13,7 +13,6 @@ import type {
   RowClickedEvent,
   SortingChangedEvent,
 } from "@ha/components/data-table/ha-data-table";
-import "@ha/components/ha-icon-button";
 import "@ha/components/ha-icon-overflow-menu";
 import type { IconOverflowMenuItem } from "@ha/components/ha-icon-overflow-menu";
 import type { HomeAssistant, Route } from "@ha/types";
@@ -53,16 +52,6 @@ import type {
 } from "../../../components/data-table/filter/knx-list-filter";
 import type { TimeDeltaChangedEvent } from "../../../components/data-table/filter/knx-time-delta-filter";
 import type { TimeRangeChangedEvent } from "../../../components/data-table/filter/knx-time-range-filter";
-
-/**
- * A toolbar action. Rendered as an `ha-icon-button` on wide layouts and as an
- * overflow-menu item on narrow ones, so both stay in sync from one definition.
- */
-interface ToolbarAction extends IconOverflowMenuItem {
-  /** Highlights the icon button while the action's state is engaged. */
-  active?: boolean;
-  testId: string;
-}
 
 /** Persisted column layout (order + hidden columns) for one breakpoint. */
 interface StoredColumnLayout {
@@ -150,10 +139,6 @@ export class KNXGroupMonitor extends LitElement {
           --table-row-alternative-background-color: var(--primary-background-color);
         }
 
-        ha-icon-button.active {
-          color: var(--primary-color);
-        }
-
         .table-header {
           border-bottom: 1px solid var(--divider-color);
           padding-bottom: 12px;
@@ -169,13 +154,6 @@ export class KNXGroupMonitor extends LitElement {
         .filter-wrapper {
           display: flex;
           flex-direction: column;
-        }
-
-        .toolbar-actions {
-          padding-left: 8px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
         }
       `,
     ];
@@ -1080,38 +1058,33 @@ export class KNXGroupMonitor extends LitElement {
   }
 
   /**
-   * Toolbar actions, rendered as individual icon buttons on wide layouts and
-   * collapsed into an overflow menu on narrow ones.
+   * Toolbar actions, rendered by ha-icon-overflow-menu as individual icon
+   * buttons when wide and as menu entries when narrow.
    */
-  private get _toolbarActions(): ToolbarAction[] {
+  private get _toolbarActions(): IconOverflowMenuItem[] {
     return [
       {
         path: this.controller.isPaused ? mdiFastForward : mdiPause,
         label: this.controller.isPaused
           ? this.knx.localize("group_monitor_resume")
           : this.knx.localize("group_monitor_pause"),
-        active: this.controller.isPaused,
-        testId: "pause-button",
         action: () => this._handlePauseToggle(),
       },
       {
         path: mdiDeleteSweep,
         label: this.knx.localize("group_monitor_clear"),
         disabled: this.controller.telegrams.length === 0,
-        testId: "clean-button",
         action: () => this._handleClearRows(),
       },
       {
         path: mdiRefresh,
         label: this.knx.localize("group_monitor_reload"),
         disabled: !this.controller.isReloadEnabled,
-        testId: "reload-button",
         action: () => this._handleReload(),
       },
       {
         path: mdiDatabaseRemove,
         label: this.knx.localize("group_monitor_clear_cache"),
-        testId: "clear-cache-button",
         action: () => this._handleClearCache(),
       },
     ];
@@ -1223,35 +1196,13 @@ export class KNXGroupMonitor extends LitElement {
             `
           : nothing}
 
-        <!-- Toolbar actions: collapsed into an overflow menu on narrow layouts
-             so they don't overlap the search field -->
-        ${this.narrow
-          ? html`
-              <ha-icon-overflow-menu
-                slot="toolbar-icon"
-                narrow
-                .items=${this._toolbarActions}
-                data-testid="toolbar-overflow-menu"
-              ></ha-icon-overflow-menu>
-            `
-          : html`
-              <div slot="toolbar-icon" class="toolbar-actions">
-                ${this._toolbarActions.map(
-                  (action) => html`
-                    <ha-icon-button
-                      .label=${action.label}
-                      .path=${action.path}
-                      class=${action.active ? "active" : ""}
-                      @click=${action.action}
-                      ?disabled=${action.disabled}
-                      data-testid=${action.testId}
-                      .title=${action.label}
-                    >
-                    </ha-icon-button>
-                  `,
-                )}
-              </div>
-            `}
+        <!-- Toolbar actions: individual icon buttons when wide, collapsed into
+             an overflow menu when narrow so they don't overlap the search field -->
+        <ha-icon-overflow-menu
+          slot="toolbar-icon"
+          .narrow=${this.narrow}
+          .items=${this._toolbarActions}
+        ></ha-icon-overflow-menu>
 
         <!-- Filter for Source Address -->
         <knx-list-filter
