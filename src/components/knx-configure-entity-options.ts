@@ -33,10 +33,7 @@ export const renderConfigureEntityCard = (
       <p class="card-content">${localizeFunction("entity.description")}</p>
       ${errors
         ? entityBaseError
-          ? html`<ha-alert
-              .alertType=${"error"}
-              .title=${entityBaseError.error_message}
-            ></ha-alert>`
+          ? html`<ha-alert .alertType=${"error"} .title=${entityBaseError.message}></ha-alert>`
           : nothing
         : nothing}
       <ha-expansion-panel

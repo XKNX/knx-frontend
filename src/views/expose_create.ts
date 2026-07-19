@@ -450,7 +450,7 @@ export class KNXCreateExpose extends LitElement {
           ${this._validationErrors?.map(
             (err) =>
               html`<p>
-                ${err.error_class}: ${err.error_message}
+                ${err.code ?? "invalid"}: ${err.message}
                 ${err.path ? "in " + err.path.join(" / ") : ""}
               </p>`,
           ) ?? nothing}
@@ -594,7 +594,7 @@ export class KNXCreateExpose extends LitElement {
           : nothing}
         <div class="panel-content">
           ${optionError
-            ? html` <ha-alert alert-type="error">${optionError.error_message}</ha-alert> `
+            ? html` <ha-alert alert-type="error">${optionError.message}</ha-alert> `
             : nothing}
           <ha-entity-attribute-picker
             data-idx=${idx}
@@ -611,7 +611,7 @@ export class KNXCreateExpose extends LitElement {
             @value-changed=${this._updateExposeOptionAtIndex}
           ></ha-entity-attribute-picker>
           ${attributeError
-            ? html` <ha-alert alert-type="error">${attributeError.error_message}</ha-alert> `
+            ? html` <ha-alert alert-type="error">${attributeError.message}</ha-alert> `
             : nothing}
           <knx-group-address-selector
             data-idx=${idx}

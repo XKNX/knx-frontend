@@ -62,7 +62,7 @@ export class KnxForm extends LitElement {
 
     return html`
       ${baseError
-        ? html`<ha-alert .alertType=${"error"} .title=${baseError.error_message}></ha-alert>`
+        ? html`<ha-alert .alertType=${"error"} .title=${baseError.message}></ha-alert>`
         : nothing}
       ${this._generateItems(this.schema, ROOT_PATH, this.validationErrors)}
     `;
@@ -251,7 +251,7 @@ export class KnxForm extends LitElement {
     >
       ${sectionBaseError
         ? html` <ha-alert .alertType=${"error"} .title=${"Validation error"}>
-            ${sectionBaseError.error_message}
+            ${sectionBaseError.message}
           </ha-alert>`
         : nothing}
       ${this._generateItems(section.schema, path, errors)}
@@ -295,7 +295,7 @@ export class KnxForm extends LitElement {
     >
       ${sectionBaseError
         ? html` <ha-alert .alertType=${"error"} .title=${"Validation error"}>
-            ${sectionBaseError.error_message}
+            ${sectionBaseError.message}
           </ha-alert>`
         : nothing}
       <ha-control-select

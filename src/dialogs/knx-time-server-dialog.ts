@@ -77,7 +77,7 @@ export class KnxTimeServerDialog extends DialogMixin<KnxTimeServerDialogParams>(
       .catch((err) => {
         logger.error("updateTimeServerConfig error", err);
         // show as general error in validation area
-        this._errors = [{ path: [], error_message: String(err), error_class: "exception" }];
+        this._errors = [{ path: [], message: String(err), code: "exception" }];
       });
   }
 
@@ -144,9 +144,7 @@ export class KnxTimeServerDialog extends DialogMixin<KnxTimeServerDialogParams>(
   private _renderContent(): TemplateResult {
     const baseError = getValidationError(this._errors);
     return html`
-      ${baseError
-        ? html`<ha-alert alert-type="error"> ${baseError.error_message} </ha-alert>`
-        : nothing}
+      ${baseError ? html`<ha-alert alert-type="error"> ${baseError.message} </ha-alert>` : nothing}
 
       <knx-group-address-selector
         .knx=${this.knx}
