@@ -24,6 +24,7 @@ export interface DPTComplexFieldSchema {
   options?: string[];
   value_min?: number;
   value_max?: number;
+  resolution?: number;
 }
 
 export interface DPTMetadata {
