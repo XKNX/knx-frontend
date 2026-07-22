@@ -297,12 +297,13 @@ export class KnxPayloadSelector extends LitElement {
 
   private _fieldToKnxHaSelector(field: DPTComplexFieldSchema): KnxHaSelector {
     if (field.type === "integer" || field.type === "float") {
+      const step = field.resolution ?? (field.type === "float" ? 0.01 : 1);
       return this._knxHaSelector(field, {
         number: {
           mode: "box",
           min: field.value_min,
           max: field.value_max,
-          step: field.type === "float" ? 0.01 : 1,
+          step,
         },
       });
     }

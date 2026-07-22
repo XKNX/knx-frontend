@@ -145,6 +145,9 @@ export class KnxDptReference extends LitElement {
                   if (field.value_max != null) {
                     details.push(`max: ${field.value_max}`);
                   }
+                  if (field.resolution != null) {
+                    details.push(`resolution: ${field.resolution}`);
+                  }
                   if (field.options?.length) {
                     const pythonList = `[${field.options.map((opt) => this._pythonRepr(opt)).join(", ")}]`;
                     details.push(html`options: <code>${pythonList}</code>`);
