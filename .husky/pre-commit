@@ -1,2 +1,11 @@
+# Yarn itself is vendored in the homeassistant-frontend submodule (see yarnPath
+# in .yarnrc.yml), so it cannot run before that submodule is checked out.
+yarn_path=$(sed -n 's/^yarnPath: *//p' .yarnrc.yml)
+if [ -n "$yarn_path" ] && [ ! -f "$yarn_path" ]; then
+  echo "pre-commit: $yarn_path is missing, so lint cannot run; skipping it."
+  echo "pre-commit: run 'git submodule update --init' to lint locally. CI runs it regardless."
+  exit 0
+fi
+
 yarn run lint:eslint
 yarn run lint:prettier
