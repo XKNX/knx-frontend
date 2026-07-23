@@ -85,6 +85,7 @@ export class KNXConfigureEntity extends LitElement {
         </h1>
         <p>${this._backendLocalize("description")}</p>
       </div>
+      <slot name="knx-validation-error"></slot>
       <ha-card outlined>
         <h1 class="card-header">${this._backendLocalize("knx.title")}</h1>
         <knx-form
@@ -149,6 +150,10 @@ export class KNXConfigureEntity extends LitElement {
         margin-top: -8px;
         line-height: 24px;
       }
+    }
+
+    ::slotted(ha-alert) {
+      margin-top: 0 !important;
     }
 
     ha-card {

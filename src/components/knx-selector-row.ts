@@ -119,7 +119,7 @@ export class KnxSelectorRow extends LitElement {
         ? nothing
         : haSelector}
       ${this._enabled ? html`<slot></slot>` : nothing}
-      ${invalid ? html`<p class="invalid-message">${invalid.error_message}</p>` : nothing}
+      ${invalid ? html`<p class="invalid-message">${invalid.message}</p>` : nothing}
     `;
   }
 

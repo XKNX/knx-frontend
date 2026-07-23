@@ -40,8 +40,12 @@ export interface DeviceCreateData {
 
 export interface ErrorDescription {
   path: string[] | null;
-  error_message: string;
-  error_class: string;
+  message: string;
+  code: string | null;
+  translation_key?: string | null;
+  placeholders?: Record<string, unknown>;
+  context?: Record<string, unknown>;
+  secret?: boolean;
 }
 
 export type CreateEntityResult =

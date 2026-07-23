@@ -195,7 +195,7 @@ export class GroupAddressSelector extends LitElement {
         ? html`<p class="error">
             <ha-svg-icon .path=${mdiAlertCircleOutline}></ha-svg-icon>
             <b>Validation error:</b>
-            ${generalValidationError.error_message}
+            ${generalValidationError.message}
           </p>`
         : nothing}
       <div class="main">
@@ -212,7 +212,7 @@ export class GroupAddressSelector extends LitElement {
                 .groupAddresses=${this.filteredGroupAddresses}
                 .key=${"write"}
                 .value=${this.config.write ?? undefined}
-                .invalidMessage=${getValidationError(this.validationErrors, "write")?.error_message}
+                .invalidMessage=${getValidationError(this.validationErrors, "write")?.message}
                 .hintMessage=${this._isGaDptMismatch(this.config.write)
                   ? this._dptMismatchMessage(this.config.write)
                   : undefined}
@@ -233,7 +233,7 @@ export class GroupAddressSelector extends LitElement {
                 .groupAddresses=${this.filteredGroupAddresses}
                 .key=${"state"}
                 .value=${this.config.state ?? undefined}
-                .invalidMessage=${getValidationError(this.validationErrors, "state")?.error_message}
+                .invalidMessage=${getValidationError(this.validationErrors, "state")?.message}
                 .hintMessage=${this._isGaDptMismatch(this.config.state)
                   ? this._dptMismatchMessage(this.config.state)
                   : undefined}
@@ -264,7 +264,7 @@ export class GroupAddressSelector extends LitElement {
                   .key=${"passive"}
                   .index=${index}
                   .value=${ga ?? undefined}
-                  .invalidMessage=${passiveErr?.error_message}
+                  .invalidMessage=${passiveErr?.message}
                   .hintMessage=${this._isGaDptMismatch(ga)
                     ? this._dptMismatchMessage(ga)
                     : undefined}
@@ -317,7 +317,7 @@ export class GroupAddressSelector extends LitElement {
       .value=${this._selectedDPTValue}
       .disabled=${this.dptSelectorDisabled}
       .invalid=${!!invalid}
-      .invalidMessage=${invalid?.error_message}
+      .invalidMessage=${invalid?.message}
       .localizeValue=${this.localizeFunction}
       .translation_key=${this.key}
       @value-changed=${this._valueChanged}
@@ -335,7 +335,7 @@ export class GroupAddressSelector extends LitElement {
       .value=${this._selectedDPTValue}
       .disabled=${this.dptSelectorDisabled}
       .invalid=${!!invalid}
-      .invalidMessage=${invalid?.error_message}
+      .invalidMessage=${invalid?.message}
       .translation_key=${this.key}
       @value-changed=${this._valueChanged}
     >

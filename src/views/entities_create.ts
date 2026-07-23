@@ -293,7 +293,6 @@ export class KNXCreateEntity extends LitElement {
       ></ha-icon-button>
       <div class="content">
         <div class="entity-config ${this._mode === "yaml" ? "yaml-mode" : ""}">
-          ${this._renderValidationAlert()}
           ${this._mode === "gui"
             ? html`
                 <knx-configure-entity
@@ -304,9 +303,12 @@ export class KNXCreateEntity extends LitElement {
                   .schema=${schema}
                   .validationErrors=${this._validationErrors}
                   @knx-entity-configuration-changed=${this._configChanged}
-                ></knx-configure-entity>
+                >
+                  ${this._renderValidationAlert()}
+                </knx-configure-entity>
               `
             : html`
+                ${this._renderValidationAlert()}
                 <ha-yaml-editor
                   .defaultValue=${this._config}
                   @value-changed=${this._yamlChanged}
@@ -345,13 +347,13 @@ export class KNXCreateEntity extends LitElement {
     if (!this._validationBaseError) {
       return nothing;
     }
-    return html`<ha-alert alert-type="error">
+    return html`<ha-alert slot="knx-validation-error" alert-type="error">
       <details>
         <summary><b>Validation error</b></summary>
         <p>Base error: ${this._validationBaseError}</p>
         ${this._validationErrors?.map(
           (err) =>
-            html`<p>${err.error_class}: ${err.error_message} in ${err.path?.join(" / ")}</p>`,
+            html`<p>${err.code ?? "invalid"}: ${err.message} in ${err.path?.join(" / ")}</p>`,
         ) ?? nothing}
       </details>
     </ha-alert>`;

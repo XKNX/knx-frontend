@@ -168,7 +168,7 @@ export class KnxPayloadSelector extends LitElement {
         @value-changed=${this._modeChanged}
       ></ha-control-select>
       ${this._mode === "raw" ? this._renderRawMode() : this._renderTypedModeOrRawFallback(dptMeta)}
-      ${invalid ? html`<p class="invalid-message">${invalid.error_message}</p>` : nothing}
+      ${invalid ? html`<p class="invalid-message">${invalid.message}</p>` : nothing}
     `;
   }
 
