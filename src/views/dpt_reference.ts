@@ -153,11 +153,11 @@ export class KnxDptReference extends LitElement {
                     details.push(html`options: <code>${pythonList}</code>`);
                   }
                   return html`
-                    <li>
+                    <li class="schema-field">
                       <code>${field.name}</code>
-                      <span>
-                        ${details.map((part, index) => html`${index > 0 ? ", " : ""}${part}`)}
-                      </span>
+                      <ul class="schema-field-details">
+                        ${details.map((part) => html`<li>${part}</li>`)}
+                      </ul>
                     </li>
                   `;
                 })}
@@ -419,9 +419,9 @@ export class KnxDptReference extends LitElement {
     }
 
     .schema-list {
-      display: grid;
-      grid-template-columns: max-content 1fr;
-      gap: 2px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
       margin: 0;
       padding: 0;
       margin-inline-start: var(--ha-space-2);
@@ -429,8 +429,21 @@ export class KnxDptReference extends LitElement {
       line-height: 1.3;
     }
 
-    .schema-list li {
-      display: contents;
+    .schema-field {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .schema-field-details {
+      margin: 0;
+      padding: 0;
+      margin-inline-start: var(--ha-space-4);
+      list-style: none;
+    }
+
+    .schema-field-details li {
+      line-height: 1.35;
     }
 
     code {
