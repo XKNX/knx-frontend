@@ -97,6 +97,22 @@ const RESPOND_TO_READ_SELECTOR: KnxHaSelector = {
   selector: { boolean: {} },
 };
 
+const WRITE_BACK_SELECTOR: KnxHaSelector = {
+  type: "ha_selector",
+  name: "write_back",
+  default: false,
+  selector: { boolean: {} },
+};
+
+const SOURCE_WHITELIST_SELECTOR: KnxHaSelector = {
+  type: "ha_selector",
+  name: "source_whitelist",
+  // combo-box (type + Enter to add a chip); commits on Enter, not per keystroke,
+  // so the input keeps focus. Free-form values; each is validated as a KNX
+  // individual address by the backend.
+  selector: { select: { multiple: true, custom_value: true, options: [] } },
+};
+
 const HIDDEN_ATTRIBUTES = new Set([
   "attribution",
   "hidden",
@@ -685,6 +701,28 @@ export class KNXCreateExpose extends LitElement {
               .localizeFunction=${this._backendLocalize}
               @value-changed=${this._updateExposeOptionAtIndex}
             ></knx-selector-row>
+            <knx-selector-row
+              data-idx=${idx}
+              .hass=${this.hass}
+              .key=${"write_back"}
+              .selector=${WRITE_BACK_SELECTOR}
+              .value=${option.write_back}
+              .validationErrors=${extractValidationErrors(optionErrors, "write_back")}
+              .localizeFunction=${this._backendLocalize}
+              @value-changed=${this._updateExposeOptionAtIndex}
+            ></knx-selector-row>
+            ${option.write_back
+              ? html`<knx-selector-row
+                  data-idx=${idx}
+                  .hass=${this.hass}
+                  .key=${"source_whitelist"}
+                  .selector=${SOURCE_WHITELIST_SELECTOR}
+                  .value=${option.source_whitelist}
+                  .validationErrors=${extractValidationErrors(optionErrors, "source_whitelist")}
+                  .localizeFunction=${this._backendLocalize}
+                  @value-changed=${this._updateExposeOptionAtIndex}
+                ></knx-selector-row>`
+              : nothing}
           </ha-expansion-panel>
         </div>
       </ha-expansion-panel>
@@ -748,6 +786,10 @@ export class KNXCreateExpose extends LitElement {
         (duration.milliseconds ?? 0) / 1000;
     }
     setNestedValue(nextItem, key, value, logger);
+    // dropping write-back also drops any stale whitelist so it isn't persisted
+    if (key === "write_back" && !value) {
+      delete nextItem.source_whitelist;
+    }
     newOptions[idx] = nextItem as ExposeOption;
     this._config = { ...this._config, options: newOptions };
     logger.debug("Updated expose item", idx, key, value, "new config:", this._config);
