@@ -1,4 +1,5 @@
 import { mdiPlus, mdiFloppy, mdiPlaylistEdit } from "@mdi/js";
+import deepClone from "deep-clone-simple";
 import type { TemplateResult, PropertyValues } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state, query } from "lit/decorators";
@@ -21,6 +22,7 @@ import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import { throttle } from "@ha/common/util/throttle";
 import { showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
+import { DirtyStateProviderMixin } from "@ha/mixins/dirty-state-provider-mixin";
 import type { HomeAssistant, Route } from "@ha/types";
 
 import "../components/knx-configure-entity";
@@ -43,8 +45,10 @@ import { knxProjectContext } from "../data/knx-project-context";
 import { entitiesByGroupContext } from "../data/knx-entities-by-group-context";
 import type { EntitiesByGroupContextValue } from "../data/knx-entities-by-group-context";
 import { getPlatformStyle } from "../utils/common";
+import { setNestedValue } from "../utils/config-helper";
 import { validDPTsForSchema } from "../utils/dpt";
 import { exitFlow, navigateInFlow } from "../utils/navigation";
+import { PreventUnsavedMixin } from "../mixins/prevent-unsaved-mixin";
 import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
 import { KNXLogger } from "../tools/knx-logger";
 import type { KNX } from "../types/knx";
@@ -53,7 +57,9 @@ import type { KNXProject } from "../types/websocket";
 const logger = new KNXLogger("knx-create-entity");
 
 @customElement("knx-create-entity")
-export class KNXCreateEntity extends LitElement {
+export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
+  PreventUnsavedMixin(LitElement),
+) {
   @property({ type: Object }) public hass!: HomeAssistant;
 
   @property({ attribute: false }) public knx!: KNX;
@@ -106,9 +112,27 @@ export class KNXCreateEntity extends LitElement {
       if (!entityId) return;
       const { platform, data } = await getEntityConfig(this.hass, entityId);
       this.entityPlatform = platform;
-      this._config = data;
+      // `knx-configure-entity` edits the config in place, so dirty state tracking needs its
+      // own copy to compare against. Cloning also moves the config into this realm - the
+      // panel runs in an iframe and `deepEqual` compares constructors, which differ there.
+      this._config = deepClone(data);
+      this._initDirtyTracking({ type: "deep" }, deepClone(data));
     },
   });
+
+  /**
+   * The config a new entity starts out with - `knx-configure-entity` applies url
+   * parameters the same way, eg. when creating an entity from the project view,
+   * so an untouched form doesn't count as changed.
+   */
+  private _newEntityConfig(): EntityData {
+    const config = { entity: {}, knx: {} } as EntityData;
+    const urlParams = new URLSearchParams(mainWindow.location.search);
+    for (const [path, value] of urlParams.entries()) {
+      setNestedValue(config, path, value, logger);
+    }
+    return config;
+  }
 
   private _dragDropContextProvider = new ContextProvider(this, {
     context: dragDropContext,
@@ -118,6 +142,7 @@ export class KNXCreateEntity extends LitElement {
   });
 
   protected willUpdate(changedProperties: PropertyValues<this>) {
+    super.willUpdate(changedProperties); // dirty state listeners are handled by the mixin
     if (changedProperties.has("route")) {
       const intent = this.route.prefix.split("/").at(-1);
       if (intent === "create" || intent === "edit") {
@@ -139,10 +164,12 @@ export class KNXCreateEntity extends LitElement {
         // knx/entities/create/light -> path: "/light"
         this.entityId = undefined; // clear entityId for create intent
         this.entityPlatform = this.route.path.split("/")[1];
+        this._initDirtyTracking({ type: "deep" }, this._newEntityConfig());
       } else if (intent === "edit") {
         // knx/entities/edit/light.living_room -> path: "/light.living_room"
         this.entityId = this.route.path.split("/")[1];
         // this.entityPlatform will be set from load task result - triggering the next load task
+        this._initDirtyTracking({ type: "deep" }); // baseline is set from the loaded config
       }
     }
   }
@@ -274,18 +301,36 @@ export class KNXCreateEntity extends LitElement {
   private _typeSelected(ev: MouseEvent) {
     // The type selection items are links - handle plain clicks here to replace the current
     // history entry instead of pushing a new one. Modifier clicks open a new tab as usual.
+    // Unsaved changes are guarded by `PreventUnsavedMixin` before this is reached.
     const href = isNavigationClick(ev);
     if (!href) return;
     navigateInFlow(href);
   }
 
-  private _backToTypeSelection = () => {
+  private _backToTypeSelection = async () => {
+    if (!(await this.promptDiscardChanges())) return;
     navigateInFlow("/knx/entities/create");
   };
 
-  private _exitEntitiesFlow = () => {
+  private _exitEntitiesFlow = async () => {
+    if (!(await this.promptDiscardChanges())) return;
     exitFlow("/knx/entities");
   };
+
+  protected override hasUnsavedChanges(): boolean {
+    // invalid yaml is not applied to the config, but is unsaved input nonetheless
+    return this.isDirtyState || !!this._yamlErrors;
+  }
+
+  protected override async promptDiscardChanges(): Promise<boolean> {
+    if (!this.hasUnsavedChanges()) return true;
+    return showConfirmationDialog(this, {
+      text: this.hass.localize("ui.panel.config.common.editor.confirm_unsaved"),
+      confirmText: this.hass.localize("ui.common.leave"),
+      dismissText: this.hass.localize("ui.common.stay"),
+      destructive: true,
+    });
+  }
 
   private _renderEntityConfig(platform: SupportedPlatform): TemplateResult {
     const create = this._intent === "create";
@@ -383,6 +428,8 @@ export class KNXCreateEntity extends LitElement {
     ev.stopPropagation();
     logger.debug("configChanged", ev.detail);
     this._config = ev.detail;
+    // `knx-configure-entity` edits the config in place, so track a snapshot of it
+    this._updateDirtyState(deepClone(this._config!));
     if (this._validationErrors) {
       this._entityValidate();
     }
@@ -412,6 +459,7 @@ export class KNXCreateEntity extends LitElement {
     }
     this._yamlErrors = undefined;
     this._config = ev.detail.value as EntityData;
+    this._updateDirtyState(this._config);
     if (this._validationErrors) {
       this._entityValidate();
     }
@@ -459,6 +507,7 @@ export class KNXCreateEntity extends LitElement {
       .then(async (createEntityResult) => {
         if (this._handleValidationError(createEntityResult, true)) return;
         logger.debug("Successfully created entity", createEntityResult.entity_id);
+        this._markDirtyStateClean();
         this._entitiesByGroupContext?.reload();
         // await leaving the flow before opening the dialog - it pushes its own history state
         await exitFlow("/knx/entities");
@@ -492,6 +541,7 @@ export class KNXCreateEntity extends LitElement {
       .then((createEntityResult) => {
         if (this._handleValidationError(createEntityResult, true)) return;
         logger.debug("Successfully updated entity", this.entityId);
+        this._markDirtyStateClean();
         this._entitiesByGroupContext?.reload();
         exitFlow("/knx/entities");
       })

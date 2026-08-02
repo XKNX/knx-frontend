@@ -1,4 +1,5 @@
 import { mdiDelete, mdiFileDocumentEdit, mdiPlus, mdiFloppy, mdiPlaylistEdit } from "@mdi/js";
+import deepClone from "deep-clone-simple";
 import type { TemplateResult, PropertyValues } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { consume } from "@lit/context";
@@ -28,6 +29,7 @@ import { mainWindow } from "@ha/common/dom/get_main_window";
 import { navigate } from "@ha/common/navigate";
 import { throttle } from "@ha/common/util/throttle";
 import { showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
+import { DirtyStateProviderMixin } from "@ha/mixins/dirty-state-provider-mixin";
 import type { HomeAssistant, Route } from "@ha/types";
 
 import "../components/knx-expose-template-preview";
@@ -48,6 +50,7 @@ import {
 import type { KnxHaSelector, GASelectorOptions } from "../types/schema";
 import { setNestedValue } from "../utils/config-helper";
 import { exitFlow, navigateInFlow } from "../utils/navigation";
+import { PreventUnsavedMixin } from "../mixins/prevent-unsaved-mixin";
 import { extractValidationErrors, getValidationError } from "../utils/validation";
 
 import { knxProjectContext } from "../data/knx-project-context";
@@ -117,7 +120,9 @@ const HIDDEN_ATTRIBUTES = new Set([
 ]);
 
 @customElement("knx-create-expose")
-export class KNXCreateExpose extends LitElement {
+export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()(
+  PreventUnsavedMixin(LitElement),
+) {
   @property({ type: Object }) public hass!: HomeAssistant;
 
   @property({ attribute: false }) public knx!: KNX;
@@ -163,20 +168,24 @@ export class KNXCreateExpose extends LitElement {
     args: () => [this._entityId] as const,
     task: async ([entityId]) => {
       if (!entityId) return;
-      this._config = await getExposeConfig(this.hass, entityId);
+      // clone into this realm - the panel runs in an iframe, and the `deepEqual` used for
+      // dirty state tracking compares constructors, which differ between the two realms
+      this._config = deepClone(await getExposeConfig(this.hass, entityId));
 
       const urlParams = new URLSearchParams(mainWindow.location.search);
       const copyFrom = urlParams.get("copy");
       if (copyFrom && copyFrom !== entityId) {
         const copyConfig = await getExposeConfig(this.hass, copyFrom);
         logger.debug("Copying expose options from", copyFrom, copyConfig);
-        this._config = copyConfig;
+        this._config = deepClone(copyConfig);
       }
       if (this._config.options.length === 0) {
         this._config = { ...this._config, options: [{ ga: {} }] };
       }
       this._validationErrors = undefined;
       this._validationBaseError = undefined;
+      // the loaded config - or the one copied from another entity - is the clean state
+      this._initDirtyTracking({ type: "deep" }, deepClone(this._config));
     },
   });
 
@@ -184,6 +193,7 @@ export class KNXCreateExpose extends LitElement {
     this.hass.localize(`component.knx.config_panel.expose.create.${key}`);
 
   protected willUpdate(changedProperties: PropertyValues<this>) {
+    super.willUpdate(changedProperties); // unsaved changes listeners are handled by the mixin
     if (changedProperties.has("route")) {
       const intent = this.route.prefix.split("/").slice(-1)[0];
       if (intent === "create" || intent === "edit") {
@@ -200,6 +210,8 @@ export class KNXCreateExpose extends LitElement {
       if (entityId !== this._entityId) {
         this._entityId = entityId;
         this._config = { options: [{ ga: {} }] };
+        // reset tracking - the load task sets the baseline once the config is known
+        this._initDirtyTracking({ type: "deep" }, deepClone(this._config));
         this._validationErrors = undefined;
         this._validationBaseError = undefined;
         this._mode = "gui";
@@ -483,7 +495,7 @@ export class KNXCreateExpose extends LitElement {
       return;
     }
     this._yamlErrors = undefined;
-    this._config = ev.detail.value as ExposeConfigData;
+    this._setConfig(ev.detail.value as ExposeConfigData);
     if (this._validationErrors) {
       this._validate();
     }
@@ -543,7 +555,7 @@ export class KNXCreateExpose extends LitElement {
     const value = textarea?.value ?? "";
     const config = { ...this._config };
     setNestedValue(config, "notes", value || undefined, logger);
-    this._config = config as ExposeConfigData;
+    this._setConfig(config as ExposeConfigData);
   }
 
   private _openNotesDialog() {
@@ -708,23 +720,45 @@ export class KNXCreateExpose extends LitElement {
     }
   }
 
-  private _backToEntityPicker = () => {
+  private _backToEntityPicker = async () => {
+    if (!(await this.promptDiscardChanges())) return;
     navigateInFlow(`/knx/expose/create${mainWindow.location.search}`);
   };
 
-  private _exitExposeFlow = () => {
+  private _exitExposeFlow = async () => {
+    if (!(await this.promptDiscardChanges())) return;
     exitFlow("/knx/expose");
   };
 
+  private _setConfig(config: ExposeConfigData) {
+    this._config = config;
+    this._updateDirtyState(config);
+  }
+
+  protected override hasUnsavedChanges(): boolean {
+    // invalid yaml is not applied to the config, but is unsaved input nonetheless
+    return this.isDirtyState || !!this._yamlErrors;
+  }
+
+  protected override async promptDiscardChanges(): Promise<boolean> {
+    if (!this.hasUnsavedChanges()) return true;
+    return showConfirmationDialog(this, {
+      text: this.hass.localize("ui.panel.config.common.editor.confirm_unsaved"),
+      confirmText: this.hass.localize("ui.common.leave"),
+      dismissText: this.hass.localize("ui.common.stay"),
+      destructive: true,
+    });
+  }
+
   private _addExpose() {
-    this._config = { ...this._config, options: [...this._config.options, { ga: {} }] };
+    this._setConfig({ ...this._config, options: [...this._config.options, { ga: {} }] });
   }
 
   private _removeExpose(ev: Event) {
     ev.preventDefault();
     ev.stopPropagation();
     const idx = parseInt((ev.currentTarget as HTMLElement).dataset.idx ?? "0");
-    this._config = { ...this._config, options: this._config.options.filter((_, i) => i !== idx) };
+    this._setConfig({ ...this._config, options: this._config.options.filter((_, i) => i !== idx) });
     if (this._validationErrors) this._validate();
   }
 
@@ -759,7 +793,7 @@ export class KNXCreateExpose extends LitElement {
     }
     setNestedValue(nextItem, key, value, logger);
     newOptions[idx] = nextItem as ExposeOption;
-    this._config = { ...this._config, options: newOptions };
+    this._setConfig({ ...this._config, options: newOptions });
     logger.debug("Updated expose item", idx, key, value, "new config:", this._config);
     if (this._validationErrors) this._validate();
   }
@@ -782,6 +816,7 @@ export class KNXCreateExpose extends LitElement {
       const result = await updateExpose(this.hass, this._entityId, this._config);
       if (this._handleResult(result, true)) return;
       logger.debug("Successfully saved expose", this._entityId);
+      this._markDirtyStateClean();
       this._exposeGroupsCtx?.reload();
       await exitFlow("/knx/expose");
     } catch (err) {
