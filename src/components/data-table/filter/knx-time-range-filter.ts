@@ -148,49 +148,59 @@ export class KnxTimeRangeFilter extends LitElement {
             ${hasValue ? html`<div class="badge">1</div>` : nothing}
           </span>
           <div class="controls">
-            ${hasValue
-              ? html`
-                  <ha-icon-button
-                    .path=${mdiFilterVariantRemove}
-                    @click=${this._clear}
-                    .title=${this.knx.localize("knx_list_filter_clear")}
-                  ></ha-icon-button>
-                `
-              : nothing}
+            ${
+              hasValue
+                ? html`
+                    <ha-icon-button
+                      .path=${mdiFilterVariantRemove}
+                      @click=${this._clear}
+                      .title=${this.knx.localize("knx_list_filter_clear")}
+                    ></ha-icon-button>
+                  `
+                : nothing
+            }
           </div>
         </div>
 
-        ${this.expanded
-          ? html`
-              <div class="filter-content">
-                <p class="description">${this.knx.localize("group_monitor_time_range_hint")}</p>
-                ${this.warning
-                  ? html`<ha-alert alert-type="warning">${this.warning}</ha-alert>`
-                  : nothing}
-                <div class="picker-row" @click=${this._openPicker}>
-                  ${this.loading
-                    ? html`<ha-spinner size="small"></ha-spinner>`
-                    : html`
-                        <ha-date-range-picker
-                          minimal
-                          .ranges=${this._ranges}
-                          .startDate=${startDate}
-                          .endDate=${endDate}
-                          .popoverPlacement=${"right"}
-                          time-picker
-                          @preset-selected=${this._onPresetSelected}
-                          @value-changed=${this._onValueChanged}
-                        ></ha-date-range-picker>
-                        <span class="picker-label">
-                          ${hasValue
-                            ? this._summary
-                            : this.knx.localize("group_monitor_time_range_select")}
-                        </span>
-                      `}
+        ${
+          this.expanded
+            ? html`
+                <div class="filter-content">
+                  <p class="description">${this.knx.localize("group_monitor_time_range_hint")}</p>
+                  ${
+                    this.warning
+                      ? html`<ha-alert alert-type="warning">${this.warning}</ha-alert>`
+                      : nothing
+                  }
+                  <div class="picker-row" @click=${this._openPicker}>
+                    ${
+                      this.loading
+                        ? html`<ha-spinner size="small"></ha-spinner>`
+                        : html`
+                            <ha-date-range-picker
+                              minimal
+                              .ranges=${this._ranges}
+                              .startDate=${startDate}
+                              .endDate=${endDate}
+                              .popoverPlacement=${"right"}
+                              time-picker
+                              @preset-selected=${this._onPresetSelected}
+                              @value-changed=${this._onValueChanged}
+                            ></ha-date-range-picker>
+                            <span class="picker-label">
+                              ${
+                                hasValue
+                                  ? this._summary
+                                  : this.knx.localize("group_monitor_time_range_select")
+                              }
+                            </span>
+                          `
+                    }
+                  </div>
                 </div>
-              </div>
-            `
-          : nothing}
+              `
+            : nothing
+        }
       </flex-content-expansion-panel>
     `;
   }

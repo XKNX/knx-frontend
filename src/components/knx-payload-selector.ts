@@ -154,9 +154,11 @@ export class KnxPayloadSelector extends LitElement {
             ${this.localizeFunction(this.key + ".label")}
           </p>
           <p class="description">${this.localizeFunction(this.key + ".description")}</p>
-          ${dpt
-            ? html`<p class="description dpt-line">DPT: ${dpt}</p>`
-            : html`<p class="description dpt-line">${this._localizeSelector("dpt_missing")}</p>`}
+          ${
+            dpt
+              ? html`<p class="description dpt-line">DPT: ${dpt}</p>`
+              : html`<p class="description dpt-line">${this._localizeSelector("dpt_missing")}</p>`
+          }
         </div>
       </div>
 
@@ -397,9 +399,11 @@ export class KnxPayloadSelector extends LitElement {
             @value-changed=${this._rawPayloadBaseChanged}
             vertical
           ></ha-control-select>
-          ${this._rawPayloadBase === "hex"
-            ? this._renderRawPayloadValueHex()
-            : this._renderRawPayloadValueDec()}
+          ${
+            this._rawPayloadBase === "hex"
+              ? this._renderRawPayloadValueHex()
+              : this._renderRawPayloadValueDec()
+          }
         </div>
       </div>
     `;

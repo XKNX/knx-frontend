@@ -61,9 +61,11 @@ export class KnxForm extends LitElement {
     const baseError = getValidationError(this.validationErrors);
 
     return html`
-      ${baseError
-        ? html`<ha-alert .alertType=${"error"} .title=${baseError.message}></ha-alert>`
-        : nothing}
+      ${
+        baseError
+          ? html`<ha-alert .alertType=${"error"} .title=${baseError.message}></ha-alert>`
+          : nothing
+      }
       ${this._generateItems(this.schema, ROOT_PATH, this.validationErrors)}
     `;
   }
@@ -249,11 +251,13 @@ export class KnxForm extends LitElement {
       .noCollapse=${!section.collapsible}
       .outlined=${!!section.collapsible}
     >
-      ${sectionBaseError
-        ? html` <ha-alert .alertType=${"error"} .title=${"Validation error"}>
-            ${sectionBaseError.message}
-          </ha-alert>`
-        : nothing}
+      ${
+        sectionBaseError
+          ? html` <ha-alert .alertType=${"error"} .title=${"Validation error"}>
+              ${sectionBaseError.message}
+            </ha-alert>`
+          : nothing
+      }
       ${this._generateItems(section.schema, path, errors)}
     </ha-expansion-panel>`;
   }
@@ -285,40 +289,46 @@ export class KnxForm extends LitElement {
     return html` <ha-expansion-panel
       .header=${this.backendLocalize(`${path}.title`)}
       .secondary=${this.backendLocalize(`${path}.description`)}
-      .expanded=${!selector.collapsible ||
-      // don't collapse if selection was cleared by user and option changed
-      // cache is `{}` then which is truthy
-      !!this._groupSelectOptionCache[path] ||
-      this._groupHasGroupAddressInConfig(selector, path)}
+      .expanded=${
+        !selector.collapsible ||
+        // don't collapse if selection was cleared by user and option changed
+        // cache is `{}` then which is truthy
+        !!this._groupSelectOptionCache[path] ||
+        this._groupHasGroupAddressInConfig(selector, path)
+      }
       .noCollapse=${!selector.collapsible}
       outlined
     >
-      ${sectionBaseError
-        ? html` <ha-alert .alertType=${"error"} .title=${"Validation error"}>
-            ${sectionBaseError.message}
-          </ha-alert>`
-        : nothing}
+      ${
+        sectionBaseError
+          ? html` <ha-alert .alertType=${"error"} .title=${"Validation error"}>
+              ${sectionBaseError.message}
+            </ha-alert>`
+          : nothing
+      }
       <ha-control-select
         .options=${controlSelectOptions}
         .value=${optionIndex.toString()}
         .key=${path}
         @value-changed=${this._updateGroupSelectOption}
       ></ha-control-select>
-      ${currentOption
-        ? html` <p class="group-description">
-              ${this.backendLocalize(
-                `${path}.options.${currentOption.translation_key}.description`,
-              )}
-            </p>
-            <div class="group-selection">
-              ${keyed(
-                // force recreation when selection changes to ensure proper
-                // defaults for sub-elements internal states
-                optionIndex,
-                this._generateItems(currentOption.schema, path, errors),
-              )}
-            </div>`
-        : nothing}
+      ${
+        currentOption
+          ? html` <p class="group-description">
+                ${this.backendLocalize(
+                  `${path}.options.${currentOption.translation_key}.description`,
+                )}
+              </p>
+              <div class="group-selection">
+                ${keyed(
+                  // force recreation when selection changes to ensure proper
+                  // defaults for sub-elements internal states
+                  optionIndex,
+                  this._generateItems(currentOption.schema, path, errors),
+                )}
+              </div>`
+          : nothing
+      }
     </ha-expansion-panel>`;
   }
 

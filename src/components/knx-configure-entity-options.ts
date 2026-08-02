@@ -31,11 +31,13 @@ export const renderConfigureEntityCard = (
     <ha-card outlined>
       <h1 class="card-header">${localizeFunction("entity.title")}</h1>
       <p class="card-content">${localizeFunction("entity.description")}</p>
-      ${errors
-        ? entityBaseError
-          ? html`<ha-alert .alertType=${"error"} .title=${entityBaseError.message}></ha-alert>`
+      ${
+        errors
+          ? entityBaseError
+            ? html`<ha-alert .alertType=${"error"} .title=${entityBaseError.message}></ha-alert>`
+            : nothing
           : nothing
-        : nothing}
+      }
       <ha-expansion-panel
         header=${localizeFunction("entity.name_title")}
         secondary=${localizeFunction("entity.name_description")}

@@ -218,21 +218,23 @@ export class KNXProjectDevicesView extends LitElement {
     );
     return html`
       <div class="content-wrapper">
-        ${!deviceItems.length
-          ? html`<ha-alert alert-type="info">
-              ${this.hass.localize("component.knx.config_panel.project.devices.not_found")}
-            </ha-alert>`
-          : !filtered.length
+        ${
+          !deviceItems.length
             ? html`<ha-alert alert-type="info">
-                ${this.hass.localize("ui.components.data-table.no_match_filter")}
+                ${this.hass.localize("component.knx.config_panel.project.devices.not_found")}
               </ha-alert>`
-            : html`<div class="devices">
-                ${repeat(
-                  filtered,
-                  (device) => device.ia,
-                  (device) => this._renderDevice(device, relatedByScope),
-                )}
-              </div>`}
+            : !filtered.length
+              ? html`<ha-alert alert-type="info">
+                  ${this.hass.localize("ui.components.data-table.no_match_filter")}
+                </ha-alert>`
+              : html`<div class="devices">
+                  ${repeat(
+                    filtered,
+                    (device) => device.ia,
+                    (device) => this._renderDevice(device, relatedByScope),
+                  )}
+                </div>`
+        }
       </div>
     `;
   }
@@ -297,8 +299,7 @@ export class KNXProjectDevicesView extends LitElement {
       }
     }
     const summary = ev.composedPath().find((target) => (target as HTMLElement).id === "summary") as
-      | HTMLElement
-      | undefined;
+      HTMLElement | undefined;
     if (!summary) {
       return;
     }
@@ -388,48 +389,56 @@ export class KNXProjectDevicesView extends LitElement {
         <div class="description">
           <p>${device.name}</p>
           <p class="secondary">
-            ${device.manufacturer}${device.description
-              ? html` – ${device.description}`
-              : nothing}${hasContent ? html` · ${this._deviceSummary(device)}` : nothing}
+            ${device.manufacturer}${
+              device.description ? html` – ${device.description}` : nothing
+            }${hasContent ? html` · ${this._deviceSummary(device)}` : nothing}
           </p>
         </div>
         <div class="device-pills">
-          ${location
-            ? html`<span class="pill" title=${location.path.join(" → ")}>
-                <ha-svg-icon .path=${mdiMapMarkerOutline}></ha-svg-icon>
-                ${location.name}
-              </span>`
-            : nothing}
+          ${
+            location
+              ? html`<span class="pill" title=${location.path.join(" → ")}>
+                  <ha-svg-icon .path=${mdiMapMarkerOutline}></ha-svg-icon>
+                  ${location.name}
+                </span>`
+              : nothing
+          }
           ${line ? html`<span class="pill" title=${line.mediumType}>${line.label}</span>` : nothing}
         </div>
       </div>
-      ${expanded
-        ? html`${hasRelatedRefs(noChannelRelated?.aggregated)
-            ? this._renderAggregatedRelated(noChannelRelated!.aggregated!)
-            : nothing}
-          ${this._renderComObjects(device.noChannelComObjects, noChannelRelated)}
-          ${repeat(
-            device.channels,
-            (channel) => channelKey(device.ia, channel.id),
-            (channel) => {
-              const scopeKey = channelKey(device.ia, channel.id);
-              const channelRelated = relatedByScope[scopeKey];
-              return html`<ha-expansion-panel
-                class="channel"
-                outlined
-                left-chevron
-                .header=${channel.name}
-                .expanded=${this._isExpanded(scopeKey)}
-                data-panel-key=${scopeKey}
-              >
-                ${hasRelatedRefs(channelRelated?.aggregated)
-                  ? this._renderAggregatedRelated(channelRelated!.aggregated!)
-                  : nothing}
-                ${this._renderComObjects(channel.comObjects, channelRelated)}
-              </ha-expansion-panel>`;
-            },
-          )}`
-        : nothing}
+      ${
+        expanded
+          ? html`${
+              hasRelatedRefs(noChannelRelated?.aggregated)
+                ? this._renderAggregatedRelated(noChannelRelated!.aggregated!)
+                : nothing
+            }
+            ${this._renderComObjects(device.noChannelComObjects, noChannelRelated)}
+            ${repeat(
+              device.channels,
+              (channel) => channelKey(device.ia, channel.id),
+              (channel) => {
+                const scopeKey = channelKey(device.ia, channel.id);
+                const channelRelated = relatedByScope[scopeKey];
+                return html`<ha-expansion-panel
+                  class="channel"
+                  outlined
+                  left-chevron
+                  .header=${channel.name}
+                  .expanded=${this._isExpanded(scopeKey)}
+                  data-panel-key=${scopeKey}
+                >
+                  ${
+                    hasRelatedRefs(channelRelated?.aggregated)
+                      ? this._renderAggregatedRelated(channelRelated!.aggregated!)
+                      : nothing
+                  }
+                  ${this._renderComObjects(channel.comObjects, channelRelated)}
+                </ha-expansion-panel>`;
+              },
+            )}`
+          : nothing
+      }
     </knx-sticky-expansion-panel>`;
   }
 
@@ -461,9 +470,9 @@ export class KNXProjectDevicesView extends LitElement {
             </span>
             <div class="description">
               <p>
-                ${item.comObject.text}${item.comObject.function_text
-                  ? " - " + item.comObject.function_text
-                  : nothing}
+                ${item.comObject.text}${
+                  item.comObject.function_text ? " - " + item.comObject.function_text : nothing
+                }
               </p>
               <p class="secondary">${comObjectFlags(item.comObject.flags)}</p>
             </div>
@@ -493,15 +502,17 @@ export class KNXProjectDevicesView extends LitElement {
               <p>${groupAddress.name}</p>
               <p class="secondary">${gaDptString(groupAddress)}</p>
             </div>
-            ${hasRelatedRefs(related)
-              ? html`<knx-data-table-related-label
-                  class="ga-related"
-                  .hass=${this.hass}
-                  .entities=${related.entities}
-                  .entitiesYaml=${related.entitiesYaml}
-                  .exposes=${related.exposes}
-                ></knx-data-table-related-label>`
-              : nothing}
+            ${
+              hasRelatedRefs(related)
+                ? html`<knx-data-table-related-label
+                    class="ga-related"
+                    .hass=${this.hass}
+                    .entities=${related.entities}
+                    .entitiesYaml=${related.entitiesYaml}
+                    .exposes=${related.exposes}
+                  ></knx-data-table-related-label>`
+                : nothing
+            }
             ${this._renderLastValue(groupAddress)}
           </div>
         </li>`;
@@ -520,9 +531,11 @@ export class KNXProjectDevicesView extends LitElement {
     }\n${payload}`;
     return html`<div class="last-value" title=${tooltip}>
       <p>
-        ${telegram.value != null
-          ? TelegramDictFormatter.valueWithUnit(telegram)
-          : html`<code>${payload}</code>`}
+        ${
+          telegram.value != null
+            ? TelegramDictFormatter.valueWithUnit(telegram)
+            : html`<code>${payload}</code>`
+        }
       </p>
       <p class="secondary">${relativeTime(new Date(telegram.timestamp), this.hass.locale)}</p>
     </div>`;

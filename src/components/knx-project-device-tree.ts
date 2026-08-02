@@ -114,9 +114,11 @@ export class KNXProjectDeviceTree extends LitElement {
 
   protected render(): TemplateResult {
     return html`<div class="device-tree-view">
-      ${this._selectedDevice
-        ? this._renderSelectedDevice(this._selectedDevice)
-        : this._renderDevices()}
+      ${
+        this._selectedDevice
+          ? this._renderSelectedDevice(this._selectedDevice)
+          : this._renderDevices()
+      }
     </div>`;
   }
 

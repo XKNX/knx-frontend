@@ -290,14 +290,16 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
               ></ha-entity-picker>
             </div>
           </ha-card>
-          ${copyFrom
-            ? html` <ha-alert alert-type="info">
-                ${this.hass.localize("component.knx.config_panel.expose.create.copy_info", {
-                  entity_name: this.hass.states[copyFrom]?.attributes.friendly_name ?? "?",
-                  entity_id: copyFrom,
-                })}
-              </ha-alert>`
-            : nothing}
+          ${
+            copyFrom
+              ? html` <ha-alert alert-type="info">
+                  ${this.hass.localize("component.knx.config_panel.expose.create.copy_info", {
+                    entity_name: this.hass.states[copyFrom]?.attributes.friendly_name ?? "?",
+                    entity_id: copyFrom,
+                  })}
+                </ha-alert>`
+              : nothing
+          }
         </div>
       </hass-subpage>
     `;
@@ -313,9 +315,11 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
         .backPath=${this.backPath}
         .backCallback=${create ? this._backToEntityPicker : this._exitExposeFlow}
         .scrollable=${this._mode === "gui"}
-        .header=${create
-          ? this.hass.localize("component.knx.config_panel.expose.create.title")
-          : `${this.hass.localize("ui.common.edit")}: ${this._entityId}`}
+        .header=${
+          create
+            ? this.hass.localize("component.knx.config_panel.expose.create.title")
+            : `${this.hass.localize("ui.common.edit")}: ${this._entityId}`
+        }
       >
         <ha-icon-button
           slot="toolbar-icon"
@@ -329,9 +333,9 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
         ></ha-icon-button>
         ${this.narrow && this._mode === "gui" ? this._renderNotesDialog() : nothing}
         <div
-          class="content config-layout ${this.narrow ? "" : "wide"} ${this._mode === "yaml"
-            ? "yaml-mode"
-            : ""}"
+          class="content config-layout ${this.narrow ? "" : "wide"} ${
+            this._mode === "yaml" ? "yaml-mode" : ""
+          }"
         >
           <div class="entity-column">
             <div class="entity-sticky-stack">
@@ -340,44 +344,50 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
             </div>
           </div>
           <div class="config-column">
-            ${this._mode === "gui"
-              ? html` ${this._renderConfigTask()} ${this._renderValidationAlert()} `
-              : html`
-                  ${this._renderValidationAlert()}
-                  <ha-yaml-editor
-                    .defaultValue=${this._config}
-                    @value-changed=${this._yamlChanged}
-                  ></ha-yaml-editor>
-                  <p class="yaml-hint">
-                    ${this.hass.localize("component.knx.config_panel.expose.create.yaml.mode_hint")}
-                  </p>
-                `}
+            ${
+              this._mode === "gui"
+                ? html` ${this._renderConfigTask()} ${this._renderValidationAlert()} `
+                : html`
+                    ${this._renderValidationAlert()}
+                    <ha-yaml-editor
+                      .defaultValue=${this._config}
+                      @value-changed=${this._yamlChanged}
+                    ></ha-yaml-editor>
+                    <p class="yaml-hint">
+                      ${this.hass.localize("component.knx.config_panel.expose.create.yaml.mode_hint")}
+                    </p>
+                  `
+            }
           </div>
         </div>
         <ha-button
           slot="fab"
           size="l"
           @click=${this._save}
-          ?disabled=${!Array.isArray(this._config?.options) ||
-          this._config.options.some((e) => !e.ga?.write) ||
-          !!this._yamlErrors}
+          ?disabled=${
+            !Array.isArray(this._config?.options) ||
+            this._config.options.some((e) => !e.ga?.write) ||
+            !!this._yamlErrors
+          }
         >
           <ha-svg-icon slot="start" .path=${create ? mdiPlus : mdiFloppy}></ha-svg-icon>
           ${create ? this.hass.localize("ui.common.create") : this.hass.localize("ui.common.save")}
         </ha-button>
-        ${this.narrow && this._entityId && this._mode === "gui"
-          ? html`
-              <ha-button
-                class="notes-fab"
-                size="l"
-                variant="neutral"
-                @click=${this._openNotesDialog}
-              >
-                <ha-svg-icon slot="start" .path=${mdiFileDocumentEdit}></ha-svg-icon>
-                ${this.hass.localize("component.knx.config_panel.expose.create.notes.label")}
-              </ha-button>
-            `
-          : nothing}
+        ${
+          this.narrow && this._entityId && this._mode === "gui"
+            ? html`
+                <ha-button
+                  class="notes-fab"
+                  size="l"
+                  variant="neutral"
+                  @click=${this._openNotesDialog}
+                >
+                  <ha-svg-icon slot="start" .path=${mdiFileDocumentEdit}></ha-svg-icon>
+                  ${this.hass.localize("component.knx.config_panel.expose.create.notes.label")}
+                </ha-button>
+              `
+            : nothing
+        }
       </hass-subpage>
     `;
   }
@@ -422,9 +432,11 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
                 >${this.hass.localize("ui.components.selectors.selector.types.state")}</span
               >
               <span class="attr-value"
-                >${this._showRawValues
-                  ? this._toRawValueString(stateObj.state)
-                  : this.hass.formatEntityState(stateObj)}</span
+                >${
+                  this._showRawValues
+                    ? this._toRawValueString(stateObj.state)
+                    : this.hass.formatEntityState(stateObj)
+                }</span
               >
             </div>
             ${visibleAttrs.map(
@@ -434,9 +446,11 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
                     >${this.hass.formatEntityAttributeName(stateObj, attr)}</span
                   >
                   <span class="attr-value"
-                    >${this._showRawValues
-                      ? this._toRawValueString(stateObj.attributes[attr])
-                      : this.hass.formatEntityAttributeValue(stateObj, attr)}</span
+                    >${
+                      this._showRawValues
+                        ? this._toRawValueString(stateObj.attributes[attr])
+                        : this.hass.formatEntityAttributeValue(stateObj, attr)
+                    }</span
                   >
                 </div>
               `,
@@ -460,13 +474,15 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
         <details>
           <summary><b>${this.knx.localize("expose_validation_error")}</b></summary>
           <p>${this._validationBaseError}</p>
-          ${this._validationErrors?.map(
-            (err) =>
-              html`<p>
-                ${err.code ?? "invalid"}: ${err.message}
-                ${err.path ? "in " + err.path.join(" / ") : ""}
-              </p>`,
-          ) ?? nothing}
+          ${
+            this._validationErrors?.map(
+              (err) =>
+                html`<p>
+                  ${err.code ?? "invalid"}: ${err.message}
+                  ${err.path ? "in " + err.path.join(" / ") : ""}
+                </p>`,
+            ) ?? nothing
+          }
         </details>
       </ha-alert>
     `;
@@ -594,21 +610,25 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
       : "";
     return html`
       <ha-expansion-panel outlined expanded left-chevron .header=${title} .secondary=${gaName}>
-        ${this._config.options.length > 1
-          ? html`
-              <ha-icon-button
-                slot="icons"
-                data-idx=${idx}
-                .path=${mdiDelete}
-                .label=${this.hass.localize("ui.common.delete")}
-                @click=${this._removeExpose}
-              ></ha-icon-button>
-            `
-          : nothing}
+        ${
+          this._config.options.length > 1
+            ? html`
+                <ha-icon-button
+                  slot="icons"
+                  data-idx=${idx}
+                  .path=${mdiDelete}
+                  .label=${this.hass.localize("ui.common.delete")}
+                  @click=${this._removeExpose}
+                ></ha-icon-button>
+              `
+            : nothing
+        }
         <div class="panel-content">
-          ${optionError
-            ? html` <ha-alert alert-type="error">${optionError.message}</ha-alert> `
-            : nothing}
+          ${
+            optionError
+              ? html` <ha-alert alert-type="error">${optionError.message}</ha-alert> `
+              : nothing
+          }
           <ha-entity-attribute-picker
             data-idx=${idx}
             allow-custom-value
@@ -623,9 +643,11 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
             .hideAttributes=${[...HIDDEN_ATTRIBUTES]}
             @value-changed=${this._updateExposeOptionAtIndex}
           ></ha-entity-attribute-picker>
-          ${attributeError
-            ? html` <ha-alert alert-type="error">${attributeError.message}</ha-alert> `
-            : nothing}
+          ${
+            attributeError
+              ? html` <ha-alert alert-type="error">${attributeError.message}</ha-alert> `
+              : nothing
+          }
           <knx-group-address-selector
             data-idx=${idx}
             .knx=${this.knx}

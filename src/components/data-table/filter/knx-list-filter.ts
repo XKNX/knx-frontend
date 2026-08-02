@@ -900,81 +900,91 @@ export class KnxListFilter<T = any> extends LitElement {
     return html`
       <div class="filter-toolbar">
         <div class="search">
-          ${this._hasFilterableFields()
-            ? html`
-                <ha-input-search
-                  appearance="outlined"
-                  .value=${this.filterQuery}
-                  @input=${this._handleSearchChange}
-                ></ha-input-search>
-              `
-            : nothing}
+          ${
+            this._hasFilterableFields()
+              ? html`
+                  <ha-input-search
+                    appearance="outlined"
+                    .value=${this.filterQuery}
+                    @input=${this._handleSearchChange}
+                  ></ha-input-search>
+                `
+              : nothing
+          }
         </div>
-        ${this._hasSortableFields()
-          ? html`
-              <div class="buttons">
-                <knx-sort-menu
-                  .knx=${this.knx}
-                  .sortCriterion=${this.sortCriterion}
-                  .sortDirection=${this.sortDirection}
-                  .isMobileDevice=${this.isMobileDevice}
-                  @sort-changed=${this._handleSortChanged}
-                >
-                  <!-- Sort button as trigger -->
-                  <ha-icon-button
-                    slot="trigger"
-                    class="sort-button"
-                    .path=${this._getSortIcon()}
-                    title=${this.sortDirection === SORT_ASC
-                      ? this.knx.localize("knx_list_filter_sort_ascending_tooltip")
-                      : this.knx.localize("knx_list_filter_sort_descending_tooltip")}
-                  ></ha-icon-button>
+        ${
+          this._hasSortableFields()
+            ? html`
+                <div class="buttons">
+                  <knx-sort-menu
+                    .knx=${this.knx}
+                    .sortCriterion=${this.sortCriterion}
+                    .sortDirection=${this.sortDirection}
+                    .isMobileDevice=${this.isMobileDevice}
+                    @sort-changed=${this._handleSortChanged}
+                  >
+                    <!-- Sort button as trigger -->
+                    <ha-icon-button
+                      slot="trigger"
+                      class="sort-button"
+                      .path=${this._getSortIcon()}
+                      title=${
+                        this.sortDirection === SORT_ASC
+                          ? this.knx.localize("knx_list_filter_sort_ascending_tooltip")
+                          : this.knx.localize("knx_list_filter_sort_descending_tooltip")
+                      }
+                    ></ha-icon-button>
 
-                  <div slot="title">${this.knx.localize("knx_list_filter_sort_by")}</div>
+                    <div slot="title">${this.knx.localize("knx_list_filter_sort_by")}</div>
 
-                  <!-- Toolbar with additional controls like pin button -->
-                  <div slot="toolbar">
-                    <!-- Pin Button for keeping selected items at top -->
-                    <ha-icon-button-toggle
-                      .path=${mdiPin}
-                      .selected=${this.pinSelectedItems}
-                      @click=${this._handlePinButtonClick}
-                      title=${this.knx.localize("knx_list_filter_selected_items_on_top")}
-                    >
-                    </ha-icon-button-toggle>
-                  </div>
+                    <!-- Toolbar with additional controls like pin button -->
+                    <div slot="toolbar">
+                      <!-- Pin Button for keeping selected items at top -->
+                      <ha-icon-button-toggle
+                        .path=${mdiPin}
+                        .selected=${this.pinSelectedItems}
+                        @click=${this._handlePinButtonClick}
+                        title=${this.knx.localize("knx_list_filter_selected_items_on_top")}
+                      >
+                      </ha-icon-button-toggle>
+                    </div>
 
-                  <!-- Sort menu items generated from all sortable fields -->
-                  ${[
-                    // Standard fields
-                    ...Object.entries(this.config || {})
-                      .filter(([key]) => key !== "custom")
-                      .map(([key, field]) => ({ key, config: field as FieldConfig<T> })),
-                    // Custom fields
-                    ...Object.entries(this.config?.custom || {}).map(([key, field]) => ({
-                      key,
-                      config: field,
-                    })),
-                  ]
-                    .filter(({ config }) => config.sortable)
-                    .map(
-                      ({ key, config }) => html`
-                        <knx-sort-menu-item
-                          criterion=${key}
-                          display-name=${ifDefined(config.fieldName)}
-                          default-direction=${config.sortDefaultDirection ?? "asc"}
-                          ascending-text=${config.sortAscendingText ??
-                          this.knx.localize("knx_list_filter_sort_ascending")}
-                          descending-text=${config.sortDescendingText ??
-                          this.knx.localize("knx_list_filter_sort_descending")}
-                          .disabled=${config.sortDisabled || false}
-                        ></knx-sort-menu-item>
-                      `,
-                    )}
-                </knx-sort-menu>
-              </div>
-            `
-          : nothing}
+                    <!-- Sort menu items generated from all sortable fields -->
+                    ${[
+                      // Standard fields
+                      ...Object.entries(this.config || {})
+                        .filter(([key]) => key !== "custom")
+                        .map(([key, field]) => ({ key, config: field as FieldConfig<T> })),
+                      // Custom fields
+                      ...Object.entries(this.config?.custom || {}).map(([key, field]) => ({
+                        key,
+                        config: field,
+                      })),
+                    ]
+                      .filter(({ config }) => config.sortable)
+                      .map(
+                        ({ key, config }) => html`
+                          <knx-sort-menu-item
+                            criterion=${key}
+                            display-name=${ifDefined(config.fieldName)}
+                            default-direction=${config.sortDefaultDirection ?? "asc"}
+                            ascending-text=${
+                              config.sortAscendingText ??
+                              this.knx.localize("knx_list_filter_sort_ascending")
+                            }
+                            descending-text=${
+                              config.sortDescendingText ??
+                              this.knx.localize("knx_list_filter_sort_descending")
+                            }
+                            .disabled=${config.sortDisabled || false}
+                          ></knx-sort-menu-item>
+                        `,
+                      )}
+                  </knx-sort-menu>
+                </div>
+              `
+            : nothing
+        }
       </div>
     `;
   }
@@ -1024,48 +1034,54 @@ export class KnxListFilter<T = any> extends LitElement {
     return html`
       <div class="options-list" tabindex="0">
         <!-- Render selected items first -->
-        ${selected.length > 0
-          ? html`
-              ${repeat(
-                selected,
-                (opt) => opt.idField,
-                (opt) => this._renderOptionItem(opt),
-              )}
-            `
-          : nothing}
+        ${
+          selected.length > 0
+            ? html`
+                ${repeat(
+                  selected,
+                  (opt) => opt.idField,
+                  (opt) => this._renderOptionItem(opt),
+                )}
+              `
+            : nothing
+        }
 
         <!-- Render separator between selected and unselected items -->
-        ${selected.length > 0 && unselected.length > 0
-          ? html`
-              <div class="separator-container">
-                <knx-separator
-                  .height=${this._separator?.height || this._separatorMinHeight}
-                  .maxHeight=${this._separatorMaxHeight}
-                  .minHeight=${this._separatorMinHeight}
-                  .animationDuration=${this._separatorAnimationDuration}
-                  customClass="list-separator"
-                >
-                  <div class="separator-content" @click=${this._handleSeparatorClick}>
-                    <ha-svg-icon .path=${mdiChevronUp}></ha-svg-icon>
-                    <span class="separator-text">
-                      ${this.knx.localize("knx_list_filter_scroll_to_selection")}
-                    </span>
-                  </div>
-                </knx-separator>
-              </div>
-            `
-          : nothing}
+        ${
+          selected.length > 0 && unselected.length > 0
+            ? html`
+                <div class="separator-container">
+                  <knx-separator
+                    .height=${this._separator?.height || this._separatorMinHeight}
+                    .maxHeight=${this._separatorMaxHeight}
+                    .minHeight=${this._separatorMinHeight}
+                    .animationDuration=${this._separatorAnimationDuration}
+                    customClass="list-separator"
+                  >
+                    <div class="separator-content" @click=${this._handleSeparatorClick}>
+                      <ha-svg-icon .path=${mdiChevronUp}></ha-svg-icon>
+                      <span class="separator-text">
+                        ${this.knx.localize("knx_list_filter_scroll_to_selection")}
+                      </span>
+                    </div>
+                  </knx-separator>
+                </div>
+              `
+            : nothing
+        }
 
         <!-- Render unselected items -->
-        ${unselected.length > 0
-          ? html`
-              ${repeat(
-                unselected,
-                (opt) => opt.idField,
-                (opt) => this._renderOptionItem(opt),
-              )}
-            `
-          : nothing}
+        ${
+          unselected.length > 0
+            ? html`
+                ${repeat(
+                  unselected,
+                  (opt) => opt.idField,
+                  (opt) => this._renderOptionItem(opt),
+                )}
+              `
+            : nothing
+        }
       </div>
     `;
   }
@@ -1115,27 +1131,31 @@ export class KnxListFilter<T = any> extends LitElement {
         @click=${this._handleOptionItemClick}
         data-value=${option.idField}
       >
-        ${option.icon
-          ? html`<ha-icon class="option-icon" .icon=${option.icon}></ha-icon>`
-          : option.iconPath
-            ? html`<ha-svg-icon class="option-icon" .path=${option.iconPath}></ha-svg-icon>`
-            : nothing}
+        ${
+          option.icon
+            ? html`<ha-icon class="option-icon" .icon=${option.icon}></ha-icon>`
+            : option.iconPath
+              ? html`<ha-svg-icon class="option-icon" .path=${option.iconPath}></ha-svg-icon>`
+              : nothing
+        }
         <div class="option-text">
           <div class="option-primary">
             <span class="option-label" title=${option.primaryField}>${option.primaryField}</span>
           </div>
 
-          ${option.secondaryField
-            ? html`
-                <div class="option-secondary" title=${option.secondaryField}>
-                  ${option.secondaryField}
-                </div>
-              `
-            : nothing}
+          ${
+            option.secondaryField
+              ? html`
+                  <div class="option-secondary" title=${option.secondaryField}>
+                    ${option.secondaryField}
+                  </div>
+                `
+              : nothing
+          }
         </div>
-        ${option.badgeField
-          ? html`<span class="option-badge">${option.badgeField}</span>`
-          : nothing}
+        ${
+          option.badgeField ? html`<span class="option-badge">${option.badgeField}</span>` : nothing
+        }
 
         <ha-checkbox
           .checked=${option.selected}
@@ -1176,29 +1196,33 @@ export class KnxListFilter<T = any> extends LitElement {
             ${selectedCount ? html`<div class="badge">${selectedCount}</div>` : nothing}
           </span>
           <div class="controls">
-            ${selectedCount
-              ? html`
-                  <ha-icon-button
-                    .path=${mdiFilterVariantRemove}
-                    @click=${this._handleClearFiltersButtonClick}
-                    .title=${clearText}
-                  ></ha-icon-button>
-                `
-              : nothing}
+            ${
+              selectedCount
+                ? html`
+                    <ha-icon-button
+                      .path=${mdiFilterVariantRemove}
+                      @click=${this._handleClearFiltersButtonClick}
+                      .title=${clearText}
+                    ></ha-icon-button>
+                  `
+                : nothing
+            }
           </div>
         </div>
 
         <!-- Render filter content only when panel is expanded and visible -->
-        ${this.expanded
-          ? html`
-              <div class="filter-content">
-                ${this._hasFilterableOrSortableFields() ? this._renderFilterControl() : nothing}
-              </div>
+        ${
+          this.expanded
+            ? html`
+                <div class="filter-content">
+                  ${this._hasFilterableOrSortableFields() ? this._renderFilterControl() : nothing}
+                </div>
 
-              <!-- Filter options list - moved outside filter-content for proper sticky behavior -->
-              <div class="options-list-wrapper ha-scrollbar">${this._renderOptionsList()}</div>
-            `
-          : nothing}
+                <!-- Filter options list - moved outside filter-content for proper sticky behavior -->
+                <div class="options-list-wrapper ha-scrollbar">${this._renderOptionsList()}</div>
+              `
+            : nothing
+        }
       </flex-content-expansion-panel>
     `;
   }

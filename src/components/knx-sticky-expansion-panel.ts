@@ -82,12 +82,14 @@ export class KnxStickyExpansionPanel extends LitElement {
         @click=${collapsible ? this._toggle : nothing}
         @keydown=${collapsible ? this._toggle : nothing}
       >
-        ${collapsible
-          ? html`<ha-svg-icon
-              class="chevron ${this.expanded ? "expanded" : ""}"
-              .path=${mdiChevronDown}
-            ></ha-svg-icon>`
-          : nothing}
+        ${
+          collapsible
+            ? html`<ha-svg-icon
+                class="chevron ${this.expanded ? "expanded" : ""}"
+                .path=${mdiChevronDown}
+              ></ha-svg-icon>`
+            : nothing
+        }
         <slot name="header"></slot>
       </div>
       <div

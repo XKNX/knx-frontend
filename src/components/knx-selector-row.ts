@@ -102,22 +102,26 @@ export class KnxSelectorRow extends LitElement {
           </p>
           <p class="description">${this.localizeFunction(`${this.key}.description`)}</p>
         </div>
-        ${!this.selector.required // TODO: && (this.selector.default !== undefined)  // since default is applied in schema anyway? test this!
-          ? html`<ha-selector
-              class="optional-switch"
-              .selector=${{ boolean: {} }}
-              .value=${this._enabled}
-              @value-changed=${this._toggleEnabled}
-            ></ha-selector>`
-          : nothing}
+        ${
+          !this.selector.required // TODO: && (this.selector.default !== undefined)  // since default is applied in schema anyway? test this!
+            ? html`<ha-selector
+                class="optional-switch"
+                .selector=${{ boolean: {} }}
+                .value=${this._enabled}
+                @value-changed=${this._toggleEnabled}
+              ></ha-selector>`
+            : nothing
+        }
         ${
           // inline selector is never optional, so optional-switch and this can't be shown together
           this._inlineSelector ? haSelector : nothing
         }
       </div>
-      ${this._inlineSelector || !this._enabled // hide disabled optional selector
-        ? nothing
-        : haSelector}
+      ${
+        this._inlineSelector || !this._enabled // hide disabled optional selector
+          ? nothing
+          : haSelector
+      }
       ${this._enabled ? html`<slot></slot>` : nothing}
       ${invalid ? html`<p class="invalid-message">${invalid.message}</p>` : nothing}
     `;
