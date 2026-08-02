@@ -16,6 +16,10 @@ import { contextMixin } from "@ha/state/context-mixin";
 
 import type { HomeAssistant, Route } from "@ha/types";
 
+import {
+  dropDeadConnectionCollections,
+  releaseConnectionCollectionsOnUnload,
+} from "./utils/connection-collections";
 import { KnxElement } from "./knx";
 import "./knx-router";
 import { showKnxSendDialog } from "./dialogs/show-knx-send-dialog";
@@ -45,6 +49,12 @@ class KnxFrontend extends contextMixin(KnxElement) {
     if (!this.hass) {
       return;
     }
+    // The panel is embedded in an iframe, so websocket collections cached on the
+    // shared connection may belong to the realm of a previous panel instance.
+    // Clean those up before anything subscribes - and don't leave ours behind.
+    dropDeadConnectionCollections(this.hass.connection);
+    releaseConnectionCollectionsOnUnload(this.hass.connection);
+
     // connect contexts by contextMixin
     this.hassConnected();
 
