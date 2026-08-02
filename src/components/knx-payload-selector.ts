@@ -48,6 +48,10 @@ export class KnxPayloadSelector extends LitElement {
 
   @property({ type: Boolean, attribute: "disable-raw" }) public disableRaw?: boolean;
 
+  // When set, the raw payload length is controlled externally (e.g. one shared
+  // length for a whole options list) - the internal length selector is hidden.
+  @property({ attribute: false }) public rawLength?: number;
+
   @property({ attribute: false }) public value?: PayloadConfigValue;
 
   @property({ attribute: false }) public validationErrors?: ErrorDescription[];
@@ -375,7 +379,33 @@ export class KnxPayloadSelector extends LitElement {
     const rawLengthSelector: NumberSelector = {
       number: { mode: "box", min: 0, max: maxLength, step: 1 },
     };
-    const disableLength = this._effectiveDpt() !== undefined;
+    // hide the length selector when the length is fixed - either controlled
+    // externally (`rawLength`) or derived from a selected DPT.
+    const showLength = this.rawLength === undefined && this._effectiveDpt() === undefined;
+
+    const payload = html`
+      <div class="raw-payload">
+        <ha-control-select
+          .label=${this._localizeSelector("raw_payload_base_label")}
+          .options=${[
+            { value: "dec", label: "Dec" },
+            { value: "hex", label: "Hex" },
+          ]}
+          .value=${this._rawPayloadBase}
+          @value-changed=${this._rawPayloadBaseChanged}
+          vertical
+        ></ha-control-select>
+        ${
+          this._rawPayloadBase === "hex"
+            ? this._renderRawPayloadValueHex()
+            : this._renderRawPayloadValueDec()
+        }
+      </div>
+    `;
+
+    if (!showLength) {
+      return payload;
+    }
 
     return html`
       <div class="raw-grid">
@@ -383,28 +413,11 @@ export class KnxPayloadSelector extends LitElement {
           .hass=${this.hass}
           .selector=${rawLengthSelector}
           .label=${this._localizeSelector("raw_length")}
-          .helper=${`${disableLength ? "" : numberRangeHelper(0, maxLength) + " "}${this._localizeSelector("raw_length_description")}`}
+          .helper=${`${numberRangeHelper(0, maxLength)} ${this._localizeSelector("raw_length_description")}`}
           .value=${this._rawLength}
           @value-changed=${this._rawLengthChanged}
-          .disabled=${disableLength}
         ></ha-selector>
-        <div class="raw-payload">
-          <ha-control-select
-            .label=${this._localizeSelector("raw_payload_base_label")}
-            .options=${[
-              { value: "dec", label: "Dec" },
-              { value: "hex", label: "Hex" },
-            ]}
-            .value=${this._rawPayloadBase}
-            @value-changed=${this._rawPayloadBaseChanged}
-            vertical
-          ></ha-control-select>
-          ${
-            this._rawPayloadBase === "hex"
-              ? this._renderRawPayloadValueHex()
-              : this._renderRawPayloadValueDec()
-          }
-        </div>
+        ${payload}
       </div>
     `;
   }
@@ -432,7 +445,7 @@ export class KnxPayloadSelector extends LitElement {
       @change=${this._rawPayloadChanged}
       .label=${this._localizeSelector("raw_payload")}
       .required=${true}
-      .maxlength=${(this._rawLength || 1) * 2}
+      .maxlength=${(this._effectiveRawLength || 1) * 2}
       .invalid=${!!rawInvalidMessage}
       .validationMessage=${rawInvalidMessage}
     >
@@ -544,7 +557,7 @@ export class KnxPayloadSelector extends LitElement {
         return 63n;
       }
     }
-    return this._rawLength === 0 ? 63n : 2n ** BigInt(this._rawLength * 8) - 1n;
+    return this._effectiveRawLength === 0 ? 63n : 2n ** BigInt(this._effectiveRawLength * 8) - 1n;
   }
 
   private _clampRawPayload(payload: string | undefined): string | undefined {
@@ -571,7 +584,7 @@ export class KnxPayloadSelector extends LitElement {
     if (this._mode === "raw") {
       value =
         this._rawPayload !== undefined
-          ? { payload: this._rawPayload, payload_length: this._rawLength }
+          ? { payload: this._rawPayload, payload_length: this._effectiveRawLength }
           : undefined;
     } else {
       value =
@@ -596,6 +609,10 @@ export class KnxPayloadSelector extends LitElement {
 
   private _effectiveDpt(): string | undefined {
     return this.dpt ?? this._linkedDpt;
+  }
+
+  private get _effectiveRawLength(): number {
+    return this.rawLength ?? this._rawLength;
   }
 
   private _handleGroupAddressChanged = (ev: CustomEvent<{ key: string; dpt?: string }>) => {

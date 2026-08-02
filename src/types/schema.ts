@@ -8,6 +8,7 @@ export type SelectorSchema =
   | GASelector
   | SyncStateSelector
   | PayloadSelector
+  | SelectOptionsSelector
   | KnxHaSelector;
 
 interface BaseSection {
@@ -63,6 +64,14 @@ export interface PayloadSelectorWithDpt extends PayloadSelectorBase {
 }
 
 export type PayloadSelector = PayloadSelectorWithGaPath | PayloadSelectorWithDpt;
+
+export interface SelectOptionsSelector {
+  type: "knx_select_options";
+  name: string;
+  // Relative path to the linked group address, used to resolve its DPT.
+  ga_path: string;
+  required?: boolean;
+}
 
 export interface KnxHaSelector {
   type: "ha_selector";
