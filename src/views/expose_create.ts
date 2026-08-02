@@ -47,6 +47,7 @@ import {
 } from "../data/knx-expose-groups-context";
 import type { KnxHaSelector, GASelectorOptions } from "../types/schema";
 import { setNestedValue } from "../utils/config-helper";
+import { exitFlow, navigateInFlow } from "../utils/navigation";
 import { extractValidationErrors, getValidationError } from "../utils/validation";
 
 import { knxProjectContext } from "../data/knx-project-context";
@@ -257,7 +258,7 @@ export class KNXCreateExpose extends LitElement {
       <hass-subpage
         .hass=${this.hass}
         .narrow=${this.narrow}
-        .backPath=${"/knx/expose/view"}
+        .backCallback=${this._exitExposeFlow}
         .header=${this.hass.localize("component.knx.config_panel.expose.create.title")}
       >
         <div class="content">
@@ -292,13 +293,13 @@ export class KNXCreateExpose extends LitElement {
 
   private _renderConfig(): TemplateResult {
     const create = this._intent === "create";
-    const backPath = create ? "/knx/expose/create" : this.backPath;
 
     return html`
       <hass-subpage
         .hass=${this.hass}
         .narrow=${this.narrow}
-        .backPath=${backPath}
+        .backPath=${this.backPath}
+        .backCallback=${create ? this._backToEntityPicker : this._exitExposeFlow}
         .scrollable=${this._mode === "gui"}
         .header=${create
           ? this.hass.localize("component.knx.config_panel.expose.create.title")
@@ -702,9 +703,18 @@ export class KNXCreateExpose extends LitElement {
   private _entityChanged(ev: CustomEvent) {
     const entityId = (ev.detail.value as string) || undefined;
     if (entityId) {
-      navigate(`/knx/expose/create/${entityId}${mainWindow.location.search}`);
+      // stay in the same history entry - the create flow is left by `exitFlow`
+      navigateInFlow(`/knx/expose/create/${entityId}${mainWindow.location.search}`);
     }
   }
+
+  private _backToEntityPicker = () => {
+    navigateInFlow(`/knx/expose/create${mainWindow.location.search}`);
+  };
+
+  private _exitExposeFlow = () => {
+    exitFlow("/knx/expose");
+  };
 
   private _addExpose() {
     this._config = { ...this._config, options: [...this._config.options, { ga: {} }] };
@@ -773,7 +783,7 @@ export class KNXCreateExpose extends LitElement {
       if (this._handleResult(result, true)) return;
       logger.debug("Successfully saved expose", this._entityId);
       this._exposeGroupsCtx?.reload();
-      navigate("/knx/expose", { replace: true });
+      await exitFlow("/knx/expose");
     } catch (err) {
       logger.error("Error saving expose", err);
       navigate("/knx/error", { replace: true, data: err });

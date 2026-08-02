@@ -16,6 +16,7 @@ import "@ha/components/ha-yaml-editor";
 import type { HaYamlEditor } from "@ha/components/ha-yaml-editor";
 import "@ha/panels/config/components/ha-config-navigation-list";
 import { navigate } from "@ha/common/navigate";
+import { isNavigationClick } from "@ha/common/dom/is-navigation-click";
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import { throttle } from "@ha/common/util/throttle";
@@ -43,6 +44,7 @@ import { entitiesByGroupContext } from "../data/knx-entities-by-group-context";
 import type { EntitiesByGroupContextValue } from "../data/knx-entities-by-group-context";
 import { getPlatformStyle } from "../utils/common";
 import { validDPTsForSchema } from "../utils/dpt";
+import { exitFlow, navigateInFlow } from "../utils/navigation";
 import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
 import { KNXLogger } from "../tools/knx-logger";
 import type { KNX } from "../types/knx";
@@ -218,7 +220,7 @@ export class KNXCreateEntity extends LitElement {
       <hass-subpage
         .hass=${this.hass}
         .narrow=${this.narrow!}
-        .back-path=${this.backPath}
+        .backPath=${this.backPath}
         .header=${this.hass.localize("ui.panel.config.integrations.config_flow.error")}
       >
         <div class="content">
@@ -233,10 +235,11 @@ export class KNXCreateEntity extends LitElement {
       <hass-subpage
         .hass=${this.hass}
         .narrow=${this.narrow!}
-        .back-path=${this.backPath}
+        .backPath=${this.backPath}
+        .backCallback=${this._exitEntitiesFlow}
         .header=${this.hass.localize("component.knx.config_panel.entities.create.title")}
       >
-        <div class="type-selection">
+        <div class="type-selection" @click=${this._typeSelected}>
           <ha-card
             outlined
             .header=${this.hass.localize(
@@ -268,6 +271,22 @@ export class KNXCreateEntity extends LitElement {
     `;
   }
 
+  private _typeSelected(ev: MouseEvent) {
+    // The type selection items are links - handle plain clicks here to replace the current
+    // history entry instead of pushing a new one. Modifier clicks open a new tab as usual.
+    const href = isNavigationClick(ev);
+    if (!href) return;
+    navigateInFlow(href);
+  }
+
+  private _backToTypeSelection = () => {
+    navigateInFlow("/knx/entities/create");
+  };
+
+  private _exitEntitiesFlow = () => {
+    exitFlow("/knx/entities");
+  };
+
   private _renderEntityConfig(platform: SupportedPlatform): TemplateResult {
     const create = this._intent === "create";
     const schema = this.knx.schema[platform]!;
@@ -275,7 +294,8 @@ export class KNXCreateEntity extends LitElement {
     return html`<hass-subpage
       .hass=${this.hass}
       .narrow=${this.narrow!}
-      .back-path=${this.backPath}
+      .backPath=${this.backPath}
+      .backCallback=${create ? this._backToTypeSelection : this._exitEntitiesFlow}
       .scrollable=${this._mode === "gui"}
       .header=${create
         ? this.hass.localize("component.knx.config_panel.entities.create.title")
@@ -436,11 +456,12 @@ export class KNXCreateEntity extends LitElement {
       return;
     }
     createEntity(this.hass, { platform: this.entityPlatform, data: this._config })
-      .then((createEntityResult) => {
+      .then(async (createEntityResult) => {
         if (this._handleValidationError(createEntityResult, true)) return;
         logger.debug("Successfully created entity", createEntityResult.entity_id);
         this._entitiesByGroupContext?.reload();
-        navigate("/knx/entities", { replace: true });
+        // await leaving the flow before opening the dialog - it pushes its own history state
+        await exitFlow("/knx/entities");
         if (!createEntityResult.entity_id) {
           logger.error("entity_id not found after creation.");
           return;
@@ -472,7 +493,7 @@ export class KNXCreateEntity extends LitElement {
         if (this._handleValidationError(createEntityResult, true)) return;
         logger.debug("Successfully updated entity", this.entityId);
         this._entitiesByGroupContext?.reload();
-        navigate("/knx/entities", { replace: true });
+        exitFlow("/knx/entities");
       })
       .catch((err) => {
         logger.error("Error updating entity", err);
