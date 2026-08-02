@@ -185,37 +185,41 @@ export class KnxDptSelectDialog extends DialogMixin<KnxDptSelectDialogParams>(Li
       <div class="dialog-body">
         <ha-input-search .value=${this._filter} @input=${this._onFilterChanged}></ha-input-search>
 
-        ${Object.keys(this.dpts).length
-          ? html`<div class="dpt-list-container">
-              ${this._groupDpts(this._filter, this.dpts).map(
-                (group) => html`
-                  ${group.title
-                    ? html`<ha-section-title>${group.title}</ha-section-title>`
-                    : nothing}
-                  <ha-md-list>
-                    ${group.items.map((dpt) => {
-                      const info = this._getDptInfo(dpt);
-                      const isSelected = this._selected === dpt;
-                      return html`<ha-md-list-item
-                        interactive
-                        type="button"
-                        value=${dpt}
-                        @click=${this._onSelect}
-                        @dblclick=${this._onDoubleClick}
-                        @keydown=${this._itemKeydown}
-                      >
-                        <div class="dpt-row ${isSelected ? "selected" : ""}" slot="headline">
-                          <div class="dpt-number">${dpt}</div>
-                          <div class="dpt-name">${info.label}</div>
-                          <div class="dpt-unit">${info.unit}</div>
-                        </div>
-                      </ha-md-list-item>`;
-                    })}
-                  </ha-md-list>
-                `,
-              )}
-            </div>`
-          : html`<div>No options</div>`}
+        ${
+          Object.keys(this.dpts).length
+            ? html`<div class="dpt-list-container">
+                ${this._groupDpts(this._filter, this.dpts).map(
+                  (group) => html`
+                    ${
+                      group.title
+                        ? html`<ha-section-title>${group.title}</ha-section-title>`
+                        : nothing
+                    }
+                    <ha-md-list>
+                      ${group.items.map((dpt) => {
+                        const info = this._getDptInfo(dpt);
+                        const isSelected = this._selected === dpt;
+                        return html`<ha-md-list-item
+                          interactive
+                          type="button"
+                          value=${dpt}
+                          @click=${this._onSelect}
+                          @dblclick=${this._onDoubleClick}
+                          @keydown=${this._itemKeydown}
+                        >
+                          <div class="dpt-row ${isSelected ? "selected" : ""}" slot="headline">
+                            <div class="dpt-number">${dpt}</div>
+                            <div class="dpt-name">${info.label}</div>
+                            <div class="dpt-unit">${info.unit}</div>
+                          </div>
+                        </ha-md-list-item>`;
+                      })}
+                    </ha-md-list>
+                  `,
+                )}
+              </div>`
+            : html`<div>No options</div>`
+        }
       </div>
 
       <ha-dialog-footer slot="footer">

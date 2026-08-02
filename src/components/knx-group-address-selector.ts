@@ -191,118 +191,136 @@ export class GroupAddressSelector extends LitElement {
       <p class="title">${this.label}</p>
       ${requiredLabel ? html`<p class="description">${requiredLabel}</p>` : nothing}
       ${gaDescription ? html`<p class="description">${gaDescription}</p>` : nothing}
-      ${generalValidationError
-        ? html`<p class="error">
-            <ha-svg-icon .path=${mdiAlertCircleOutline}></ha-svg-icon>
-            <b>Validation error:</b>
-            ${generalValidationError.message}
-          </p>`
-        : nothing}
+      ${
+        generalValidationError
+          ? html`<p class="error">
+              <ha-svg-icon .path=${mdiAlertCircleOutline}></ha-svg-icon>
+              <b>Validation error:</b>
+              ${generalValidationError.message}
+            </p>`
+          : nothing
+      }
       <div class="main">
         <div class="selectors">
-          ${this.options.write
-            ? html`<knx-single-address-selector
-                class=${classMap({
-                  "valid-drop-zone": validGADropTargetClass,
-                  "invalid-drop-zone": invalidGADropTargetClass,
-                })}
-                .label=${this._baseTranslation("send_address")}
-                .parentLabel=${this.label}
-                .required=${this.options.write.required}
-                .groupAddresses=${this.filteredGroupAddresses}
-                .key=${"write"}
-                .value=${this.config.write ?? undefined}
-                .invalidMessage=${getValidationError(this.validationErrors, "write")?.message}
-                .hintMessage=${this._isGaDptMismatch(this.config.write)
-                  ? this._dptMismatchMessage(this.config.write)
-                  : undefined}
-                @value-changed=${this._valueChanged}
-                @dragover=${this._dragOverHandler}
-                @drop=${this._dropHandler}
-              ></knx-single-address-selector>`
-            : nothing}
-          ${this.options.state
-            ? html`<knx-single-address-selector
-                class=${classMap({
-                  "valid-drop-zone": validGADropTargetClass,
-                  "invalid-drop-zone": invalidGADropTargetClass,
-                })}
-                .label=${this._baseTranslation("state_address")}
-                .parentLabel=${this.label}
-                .required=${this.options.state.required}
-                .groupAddresses=${this.filteredGroupAddresses}
-                .key=${"state"}
-                .value=${this.config.state ?? undefined}
-                .invalidMessage=${getValidationError(this.validationErrors, "state")?.message}
-                .hintMessage=${this._isGaDptMismatch(this.config.state)
-                  ? this._dptMismatchMessage(this.config.state)
-                  : undefined}
-                @value-changed=${this._valueChanged}
-                @dragover=${this._dragOverHandler}
-                @drop=${this._dropHandler}
-              ></knx-single-address-selector>`
-            : nothing}
-        </div>
-      </div>
-      ${this.options.passive
-        ? html`<div class="passive-list">
-            ${[
-              ...(this.config.passive ?? []),
-              ...(this._showEmptyPassiveField ? [undefined] : []),
-            ].map((ga, index) => {
-              const passiveErr = this._getPassiveValidationForIndex(index);
-              return html`<div class="passive-row">
-                <knx-single-address-selector
+          ${
+            this.options.write
+              ? html`<knx-single-address-selector
                   class=${classMap({
                     "valid-drop-zone": validGADropTargetClass,
                     "invalid-drop-zone": invalidGADropTargetClass,
                   })}
-                  .label=${this._baseTranslation("passive_address")}
+                  .label=${this._baseTranslation("send_address")}
                   .parentLabel=${this.label}
-                  .required=${false}
+                  .required=${this.options.write.required}
                   .groupAddresses=${this.filteredGroupAddresses}
-                  .key=${"passive"}
-                  .index=${index}
-                  .value=${ga ?? undefined}
-                  .invalidMessage=${passiveErr?.message}
-                  .hintMessage=${this._isGaDptMismatch(ga)
-                    ? this._dptMismatchMessage(ga)
-                    : undefined}
-                  @value-changed=${this._valueChangedPassive}
+                  .key=${"write"}
+                  .value=${this.config.write ?? undefined}
+                  .invalidMessage=${getValidationError(this.validationErrors, "write")?.message}
+                  .hintMessage=${
+                    this._isGaDptMismatch(this.config.write)
+                      ? this._dptMismatchMessage(this.config.write)
+                      : undefined
+                  }
+                  @value-changed=${this._valueChanged}
                   @dragover=${this._dragOverHandler}
                   @drop=${this._dropHandler}
-                ></knx-single-address-selector>
-                <ha-icon-button
-                  class="remove-passive"
-                  .path=${mdiClose}
-                  .label=${this.localize("ui.common.remove")}
-                  data-index=${index}
-                  @click=${this._onRemovePassiveClick}
-                ></ha-icon-button>
-              </div>`;
-            })}
-          </div>`
-        : nothing}
-      ${this.options.validDPTs || this.options.passive
-        ? html`<div class="footer-row">
-            ${this.options.validDPTs
-              ? html`<p class="valid-dpts">
-                  ${this._baseTranslation("valid_dpts")}:
-                  ${this.options.validDPTs.map((dpt) => dptToString(dpt)).join(", ")}
-                </p>`
-              : nothing}
-            ${this.options.passive
-              ? html`<a
-                  href="#"
-                  @click=${this._addPassiveSelector}
-                  class="add-passive-link"
-                  ?disabled=${this._showEmptyPassiveField}
-                >
-                  ${this._baseTranslation("add_passive_address")}
-                </a>`
-              : nothing}
-          </div>`
-        : nothing}
+                ></knx-single-address-selector>`
+              : nothing
+          }
+          ${
+            this.options.state
+              ? html`<knx-single-address-selector
+                  class=${classMap({
+                    "valid-drop-zone": validGADropTargetClass,
+                    "invalid-drop-zone": invalidGADropTargetClass,
+                  })}
+                  .label=${this._baseTranslation("state_address")}
+                  .parentLabel=${this.label}
+                  .required=${this.options.state.required}
+                  .groupAddresses=${this.filteredGroupAddresses}
+                  .key=${"state"}
+                  .value=${this.config.state ?? undefined}
+                  .invalidMessage=${getValidationError(this.validationErrors, "state")?.message}
+                  .hintMessage=${
+                    this._isGaDptMismatch(this.config.state)
+                      ? this._dptMismatchMessage(this.config.state)
+                      : undefined
+                  }
+                  @value-changed=${this._valueChanged}
+                  @dragover=${this._dragOverHandler}
+                  @drop=${this._dropHandler}
+                ></knx-single-address-selector>`
+              : nothing
+          }
+        </div>
+      </div>
+      ${
+        this.options.passive
+          ? html`<div class="passive-list">
+              ${[
+                ...(this.config.passive ?? []),
+                ...(this._showEmptyPassiveField ? [undefined] : []),
+              ].map((ga, index) => {
+                const passiveErr = this._getPassiveValidationForIndex(index);
+                return html`<div class="passive-row">
+                  <knx-single-address-selector
+                    class=${classMap({
+                      "valid-drop-zone": validGADropTargetClass,
+                      "invalid-drop-zone": invalidGADropTargetClass,
+                    })}
+                    .label=${this._baseTranslation("passive_address")}
+                    .parentLabel=${this.label}
+                    .required=${false}
+                    .groupAddresses=${this.filteredGroupAddresses}
+                    .key=${"passive"}
+                    .index=${index}
+                    .value=${ga ?? undefined}
+                    .invalidMessage=${passiveErr?.message}
+                    .hintMessage=${
+                      this._isGaDptMismatch(ga) ? this._dptMismatchMessage(ga) : undefined
+                    }
+                    @value-changed=${this._valueChangedPassive}
+                    @dragover=${this._dragOverHandler}
+                    @drop=${this._dropHandler}
+                  ></knx-single-address-selector>
+                  <ha-icon-button
+                    class="remove-passive"
+                    .path=${mdiClose}
+                    .label=${this.localize("ui.common.remove")}
+                    data-index=${index}
+                    @click=${this._onRemovePassiveClick}
+                  ></ha-icon-button>
+                </div>`;
+              })}
+            </div>`
+          : nothing
+      }
+      ${
+        this.options.validDPTs || this.options.passive
+          ? html`<div class="footer-row">
+              ${
+                this.options.validDPTs
+                  ? html`<p class="valid-dpts">
+                      ${this._baseTranslation("valid_dpts")}:
+                      ${this.options.validDPTs.map((dpt) => dptToString(dpt)).join(", ")}
+                    </p>`
+                  : nothing
+              }
+              ${
+                this.options.passive
+                  ? html`<a
+                      href="#"
+                      @click=${this._addPassiveSelector}
+                      class="add-passive-link"
+                      ?disabled=${this._showEmptyPassiveField}
+                    >
+                      ${this._baseTranslation("add_passive_address")}
+                    </a>`
+                  : nothing
+              }
+            </div>`
+          : nothing
+      }
       ${this.options.dptSelect ? this._renderDptOptionSelector() : nothing}
       ${this.options.dptClasses ? this._renderDptDialogSelector() : nothing}
     `;

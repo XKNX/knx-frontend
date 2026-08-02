@@ -94,13 +94,15 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
         <knx-selector-row
           .hass=${this.hass}
           .key=${"response"}
-          .selector=${{
-            type: "ha_selector",
-            name: "response",
-            selector: {
-              boolean: {},
-            },
-          } as any}
+          .selector=${
+            {
+              type: "ha_selector",
+              name: "response",
+              selector: {
+                boolean: {},
+              },
+            } as any
+          }
           .value=${this._data.response}
           .localizeFunction=${this._backendLocalize}
           @value-changed=${this._selectorChanged}

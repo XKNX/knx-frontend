@@ -58,10 +58,12 @@ class KnxDataTableGaLabel extends LitElement {
             slot="trigger"
             class="open-menu"
             dense
-            .description=${this.localize("component.knx.config_panel.common.group_addresses") +
-            " (" +
-            gas.length +
-            ")"}
+            .description=${
+              this.localize("component.knx.config_panel.common.group_addresses") +
+              " (" +
+              gas.length +
+              ")"
+            }
             >&#8943;</ha-label
           >
           ${repeat(

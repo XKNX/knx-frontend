@@ -187,22 +187,25 @@ export class GroupMonitorTelegramInfoDialog
           <span title=${formatIsoTimestampWithMicroseconds(telegram.timestampIso)}>
             ${formatDateTimeWithMilliseconds(telegram.timestamp) + " "}
           </span>
-          ${!narrow
-            ? html`
-                (<ha-relative-time
-                  .hass=${this.hass}
-                  .datetime=${telegram.timestamp}
-                  .capitalize=${false}
-                ></ha-relative-time
-                >)
-              `
-            : nothing}
+          ${
+            !narrow
+              ? html`
+                  (<ha-relative-time
+                    .hass=${this.hass}
+                    .datetime=${telegram.timestamp}
+                    .capitalize=${false}
+                  ></ha-relative-time
+                  >)
+                `
+              : nothing
+          }
         </div>
         <div
           slot="headerActionItems"
           class="direction-badge ${directionClass}"
-          title=${this.knx.localize(telegram.direction) +
-          (telegram.dataSecure ? " DataSecure" : "")}
+          title=${
+            this.knx.localize(telegram.direction) + (telegram.dataSecure ? " DataSecure" : "")
+          }
         >
           ${this.knx.localize(telegram.direction) + (telegram.dataSecure ? " 🔒" : "")}
         </div>
@@ -216,31 +219,37 @@ export class GroupMonitorTelegramInfoDialog
                   ${this.knx.localize("knx_telegram_info_dialog_source")}
                 </div>
                 <div class="address-chip">${telegram.sourceAddress}</div>
-                ${telegram.sourceText
-                  ? html`<div class="item-name">${telegram.sourceText}</div>`
-                  : nothing}
+                ${
+                  telegram.sourceText
+                    ? html`<div class="item-name">${telegram.sourceText}</div>`
+                    : nothing
+                }
               </div>
               <div class="address-item">
                 <div class="item-label">
                   ${this.knx.localize("knx_telegram_info_dialog_destination")}
                 </div>
                 <div class="address-chip">${telegram.destinationAddress}</div>
-                ${telegram.destinationText
-                  ? html`<div class="item-name">${telegram.destinationText}</div>`
-                  : nothing}
+                ${
+                  telegram.destinationText
+                    ? html`<div class="item-name">${telegram.destinationText}</div>`
+                    : nothing
+                }
               </div>
             </div>
 
-            ${telegram.value != null
-              ? html`
-                  <div class="value-section">
-                    <div class="value-label">
-                      ${this.knx.localize("knx_telegram_info_dialog_value")}
+            ${
+              telegram.value != null
+                ? html`
+                    <div class="value-section">
+                      <div class="value-label">
+                        ${this.knx.localize("knx_telegram_info_dialog_value")}
+                      </div>
+                      <div class="value-content">${telegram.value}</div>
                     </div>
-                    <div class="value-content">${telegram.value}</div>
-                  </div>
-                `
-              : nothing}
+                  `
+                : nothing
+            }
 
             <div class="telegram-details">
               <div class="detail-grid">
@@ -254,34 +263,38 @@ export class GroupMonitorTelegramInfoDialog
                   <div class="detail-label">DPT</div>
                   <div class="detail-value">${telegram.dpt || ""}</div>
                 </div>
-                ${telegram.payload != null
-                  ? html`
-                      <div class="detail-item payload">
-                        <div class="detail-label">
-                          ${this.knx.localize("knx_telegram_info_dialog_payload")}
+                ${
+                  telegram.payload != null
+                    ? html`
+                        <div class="detail-item payload">
+                          <div class="detail-label">
+                            ${this.knx.localize("knx_telegram_info_dialog_payload")}
+                          </div>
+                          <code>${telegram.payload}</code>
                         </div>
-                        <code>${telegram.payload}</code>
-                      </div>
-                    `
-                  : nothing}
+                      `
+                    : nothing
+                }
               </div>
             </div>
 
-            ${relatedEntities.length || relatedEntitiesYaml.length || relatedExposes.length
-              ? html`
-                  <div class="item-related">
-                    <div class="related-label">
-                      ${this.hass.localize("ui.dialogs.entity_registry.related")}
+            ${
+              relatedEntities.length || relatedEntitiesYaml.length || relatedExposes.length
+                ? html`
+                    <div class="item-related">
+                      <div class="related-label">
+                        ${this.hass.localize("ui.dialogs.entity_registry.related")}
+                      </div>
+                      <knx-data-table-related-label
+                        .hass=${this.hass}
+                        .entities=${relatedEntities}
+                        .entitiesYaml=${relatedEntitiesYaml}
+                        .exposes=${relatedExposes}
+                      ></knx-data-table-related-label>
                     </div>
-                    <knx-data-table-related-label
-                      .hass=${this.hass}
-                      .entities=${relatedEntities}
-                      .entitiesYaml=${relatedEntitiesYaml}
-                      .exposes=${relatedExposes}
-                    ></knx-data-table-related-label>
-                  </div>
-                `
-              : nothing}
+                  `
+                : nothing
+            }
           </div>
         </div>
 

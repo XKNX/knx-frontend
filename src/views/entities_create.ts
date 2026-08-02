@@ -342,9 +342,11 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
       .backPath=${this.backPath}
       .backCallback=${create ? this._backToTypeSelection : this._exitEntitiesFlow}
       .scrollable=${this._mode === "gui"}
-      .header=${create
-        ? this.hass.localize("component.knx.config_panel.entities.create.title")
-        : `${this.hass.localize("ui.common.edit")}: ${this.entityId}`}
+      .header=${
+        create
+          ? this.hass.localize("component.knx.config_panel.entities.create.title")
+          : `${this.hass.localize("ui.common.edit")}: ${this.entityId}`
+      }
     >
       <ha-icon-button
         slot="toolbar-icon"
@@ -358,32 +360,34 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
       ></ha-icon-button>
       <div class="content">
         <div class="entity-config ${this._mode === "yaml" ? "yaml-mode" : ""}">
-          ${this._mode === "gui"
-            ? html`
-                <knx-configure-entity
-                  .hass=${this.hass}
-                  .knx=${this.knx}
-                  .platform=${platform}
-                  .config=${this._config}
-                  .schema=${schema}
-                  .validationErrors=${this._validationErrors}
-                  @knx-entity-configuration-changed=${this._configChanged}
-                >
+          ${
+            this._mode === "gui"
+              ? html`
+                  <knx-configure-entity
+                    .hass=${this.hass}
+                    .knx=${this.knx}
+                    .platform=${platform}
+                    .config=${this._config}
+                    .schema=${schema}
+                    .validationErrors=${this._validationErrors}
+                    @knx-entity-configuration-changed=${this._configChanged}
+                  >
+                    ${this._renderValidationAlert()}
+                  </knx-configure-entity>
+                `
+              : html`
                   ${this._renderValidationAlert()}
-                </knx-configure-entity>
-              `
-            : html`
-                ${this._renderValidationAlert()}
-                <ha-yaml-editor
-                  .defaultValue=${this._config}
-                  @value-changed=${this._yamlChanged}
-                  @dragover=${this._yamlDragOver}
-                  @drop=${this._yamlDrop}
-                ></ha-yaml-editor>
-                <p class="yaml-hint">
-                  ${this.hass.localize("component.knx.config_panel.entities.create.yaml.mode_hint")}
-                </p>
-              `}
+                  <ha-yaml-editor
+                    .defaultValue=${this._config}
+                    @value-changed=${this._yamlChanged}
+                    @dragover=${this._yamlDragOver}
+                    @drop=${this._yamlDrop}
+                  ></ha-yaml-editor>
+                  <p class="yaml-hint">
+                    ${this.hass.localize("component.knx.config_panel.entities.create.yaml.mode_hint")}
+                  </p>
+                `
+          }
           <ha-button
             class="fab"
             size="l"
@@ -391,19 +395,21 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
             ?disabled=${this._config === undefined || !!this._yamlErrors}
           >
             <ha-svg-icon slot="start" .path=${create ? mdiPlus : mdiFloppy}></ha-svg-icon>
-            ${create
-              ? this.hass.localize("ui.common.create")
-              : this.hass.localize("ui.common.save")}
+            ${
+              create ? this.hass.localize("ui.common.create") : this.hass.localize("ui.common.save")
+            }
           </ha-button>
         </div>
-        ${this._projectData
-          ? html` <div class="panel">
-              <knx-project-device-tree
-                .data=${this._projectData}
-                .validDPTs=${validDPTsForSchema(schema, this.knx.dptMetadata)}
-              ></knx-project-device-tree>
-            </div>`
-          : nothing}
+        ${
+          this._projectData
+            ? html` <div class="panel">
+                <knx-project-device-tree
+                  .data=${this._projectData}
+                  .validDPTs=${validDPTsForSchema(schema, this.knx.dptMetadata)}
+                ></knx-project-device-tree>
+              </div>`
+            : nothing
+        }
       </div>
     </hass-subpage>`;
   }
@@ -416,10 +422,12 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
       <details>
         <summary><b>Validation error</b></summary>
         <p>Base error: ${this._validationBaseError}</p>
-        ${this._validationErrors?.map(
-          (err) =>
-            html`<p>${err.code ?? "invalid"}: ${err.message} in ${err.path?.join(" / ")}</p>`,
-        ) ?? nothing}
+        ${
+          this._validationErrors?.map(
+            (err) =>
+              html`<p>${err.code ?? "invalid"}: ${err.message} in ${err.path?.join(" / ")}</p>`,
+          ) ?? nothing
+        }
       </details>
     </ha-alert>`;
   }

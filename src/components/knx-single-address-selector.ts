@@ -91,15 +91,17 @@ export class KnxSingleAddressSelector extends LitElement {
 
     return html`
       <div class="container">
-        ${this._projectData
-          ? html`<ha-icon-button
-              class="menu-button"
-              .disabled=${this.disabled || this.groupAddresses.length === 0}
-              .path=${mdiTextSearchVariant}
-              .label=${this._baseTranslation("group_address_search")}
-              @click=${this._openDialog}
-            ></ha-icon-button>`
-          : nothing}
+        ${
+          this._projectData
+            ? html`<ha-icon-button
+                class="menu-button"
+                .disabled=${this.disabled || this.groupAddresses.length === 0}
+                .path=${mdiTextSearchVariant}
+                .label=${this._baseTranslation("group_address_search")}
+                @click=${this._openDialog}
+              ></ha-icon-button>`
+            : nothing
+        }
 
         <div class="input-wrap">
           <div class="input-row">
@@ -112,15 +114,17 @@ export class KnxSingleAddressSelector extends LitElement {
               @input=${this._onInput}
             >
             </ha-input>
-            ${displayName
-              ? html`<div
-                  class="ga-name"
-                  ?unknown-ga=${!nameKnown || noAddressKnown}
-                  title=${displayName}
-                >
-                  ${displayName}
-                </div>`
-              : nothing}
+            ${
+              displayName
+                ? html`<div
+                    class="ga-name"
+                    ?unknown-ga=${!nameKnown || noAddressKnown}
+                    title=${displayName}
+                  >
+                    ${displayName}
+                  </div>`
+                : nothing
+            }
           </div>
         </div>
       </div>

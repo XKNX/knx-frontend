@@ -56,28 +56,32 @@ class KnxDptDialogSelector extends LitElement {
           .label=${this._baseTranslation("dpt_select")}
         ></ha-icon-button>
 
-        ${this.value
-          ? html`<div class="selection">
-                <div class="dpt-number">${this.value}</div>
-                <div class="dpt-name">
-                  ${this.localize(
-                    `component.knx.config_panel.dpt.options.${this.value.replace(".", "_")}`,
-                  ) ||
-                  (this.knx.dptMetadata[this.value]?.name
-                    ? snakeToTitleCase(this.knx.dptMetadata[this.value].name)
-                    : this.localize("state.default.unknown"))}
+        ${
+          this.value
+            ? html`<div class="selection">
+                  <div class="dpt-number">${this.value}</div>
+                  <div class="dpt-name">
+                    ${
+                      this.localize(
+                        `component.knx.config_panel.dpt.options.${this.value.replace(".", "_")}`,
+                      ) ||
+                      (this.knx.dptMetadata[this.value]?.name
+                        ? snakeToTitleCase(this.knx.dptMetadata[this.value].name)
+                        : this.localize("state.default.unknown"))
+                    }
+                  </div>
+                  <div class="dpt-unit">${this.knx.dptMetadata[this.value]?.unit ?? ""}</div>
                 </div>
-                <div class="dpt-unit">${this.knx.dptMetadata[this.value]?.unit ?? ""}</div>
-              </div>
-              <ha-icon-button
-                class="clear-button"
-                .path=${mdiClose}
-                .label=${this.localize("ui.common.clear")}
-                @click=${this._clearSelection}
-              ></ha-icon-button>`
-          : html`<div no-selection class="selection">
-              ${this._baseTranslation("dpt_no_selection")}
-            </div>`}
+                <ha-icon-button
+                  class="clear-button"
+                  .path=${mdiClose}
+                  .label=${this.localize("ui.common.clear")}
+                  @click=${this._clearSelection}
+                ></ha-icon-button>`
+            : html`<div no-selection class="selection">
+                ${this._baseTranslation("dpt_no_selection")}
+              </div>`
+        }
       </div>
       ${this.invalidMessage ? html`<p class="invalid-message">${this.invalidMessage}</p>` : nothing}
     `;

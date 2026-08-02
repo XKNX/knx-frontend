@@ -85,5 +85,4 @@ export interface ExposeConfigData {
 }
 
 export type ExposeResult =
-  | { success: true }
-  | { success: false; error_base: string; errors: ErrorDescription[] };
+  { success: true } | { success: false; error_base: string; errors: ErrorDescription[] };

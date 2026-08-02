@@ -76,11 +76,13 @@ export class KNXProjectTreeView extends LitElement {
       const rangeContent = html`<div
         class=${classMap(rangeClasses)}
         toggle-range=${selectable ? key : nothing}
-        @click=${selectable
-          ? this.multiselect
-            ? this._selectionChangedMulti
-            : this._selectionChangedSingle
-          : nothing}
+        @click=${
+          selectable
+            ? this.multiselect
+              ? this._selectionChangedMulti
+              : this._selectionChangedSingle
+            : nothing
+        }
       >
         <span class="range-key">${key}</span>
         <span class="range-text">${groupRange.name}</span>

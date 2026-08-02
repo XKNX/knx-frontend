@@ -132,102 +132,110 @@ export class KnxTimeDeltaFilter extends LitElement {
             ${hasValues && !this.disabled ? html`<div class="badge">1</div>` : nothing}
           </span>
           <div class="controls">
-            ${hasValues && !this.disabled
-              ? html`
-                  <ha-icon-button
-                    .path=${mdiFilterVariantRemove}
-                    @click=${this._handleClearFiltersButtonClick}
-                    .title=${this.knx.localize("knx_list_filter_clear")}
-                  ></ha-icon-button>
-                `
-              : nothing}
+            ${
+              hasValues && !this.disabled
+                ? html`
+                    <ha-icon-button
+                      .path=${mdiFilterVariantRemove}
+                      @click=${this._handleClearFiltersButtonClick}
+                      .title=${this.knx.localize("knx_list_filter_clear")}
+                    ></ha-icon-button>
+                  `
+                : nothing
+            }
           </div>
         </div>
 
-        ${this.expanded
-          ? html`
-              <div class="filter-content">
-                <p class="description">
-                  ${this.knx.localize("group_monitor_time_delta_description")}
-                </p>
+        ${
+          this.expanded
+            ? html`
+                <div class="filter-content">
+                  <p class="description">
+                    ${this.knx.localize("group_monitor_time_delta_description")}
+                  </p>
 
-                ${this.disabled
-                  ? html`
-                      <p class="disabled-message">
-                        ${this.knx.localize("group_monitor_time_delta_disabled")}
-                      </p>
-                    `
-                  : html`
-                      <div class="input-row">
-                        <div
-                          class="input-wrapper"
-                          title=${this.knx.localize("group_monitor_time_delta_before")}
-                        >
-                          <ha-selector-number
-                            id="delta-before"
-                            .hass=${this.hass}
-                            .value=${this.deltaBefore}
-                            .disabled=${this.disabled}
-                            .required=${false}
-                            .label=${this.knx.localize("group_monitor_time_delta_before")}
-                            .selector=${{
-                              number: {
-                                min: 0,
-                                step: 10,
-                                mode: "box",
-                                unit_of_measurement: "ms",
-                              },
-                            }}
-                            @value-changed=${this._handleBeforeInput}
-                          ></ha-selector-number>
-                        </div>
-                      </div>
-
-                      <div class="input-row">
-                        <div
-                          class="input-wrapper"
-                          title=${this.knx.localize("group_monitor_time_delta_after")}
-                        >
-                          <ha-selector-number
-                            id="delta-after"
-                            .hass=${this.hass}
-                            .value=${this.deltaAfter}
-                            .disabled=${this.disabled}
-                            .required=${false}
-                            .label=${this.knx.localize("group_monitor_time_delta_after")}
-                            .selector=${{
-                              number: {
-                                min: 0,
-                                step: 10,
-                                mode: "box",
-                                unit_of_measurement: "ms",
-                              },
-                            }}
-                            @value-changed=${this._handleAfterInput}
-                          ></ha-selector-number>
-                        </div>
-                      </div>
-                    `}
-                ${hasValues && !this.disabled
-                  ? html`
-                      <div class="summary-item">
-                        <div class="summary-text">
-                          <div class="summary-primary">
-                            <span class="summary-label">
-                              ${this.knx.localize("group_monitor_time_delta_summary", {
-                                before: this.deltaBefore,
-                                after: this.deltaAfter,
-                              })}
-                            </span>
-                            <span class="summary-badge">${this.addedCount}</span>
+                  ${
+                    this.disabled
+                      ? html`
+                          <p class="disabled-message">
+                            ${this.knx.localize("group_monitor_time_delta_disabled")}
+                          </p>
+                        `
+                      : html`
+                          <div class="input-row">
+                            <div
+                              class="input-wrapper"
+                              title=${this.knx.localize("group_monitor_time_delta_before")}
+                            >
+                              <ha-selector-number
+                                id="delta-before"
+                                .hass=${this.hass}
+                                .value=${this.deltaBefore}
+                                .disabled=${this.disabled}
+                                .required=${false}
+                                .label=${this.knx.localize("group_monitor_time_delta_before")}
+                                .selector=${{
+                                  number: {
+                                    min: 0,
+                                    step: 10,
+                                    mode: "box",
+                                    unit_of_measurement: "ms",
+                                  },
+                                }}
+                                @value-changed=${this._handleBeforeInput}
+                              ></ha-selector-number>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    `
-                  : nothing}
-              </div>
-            `
-          : nothing}
+
+                          <div class="input-row">
+                            <div
+                              class="input-wrapper"
+                              title=${this.knx.localize("group_monitor_time_delta_after")}
+                            >
+                              <ha-selector-number
+                                id="delta-after"
+                                .hass=${this.hass}
+                                .value=${this.deltaAfter}
+                                .disabled=${this.disabled}
+                                .required=${false}
+                                .label=${this.knx.localize("group_monitor_time_delta_after")}
+                                .selector=${{
+                                  number: {
+                                    min: 0,
+                                    step: 10,
+                                    mode: "box",
+                                    unit_of_measurement: "ms",
+                                  },
+                                }}
+                                @value-changed=${this._handleAfterInput}
+                              ></ha-selector-number>
+                            </div>
+                          </div>
+                        `
+                  }
+                  ${
+                    hasValues && !this.disabled
+                      ? html`
+                          <div class="summary-item">
+                            <div class="summary-text">
+                              <div class="summary-primary">
+                                <span class="summary-label">
+                                  ${this.knx.localize("group_monitor_time_delta_summary", {
+                                    before: this.deltaBefore,
+                                    after: this.deltaAfter,
+                                  })}
+                                </span>
+                                <span class="summary-badge">${this.addedCount}</span>
+                              </div>
+                            </div>
+                          </div>
+                        `
+                      : nothing
+                  }
+                </div>
+              `
+            : nothing
+        }
       </flex-content-expansion-panel>
     `;
   }

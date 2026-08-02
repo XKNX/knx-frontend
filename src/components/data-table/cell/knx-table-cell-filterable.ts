@@ -110,23 +110,25 @@ export class KnxTableCellFilterable extends KnxTableCell {
           <slot name="secondary"></slot>
         </div>
         <!-- Filter Button - conditionally rendered based on filterValue and filterDisabled -->
-        ${this.filterValue && !this.filterDisabled
-          ? html`
-              <div class="filter-button ${this.filterActive ? "filter-active" : ""}">
-                <ha-icon-button
-                  .path=${this.filterActive ? mdiFilterVariantRemove : mdiFilterVariant}
-                  @click=${this._handleFilterClick}
-                  .title=${this.knx.localize(
-                    this.filterActive
-                      ? "knx_table_cell_filterable_filter_remove_tooltip"
-                      : "knx_table_cell_filterable_filter_set_tooltip",
-                    { value: this.filterDisplayText || this.filterValue },
-                  )}
-                >
-                </ha-icon-button>
-              </div>
-            `
-          : nothing}
+        ${
+          this.filterValue && !this.filterDisabled
+            ? html`
+                <div class="filter-button ${this.filterActive ? "filter-active" : ""}">
+                  <ha-icon-button
+                    .path=${this.filterActive ? mdiFilterVariantRemove : mdiFilterVariant}
+                    @click=${this._handleFilterClick}
+                    .title=${this.knx.localize(
+                      this.filterActive
+                        ? "knx_table_cell_filterable_filter_remove_tooltip"
+                        : "knx_table_cell_filterable_filter_set_tooltip",
+                      { value: this.filterDisplayText || this.filterValue },
+                    )}
+                  >
+                  </ha-icon-button>
+                </div>
+              `
+            : nothing
+        }
       </div>
     `;
   }

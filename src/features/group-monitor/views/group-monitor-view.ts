@@ -843,13 +843,15 @@ export class KNXGroupMonitor extends LitElement {
             @toggle-filter=${this._handleSourceFilterToggle}
           >
             <div class="primary" slot="primary">${row.sourceAddress}</div>
-            ${row.sourceText
-              ? html`
-                  <div class="secondary" slot="secondary" title=${row.sourceText || ""}>
-                    ${row.sourceText}
-                  </div>
-                `
-              : nothing}
+            ${
+              row.sourceText
+                ? html`
+                    <div class="secondary" slot="secondary" title=${row.sourceText || ""}>
+                      ${row.sourceText}
+                    </div>
+                  `
+                : nothing
+            }
           </knx-table-cell-filterable>
         `,
       },
@@ -892,13 +894,15 @@ export class KNXGroupMonitor extends LitElement {
             @toggle-filter=${this._handleDestinationFilterToggle}
           >
             <div class="primary" slot="primary">${row.destinationAddress}</div>
-            ${row.destinationText
-              ? html`
-                  <div class="secondary" slot="secondary" title=${row.destinationText || ""}>
-                    ${row.destinationText}
-                  </div>
-                `
-              : nothing}
+            ${
+              row.destinationText
+                ? html`
+                    <div class="secondary" slot="secondary" title=${row.destinationText || ""}>
+                      ${row.destinationText}
+                    </div>
+                  `
+                : nothing
+            }
           </knx-table-cell-filterable>
         `,
       },
@@ -948,9 +952,9 @@ export class KNXGroupMonitor extends LitElement {
               class="secondary"
               slot="secondary"
               title=${row.direction + (row.dataSecure ? " DataSecure" : "")}
-              style="color: ${row.direction === "Outgoing"
-                ? "var(--knx-blue)"
-                : "var(--knx-green)"}"
+              style="color: ${
+                row.direction === "Outgoing" ? "var(--knx-blue)" : "var(--knx-green)"
+              }"
             >
               ${row.direction + (row.dataSecure ? " 🔒" : "")}
             </div>
@@ -1146,55 +1150,65 @@ export class KNXGroupMonitor extends LitElement {
         .filters=${activeFilters}
         @clear-filter=${this._handleClearFilters}
         @columns-changed=${this._handleColumnsChanged}
-        .columnOrder=${this.narrow
-          ? this._storedColumns?.narrow?.columnOrder
-          : this._storedColumns?.wide?.columnOrder}
-        .hiddenColumns=${this.narrow
-          ? this._storedColumns?.narrow?.hiddenColumns
-          : this._storedColumns?.wide?.hiddenColumns}
+        .columnOrder=${
+          this.narrow
+            ? this._storedColumns?.narrow?.columnOrder
+            : this._storedColumns?.wide?.columnOrder
+        }
+        .hiddenColumns=${
+          this.narrow
+            ? this._storedColumns?.narrow?.hiddenColumns
+            : this._storedColumns?.wide?.hiddenColumns
+        }
       >
         <!-- Top header -->
-        ${this.controller.connectionError
-          ? html`
-              <ha-alert
-                slot="top-header"
-                .alertType=${"error"}
-                .title=${this.knx.localize("group_monitor_connection_error_title")}
-              >
-                ${this.controller.connectionError}
-                <ha-button slot="action" @click=${this._retryConnection}>
-                  ${this.knx.localize("group_monitor_retry_connection")}
-                </ha-button>
-              </ha-alert>
-            `
-          : nothing}
-        ${this.controller.isPaused
-          ? html`
-              <ha-alert
-                slot="top-header"
-                .alertType=${"info"}
-                .dismissable=${false}
-                .title=${this.knx.localize("group_monitor_paused_title")}
-              >
-                ${this.knx.localize("group_monitor_paused_message")}
-                <ha-button slot="action" @click=${this._handlePauseToggle}>
-                  ${this.knx.localize("group_monitor_resume")}
-                </ha-button>
-              </ha-alert>
-            `
-          : ""}
-        ${this.controller.isProjectLoaded === false
-          ? html`
-              <ha-alert
-                slot="top-header"
-                .alertType=${"info"}
-                .dismissable=${true}
-                .title=${this.knx.localize("group_monitor_project_not_loaded_title")}
-              >
-                ${this.knx.localize("group_monitor_project_not_loaded_message")}
-              </ha-alert>
-            `
-          : nothing}
+        ${
+          this.controller.connectionError
+            ? html`
+                <ha-alert
+                  slot="top-header"
+                  .alertType=${"error"}
+                  .title=${this.knx.localize("group_monitor_connection_error_title")}
+                >
+                  ${this.controller.connectionError}
+                  <ha-button slot="action" @click=${this._retryConnection}>
+                    ${this.knx.localize("group_monitor_retry_connection")}
+                  </ha-button>
+                </ha-alert>
+              `
+            : nothing
+        }
+        ${
+          this.controller.isPaused
+            ? html`
+                <ha-alert
+                  slot="top-header"
+                  .alertType=${"info"}
+                  .dismissable=${false}
+                  .title=${this.knx.localize("group_monitor_paused_title")}
+                >
+                  ${this.knx.localize("group_monitor_paused_message")}
+                  <ha-button slot="action" @click=${this._handlePauseToggle}>
+                    ${this.knx.localize("group_monitor_resume")}
+                  </ha-button>
+                </ha-alert>
+              `
+            : ""
+        }
+        ${
+          this.controller.isProjectLoaded === false
+            ? html`
+                <ha-alert
+                  slot="top-header"
+                  .alertType=${"info"}
+                  .dismissable=${true}
+                  .title=${this.knx.localize("group_monitor_project_not_loaded_title")}
+                >
+                  ${this.knx.localize("group_monitor_project_not_loaded_message")}
+                </ha-alert>
+              `
+            : nothing
+        }
 
         <!-- Toolbar actions: individual icon buttons when wide, collapsed into
              an overflow menu when narrow so they don't overlap the search field -->
@@ -1211,12 +1225,14 @@ export class KNXGroupMonitor extends LitElement {
           .hass=${this.hass}
           .knx=${this.knx}
           .data=${Object.values(distinctValues.source)}
-          .config=${this._sourceFilterConfig(
-            this._hasActiveFilters("source"),
-            this.controller.filters.source?.length || 0,
-            this.sourceFilter?.sortCriterion,
-            this.hass.language,
-          ) as any}
+          .config=${
+            this._sourceFilterConfig(
+              this._hasActiveFilters("source"),
+              this.controller.filters.source?.length || 0,
+              this.sourceFilter?.sortCriterion,
+              this.hass.language,
+            ) as any
+          }
           .selectedOptions=${this.controller.filters.source}
           .expanded=${this.controller.expandedFilter === "source"}
           .narrow=${this.narrow}
@@ -1234,12 +1250,14 @@ export class KNXGroupMonitor extends LitElement {
           .hass=${this.hass}
           .knx=${this.knx}
           .data=${Object.values(distinctValues.destination)}
-          .config=${this._destinationFilterConfig(
-            this._hasActiveFilters("destination"),
-            this.controller.filters.destination?.length || 0,
-            this.destinationFilter?.sortCriterion,
-            this.hass.language,
-          ) as any}
+          .config=${
+            this._destinationFilterConfig(
+              this._hasActiveFilters("destination"),
+              this.controller.filters.destination?.length || 0,
+              this.destinationFilter?.sortCriterion,
+              this.hass.language,
+            ) as any
+          }
           .selectedOptions=${this.controller.filters.destination}
           .expanded=${this.controller.expandedFilter === "destination"}
           .narrow=${this.narrow}
@@ -1256,10 +1274,12 @@ export class KNXGroupMonitor extends LitElement {
           .hass=${this.hass}
           .knx=${this.knx}
           .data=${Object.values(distinctValues.direction)}
-          .config=${this._directionFilterConfig(
-            this._hasActiveFilters("direction"),
-            this.hass.language,
-          ) as any}
+          .config=${
+            this._directionFilterConfig(
+              this._hasActiveFilters("direction"),
+              this.hass.language,
+            ) as any
+          }
           .selectedOptions=${this.controller.filters.direction}
           .pinSelectedItems=${false}
           .expanded=${this.controller.expandedFilter === "direction"}
@@ -1276,10 +1296,12 @@ export class KNXGroupMonitor extends LitElement {
           .hass=${this.hass}
           .knx=${this.knx}
           .data=${Object.values(distinctValues.telegramtype)}
-          .config=${this._telegramTypeFilterConfig(
-            this._hasActiveFilters("telegramtype"),
-            this.hass.language,
-          ) as any}
+          .config=${
+            this._telegramTypeFilterConfig(
+              this._hasActiveFilters("telegramtype"),
+              this.hass.language,
+            ) as any
+          }
           .selectedOptions=${this.controller.filters.telegramtype}
           .pinSelectedItems=${false}
           .expanded=${this.controller.expandedFilter === "telegramtype"}
@@ -1297,12 +1319,14 @@ export class KNXGroupMonitor extends LitElement {
           .hass=${this.hass}
           .knx=${this.knx}
           .data=${this._getDptFilterData(distinctValues)}
-          .config=${this._dptFilterConfig(
-            this._hasActiveFilters("dpt"),
-            this.controller.filters.dpt?.length || 0,
-            this.dptFilter?.sortCriterion,
-            this.hass.language,
-          ) as any}
+          .config=${
+            this._dptFilterConfig(
+              this._hasActiveFilters("dpt"),
+              this.controller.filters.dpt?.length || 0,
+              this.dptFilter?.sortCriterion,
+              this.hass.language,
+            ) as any
+          }
           .selectedOptions=${this.controller.filters.dpt}
           .expanded=${this.controller.expandedFilter === "dpt"}
           .narrow=${this.narrow}

@@ -227,22 +227,26 @@ export class KnxExposeTemplatePreview extends LitElement {
   protected render(): TemplateResult | typeof nothing {
     return this.valueTemplate
       ? html`<div class="container">
-          ${this._error
-            ? html`<div class="error">
-                ${this.localize("ui.panel.config.integrations.config_flow.error")}: ${this._error}
-              </div>`
-            : html`<div class="preview">
-                ${this.localize("ui.panel.config.integrations.config_flow.preview")}
-                <code class="value-preview">
-                  value: ${this._toRawValueString(this._stateOrAttribute)}</code
-                >
-                ${this._typingIndicator
-                  ? html`<span class="typing-indicator" aria-hidden="true">…</span>`
-                  : nothing}
-                <div class="template-result">
-                  <code>${this._toRawValueString(this._templateResult)}</code>
-                </div>
-              </div>`}
+          ${
+            this._error
+              ? html`<div class="error">
+                  ${this.localize("ui.panel.config.integrations.config_flow.error")}: ${this._error}
+                </div>`
+              : html`<div class="preview">
+                  ${this.localize("ui.panel.config.integrations.config_flow.preview")}
+                  <code class="value-preview">
+                    value: ${this._toRawValueString(this._stateOrAttribute)}</code
+                  >
+                  ${
+                    this._typingIndicator
+                      ? html`<span class="typing-indicator" aria-hidden="true">…</span>`
+                      : nothing
+                  }
+                  <div class="template-result">
+                    <code>${this._toRawValueString(this._templateResult)}</code>
+                  </div>
+                </div>`
+          }
         </div>`
       : nothing;
   }

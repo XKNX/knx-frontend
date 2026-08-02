@@ -128,42 +128,44 @@ export class KnxDptReference extends LitElement {
     return html`
       <div class="schema-row">
         <div>Schema</div>
-        ${schema?.length
-          ? html`
-              <ul class="schema-list">
-                ${schema.map((field) => {
-                  const details: (string | TemplateResult)[] = [
-                    field.type,
-                    field.required ? "required" : "optional",
-                  ];
-                  if (field.default != null) {
-                    details.push(html`default: <code>${this._pythonRepr(field.default)}</code>`);
-                  }
-                  if (field.value_min != null) {
-                    details.push(`min: ${field.value_min}`);
-                  }
-                  if (field.value_max != null) {
-                    details.push(`max: ${field.value_max}`);
-                  }
-                  if (field.resolution != null) {
-                    details.push(`resolution: ${field.resolution}`);
-                  }
-                  if (field.options?.length) {
-                    const pythonList = `[${field.options.map((opt) => this._pythonRepr(opt)).join(", ")}]`;
-                    details.push(html`options: <code>${pythonList}</code>`);
-                  }
-                  return html`
-                    <li class="schema-field">
-                      <code>${field.name}</code>
-                      <ul class="schema-field-details">
-                        ${details.map((part) => html`<li>${part}</li>`)}
-                      </ul>
-                    </li>
-                  `;
-                })}
-              </ul>
-            `
-          : html`<div class="detail-value">No schema fields</div>`}
+        ${
+          schema?.length
+            ? html`
+                <ul class="schema-list">
+                  ${schema.map((field) => {
+                    const details: (string | TemplateResult)[] = [
+                      field.type,
+                      field.required ? "required" : "optional",
+                    ];
+                    if (field.default != null) {
+                      details.push(html`default: <code>${this._pythonRepr(field.default)}</code>`);
+                    }
+                    if (field.value_min != null) {
+                      details.push(`min: ${field.value_min}`);
+                    }
+                    if (field.value_max != null) {
+                      details.push(`max: ${field.value_max}`);
+                    }
+                    if (field.resolution != null) {
+                      details.push(`resolution: ${field.resolution}`);
+                    }
+                    if (field.options?.length) {
+                      const pythonList = `[${field.options.map((opt) => this._pythonRepr(opt)).join(", ")}]`;
+                      details.push(html`options: <code>${pythonList}</code>`);
+                    }
+                    return html`
+                      <li class="schema-field">
+                        <code>${field.name}</code>
+                        <ul class="schema-field-details">
+                          ${details.map((part) => html`<li>${part}</li>`)}
+                        </ul>
+                      </li>
+                    `;
+                  })}
+                </ul>
+              `
+            : html`<div class="detail-value">No schema fields</div>`
+        }
       </div>
     `;
   }
@@ -234,16 +236,20 @@ export class KnxDptReference extends LitElement {
         <div class="wrapper">
           ${!this.narrow ? html`<div class="table-header">${searchBar}</div>` : nothing}
           <div class="list-content">
-            ${entries.length === 0
-              ? html`<ha-alert alert-type="info"
-                  >No datapoint type metadata available from backend.</ha-alert
-                >`
-              : nothing}
-            ${entries.length > 0 && groupedEntries.length === 0
-              ? html`<ha-alert alert-type="warning"
-                  >No datapoint types match the current search.</ha-alert
-                >`
-              : nothing}
+            ${
+              entries.length === 0
+                ? html`<ha-alert alert-type="info"
+                    >No datapoint type metadata available from backend.</ha-alert
+                  >`
+                : nothing
+            }
+            ${
+              entries.length > 0 && groupedEntries.length === 0
+                ? html`<ha-alert alert-type="warning"
+                    >No datapoint types match the current search.</ha-alert
+                  >`
+                : nothing
+            }
             ${repeat(
               groupedEntries,
               (group) => group.main,

@@ -503,12 +503,16 @@ export class KNXExposeView extends LitElement {
         @grouping-changed=${this._handleGroupingChanged}
         .initialSorting=${this._activeSorting}
         @sorting-changed=${this._handleSortingChanged}
-        .columnOrder=${this.narrow
-          ? this._storedColumns?.narrow?.columnOrder
-          : this._storedColumns?.wide?.columnOrder}
-        .hiddenColumns=${this.narrow
-          ? this._storedColumns?.narrow?.hiddenColumns
-          : this._storedColumns?.wide?.hiddenColumns}
+        .columnOrder=${
+          this.narrow
+            ? this._storedColumns?.narrow?.columnOrder
+            : this._storedColumns?.wide?.columnOrder
+        }
+        .hiddenColumns=${
+          this.narrow
+            ? this._storedColumns?.narrow?.hiddenColumns
+            : this._storedColumns?.wide?.hiddenColumns
+        }
         @columns-changed=${this._handleColumnsChanged}
       >
         <knx-list-filter

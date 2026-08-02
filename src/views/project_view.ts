@@ -470,23 +470,29 @@ export class KNXProjectView extends LitElement {
       .hasFilters=${this._groupRangeAvailable}
       .filters=${this._visibleGroupAddresses.length}
       @columns-changed=${this._handleColumnsChanged}
-      .columnOrder=${this.narrow
-        ? this._storedColumns?.narrow?.columnOrder
-        : this._storedColumns?.wide?.columnOrder}
-      .hiddenColumns=${this.narrow
-        ? this._storedColumns?.narrow?.hiddenColumns
-        : this._storedColumns?.wide?.hiddenColumns}
+      .columnOrder=${
+        this.narrow
+          ? this._storedColumns?.narrow?.columnOrder
+          : this._storedColumns?.wide?.columnOrder
+      }
+      .hiddenColumns=${
+        this.narrow
+          ? this._storedColumns?.narrow?.hiddenColumns
+          : this._storedColumns?.wide?.hiddenColumns
+      }
     >
       ${this._renderViewToggle()}
-      ${this._groupRangeAvailable
-        ? html`
-            <knx-project-tree-view
-              slot="filter-pane"
-              .data=${projectData}
-              @knx-group-range-selection-changed=${this._visibleAddressesChanged}
-            ></knx-project-tree-view>
-          `
-        : nothing}
+      ${
+        this._groupRangeAvailable
+          ? html`
+              <knx-project-tree-view
+                slot="filter-pane"
+                .data=${projectData}
+                @knx-group-range-selection-changed=${this._visibleAddressesChanged}
+              ></knx-project-tree-view>
+            `
+          : nothing
+      }
     </hass-tabs-subpage-data-table>`;
   }
 
@@ -585,9 +591,7 @@ export class KNXProjectView extends LitElement {
 
   private _devicesFilterExpandedChanged(ev: HASSDomEvent<ListFilterExpandedChangedEvent>): void {
     const filterId = (ev.currentTarget as HTMLElement).getAttribute("data-filter") as
-      | "dpt"
-      | "location"
-      | "line";
+      "dpt" | "location" | "line";
     if (ev.detail.expanded) {
       this._devicesExpandedFilter = filterId;
     } else if (this._devicesExpandedFilter === filterId) {
@@ -612,25 +616,27 @@ export class KNXProjectView extends LitElement {
         @selection-changed=${this._devicesDptSelectionChanged}
         @expanded-changed=${this._devicesFilterExpandedChanged}
       ></knx-list-filter>
-      ${projectData.locations
-        ? html`<knx-list-filter
-            data-filter="location"
-            .hass=${this.hass}
-            .knx=${this.knx}
-            .data=${this._locationFilterOptions(
-              this._locationByDevice(projectData.locations ?? null),
-            )}
-            .config=${config}
-            .selectedOptions=${this._devicesFilterLocation}
-            .expanded=${this._devicesExpandedFilter === "location"}
-            .narrow=${this.narrow}
-            .filterTitle=${this.hass.localize(
-              "component.knx.config_panel.project.devices.locations",
-            )}
-            @selection-changed=${this._devicesLocationSelectionChanged}
-            @expanded-changed=${this._devicesFilterExpandedChanged}
-          ></knx-list-filter>`
-        : nothing}
+      ${
+        projectData.locations
+          ? html`<knx-list-filter
+              data-filter="location"
+              .hass=${this.hass}
+              .knx=${this.knx}
+              .data=${this._locationFilterOptions(
+                this._locationByDevice(projectData.locations ?? null),
+              )}
+              .config=${config}
+              .selectedOptions=${this._devicesFilterLocation}
+              .expanded=${this._devicesExpandedFilter === "location"}
+              .narrow=${this.narrow}
+              .filterTitle=${this.hass.localize(
+                "component.knx.config_panel.project.devices.locations",
+              )}
+              @selection-changed=${this._devicesLocationSelectionChanged}
+              @expanded-changed=${this._devicesFilterExpandedChanged}
+            ></knx-list-filter>`
+          : nothing
+      }
       <knx-list-filter
         data-filter="line"
         .hass=${this.hass}
@@ -707,21 +713,23 @@ export class KNXProjectView extends LitElement {
       : nothing;
     return html`<div class="devices-toolbar">
       ${filterButton} ${!this.narrow ? this._renderDevicesSearch() : nothing}
-      ${filterActive
-        ? html`<span class="result-count">
-            ${this.hass.localize("ui.components.data-table.hidden", {
-              number:
-                this._devicesTree(projectData).length -
-                this._devicesFilteredCount(
-                  projectData,
-                  this._devicesSearchText,
-                  this._devicesFilterDpt,
-                  this._devicesFilterLocation,
-                  this._devicesFilterLine,
-                ),
-            })}
-          </span>`
-        : nothing}
+      ${
+        filterActive
+          ? html`<span class="result-count">
+              ${this.hass.localize("ui.components.data-table.hidden", {
+                number:
+                  this._devicesTree(projectData).length -
+                  this._devicesFilteredCount(
+                    projectData,
+                    this._devicesSearchText,
+                    this._devicesFilterDpt,
+                    this._devicesFilterLocation,
+                    this._devicesFilterLine,
+                  ),
+              })}
+            </span>`
+          : nothing
+      }
       <ha-icon-button
         .path=${mdiUnfoldMoreHorizontal}
         .label=${this.hass.localize("ui.components.subpage-data-table.expand_all_groups")}
@@ -749,30 +757,36 @@ export class KNXProjectView extends LitElement {
         .pane=${showPane}
       >
         ${this._renderViewToggle()}
-        ${this.narrow
-          ? html`<div slot="header" class="search-toolbar">${this._renderDevicesSearch()}</div>`
-          : nothing}
-        ${showPane
-          ? html`<div class="filter-pane" slot="pane">
-              <div class="filter-pane-header">
-                <ha-assist-chip
-                  .label=${this.hass.localize("ui.components.subpage-data-table.filters")}
-                  active
-                  @click=${this._toggleDevicesFilters}
-                >
-                  <ha-svg-icon slot="icon" .path=${mdiFilterVariant}></ha-svg-icon>
-                </ha-assist-chip>
-                ${activeFilterCount
-                  ? html`<ha-icon-button
-                      .path=${mdiFilterVariantRemove}
-                      .label=${this.hass.localize("ui.components.subpage-data-table.clear_filter")}
-                      @click=${this._clearDevicesFilters}
-                    ></ha-icon-button>`
-                  : nothing}
-              </div>
-              <div class="filter-pane-content">${this._renderDevicesFilters(projectData)}</div>
-            </div>`
-          : nothing}
+        ${
+          this.narrow
+            ? html`<div slot="header" class="search-toolbar">${this._renderDevicesSearch()}</div>`
+            : nothing
+        }
+        ${
+          showPane
+            ? html`<div class="filter-pane" slot="pane">
+                <div class="filter-pane-header">
+                  <ha-assist-chip
+                    .label=${this.hass.localize("ui.components.subpage-data-table.filters")}
+                    active
+                    @click=${this._toggleDevicesFilters}
+                  >
+                    <ha-svg-icon slot="icon" .path=${mdiFilterVariant}></ha-svg-icon>
+                  </ha-assist-chip>
+                  ${
+                    activeFilterCount
+                      ? html`<ha-icon-button
+                          .path=${mdiFilterVariantRemove}
+                          .label=${this.hass.localize("ui.components.subpage-data-table.clear_filter")}
+                          @click=${this._clearDevicesFilters}
+                        ></ha-icon-button>`
+                      : nothing
+                  }
+                </div>
+                <div class="filter-pane-content">${this._renderDevicesFilters(projectData)}</div>
+              </div>`
+            : nothing
+        }
         <div class="devices-layout">
           ${this._renderDevicesToolbar(projectData, activeFilterCount)}
           <knx-project-devices-view
@@ -792,35 +806,39 @@ export class KNXProjectView extends LitElement {
           ></knx-project-devices-view>
         </div>
       </hass-tabs-subpage>
-      ${this._devicesShowFilters && this.narrow
-        ? html`<ha-dialog
-            .open=${true}
-            width="full"
-            header-title=${this.hass.localize("ui.components.subpage-data-table.filters")}
-            @closed=${this._closeDevicesFilters}
-          >
-            <ha-icon-button
-              slot="headerNavigationIcon"
-              .path=${mdiClose}
-              .label=${this.hass.localize("ui.components.subpage-data-table.close_filter")}
-              @click=${this._closeDevicesFilters}
-            ></ha-icon-button>
-            ${activeFilterCount
-              ? html`<ha-icon-button
-                  slot="headerActionItems"
-                  .path=${mdiFilterVariantRemove}
-                  .label=${this.hass.localize("ui.components.subpage-data-table.clear_filter")}
-                  @click=${this._clearDevicesFilters}
-                ></ha-icon-button>`
-              : nothing}
-            <div class="filter-dialog-content">${this._renderDevicesFilters(projectData)}</div>
-            <ha-dialog-footer slot="footer">
-              <ha-button slot="primaryAction" @click=${this._closeDevicesFilters}>
-                ${this.hass.localize("ui.common.close")}
-              </ha-button>
-            </ha-dialog-footer>
-          </ha-dialog>`
-        : nothing}`;
+      ${
+        this._devicesShowFilters && this.narrow
+          ? html`<ha-dialog
+              .open=${true}
+              width="full"
+              header-title=${this.hass.localize("ui.components.subpage-data-table.filters")}
+              @closed=${this._closeDevicesFilters}
+            >
+              <ha-icon-button
+                slot="headerNavigationIcon"
+                .path=${mdiClose}
+                .label=${this.hass.localize("ui.components.subpage-data-table.close_filter")}
+                @click=${this._closeDevicesFilters}
+              ></ha-icon-button>
+              ${
+                activeFilterCount
+                  ? html`<ha-icon-button
+                      slot="headerActionItems"
+                      .path=${mdiFilterVariantRemove}
+                      .label=${this.hass.localize("ui.components.subpage-data-table.clear_filter")}
+                      @click=${this._clearDevicesFilters}
+                    ></ha-icon-button>`
+                  : nothing
+              }
+              <div class="filter-dialog-content">${this._renderDevicesFilters(projectData)}</div>
+              <ha-dialog-footer slot="footer">
+                <ha-button slot="primaryAction" @click=${this._closeDevicesFilters}>
+                  ${this.hass.localize("ui.common.close")}
+                </ha-button>
+              </ha-dialog-footer>
+            </ha-dialog>`
+          : nothing
+      }`;
   }
 
   private _handleColumnsChanged(

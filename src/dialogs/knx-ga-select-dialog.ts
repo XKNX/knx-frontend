@@ -155,26 +155,31 @@ export class KnxGaSelectDialog extends DialogMixin<KnxGaSelectDialogParams>(LitE
     return html`
       <div class="group-section">
         <div class="group-title" style="--group-depth: ${group.depth}">${group.title}</div>
-        ${group.items.length > 0
-          ? html`<ha-md-list>
-              ${group.items.map((ga) => {
-                const isSelected = this._selected === ga.address;
-                return html`<ha-md-list-item
-                  interactive
-                  type="button"
-                  value=${ga.address}
-                  @click=${this._onSelect}
-                  @dblclick=${this._onDoubleClick}
-                  @keydown=${this._itemKeydown}
-                >
-                  <div class=${classMap({ "ga-row": true, selected: isSelected })} slot="headline">
-                    <div class="ga-address">${ga.address}</div>
-                    <div class="ga-name">${ga.name ?? ""}</div>
-                  </div>
-                </ha-md-list-item>`;
-              })}
-            </ha-md-list>`
-          : nothing}
+        ${
+          group.items.length > 0
+            ? html`<ha-md-list>
+                ${group.items.map((ga) => {
+                  const isSelected = this._selected === ga.address;
+                  return html`<ha-md-list-item
+                    interactive
+                    type="button"
+                    value=${ga.address}
+                    @click=${this._onSelect}
+                    @dblclick=${this._onDoubleClick}
+                    @keydown=${this._itemKeydown}
+                  >
+                    <div
+                      class=${classMap({ "ga-row": true, selected: isSelected })}
+                      slot="headline"
+                    >
+                      <div class="ga-address">${ga.address}</div>
+                      <div class="ga-name">${ga.name ?? ""}</div>
+                    </div>
+                  </ha-md-list-item>`;
+                })}
+              </ha-md-list>`
+            : nothing
+        }
         ${group.childGroups.map((child) => this._renderGroup(child))}
       </div>
     `;
@@ -202,19 +207,21 @@ export class KnxGaSelectDialog extends DialogMixin<KnxGaSelectDialogParams>(LitE
         <ha-input-search .value=${this._filter} @input=${this._onFilterChanged}></ha-input-search>
 
         <div class="ga-list-container">
-          ${noProjectData || !hasAddresses
-            ? html`<div class="empty-state">
-                ${this.localize(
-                  "component.knx.config_panel.entities.create._.knx.knx_group_address.group_address_none_for_dpt",
-                )}
-              </div>`
-            : !hasFilteredItems
+          ${
+            noProjectData || !hasAddresses
               ? html`<div class="empty-state">
                   ${this.localize(
-                    "component.knx.config_panel.entities.create._.knx.knx_group_address.group_address_none_for_filter",
+                    "component.knx.config_panel.entities.create._.knx.knx_group_address.group_address_none_for_dpt",
                   )}
                 </div>`
-              : groupItems.map((group) => this._renderGroup(group))}
+              : !hasFilteredItems
+                ? html`<div class="empty-state">
+                    ${this.localize(
+                      "component.knx.config_panel.entities.create._.knx.knx_group_address.group_address_none_for_filter",
+                    )}
+                  </div>`
+                : groupItems.map((group) => this._renderGroup(group))
+          }
         </div>
       </div>
 

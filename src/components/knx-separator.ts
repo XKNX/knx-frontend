@@ -96,9 +96,9 @@ export class KnxSeparator extends LitElement {
         class="separator-container ${this.customClass}"
         style="
           height: ${this.height}px;
-          transition: ${this._isTransitioning
-          ? `height ${this.animationDuration}ms ease-in-out`
-          : "none"};
+          transition: ${
+            this._isTransitioning ? `height ${this.animationDuration}ms ease-in-out` : "none"
+          };
         "
       >
         <div class="content">

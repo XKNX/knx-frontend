@@ -83,28 +83,34 @@ export class KNXInfo extends LitElement {
           </div>
         </div>
 
-        ${this.knx.connectionInfo.telegram_retention != null
-          ? html`
-              <div class="knx-content-row">
-                <div>${this.knx.localize("info_telegram_retention")}</div>
-                <div>
-                  ${this.knx.connectionInfo.telegram_retention === 1
-                    ? this.knx.localize("info_telegram_retention_day")
-                    : this.knx.localize("info_telegram_retention_days", {
-                        retention: String(this.knx.connectionInfo.telegram_retention),
-                      })}
+        ${
+          this.knx.connectionInfo.telegram_retention != null
+            ? html`
+                <div class="knx-content-row">
+                  <div>${this.knx.localize("info_telegram_retention")}</div>
+                  <div>
+                    ${
+                      this.knx.connectionInfo.telegram_retention === 1
+                        ? this.knx.localize("info_telegram_retention_day")
+                        : this.knx.localize("info_telegram_retention_days", {
+                            retention: String(this.knx.connectionInfo.telegram_retention),
+                          })
+                    }
+                  </div>
                 </div>
-              </div>
-            `
-          : nothing}
-        ${this.knx.connectionInfo.telegram_max_count != null
-          ? html`
-              <div class="knx-content-row">
-                <div>${this.knx.localize("info_telegram_limit")}</div>
-                <div>${this.knx.connectionInfo.telegram_max_count}</div>
-              </div>
-            `
-          : nothing}
+              `
+            : nothing
+        }
+        ${
+          this.knx.connectionInfo.telegram_max_count != null
+            ? html`
+                <div class="knx-content-row">
+                  <div>${this.knx.localize("info_telegram_limit")}</div>
+                  <div>${this.knx.connectionInfo.telegram_max_count}</div>
+                </div>
+              `
+            : nothing
+        }
 
         <div class="knx-bug-report">
           ${this.knx.localize("info_issue_tracker")}
