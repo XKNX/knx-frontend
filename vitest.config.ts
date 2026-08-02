@@ -14,6 +14,10 @@ export default defineConfig({
         find: /.*\/build\/mdi\/iconMetadata\.json$/,
         replacement: resolve(__dirname, "test/mocks/iconMetadata.json"),
       },
+      {
+        find: /.*\/build\/translations\/translationMetadata\.json$/,
+        replacement: resolve(__dirname, "test/mocks/translationMetadata.json"),
+      },
     ],
     environment: "jsdom", // to run in browser-like environment
     env: {

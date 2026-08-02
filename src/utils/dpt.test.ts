@@ -94,12 +94,23 @@ describe("compareDpt", () => {
 });
 
 describe("dptInClasses", () => {
+  // sensor_device_class, sensor_state_class and payload_length are required by
+  // DPTMetadata but irrelevant here - dptInClasses only looks at dpt_class.
+  const meta = (
+    fields: Omit<DPTMetadata, "sensor_device_class" | "sensor_state_class" | "payload_length">,
+  ): DPTMetadata => ({
+    sensor_device_class: null,
+    sensor_state_class: null,
+    payload_length: 0,
+    ...fields,
+  });
+
   const mockMetadata: Record<string, DPTMetadata> = {
-    "1.001": { main: 1, sub: 1, name: "Switch", unit: "", dpt_class: "enum" },
-    "5": { main: 5, sub: null, name: "Unsigned", unit: "", dpt_class: "numeric" },
-    "5.001": { main: 5, sub: 1, name: "Percentage", unit: "%", dpt_class: "numeric" },
-    "9.001": { main: 9, sub: 1, name: "Temperature", unit: "°C", dpt_class: "numeric" },
-    "16.001": { main: 16, sub: 1, name: "String", unit: "", dpt_class: "string" },
+    "1.001": meta({ main: 1, sub: 1, name: "Switch", unit: "", dpt_class: "enum" }),
+    "5": meta({ main: 5, sub: null, name: "Unsigned", unit: "", dpt_class: "numeric" }),
+    "5.001": meta({ main: 5, sub: 1, name: "Percentage", unit: "%", dpt_class: "numeric" }),
+    "9.001": meta({ main: 9, sub: 1, name: "Temperature", unit: "°C", dpt_class: "numeric" }),
+    "16.001": meta({ main: 16, sub: 1, name: "String", unit: "", dpt_class: "string" }),
   };
 
   it("should return true when DPT is in specified class", () => {
