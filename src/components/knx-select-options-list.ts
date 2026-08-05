@@ -11,6 +11,7 @@ import "@ha/components/ha-svg-icon";
 import "@ha/components/input/ha-input";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
+import { clamp } from "@ha/common/number/clamp";
 import type { HaInput } from "@ha/components/input/ha-input";
 import type { NumberSelector } from "@ha/data/selector";
 import type { HomeAssistant } from "@ha/types";
@@ -24,6 +25,9 @@ import type { KNX } from "../types/knx";
 export interface SelectOption extends PayloadConfigValue {
   option: string;
 }
+
+// maximum KNX payload length in bytes
+const MAX_PAYLOAD_LENGTH = 14;
 
 @customElement("knx-select-options-list")
 export class KnxSelectOptionsList extends LitElement {
@@ -114,7 +118,11 @@ export class KnxSelectOptionsList extends LitElement {
           : html`<ha-selector
               class="payload-length"
               .hass=${this.hass}
-              .selector=${{ number: { mode: "box", min: 0, max: 14, step: 1 } } as NumberSelector}
+              .selector=${
+                {
+                  number: { mode: "box", min: 0, max: MAX_PAYLOAD_LENGTH, step: 1 },
+                } as NumberSelector
+              }
               .label=${this._localizePayload("raw_length")}
               .helper=${this._localizePayload("raw_length_description")}
               .value=${this._payloadLength}
@@ -162,6 +170,7 @@ export class KnxSelectOptionsList extends LitElement {
         .gaKey=${this.gaKey}
         .dpt=${this._effectiveDpt}
         .rawLength=${this._effectiveDpt ? undefined : this._payloadLength}
+        .required=${true}
         .value=${payload as PayloadConfigValue}
         .localizeFunction=${this._emptyLocalize}
         data-index=${index}
@@ -178,7 +187,7 @@ export class KnxSelectOptionsList extends LitElement {
   private _payloadLengthChanged(ev: CustomEvent<{ value: number }>): void {
     ev.stopPropagation();
     const length = Math.floor(Number(ev.detail.value));
-    this._payloadLength = Number.isFinite(length) ? Math.min(14, Math.max(0, length)) : 1;
+    this._payloadLength = Number.isFinite(length) ? clamp(length, 0, MAX_PAYLOAD_LENGTH) : 1;
     // apply the shared length to every raw option
     const options = (this.value ?? []).map((o) =>
       o.payload !== undefined ? { ...o, payload_length: this._payloadLength } : o,

@@ -8,6 +8,7 @@ import "@ha/components/ha-selector/ha-selector";
 import "@ha/components/input/ha-input";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
+import { conditionalClamp } from "@ha/common/number/clamp";
 import type { HaInput } from "@ha/components/input/ha-input";
 import type { NumberSelector, SelectSelector, StringSelector } from "@ha/data/selector";
 import type { HomeAssistant } from "@ha/types";
@@ -105,44 +106,111 @@ export class KnxPayloadSelector extends LitElement {
   }
 
   protected willUpdate(changedProperties: PropertyValues): void {
-    if (!this._initialized && changedProperties.has("value")) {
+    const firstInit = !this._initialized && changedProperties.has("value");
+    if (firstInit) {
       this._mode = this._inferMode();
       this._typedValue = this.value?.value;
       this._rawPayload = this.value?.payload;
       const rawLength = this.value?.payload_length ?? 1;
       this._rawLength = this._clampRawLength(rawLength);
       this._initialized = true;
-    } else if (changedProperties.has("dpt") || changedProperties.has("_linkedDpt")) {
-      this._mode = this._inferMode();
-      const dpt = this._effectiveDpt();
-      const dptMeta = dpt ? this.knx.dptMetadata[dpt] : undefined;
-      if (dptMeta?.dpt_class === "numeric" && typeof this._typedValue === "number") {
-        this._typedValue = Math.min(
-          dptMeta.max ?? this._typedValue,
-          Math.max(dptMeta.min ?? this._typedValue, this._typedValue),
-        );
-      } else if (
-        dptMeta?.dpt_class === "enum" &&
-        dptMeta.options &&
-        !dptMeta.options.includes(this._typedValue as string)
-      ) {
-        // set initial value for enum selector
-        this._typedValue = dptMeta.options[0];
-      } else if (dptMeta?.dpt_class === "complex" && dptMeta.schema) {
-        this._typedValue = {};
-        // set initial values for enum fields in complex DPTs
-        for (const field of dptMeta.schema) {
-          if (field.type === "enum" && field.required && field.options) {
-            this._typedValue[field.name] = field.options[0];
-          }
+    }
+    const dptChanged = changedProperties.has("dpt") || changedProperties.has("_linkedDpt");
+    // Apply defaults when the DPT changes, or on first init when a DPT is already
+    // selected but no typed value exists yet (e.g. a freshly added select option) -
+    // otherwise required fields would stay unset.
+    if (dptChanged || (firstInit && this._typedValue === undefined)) {
+      this._applyDptTypedDefaults();
+    }
+  }
+
+  private _applyDptTypedDefaults(): void {
+    this._mode = this._inferMode();
+    const dpt = this._effectiveDpt();
+    const dptMeta = dpt ? this.knx.dptMetadata[dpt] : undefined;
+    const typedValue = this._typedValueForDpt(dptMeta);
+    const rawLength = dptMeta?.payload_length ?? this._clampRawLength(this._rawLength);
+    const rawPayload = this._clampRawPayload(this._rawPayload);
+
+    if (
+      typedValue === this._typedValue &&
+      rawLength === this._rawLength &&
+      rawPayload === this._rawPayload
+    ) {
+      return; // nothing to apply - don't emit a redundant update
+    }
+    this._typedValue = typedValue;
+    this._rawLength = rawLength;
+    this._rawPayload = rawPayload;
+    this._emitValue();
+  }
+
+  /** Typed value to use for a DPT - keeps the current value if it still fits and
+   * falls back to a default so required fields validate without user input. */
+  private _typedValueForDpt(dptMeta?: DPTMetadata): PayloadConfigValue["value"] {
+    if (!dptMeta) {
+      return undefined;
+    }
+    switch (dptMeta.dpt_class) {
+      case "numeric":
+        if (typeof this._typedValue === "number") {
+          return conditionalClamp(this._typedValue, dptMeta.min, dptMeta.max);
         }
-      } else {
-        this._typedValue = undefined;
+        // default to 0, clamped into range; defaulting to the min would be
+        // awkward for signed int / float DPTs
+        return this.required ? conditionalClamp(0, dptMeta.min, dptMeta.max) : undefined;
+      case "enum":
+        return dptMeta.options?.includes(this._typedValue as string)
+          ? this._typedValue
+          : dptMeta.options?.[0];
+      case "complex":
+        return dptMeta.schema ? this._complexDefaults(dptMeta.schema) : undefined;
+      case "string":
+        if (typeof this._typedValue === "string") {
+          return this._typedValue;
+        }
+        // an empty string is a valid payload, so it can serve as default
+        return this.required ? "" : undefined;
+      default:
+        return undefined;
+    }
+  }
+
+  // Default values for the required fields of a complex DPT, matching what the
+  // field selectors display, so the emitted value validates without user input.
+  private _complexDefaults(schema: DPTComplexFieldSchema[]): Record<string, unknown> {
+    const value: Record<string, unknown> = {};
+    for (const field of schema) {
+      if (!field.required) {
+        continue;
       }
-      const dptPayloadLength = dptMeta ? dptMeta.payload_length : undefined;
-      this._rawLength = dptPayloadLength ?? this._clampRawLength(this._rawLength);
-      this._rawPayload = this._clampRawPayload(this._rawPayload);
-      this._emitValue();
+      const fieldDefault = this._complexFieldDefault(field);
+      if (fieldDefault !== undefined) {
+        value[field.name] = fieldDefault;
+      }
+    }
+    return value;
+  }
+
+  private _complexFieldDefault(
+    field: DPTComplexFieldSchema,
+  ): number | boolean | string | undefined {
+    if (field.default !== undefined) {
+      return field.default;
+    }
+    switch (field.type) {
+      case "boolean":
+        return false;
+      case "enum":
+        return field.options?.[0];
+      case "integer":
+      case "float":
+        // default to 0, clamped into range (min would be awkward for signed types)
+        return conditionalClamp(0, field.value_min, field.value_max);
+      case "string":
+        return "";
+      default:
+        return undefined;
     }
   }
 
@@ -587,10 +655,10 @@ export class KnxPayloadSelector extends LitElement {
           ? { payload: this._rawPayload, payload_length: this._effectiveRawLength }
           : undefined;
     } else {
-      value =
-        this._typedValue !== undefined && this._typedValue !== ""
-          ? { value: this._typedValue }
-          : undefined;
+      // an empty string is a valid value for required fields - so it can be set
+      // deliberately; for optional ones clearing the input means "no value"
+      const isSet = this._typedValue !== undefined && (this.required || this._typedValue !== "");
+      value = isSet ? { value: this._typedValue } : undefined;
     }
     fireEvent(this, "value-changed", { value });
   }
