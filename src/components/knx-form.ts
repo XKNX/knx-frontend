@@ -13,6 +13,7 @@ import type { HomeAssistant, ValueChangedEvent } from "@ha/types";
 import type { ControlSelectOption } from "@ha/components/ha-control-select";
 
 import "./knx-group-address-selector";
+import "./knx-select-options-list";
 import "./knx-payload-selector";
 import "./knx-selector-row";
 import "./knx-sync-state-selector-row";
@@ -205,6 +206,22 @@ export class KnxForm extends LitElement {
             .localizeFunction=${this.backendLocalize}
             @value-changed=${this._updateConfig}
           ></knx-payload-selector>
+        `;
+      }
+      case "knx_select_options": {
+        const optionsGaPath = pathAdd(path, selector.ga_path);
+        return html`
+          <knx-select-options-list
+            .hass=${this.hass}
+            .knx=${this.knx}
+            .key=${selectorPath}
+            .gaKey=${optionsGaPath}
+            .dpt=${getNestedValue(this.config!, optionsGaPath)?.dpt}
+            .value=${getNestedValue(this.config!, selectorPath)}
+            .validationErrors=${selectorErrors}
+            .localizeFunction=${this.backendLocalize}
+            @value-changed=${this._updateConfig}
+          ></knx-select-options-list>
         `;
       }
       case "knx_sync_state":
