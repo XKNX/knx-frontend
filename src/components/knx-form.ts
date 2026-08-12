@@ -216,6 +216,7 @@ export class KnxForm extends LitElement {
             .knx=${this.knx}
             .key=${selectorPath}
             .gaKey=${optionsGaPath}
+            .required=${selector.required}
             .dpt=${getNestedValue(this.config!, optionsGaPath)?.dpt}
             .value=${getNestedValue(this.config!, selectorPath)}
             .validationErrors=${selectorErrors}

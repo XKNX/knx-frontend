@@ -42,6 +42,8 @@ export class KnxSelectOptionsList extends LitElement {
 
   @property({ attribute: false }) public dpt?: string;
 
+  @property({ type: Boolean }) public required?: boolean;
+
   @property({ attribute: false }) public value?: SelectOption[];
 
   @property({ attribute: false }) public validationErrors?: ErrorDescription[];
@@ -101,6 +103,12 @@ export class KnxSelectOptionsList extends LitElement {
     return this.value?.length ? this.value : [{ option: "" }];
   }
 
+  // A required list keeps its last option; an optional one can be cleared
+  // completely. The placeholder row shown for an empty list has nothing to delete.
+  private get _canDeleteOption(): boolean {
+    return this._displayOptions.length > 1 || (!this.required && !!this.value?.length);
+  }
+
   protected render(): TemplateResult {
     const invalid = getValidationError(this.validationErrors);
     const options = this._displayOptions;
@@ -130,7 +138,7 @@ export class KnxSelectOptionsList extends LitElement {
             ></ha-selector>`
       }
       <div class="options">
-        ${options.map((option, index) => this._renderOption(option, index, options.length > 1))}
+        ${options.map((option, index) => this._renderOption(option, index, this._canDeleteOption))}
       </div>
       <ha-button appearance="filled" size="small" @click=${this._addOption}>
         <ha-svg-icon slot="start" .path=${mdiPlus}></ha-svg-icon>
@@ -140,6 +148,8 @@ export class KnxSelectOptionsList extends LitElement {
     `;
   }
 
+  // Name and payload are always required - an option row that exists has to be
+  // complete, no matter whether the list itself is required.
   private _renderOption(option: SelectOption, index: number, canDelete: boolean): TemplateResult {
     const { option: name, ...payload } = option;
     return html`<div class="option">

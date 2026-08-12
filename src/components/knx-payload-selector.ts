@@ -145,8 +145,12 @@ export class KnxPayloadSelector extends LitElement {
     this._emitValue();
   }
 
-  /** Typed value to use for a DPT - keeps the current value if it still fits and
-   * falls back to a default so required fields validate without user input. */
+  /** Typed value to use for a DPT.
+   *
+   * Numeric, enum and string values are kept when they still fit the DPT, while
+   * complex values are reset - their fields are specific to the previous DPT.
+   * Otherwise a default is used, so required fields validate without user input.
+   */
   private _typedValueForDpt(dptMeta?: DPTMetadata): PayloadConfigValue["value"] {
     if (!dptMeta) {
       return undefined;
