@@ -86,6 +86,13 @@ const COOLDOWN_SELECTOR: KnxHaSelector = {
   },
 };
 
+const SEND_ON_INIT_SELECTOR: KnxHaSelector = {
+  type: "ha_selector",
+  name: "send_on_init",
+  default: false,
+  selector: { boolean: {} },
+};
+
 const PERIODIC_SEND_SELECTOR: KnxHaSelector = {
   type: "ha_selector",
   name: "periodic_send",
@@ -98,13 +105,6 @@ const RESPOND_TO_READ_SELECTOR: KnxHaSelector = {
   type: "ha_selector",
   name: "respond_to_read",
   default: true,
-  selector: { boolean: {} },
-};
-
-const SEND_ON_INIT_SELECTOR: KnxHaSelector = {
-  type: "ha_selector",
-  name: "send_on_init",
-  default: false,
   selector: { boolean: {} },
 };
 
@@ -710,6 +710,16 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
             <knx-selector-row
               data-idx=${idx}
               .hass=${this.hass}
+              .key=${"send_on_init"}
+              .selector=${SEND_ON_INIT_SELECTOR}
+              .value=${option.send_on_init}
+              .validationErrors=${extractValidationErrors(optionErrors, "send_on_init")}
+              .localizeFunction=${this._backendLocalize}
+              @value-changed=${this._updateExposeOptionAtIndex}
+            ></knx-selector-row>
+            <knx-selector-row
+              data-idx=${idx}
+              .hass=${this.hass}
               .key=${"periodic_send"}
               .selector=${PERIODIC_SEND_SELECTOR}
               .value=${option.periodic_send}
@@ -724,16 +734,6 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
               .selector=${RESPOND_TO_READ_SELECTOR}
               .value=${option.respond_to_read}
               .validationErrors=${extractValidationErrors(optionErrors, "respond_to_read")}
-              .localizeFunction=${this._backendLocalize}
-              @value-changed=${this._updateExposeOptionAtIndex}
-            ></knx-selector-row>
-            <knx-selector-row
-              data-idx=${idx}
-              .hass=${this.hass}
-              .key=${"send_on_init"}
-              .selector=${SEND_ON_INIT_SELECTOR}
-              .value=${option.send_on_init}
-              .validationErrors=${extractValidationErrors(optionErrors, "send_on_init")}
               .localizeFunction=${this._backendLocalize}
               @value-changed=${this._updateExposeOptionAtIndex}
             ></knx-selector-row>
