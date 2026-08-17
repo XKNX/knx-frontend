@@ -77,6 +77,7 @@ export interface ExposeOption {
   cooldown?: number;
   periodic_send?: number;
   respond_to_read?: boolean;
+  send_on_init?: boolean;
 }
 
 export interface ExposeConfigData {
