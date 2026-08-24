@@ -75,6 +75,7 @@ export interface ExposeOption {
   default?: boolean | string | number;
   value_template?: string;
   cooldown?: number;
+  send_on_init?: boolean;
   periodic_send?: number;
   respond_to_read?: boolean;
 }

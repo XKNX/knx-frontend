@@ -86,6 +86,13 @@ const COOLDOWN_SELECTOR: KnxHaSelector = {
   },
 };
 
+const SEND_ON_INIT_SELECTOR: KnxHaSelector = {
+  type: "ha_selector",
+  name: "send_on_init",
+  default: false,
+  selector: { boolean: {} },
+};
+
 const PERIODIC_SEND_SELECTOR: KnxHaSelector = {
   type: "ha_selector",
   name: "periodic_send",
@@ -697,6 +704,16 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
               .selector=${COOLDOWN_SELECTOR}
               .value=${option.cooldown}
               .validationErrors=${extractValidationErrors(optionErrors, "cooldown")}
+              .localizeFunction=${this._backendLocalize}
+              @value-changed=${this._updateExposeOptionAtIndex}
+            ></knx-selector-row>
+            <knx-selector-row
+              data-idx=${idx}
+              .hass=${this.hass}
+              .key=${"send_on_init"}
+              .selector=${SEND_ON_INIT_SELECTOR}
+              .value=${option.send_on_init}
+              .validationErrors=${extractValidationErrors(optionErrors, "send_on_init")}
               .localizeFunction=${this._backendLocalize}
               @value-changed=${this._updateExposeOptionAtIndex}
             ></knx-selector-row>
