@@ -26,7 +26,6 @@ import "@ha/components/entity/ha-entity-attribute-picker";
 
 import { consumeEntityState } from "@ha/common/decorators/consume-context-entry";
 import { mainWindow } from "@ha/common/dom/get_main_window";
-import { navigate } from "@ha/common/navigate";
 import { throttle } from "@ha/common/util/throttle";
 import { showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 import { DirtyStateProviderMixin } from "@ha/mixins/dirty-state-provider-mixin";
@@ -49,7 +48,7 @@ import {
 } from "../data/knx-expose-groups-context";
 import type { KnxHaSelector, GASelectorOptions } from "../types/schema";
 import { setNestedValue } from "../utils/config-helper";
-import { exitFlow, navigateInFlow } from "../utils/navigation";
+import { exitFlow, navigateInFlow, navigateToError } from "../utils/navigation";
 import { PreventUnsavedMixin } from "../mixins/prevent-unsaved-mixin";
 import { extractValidationErrors, getValidationError } from "../utils/validation";
 
@@ -843,7 +842,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
       .then((result) => this._handleResult(result, false))
       .catch((err) => {
         logger.error("validateExposeConfig", err);
-        navigate("/knx/error", { replace: true, data: err });
+        navigateToError(err);
       });
   }, 250);
 
@@ -860,7 +859,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
       await exitFlow("/knx/expose");
     } catch (err) {
       logger.error("Error saving expose", err);
-      navigate("/knx/error", { replace: true, data: err });
+      navigateToError(err);
     }
   }
 

@@ -2,8 +2,8 @@
 
 import { constants } from "node:zlib";
 import gulp from "gulp";
-import brotli from "gulp-brotli";
-import zopfli from "gulp-zopfli-green";
+import brotli from "../../homeassistant-frontend/build-scripts/brotli.mjs";
+import zopfli from "../../homeassistant-frontend/build-scripts/zopfli.mjs";
 import paths from "../paths.cjs";
 
 const filesGlob = "*.{js,json,css,svg,xml}";

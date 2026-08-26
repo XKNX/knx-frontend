@@ -38,6 +38,7 @@ import type { DataTableFiltersValues } from "@ha/data/data_table_filters";
 import type { EntityRegistryEntry } from "@ha/data/entity/entity_registry";
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 import type { HomeAssistant, Route } from "@ha/types";
+import { navigateToError } from "../utils/navigation";
 
 import "../components/data-table/knx-data-table-ga-label";
 import "../components/data-table/filter/knx-list-filter";
@@ -470,7 +471,7 @@ export class KNXExposeView extends LitElement {
 
   protected willUpdate(_changedProperties: PropertyValues): void {
     if (_changedProperties.has("_exposeGroupsCtx") && this._exposeGroupsCtx?.error) {
-      navigate("/knx/error", { replace: true, data: this._exposeGroupsCtx.error });
+      navigateToError(this._exposeGroupsCtx.error);
     }
   }
 
