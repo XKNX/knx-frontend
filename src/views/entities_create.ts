@@ -16,7 +16,6 @@ import "@ha/components/ha-icon-button";
 import "@ha/components/ha-yaml-editor";
 import type { HaYamlEditor } from "@ha/components/ha-yaml-editor";
 import "@ha/panels/config/components/ha-config-navigation-list";
-import { navigate } from "@ha/common/navigate";
 import { isNavigationClick } from "@ha/common/dom/is-navigation-click";
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
@@ -47,7 +46,7 @@ import type { EntitiesByGroupContextValue } from "../data/knx-entities-by-group-
 import { getPlatformStyle } from "../utils/common";
 import { setNestedValue } from "../utils/config-helper";
 import { validDPTsForSchema } from "../utils/dpt";
-import { exitFlow, navigateInFlow } from "../utils/navigation";
+import { exitFlow, navigateInFlow, navigateToError } from "../utils/navigation";
 import { PreventUnsavedMixin } from "../mixins/prevent-unsaved-mixin";
 import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
 import { KNXLogger } from "../tools/knx-logger";
@@ -501,7 +500,7 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
       })
       .catch((err) => {
         logger.error("validateEntity", err);
-        navigate("/knx/error", { replace: true, data: err });
+        navigateToError(err);
       });
   }, 250);
 
@@ -527,7 +526,7 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
       })
       .catch((err) => {
         logger.error("Error creating entity", err);
-        navigate("/knx/error", { replace: true, data: err });
+        navigateToError(err);
       });
   }
 
@@ -555,7 +554,7 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
       })
       .catch((err) => {
         logger.error("Error updating entity", err);
-        navigate("/knx/error", { replace: true, data: err });
+        navigateToError(err);
       });
   }
 

@@ -34,6 +34,19 @@ const _historyChanged = (): Promise<void> =>
 const _dialogHistorySettled = (): Promise<void> =>
   mainWindow.history.state?.dialog ? _historyChanged() : Promise.resolve();
 
+/**
+ * Show the error page, replacing the current history entry.
+ *
+ * The message is passed as a plain object: `navigate()` merges its own
+ * bookkeeping into the history state, which would drop the non-enumerable
+ * `message` of an `Error` instance.
+ */
+export const navigateToError = (error: unknown): Promise<boolean> =>
+  navigate("/knx/error", {
+    replace: true,
+    data: { message: error instanceof Error ? error.message : String(error) },
+  });
+
 /** Navigate between the steps of a flow, without adding a history entry. */
 export const navigateInFlow = (path: string): Promise<boolean> => navigate(path, { replace: true });
 

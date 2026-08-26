@@ -49,6 +49,7 @@ import { compare } from "compare-versions";
 
 import type { HomeAssistant, Route, ToggleButton } from "@ha/types";
 import { dptInClasses, dptToString } from "utils/dpt";
+import { navigateToError } from "../utils/navigation";
 import type {
   SelectionChangedEvent as ListFilterSelectionChangedEvent,
   ExpandedChangedEvent as ListFilterExpandedChangedEvent,
@@ -165,7 +166,7 @@ export class KNXProjectView extends LitElement {
       })
       .catch((err) => {
         logger.error("getGroupTelegrams", err);
-        navigate("/knx/error", { replace: true, data: err });
+        navigateToError(err);
       });
     this._subscribed = await subscribeKnxTelegrams(this.hass, (telegram) => {
       this.telegram_callback(telegram);

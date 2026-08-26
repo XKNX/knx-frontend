@@ -99,7 +99,7 @@ const createRspackConfig = ({
         new TerserPlugin({
           parallel: true,
           extractComments: true,
-          terserOptions: bundle.terserOptions(latestBuild),
+          terserOptions: bundle.terserOptions({ latestBuild }),
         }),
       ],
       moduleIds: isProdBuild && !isStatsBuild ? "deterministic" : "named",

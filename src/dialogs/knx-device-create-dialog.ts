@@ -24,7 +24,6 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
-import { navigate } from "@ha/common/navigate";
 import "@ha/components/ha-area-picker";
 import "@ha/components/ha-dialog";
 import "@ha/components/ha-button";
@@ -35,6 +34,7 @@ import type { HomeAssistant } from "@ha/types";
 import type { HassDialog } from "@ha/dialogs/make-dialog-manager";
 
 import { createDevice } from "../services/websocket.service";
+import { navigateToError } from "../utils/navigation";
 import { KNXLogger } from "../tools/knx-logger";
 
 // ============================================================================
@@ -185,7 +185,7 @@ export class DeviceCreateDialog
       })
       .catch((err) => {
         logger.error("createDevice", err);
-        navigate("/knx/error", { replace: true, data: err });
+        navigateToError(err);
         if (this._params?.onClose) {
           this._params.onClose(undefined);
         }
