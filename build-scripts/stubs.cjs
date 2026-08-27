@@ -102,6 +102,24 @@ const stubs = [
     ),
     replacement: stub("calendar.ts"),
   },
+  {
+    name: "media browser",
+    why: "The media browse dialogs and the component behind them, plus the virtualizer's grid layout, whose only user ha-media-player-browse is (the virtualizer itself stays — ha-data-table renders one). KNX has no media_player entities, so nothing in the panel can open one. Small change on its own — kept because it is one console warning away from being obvious if that ever stops being true.",
+    test: exactly(
+      ...ha(
+        "components/media-player/dialog-join-media-players.ts",
+        "components/media-player/dialog-media-manage.ts",
+        "components/media-player/dialog-media-player-browse.ts",
+        "components/media-player/ha-browse-media-manual.ts",
+        "components/media-player/ha-browse-media-tts.ts",
+        "components/media-player/ha-media-browser-thumbnail.ts",
+        "components/media-player/ha-media-manage-button.ts",
+        "components/media-player/ha-media-player-browse.ts",
+        "components/media-player/ha-media-upload-button.ts",
+      ),
+    ),
+    replacement: stub("media-player.ts"),
+  },
 ];
 
 module.exports.stubs = stubs;
