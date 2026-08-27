@@ -120,6 +120,13 @@ const stubs = [
     ),
     replacement: stub("media-player.ts"),
   },
+  {
+    name: "cropperjs",
+    why: "Image cropper, imported statically by image-cropper-dialog for picture uploads the KNX panel never makes. This is the one the old empty-file mechanism could not take: a static default import needs something to import.",
+    // `browser` is the entry rspack picks here; `main` (cropper.common.js) never appears.
+    test: exactly(npm("cropperjs/dist/cropper.js")),
+    replacement: stub("cropperjs.ts"),
+  },
 ];
 
 module.exports.stubs = stubs;
