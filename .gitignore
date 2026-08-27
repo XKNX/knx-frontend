@@ -8,6 +8,9 @@ yarn-error.log
 
 result.md
 
+# Build size report (CI)
+.build-size.md
+
 # Test Coverage files
 test/coverage/
 

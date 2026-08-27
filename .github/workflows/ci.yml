@@ -75,6 +75,9 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    # Surfaced by the `size` job below, whose name is this string.
+    outputs:
+      size: ${{ steps.size.outputs.summary }}
     steps:
       - name: Check out files from GitHub
         uses: actions/checkout@v7
@@ -88,4 +91,21 @@ jobs:
         run: yarn build
 
       - name: Report output size
-        run: yarn run build:size
+        id: size
+        run: |
+          yarn run build:size --markdown .build-size.md
+          cat .build-size.md >> "$GITHUB_STEP_SUMMARY"
+
+  # The shipped wheel is just knx_frontend/ zipped up, so its size is what every Home Assistant
+  # install pays for — and it is easy to inflate by accident. Put it in the check list where it
+  # cannot be missed. A job's own name is fixed before it runs and cannot report its result, but
+  # `needs` is allowed in `jobs.<id>.name`, so a downstream job can be *named* after the number:
+  #   CI / Size: 30.44 MB download, 64.39 MB installed (pull_request)
+  size:
+    # Quoted: an unquoted value containing ": " is not valid YAML here.
+    name: "Size: ${{ needs.build.outputs.size }}"
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build output size
+        run: echo "${{ needs.build.outputs.size }}"
