@@ -54,6 +54,9 @@ const ha = (...relativePaths) =>
     path.resolve(paths.root_dir, "homeassistant-frontend/src", relative),
   );
 
+/** Every module inside a homeassistant-frontend directory, relative to its `src/`. */
+const haDirectory = (relative) => new RegExp(`^${escapeRegExp(...ha(relative))}[\\\\/].*\\.ts$`);
+
 /** Our replacement, in `src/stubs/`. */
 const stub = (file) => path.resolve(paths.root_dir, "src/stubs", file);
 
@@ -81,6 +84,12 @@ const stubs = [
     why: "<ha-map> and <ha-locations-editor> are the only modules that reach leaflet, leaflet-draw, leaflet.markercluster and maplibre-gl — 2 MB of map renderer for a panel that draws no maps.",
     test: exactly(...ha("components/map/ha-map.ts", "components/map/ha-locations-editor.ts")),
     replacement: stub("ha-map.ts"),
+  },
+  {
+    name: "echarts",
+    why: "resources/echarts is the only door echarts, zrender and the chart2music extension come in through — 2 MB of chart engine for a panel that draws no charts. The chart components under components/chart stay: they are small, other modules import helpers out of them, and with no engine behind them they draw nothing.",
+    test: haDirectory("resources/echarts"),
+    replacement: stub("echarts.ts"),
   },
 ];
 
