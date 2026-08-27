@@ -14,6 +14,7 @@ const log = require("fancy-log");
 const SafeWebpackBar = require("./safe-webpackbar.cjs");
 const paths = require("./paths.cjs");
 const bundle = require("./bundle.cjs");
+const stubs = require("./stubs.cjs");
 
 class LogStartCompilePlugin {
   ignoredFirst = false;
@@ -184,12 +185,14 @@ const createRspackConfig = ({
           return ignorePackages.some((toIgnorePath) => fullPath.startsWith(toIgnorePath));
         },
       }),
-      bundle.emptyPackages().length
-        ? new rspack.NormalModuleReplacementPlugin(
-            new RegExp(bundle.emptyPackages().join("|")),
-            path.resolve(paths.root_dir, "src/util/empty.js"),
-          )
-        : false,
+      // Modules the KNX panel does not need, swapped for a stub that says so out loud.
+      // The list, and what to do when one of them turns out to be needed after all, is in
+      // build-scripts/stubs.cjs.
+      ...stubs
+        .moduleReplacements()
+        .map(
+          ({ test, replacement }) => new rspack.NormalModuleReplacementPlugin(test, replacement),
+        ),
       // core-js ships a Node-only helper that evaluates
       // `Function('return require("...")')()` when its runtime environment
       // detection mis-classifies the page as Node. That produces a

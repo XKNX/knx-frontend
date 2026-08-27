@@ -43,41 +43,6 @@ module.exports.haSourceMapURL = () => {
 // Files from NPM Packages that should not be imported
 module.exports.ignorePackages = () => [];
 
-// Files from NPM packages that we should replace with empty file.
-//
-// The KNX panel renders no cameras, no media browser and no image uploads, so the
-// camera/video/image-processing dependencies HA pulls in are dead weight here — hls.js alone
-// was 1.3 MB of the published wheel.
-//
-// Only packages reached through a *dynamic* import can be stubbed: a static `import X from`
-// fails the build outright with "export 'default' was not found" against the empty module.
-// That rules out "cropperjs" (image-cropper-dialog imports it statically, and it is only
-// ~160 KB). Also excluded: "barcode-detector", which calls prepareZXingModule() at the top
-// level of ha-qr-scanner.ts, so an empty module would throw when that module is evaluated
-// rather than when it is used; and "node-vibrant", at only ~30 KB.
-//
-// See the camera stubs note in build-scripts/README.md before adding to this list.
-module.exports.emptyPackages = () =>
-  [
-    // HTTP Live Streaming player, dynamically imported by ha-hls-player for camera streams.
-    require.resolve("hls.js/dist/hls.light.mjs"),
-    // Camera-based QR code scanner, dynamically imported by ha-qr-scanner. Resolve the exact
-    // entry rspack picks (the "module" field), not the bare package — require.resolve() would
-    // give the CommonJS "main" (qr-scanner.umd.min.js), which is never the file in the bundle.
-    require.resolve("qr-scanner/qr-scanner.min.js"),
-
-    // Icons in landingpage conflict with icons in HA so we don't load.
-    // ... for KNX we seem to need it - probably due to iframe.
-    //
-    //   require.resolve(
-    //     path.resolve(paths.root_dir, "homeassistant-frontend/src/components/ha-icon.ts"),
-    //   ),
-    //
-    //   require.resolve(
-    //     path.resolve(paths.root_dir, "homeassistant-frontend/src/components/ha-icon-picker.ts"),
-    //   ),
-  ].filter(Boolean);
-
 module.exports.definedVars = ({ isProdBuild, latestBuild, defineOverlay }) => ({
   __DEV__: !isProdBuild,
   __BUILD__: JSON.stringify(latestBuild ? "latest" : "es5"),

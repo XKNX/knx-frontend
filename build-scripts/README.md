@@ -60,18 +60,29 @@ GitHub instead, across two source roots:
   contents, so `XKNX/knx-frontend/<tag>/homeassistant-frontend/…` would 404 on every HA frame.
 - everything else → `/unknown/…`, which dev tools request and cheerfully 404 on.
 
-### Camera stubs
+### Stubs
 
-`emptyPackages()` in [bundle.cjs](bundle.cjs) replaces hls.js and qr-scanner with an empty
-module. The KNX panel renders no cameras, but it reaches HA components that do, and hls.js alone
-was 1.3 MB of the wheel.
+The panel is built from the whole homeassistant-frontend source tree, so it inherits every
+dependency HA has, reachable from the KNX panel or not. Unreachable code still lands in the
+wheel — as lazy chunks nobody downloads, but on disk all the same.
 
-Only packages behind a **dynamic** import can be stubbed. A static `import X from "pkg"` fails
-the build with `export 'default' was not found`, which is why cropperjs is not on the list — do
-not "fix" that by giving [../src/util/empty.js](../src/util/empty.js) a default export, as that
-trades a build error for a silent runtime one. Also check the package is not used at module top
-level (`barcode-detector` is excluded for that reason: an empty module would throw when
-ha-qr-scanner is evaluated rather than when it is used).
+[stubs.cjs](stubs.cjs) is the list of modules replaced with a stub for that reason, one entry
+per library, each with the reason it is there. The replacements live in
+[../src/stubs](../src/stubs) and every one of them logs
+
+```
+[KNX] "<entry name>" is stubbed out in this build ...
+```
+
+the moment it is actually reached, so a feature that quietly does nothing points at the entry
+that removed it. Deleting the entry is all it takes to get the real module back.
+
+A stub is a real module, not an empty file: it has to carry the value exports its consumers
+import (type-only imports are erased and need nothing), or the build fails with
+`export 'X' was not found`. That is the constraint that used to rule out anything behind a
+static `import X from "pkg"` — with a named stub file it no longer does, as long as the shape
+it exports makes the consumer degrade on its own (`isSupported: () => false`) instead of
+throwing somewhere deep inside it.
 
 Point `require.resolve` at the entry file rspack actually picks: `main` is often the CommonJS
 build while the bundle gets `browser` or `module`, and a stub aimed at the wrong file silently
