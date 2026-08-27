@@ -7,6 +7,7 @@
   "scripts": {
     "develop": "./script/develop",
     "build": "./script/build",
+    "build:size": "node build-scripts/report-output-size.cjs",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
     "test:coverage": "vitest run --config vitest.config.ts --coverage",
