@@ -86,3 +86,6 @@ jobs:
 
       - name: Build
         run: yarn build
+
+      - name: Report output size
+        run: yarn run build:size

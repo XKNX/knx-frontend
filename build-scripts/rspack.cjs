@@ -49,7 +49,12 @@ const createRspackConfig = ({
   return {
     mode: isProdBuild ? "production" : "development",
     target: `browserslist:${latestBuild ? "modern" : "legacy"}`,
-    devtool: isProdBuild ? "cheap-module-source-map" : "eval-cheap-module-source-map",
+    // For production, generate source maps for accurate stack traces without shipping the
+    // source itself. "cheap-module-source-map" would embed `sourcesContent` — the full
+    // pre-minification source of every module, HA frontend and node_modules alike — which was
+    // ~2/3 of the published wheel. `devtoolModuleFilenameTemplate` below points at GitHub
+    // instead. For development, generate "cheap" versions that map to original line numbers.
+    devtool: isProdBuild ? "nosources-source-map" : "eval-cheap-module-source-map",
     entry,
     node: false,
     module: {
@@ -279,6 +284,37 @@ const createRspackConfig = ({
       publicPath,
       // To silence warning in worker plugin
       globalObject: "self",
+      // Production source maps carry no sources, so point them elsewhere. This repo has two
+      // source roots: its own `src/` on XKNX/knx-frontend, and the homeassistant-frontend
+      // submodule, whose files live on home-assistant/frontend at the pinned commit (GitHub
+      // raw does not serve submodule contents, so they must NOT be addressed under this repo).
+      // Everything else — dependencies, generated files — gets a relative URL under a
+      // non-existent top directory: a clean source tree in dev tools, which stay happy getting
+      // 404s from valid requests.
+      ...Object.fromEntries(
+        ["", "Fallback"].map((v) => [
+          `devtool${v}ModuleFilenameTemplate`,
+          isProdBuild
+            ? (info) => {
+                const unknown = () => `/unknown${path.resolve("/", info.resourcePath)}`;
+                if (!path.isAbsolute(info.absoluteResourcePath) || !existsSync(info.resourcePath)) {
+                  return unknown();
+                }
+                const submodulePrefix = "./homeassistant-frontend/";
+                if (info.resourcePath.startsWith(`${submodulePrefix}src/`)) {
+                  const haURL = bundle.haSourceMapURL();
+                  return haURL
+                    ? new URL(info.resourcePath.slice(submodulePrefix.length), haURL).href
+                    : unknown();
+                }
+                if (info.resourcePath.startsWith("./src/")) {
+                  return new URL(info.resourcePath, bundle.sourceMapURL()).href;
+                }
+                return unknown();
+              }
+            : undefined,
+        ]),
+      ),
     },
     experiments: {
       outputModule: true,
