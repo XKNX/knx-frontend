@@ -1,4 +1,11 @@
-import { mdiDelete, mdiFileDocumentEdit, mdiPlus, mdiFloppy, mdiPlaylistEdit } from "@mdi/js";
+import {
+  mdiDelete,
+  mdiFileDocumentEdit,
+  mdiPlus,
+  mdiFloppy,
+  mdiCodeBraces,
+  mdiPlaylistEdit,
+} from "@mdi/js";
 import deepClone from "deep-clone-simple";
 import type { TemplateResult, PropertyValues } from "lit";
 import { LitElement, html, css, nothing } from "lit";
@@ -334,7 +341,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
               ? "ui.panel.config.automation.editor.edit_yaml"
               : "ui.panel.config.automation.editor.edit_ui",
           )}
-          .path=${mdiPlaylistEdit}
+          .path=${this._mode === "gui" ? mdiCodeBraces : mdiPlaylistEdit}
           @click=${this._toggleMode}
         ></ha-icon-button>
         ${this.narrow && this._mode === "gui" ? this._renderNotesDialog() : nothing}
