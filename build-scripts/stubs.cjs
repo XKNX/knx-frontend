@@ -76,6 +76,12 @@ const stubs = [
     test: exactly(npm("qr-scanner/qr-scanner.min.js")),
     replacement: stub("qr-scanner.ts"),
   },
+  {
+    name: "maps",
+    why: "<ha-map> and <ha-locations-editor> are the only modules that reach leaflet, leaflet-draw, leaflet.markercluster and maplibre-gl — 2 MB of map renderer for a panel that draws no maps.",
+    test: exactly(...ha("components/map/ha-map.ts", "components/map/ha-locations-editor.ts")),
+    replacement: stub("ha-map.ts"),
+  },
 ];
 
 module.exports.stubs = stubs;
