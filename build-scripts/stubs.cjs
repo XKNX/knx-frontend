@@ -91,6 +91,17 @@ const stubs = [
     test: haDirectory("resources/echarts"),
     replacement: stub("echarts.ts"),
   },
+  {
+    name: "calendars",
+    why: "<ha-full-calendar> and <ha-schedule-form> are the only modules that reach @fullcalendar, and through it luxon and rrule. The KNX panel shows no calendars and edits no schedule helpers. Neither module has a value export — both are only ever imported for the element they define.",
+    test: exactly(
+      ...ha(
+        "panels/calendar/ha-full-calendar.ts",
+        "panels/config/helpers/forms/ha-schedule-form.ts",
+      ),
+    ),
+    replacement: stub("calendar.ts"),
+  },
 ];
 
 module.exports.stubs = stubs;
