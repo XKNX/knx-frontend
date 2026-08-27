@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { TelegramDict } from "../../../types/websocket";
-import { GroupMonitorController } from "./group-monitor-controller";
+import { GroupMonitorController, UNKNOWN_DPT_ID } from "./group-monitor-controller";
 import { getGroupMonitorInfo } from "../../../services/websocket.service";
 
 vi.mock("../../../services/websocket.service", () => ({
@@ -103,6 +103,36 @@ describe("GroupMonitorController - DPT Filtering & URL Syncing", () => {
       expect(result).toHaveLength(1);
       expect(result[0].sourceAddress).toBe("1.1.1");
       expect(result[0].dptId).toBe("1.001");
+    });
+  });
+
+  describe("Telegrams without DPT", () => {
+    it("should group telegrams without DPT under the unknown sentinel", async () => {
+      await injectTelegrams([
+        createMockTelegram({ dpt_main: 1, dpt_sub: 1, source: "1.1.1" }),
+        createMockTelegram({ source: "1.1.2" }),
+        createMockTelegram({ source: "1.1.3" }),
+      ]);
+
+      const { distinctValues } = controller.getFilteredTelegramsAndDistinctValues();
+
+      expect(distinctValues.dpt[UNKNOWN_DPT_ID]).toBeDefined();
+      expect(distinctValues.dpt[UNKNOWN_DPT_ID].totalCount).toBe(2);
+      expect(distinctValues.dpt["1.001"].totalCount).toBe(1);
+    });
+
+    it("should filter for telegrams without DPT", async () => {
+      await injectTelegrams([
+        createMockTelegram({ dpt_main: 1, dpt_sub: 1, source: "1.1.1" }),
+        createMockTelegram({ source: "1.1.2" }),
+      ]);
+
+      controller.setFilterFieldValue("dpt", [UNKNOWN_DPT_ID]);
+
+      const result = getFiltered();
+      expect(result).toHaveLength(1);
+      expect(result[0].sourceAddress).toBe("1.1.2");
+      expect(result[0].dptId).toBeNull();
     });
   });
 
