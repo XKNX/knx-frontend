@@ -30,6 +30,13 @@ export const FILTER_FIELDS: readonly FilterField[] = [
   "dpt",
 ] as const;
 
+/**
+ * Sentinel filter id for telegrams without a DPT (no project data or
+ * unknown group address). Kept URL-safe and distinct from real DPT ids,
+ * which are always numeric (e.g. "1.001").
+ */
+export const UNKNOWN_DPT_ID = "unknown";
+
 export type FilterMap = Record<FilterField, ReadonlySet<string>>;
 
 export interface DistinctValueInfo {
@@ -517,7 +524,7 @@ export class GroupMonitorController implements ReactiveController {
         destination: telegram.destinationAddress,
         direction: telegram.direction,
         telegramtype: telegram.type,
-        dpt: telegram.dptId,
+        dpt: telegram.dptId ?? UNKNOWN_DPT_ID,
       };
 
       return values.includes(fieldMap[field] || "");
@@ -1007,7 +1014,9 @@ export class GroupMonitorController implements ReactiveController {
       case "telegramtype":
         return { id: telegram.type, name: "" };
       case "dpt":
-        if (!telegram.dptId) return null;
+        // Telegrams without DPT information are grouped under a sentinel id so
+        // they remain filterable; the display name is resolved by the view.
+        if (!telegram.dptId) return { id: UNKNOWN_DPT_ID, name: "" };
         return { id: telegram.dptId, name: telegram.dpt || telegram.dptId };
       default:
         return null;

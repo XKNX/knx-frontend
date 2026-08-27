@@ -35,7 +35,7 @@ import type { TelegramInfoDialogParams } from "../dialogs/telegram-info-dialog";
 import { formatTimeWithMilliseconds, formatTimeDelta, formatDate } from "../../../utils/format";
 import type { TelegramRow, TelegramRowKeys } from "../types/telegram-row";
 import type { ToggleFilterEvent } from "../../../components/data-table/cell/knx-table-cell-filterable";
-import { GroupMonitorController } from "../controller/group-monitor-controller";
+import { GroupMonitorController, UNKNOWN_DPT_ID } from "../controller/group-monitor-controller";
 import type {
   DistinctValueInfo,
   DistinctValues,
@@ -118,7 +118,7 @@ export function migrateStoredColumns(stored: StoredColumns | undefined): StoredC
  * - `?destination=1/2/3,4/5/6` - Filter by destination addresses (comma-separated)
  * - `?direction=Incoming` - Filter by telegram direction (comma-separated)
  * - `?telegramtype=GroupValueWrite,GroupValueRead` - Filter by telegram types (comma-separated)
- * - `?dpt=1.001,5.001` - Filter by Data Point Types (comma-separated)
+ * - `?dpt=1.001,5.001` - Filter by Data Point Types (comma-separated); `unknown` matches telegrams without DPT
  * - `?timedelta_before=100` - Include telegrams up to 100ms before a match (only applies when list filters are active)
  * - `?timedelta_after=100` - Include telegrams up to 100ms after a match (only applies when list filters are active)
  *
@@ -226,7 +226,15 @@ export class KNXGroupMonitor extends LitElement {
       }
     }
 
-    // 2. Override/update with actual telegram distinct values
+    // 2. Always offer the "unknown" bucket for telegrams without DPT information
+    dptMap[UNKNOWN_DPT_ID] = {
+      id: UNKNOWN_DPT_ID,
+      name: "",
+      totalCount: 0,
+      filteredCount: 0,
+    };
+
+    // 3. Override/update with actual telegram distinct values
     for (const info of Object.values(distinctValues.dpt)) {
       const dptId = info.id;
       if (dptMap[dptId]) {
@@ -502,7 +510,8 @@ export class KNXGroupMonitor extends LitElement {
         sortAscendingText: this.knx.localize("telegram_filter_sort_ascending"),
         sortDescendingText: this.knx.localize("telegram_filter_sort_descending"),
         sortDefaultDirection: "asc",
-        mapper: (item: DistinctValueInfo) => item.id,
+        mapper: (item: DistinctValueInfo) =>
+          item.id === UNKNOWN_DPT_ID ? this.hass.localize("state.default.unknown") : item.id,
       },
       secondaryField: {
         fieldName: this.knx.localize("telegram_filter_dpt_sort_by_secondaryText"),
