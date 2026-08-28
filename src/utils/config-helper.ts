@@ -44,8 +44,8 @@ export const configPathFromEvent = (ev: Event): string => {
  * @param config - The configuration object to modify
  * @param path - Dot-separated path to the property (e.g., "knx.color.ga_color")
  * @param value - The value to set. If undefined, the property will be removed
- * @param callerLogger - Optional logger instance for debugging operations, so that the
- *   messages carry the name of the module doing the writing
+ * @param callerLogger - Logger to attribute the debug lines to, so they carry the name of
+ *   the module doing the writing. Falls back to this module's own
  *
  * @example
  * ```typescript
@@ -66,9 +66,14 @@ export function setNestedValue(
   value: any,
   callerLogger?: KNXLogger,
 ) {
+  const log = callerLogger ?? logger;
   const keys = path.split(".");
   const targetKey = keys.pop();
-  if (!targetKey) return;
+  if (!targetKey) {
+    // configPathFromEvent has already said why, when it is the one handing us "".
+    log.debug(`nothing to write: no key in path "${path}"`);
+    return;
+  }
   let current = config;
   for (const key of keys) {
     if (!(key in current)) {
@@ -78,14 +83,14 @@ export function setNestedValue(
     current = current[key];
   }
   if (value === undefined) {
-    if (callerLogger) callerLogger.debug(`remove ${targetKey} at ${path}`);
+    log.debug(`remove ${targetKey} at ${path}`);
     delete current[targetKey];
     if (!Object.keys(current).length && keys.length > 0) {
       // when no other keys in this, recursively remove empty objects
-      setNestedValue(config, keys.join("."), undefined);
+      setNestedValue(config, keys.join("."), undefined, callerLogger);
     }
   } else {
-    if (callerLogger) callerLogger.debug(`update ${targetKey} at ${path} with value`, value);
+    log.debug(`update ${targetKey} at ${path} with value`, value);
     current[targetKey] = value;
   }
 }
