@@ -67,7 +67,7 @@ export class KnxExposeTemplatePreview extends LitElement {
     this._unsubscribeTemplate();
   }
 
-  protected willUpdate(changedProperties: PropertyValues<this>) {
+  protected willUpdate(changedProperties: PropertyValues) {
     if (changedProperties.has("valueTemplate")) {
       this._scheduleTemplateUpdateTyping();
     } else if (
@@ -141,7 +141,7 @@ export class KnxExposeTemplatePreview extends LitElement {
       this._error =
         err instanceof Error
           ? err.message
-          : this.localize("ui.panel.config.developer-tools.tabs.templates.unknown_error_template");
+          : this.localize("ui.panel.config.tools.tabs.templates.unknown_error_template");
     }
   }
 

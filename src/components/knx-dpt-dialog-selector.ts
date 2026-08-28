@@ -66,7 +66,7 @@ class KnxDptDialogSelector extends LitElement {
                         `component.knx.config_panel.dpt.options.${this.value.replace(".", "_")}`,
                       ) ||
                       (this.knx.dptMetadata[this.value]?.name
-                        ? snakeToTitleCase(this.knx.dptMetadata[this.value].name)
+                        ? snakeToTitleCase(this.knx.dptMetadata[this.value].name ?? "")
                         : this.localize("state.default.unknown"))
                     }
                   </div>

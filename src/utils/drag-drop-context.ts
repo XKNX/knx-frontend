@@ -4,6 +4,9 @@ import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("knx-drag-drop-context");
 
+/** The project tree tags each draggable row with the group address it stands for. */
+type GroupAddressElement = HTMLElement & { ga?: GroupAddress };
+
 const contextKey = Symbol("drag-drop-context");
 
 export class DragDropContext {
@@ -23,8 +26,8 @@ export class DragDropContext {
 
   // arrow function => so `this` refers to the class instance, not the event source
   public gaDragStartHandler = (ev: DragEvent) => {
-    const target = ev.target as HTMLElement;
-    const ga = target.ga as GroupAddress;
+    const target = ev.target as GroupAddressElement;
+    const ga = target.ga;
     if (!ga) {
       logger.warn("dragstart: no 'ga' property found", target);
       return;
@@ -42,8 +45,8 @@ export class DragDropContext {
   };
 
   public gaDragIndicatorStartHandler = (ev: MouseEvent) => {
-    const target = ev.target as HTMLElement;
-    const ga = target.ga as GroupAddress;
+    const target = ev.target as GroupAddressElement;
+    const ga = target.ga;
     if (!ga) {
       return;
     }

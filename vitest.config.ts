@@ -37,7 +37,6 @@ export default defineConfig({
       include: ["src/**/*.ts"],
       reporter: ["text", "html", "json", "lcov"],
       reportOnFailure: true,
-      all: true,
       provider: "v8",
       reportsDirectory: "test/coverage",
       // Coverage thresholds are currently disabled to allow gradual improvement of test coverage.

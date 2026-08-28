@@ -9,7 +9,10 @@ export interface LocationChangedEvent {
   detail?: { route: Route; force?: boolean };
 }
 
+/** A key under KNX's own translations, which is what `hass.localize` accepts. */
+export type KnxTranslationKey = `component.${string}`;
+
 export interface KnxPageNavigation extends PageNavigation {
-  descriptionTranslationKey: string;
-  translationKey: string;
+  descriptionTranslationKey: KnxTranslationKey;
+  translationKey: KnxTranslationKey;
 }

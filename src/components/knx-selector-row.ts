@@ -68,12 +68,11 @@ export class KnxSelectorRow extends LitElement {
       }
 
       // selector specific helper text
+      const numberSelector =
+        "number" in this.selector.selector ? this.selector.selector.number : undefined;
       this._selectorHelper =
-        isNumber && this.selector.selector.number?.mode === "box"
-          ? numberRangeHelper(
-              this.selector.selector.number?.min,
-              this.selector.selector.number?.max,
-            )
+        numberSelector?.mode === "box"
+          ? numberRangeHelper(numberSelector.min, numberSelector.max)
           : undefined;
     }
   }

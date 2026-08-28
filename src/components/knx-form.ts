@@ -29,7 +29,7 @@ import type {
   GroupSelect,
   GASelector,
 } from "../types/schema";
-import { getNestedValue, setNestedValue } from "../utils/config-helper";
+import { configPathFromEvent, getNestedValue, setNestedValue } from "../utils/config-helper";
 
 const logger = new KNXLogger("knx-form");
 
@@ -396,7 +396,7 @@ export class KnxForm extends LitElement {
 
   private _updateGroupSelectOption(ev: ValueChangedEvent<any>) {
     ev.stopPropagation();
-    const key = ev.target.key;
+    const key = configPathFromEvent(ev);
     const selectedIndex = parseInt(ev.detail.value, 10);
     const previousIndex = this._selectedGroupSelectOptions[key];
 
@@ -432,7 +432,7 @@ export class KnxForm extends LitElement {
 
   private _updateConfig(ev: ValueChangedEvent<any>) {
     ev.stopPropagation();
-    const key = ev.target.key;
+    const key = configPathFromEvent(ev);
     const value = ev.detail.value;
     setNestedValue(this.config!, key, value, logger);
     fireEvent(this, "knx-form-config-changed", { value: this.config });

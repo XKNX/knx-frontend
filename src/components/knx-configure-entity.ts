@@ -16,9 +16,14 @@ import type { HomeAssistant, ValueChangedEvent } from "@ha/types";
 import "./knx-form";
 import { renderConfigureEntityCard } from "./knx-configure-entity-options";
 import { KNXLogger } from "../tools/knx-logger";
-import { setNestedValue } from "../utils/config-helper";
+import { configPathFromEvent, setNestedValue } from "../utils/config-helper";
 import { extractValidationErrors } from "../utils/validation";
-import type { EntityData, ErrorDescription, SupportedPlatform } from "../types/entity_data";
+import type {
+  BaseEntityData,
+  EntityData,
+  ErrorDescription,
+  SupportedPlatform,
+} from "../types/entity_data";
 import type { KNX } from "../types/knx";
 import { getPlatformStyle } from "../utils/common";
 import type { PlatformStyle } from "../utils/common";
@@ -55,7 +60,10 @@ export class KNXConfigureEntity extends LitElement {
     this.platformStyle = getPlatformStyle(this.platform);
     if (!this.config) {
       // set base keys to get better validation error messages
-      this.config = { entity: {}, knx: {} };
+      // `entity` starts out empty on purpose: the backend then reports one error per
+      // missing field instead of one complaint about the whole object, and the form fills
+      // them in from there.
+      this.config = { entity: {} as BaseEntityData, knx: {} };
 
       // url params are extracted to config.
       // /knx/entities/create/binary_sensor?knx.ga_sensor.state=0/1/4
@@ -111,7 +119,7 @@ export class KNXConfigureEntity extends LitElement {
 
   private _updateConfig(ev: ValueChangedEvent<any>): void {
     ev.stopPropagation();
-    const key = ev.target.key;
+    const key = configPathFromEvent(ev);
     const value = ev.detail.value;
     setNestedValue(this.config!, key, value, logger);
     fireEvent(this, "knx-entity-configuration-changed", this.config);

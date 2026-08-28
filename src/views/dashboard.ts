@@ -27,12 +27,22 @@ import type { UnsubscribeFunc } from "home-assistant-js-websocket";
 import { showKnxProjectUploadDialog } from "../dialogs/show-knx-project-upload-dialog";
 import { showKnxTimeServerDialog } from "../dialogs/show-knx-time-server-dialog";
 import { showKnxSendDialog } from "../dialogs/show-knx-send-dialog";
-import type { KnxPageNavigation } from "../types/navigation";
+import type { KnxPageNavigation, KnxTranslationKey } from "../types/navigation";
 import type { KNX } from "../types/knx";
 import { knxMainTabs } from "../knx-router";
 import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("knx-dashboard");
+
+/** One of the action buttons below the navigation list. */
+interface DashboardButton {
+  /** Root key; `.title` and `.description` below it name the button. */
+  translationKey: KnxTranslationKey;
+  click: () => void;
+  iconPath: string;
+  iconColor: string;
+  validConfigEntryStates: Set<string>;
+}
 
 @customElement("knx-dashboard")
 export class KnxDashboard extends SubscribeMixin(LitElement) {
@@ -77,7 +87,7 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
     }));
   }
 
-  private _buttonItems = [
+  private _buttonItems: DashboardButton[] = [
     {
       translationKey: "component.knx.config_panel.dashboard.send",
       click: this._openSendDialog,
@@ -138,7 +148,6 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
     await this.hass.loadBackendTranslation("config", "knx");
     showConfigFlowDialog(this, {
       startFlowHandler: this.knx.config_entry.domain,
-      showAdvanced: this.hass.userData?.showAdvanced,
       manifest: await fetchIntegrationManifest(this.hass, this.knx.config_entry.domain),
       entryId: this.knx.config_entry.entry_id,
       dialogClosedCallback: (params) => {
@@ -165,7 +174,7 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
             <ha-md-list has-secondary>
               ${map(
                 this._buttonItems,
-                (item) =>
+                (item: DashboardButton) =>
                   html` <ha-md-list-item
                     type="button"
                     @click=${item.click}

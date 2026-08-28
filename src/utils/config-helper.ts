@@ -1,6 +1,16 @@
 import type { KNXLogger } from "../tools/knx-logger";
 
 /**
+ * Reads the config path back off the element that fired a change event.
+ *
+ * Every form row renders its input with a `key` property holding the dot-separated path it
+ * edits, so that one handler can serve all of them. The DOM knows nothing about that, and
+ * types `ev.target` as `EventTarget | null` besides.
+ */
+export const configPathFromEvent = (ev: Event): string =>
+  (ev.target as HTMLElement & { key: string }).key;
+
+/**
  * Sets a nested value in a configuration object using a dot-separated path.
  * Creates intermediate objects as needed when setting values.
  * When value is undefined, removes the property and cleans up empty parent objects.

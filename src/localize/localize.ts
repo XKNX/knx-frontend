@@ -1,4 +1,5 @@
 import { IntlMessageFormat } from "intl-messageformat";
+import type { LocalizeKeys } from "@ha/common/translations/localize";
 import type { HomeAssistant } from "@ha/types";
 import * as de from "./languages/de.json";
 import * as en from "./languages/en.json";
@@ -33,7 +34,7 @@ export function localize(hass: HomeAssistant, key: string, replace?: Record<stri
   const translatedValue = languages[lang]?.[key] || languages[DEFAULT_LANGUAGE][key];
 
   if (!translatedValue) {
-    const hassTranslation = hass.localize(key, replace);
+    const hassTranslation = hass.localize(key as LocalizeKeys, replace);
     if (hassTranslation) {
       return hassTranslation;
     }

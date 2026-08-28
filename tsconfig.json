@@ -1,4 +1,14 @@
 {
+  // Upstream ships a component gallery and an e2e test app that this panel never builds,
+  // and both need generated files we do not generate. Nothing imports them, so dropping
+  // them as root files is enough to keep them out. (Setting "exclude" replaces its
+  // default, which is why node_modules is listed.)
+  "exclude": [
+    "node_modules",
+    ".claude",
+    "homeassistant-frontend/gallery",
+    "homeassistant-frontend/test"
+  ],
   "compilerOptions": {
     "target": "ES2021",
     "lib": ["ES2021", "DOM", "DOM.Iterable", "WebWorker"],
