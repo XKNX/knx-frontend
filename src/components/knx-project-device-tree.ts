@@ -238,7 +238,7 @@ export class KNXProjectDeviceTree extends LitElement {
   }
 
   private _selectDevice(ev: CustomEvent) {
-    const device = ev.target.device;
+    const device = (ev.target as HTMLElement & { device: DeviceTreeItem }).device;
     logger.debug("select device", device);
     this._selectedDevice = device;
     this.scrollTop = 0;

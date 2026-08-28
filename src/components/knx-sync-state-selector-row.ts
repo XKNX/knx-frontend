@@ -7,6 +7,8 @@ import "@ha/components/ha-selector/ha-selector-number";
 import "@ha/components/ha-selector/ha-selector-select";
 import type { HomeAssistant } from "@ha/types";
 
+import { configPathFromEvent } from "../utils/config-helper";
+
 @customElement("knx-sync-state-selector-row")
 export class KnxSyncStateSelectorRow extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -102,7 +104,7 @@ export class KnxSyncStateSelectorRow extends LitElement {
     ev.stopPropagation();
     let strategy: string;
     let minutes: number;
-    if (ev.target.key === "strategy") {
+    if (configPathFromEvent(ev) === "strategy") {
       strategy = ev.detail.value;
       minutes = this._minutes;
     } else {

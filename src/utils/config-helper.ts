@@ -1,4 +1,40 @@
-import type { KNXLogger } from "../tools/knx-logger";
+import { KNXLogger } from "../tools/knx-logger";
+
+const logger = new KNXLogger("config-helper");
+
+/** `ha-selector < knx-selector-row < knx-form`, as far up as the event was composed. */
+const composedElementPath = (ev: Event): string =>
+  ev
+    .composedPath()
+    .map((node) => (node as HTMLElement).localName)
+    .filter(Boolean)
+    .join(" < ");
+
+/**
+ * Reads the config path back off the element that fired a change event.
+ *
+ * Every form row renders its input with a `key` property holding the dot-separated path it
+ * edits, so that one handler can serve all of them. The DOM knows nothing about that, and
+ * types `ev.target` as `EventTarget | null` besides.
+ *
+ * A row that forgot its `key` is a bug in the caller, and a quiet one: `setNestedValue`
+ * would fail somewhere down in `path.split`, and a handler comparing the path against a
+ * literal would just take its other branch. So say so — with the chain of elements the
+ * event came through, which locates the offending row better than the name of whichever
+ * module happened to handle it — and return the empty path that `setNestedValue` ignores.
+ */
+export const configPathFromEvent = (ev: Event): string => {
+  const target = ev.target as (HTMLElement & { key?: string }) | null;
+  if (target?.key === undefined) {
+    logger.warn(
+      `${ev.type} from an element with no "key" to write to, so its value is dropped:`,
+      composedElementPath(ev),
+      target,
+    );
+    return "";
+  }
+  return target.key;
+};
 
 /**
  * Sets a nested value in a configuration object using a dot-separated path.
@@ -8,7 +44,8 @@ import type { KNXLogger } from "../tools/knx-logger";
  * @param config - The configuration object to modify
  * @param path - Dot-separated path to the property (e.g., "knx.color.ga_color")
  * @param value - The value to set. If undefined, the property will be removed
- * @param logger - Optional logger instance for debugging operations
+ * @param callerLogger - Logger to attribute the debug lines to, so they carry the name of
+ *   the module doing the writing. Falls back to this module's own
  *
  * @example
  * ```typescript
@@ -27,11 +64,16 @@ export function setNestedValue(
   config: Record<string, any>,
   path: string,
   value: any,
-  logger?: KNXLogger,
+  callerLogger?: KNXLogger,
 ) {
+  const log = callerLogger ?? logger;
   const keys = path.split(".");
   const targetKey = keys.pop();
-  if (!targetKey) return;
+  if (!targetKey) {
+    // configPathFromEvent has already said why, when it is the one handing us "".
+    log.debug(`nothing to write: no key in path "${path}"`);
+    return;
+  }
   let current = config;
   for (const key of keys) {
     if (!(key in current)) {
@@ -41,14 +83,14 @@ export function setNestedValue(
     current = current[key];
   }
   if (value === undefined) {
-    if (logger) logger.debug(`remove ${targetKey} at ${path}`);
+    log.debug(`remove ${targetKey} at ${path}`);
     delete current[targetKey];
     if (!Object.keys(current).length && keys.length > 0) {
       // when no other keys in this, recursively remove empty objects
-      setNestedValue(config, keys.join("."), undefined);
+      setNestedValue(config, keys.join("."), undefined, callerLogger);
     }
   } else {
-    if (logger) logger.debug(`update ${targetKey} at ${path} with value`, value);
+    log.debug(`update ${targetKey} at ${path} with value`, value);
     current[targetKey] = value;
   }
 }

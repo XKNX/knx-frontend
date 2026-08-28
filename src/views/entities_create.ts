@@ -143,7 +143,8 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
   protected willUpdate(changedProperties: PropertyValues<this>) {
     super.willUpdate(changedProperties); // dirty state listeners are handled by the mixin
     if (changedProperties.has("route")) {
-      const intent = this.route.prefix.split("/").at(-1);
+      const pathSegments = this.route.prefix.split("/");
+      const intent = pathSegments[pathSegments.length - 1];
       if (intent === "create" || intent === "edit") {
         this._intent = intent;
       } else {
@@ -233,14 +234,11 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
         <hass-loading-screen .message=${"Loading entity platform schema."}></hass-loading-screen>
       `,
       error: (err) => this._renderError("Error loading schema", err),
-      complete: () => this._renderEntityConfig(this.entityPlatform),
+      complete: () => this._renderEntityConfig(this.entityPlatform!),
     });
   }
 
-  private _renderError(
-    errorContent: TemplateResult | string,
-    error?: Error | string,
-  ): TemplateResult {
+  private _renderError(errorContent: TemplateResult | string, error?: unknown): TemplateResult {
     logger.error("Error in create/edit entity", error);
     return html`
       <hass-subpage
@@ -558,7 +556,10 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
       });
   }
 
-  private _handleValidationError(result: CreateEntityResult, final: boolean): boolean {
+  private _handleValidationError(
+    result: CreateEntityResult,
+    final: boolean,
+  ): result is Extract<CreateEntityResult, { success: false }> {
     // return true if validation error; scroll to alert if final
     if (result.success === false) {
       logger.warn("Validation error", result);

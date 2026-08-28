@@ -15,7 +15,7 @@ import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import type { KNX } from "./types/knx";
 import { KNXLogger } from "./tools/knx-logger";
-import type { KnxPageNavigation } from "./types/navigation";
+import type { KnxPageNavigation, KnxTranslationKey } from "./types/navigation";
 
 const logger = new KNXLogger("router");
 
@@ -28,7 +28,7 @@ export const BASE_URL = "/knx";
  * description keys in sync.
  */
 function _knxPageNavigationFactory(
-  pageNavigation: PageNavigation & { baseTranslationKey: string },
+  pageNavigation: PageNavigation & { baseTranslationKey: KnxTranslationKey },
 ): KnxPageNavigation {
   return {
     ...pageNavigation,

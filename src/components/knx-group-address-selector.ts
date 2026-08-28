@@ -134,7 +134,7 @@ export class GroupAddressSelector extends LitElement {
     this._getDPTsFromClasses(dptClasses).map(dptToString),
   );
 
-  protected willUpdate(changedProps: PropertyValues<this>) {
+  protected willUpdate(changedProps: PropertyValues) {
     this._selectedDPTValue = this.config.dpt ?? this._selectedDPTValue;
     const selectedDPT = this.getDptByValue(this._selectedDPTValue);
 

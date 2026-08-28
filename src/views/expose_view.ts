@@ -57,9 +57,21 @@ import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("knx-expose-view");
 
-export interface EntityRow {
-  entityState?: HassEntity;
+/**
+ * An exposed entity we cannot look up: an expose outlives the entity it was created for,
+ * so the entity may have been deleted since, leaving nothing but the id it was exposed
+ * under. Extending Partial<EntityRegistryEntry> rather than declaring entity_id alone is
+ * what lets the union below be read without narrowing at every property.
+ */
+interface UnknownEntity extends Partial<EntityRegistryEntry> {
   entity_id: string;
+}
+
+/** An exposed entity: its registry entry when we have one, the bare id when we do not. */
+type ExposedEntity = EntityRegistryEntry | UnknownEntity;
+
+export type EntityRow = ExposedEntity & {
+  entityState?: HassEntity;
   friendly_name: string;
   device_name: string;
   area_name: string;
@@ -67,11 +79,7 @@ export interface EntityRow {
   domain: string;
   group_addresses: string[];
   group_address_names: (string | undefined)[];
-}
-
-interface UnknownEntity {
-  entity_id: string;
-}
+};
 
 interface AreaFilterItem {
   id: string;
@@ -114,14 +122,13 @@ export class KNXExposeView extends LitElement {
       return Object.keys(this._exposeGroupsCtx.groups).map(
         (entityId) =>
           entities.find((e) => e.entity_id === entityId) ??
-          ({
-            entity_id: entityId,
-          } as UnknownEntity),
+          // exposed, but no longer in the registry
+          ({ entity_id: entityId } as UnknownEntity),
       );
     },
     watch: ["_exposeGroupsCtx"],
   })
-  private _exposes: (EntityRegistryEntry | UnknownEntity)[] = [];
+  private _exposes: ExposedEntity[] = [];
 
   @state() private _filters: DataTableFiltersValues = {};
 
@@ -144,10 +151,7 @@ export class KNXExposeView extends LitElement {
   };
 
   private _computeRows = memoize(
-    (
-      entries: (EntityRegistryEntry | UnknownEntity)[],
-      projectData: KNXProject | null,
-    ): EntityRow[] =>
+    (entries: ExposedEntity[], projectData: KNXProject | null): EntityRow[] =>
       entries.map((entry) => {
         const entityState: HassEntity | undefined = this.hass.states[entry.entity_id]; // undefined for disabled entities
         const device = entry.device_id ? this.hass.devices[entry.device_id] : undefined;
@@ -201,51 +205,45 @@ export class KNXExposeView extends LitElement {
     },
   );
 
-  private _getAreaFilterData = memoize(
-    (entities: (EntityRegistryEntry | UnknownEntity)[]): AreaFilterItem[] => {
-      const areas = new Map<string, string>();
-      entities.forEach((entity) => {
-        const areaId =
-          entity.area_id || (entity.device_id && this.hass.devices[entity.device_id]?.area_id);
-        if (areaId) {
-          const area = this.hass.areas[areaId];
-          if (area) {
-            areas.set(areaId, area.name);
-          }
+  private _getAreaFilterData = memoize((entities: ExposedEntity[]): AreaFilterItem[] => {
+    const areas = new Map<string, string>();
+    entities.forEach((entity) => {
+      const areaId =
+        entity.area_id || (entity.device_id && this.hass.devices[entity.device_id]?.area_id);
+      if (areaId) {
+        const area = this.hass.areas[areaId];
+        if (area) {
+          areas.set(areaId, area.name);
         }
-      });
-      return Array.from(areas, ([id, name]) => ({ id, name }));
-    },
-  );
+      }
+    });
+    return Array.from(areas, ([id, name]) => ({ id, name }));
+  });
 
-  private _getDeviceFilterData = memoize(
-    (entities: (EntityRegistryEntry | UnknownEntity)[]): DeviceFilterItem[] => {
-      const devices = new Map<string, string>();
-      entities.forEach((entity) => {
-        if (entity.device_id) {
-          const device = this.hass.devices[entity.device_id];
-          if (device) {
-            devices.set(entity.device_id, device.name_by_user ?? device.name ?? entity.device_id);
-          }
+  private _getDeviceFilterData = memoize((entities: ExposedEntity[]): DeviceFilterItem[] => {
+    const devices = new Map<string, string>();
+    entities.forEach((entity) => {
+      if (entity.device_id) {
+        const device = this.hass.devices[entity.device_id];
+        if (device) {
+          devices.set(entity.device_id, device.name_by_user ?? device.name ?? entity.device_id);
         }
-      });
-      return Array.from(devices, ([id, name]) => ({ id, name }));
-    },
-  );
+      }
+    });
+    return Array.from(devices, ([id, name]) => ({ id, name }));
+  });
 
-  private _getDomainFilterData = memoize(
-    (entities: (EntityRegistryEntry | UnknownEntity)[]): DomainFilterItem[] => {
-      const domains = new Map<string, string>();
-      entities.forEach((entity) => {
-        const domain = computeDomain(entity.entity_id);
-        if (!domains.has(domain)) {
-          const domainName = this.hass.localize(`component.${domain}.title`) || domain;
-          domains.set(domain, domainName);
-        }
-      });
-      return Array.from(domains, ([id, name]) => ({ id, name }));
-    },
-  );
+  private _getDomainFilterData = memoize((entities: ExposedEntity[]): DomainFilterItem[] => {
+    const domains = new Map<string, string>();
+    entities.forEach((entity) => {
+      const domain = computeDomain(entity.entity_id);
+      if (!domains.has(domain)) {
+        const domainName = this.hass.localize(`component.${domain}.title`) || domain;
+        domains.set(domain, domainName);
+      }
+    });
+    return Array.from(domains, ([id, name]) => ({ id, name }));
+  });
 
   private _getBasicFilterConfig = <
     T extends { id: string; name: string },

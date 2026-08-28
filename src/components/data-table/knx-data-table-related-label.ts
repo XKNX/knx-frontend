@@ -78,7 +78,7 @@ class KnxDataTableRelatedLabel extends LitElement {
         : this._renderEntityYamlItem(this.entitiesYaml[0]);
     }
 
-    const openDropdownLabel = this.localize("ui.components.target-picker.selected.entity", {
+    const openDropdownLabel = this.localize("ui.components.target-picker.entities_count", {
       count: itemCount,
     });
 
