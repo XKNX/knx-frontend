@@ -4,9 +4,9 @@
 // support, then to a "video not supported" message. Reporting false walks it down that
 // path instead of leaving it with a broken player object.
 
-import { warnStubbed } from "./stub-warning";
+import { reportStubbed } from "./stub-report";
 
-warnStubbed("hls.js", "playing camera streams that the browser cannot play natively");
+reportStubbed("hls.js", "playing camera streams that the browser cannot play natively");
 
 export default {
   isSupported: (): boolean => false,

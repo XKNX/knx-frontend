@@ -9,7 +9,8 @@
  *
  * ── If something in the panel is missing or dead, look here first ──────────────────────────
  *
- * Every stub says so on the console the moment it is reached:
+ * Every stub reports itself on the console — as an error, not a warning — the moment it is
+ * reached:
  *
  *     [KNX] "leaflet maps" is stubbed out in this build ...
  *
@@ -25,7 +26,7 @@
  *     "export 'X' was not found". Type-only imports are erased and need nothing.
  *   - Prefer a shape that makes the consumer degrade on its own (`isSupported: () => false`)
  *     over one that throws somewhere deep inside it.
- *   - Warn from the point that means "actually used": module scope for something behind a
+ *   - Report from the point that means "actually used": module scope for something behind a
  *     dynamic import, `connectedCallback` for a custom element (its module is often
  *     evaluated eagerly by a static import that never renders anything).
  *   - Check what rspack really resolves: a package's `main` is often the CommonJS build while

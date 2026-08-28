@@ -4,11 +4,11 @@
 // the KNX panel never does. The methods the dialog calls are all here and all no-ops, so
 // the dialog opens on an uncropped image instead of throwing its way through a render.
 
-import { warnStubbed } from "./stub-warning";
+import { reportStubbed } from "./stub-report";
 
 export default class Cropper {
   public constructor() {
-    warnStubbed("cropperjs", "cropping an uploaded image");
+    reportStubbed("cropperjs", "cropping an uploaded image");
   }
 
   public getData(): Record<string, never> {

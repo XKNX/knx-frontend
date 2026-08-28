@@ -7,11 +7,11 @@
 // The elements still register, so a template that renders one gets an empty box and a
 // console warning instead of an unknown tag that silently does nothing.
 
-import { warnStubbed } from "./stub-warning";
+import { reportStubbed } from "./stub-report";
 
 class StubbedMapElement extends HTMLElement {
   public connectedCallback(): void {
-    warnStubbed("maps", `showing <${this.localName}>`);
+    reportStubbed("maps", `showing <${this.localName}>`);
   }
 }
 

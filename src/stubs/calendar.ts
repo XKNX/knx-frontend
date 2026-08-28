@@ -5,11 +5,11 @@
 // helpers. Neither module has a value export; both are only ever imported for their side
 // effect of defining an element, so registering an empty one is the whole stub.
 
-import { warnStubbed } from "./stub-warning";
+import { reportStubbed } from "./stub-report";
 
 class StubbedCalendarElement extends HTMLElement {
   public connectedCallback(): void {
-    warnStubbed("calendars", `showing <${this.localName}>`);
+    reportStubbed("calendars", `showing <${this.localName}>`);
   }
 }
 

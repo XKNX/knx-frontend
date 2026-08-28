@@ -4,11 +4,11 @@
 // `show-*-dialog` helpers are deliberately left alone: they are what other components
 // import by name, and what they open is this.
 
-import { warnStubbed } from "./stub-warning";
+import { reportStubbed } from "./stub-report";
 
 class StubbedMediaElement extends HTMLElement {
   public connectedCallback(): void {
-    warnStubbed("media browser", `showing <${this.localName}>`);
+    reportStubbed("media browser", `showing <${this.localName}>`);
   }
 }
 

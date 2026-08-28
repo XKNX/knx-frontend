@@ -11,9 +11,9 @@
 // property with a function. Everything it returns is undefined, which is where a chart that
 // really is needed will fail — right after the warning below says why.
 
-import { warnStubbed } from "./stub-warning";
+import { reportStubbed } from "./stub-report";
 
-warnStubbed("echarts", "drawing charts and graphs");
+reportStubbed("echarts", "drawing charts and graphs");
 
 const noop = (): undefined => undefined;
 

@@ -68,7 +68,7 @@ wheel — as lazy chunks nobody downloads, but on disk all the same.
 
 [stubs.cjs](stubs.cjs) is the list of modules replaced with a stub for that reason, one entry
 per library, each with the reason it is there. The replacements live in
-[../src/stubs](../src/stubs) and every one of them logs
+[../src/stubs](../src/stubs) and every one of them logs, as a console error,
 
 ```
 [KNX] "<entry name>" is stubbed out in this build ...
