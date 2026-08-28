@@ -1,0 +1,137 @@
+/* Modules the KNX panel replaces with a stub at build time.
+ *
+ * The panel is built from the full homeassistant-frontend source tree, so it inherits every
+ * dependency HA has — camera players, map renderers, chart engines — whether or not the KNX
+ * panel can reach them. Unreachable code still ships: rspack emits it as lazy chunks that no
+ * KNX user ever downloads, but `knx_frontend/` is zipped into the wheel as-is, so every Home
+ * Assistant install pays for it on disk. Replacing the module that pulls a library in drops
+ * the whole subtree behind it.
+ *
+ * ── If something in the panel is missing or dead, look here first ──────────────────────────
+ *
+ * Every stub reports itself on the console — as an error, not a warning — the moment it is
+ * reached:
+ *
+ *     [KNX] "leaflet maps" is stubbed out in this build ...
+ *
+ * The quoted name is the `name` of an entry below. To get the real module back, delete that
+ * entry and rebuild — nothing else references it.
+ *
+ * ── Adding an entry ───────────────────────────────────────────────────────────────────────
+ *
+ * `test` is matched against the *resolved absolute path*, so use the helpers below rather
+ * than hand-writing a regex. The replacement must be a real module, not an empty file:
+ *
+ *   - Every value export its consumers use must exist, or the build fails with
+ *     "export 'X' was not found". Type-only imports are erased and need nothing.
+ *   - Prefer a shape that makes the consumer degrade on its own (`isSupported: () => false`)
+ *     over one that throws somewhere deep inside it.
+ *   - Report from the point that means "actually used": module scope for something behind a
+ *     dynamic import, `connectedCallback` for a custom element (its module is often
+ *     evaluated eagerly by a static import that never renders anything).
+ *   - Check what rspack really resolves: a package's `main` is often the CommonJS build while
+ *     the bundle gets `browser` or `module`, and a stub aimed at the wrong file matches
+ *     nothing at all — silently.
+ *
+ * Verify with `yarn build && yarn build:size`, and confirm the library is gone rather than
+ * merely moved: `grep -rl <marker> knx_frontend/frontend_latest` should come back empty.
+ */
+
+const path = require("path");
+const paths = require("./paths.cjs");
+
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Matches exactly these absolute paths, and nothing else. */
+const exactly = (...absolutePaths) =>
+  new RegExp(`^(?:${absolutePaths.map(escapeRegExp).join("|")})$`);
+
+/** An npm package entry, resolved the way the bundler resolves it. */
+const npm = (request) => require.resolve(request);
+
+/** Modules inside the homeassistant-frontend submodule, relative to its `src/`. */
+const ha = (...relativePaths) =>
+  relativePaths.map((relative) =>
+    path.resolve(paths.root_dir, "homeassistant-frontend/src", relative),
+  );
+
+/** Every module inside a homeassistant-frontend directory, relative to its `src/`. */
+const haDirectory = (relative) => new RegExp(`^${escapeRegExp(...ha(relative))}[\\\\/].*\\.ts$`);
+
+/** Our replacement, in `src/stubs/`. */
+const stub = (file) => path.resolve(paths.root_dir, "src/stubs", file);
+
+/**
+ * @type {{ name: string, why: string, test: RegExp, replacement: string }[]}
+ */
+const stubs = [
+  {
+    name: "hls.js",
+    why: "HTTP Live Streaming player, dynamically imported by ha-hls-player for camera streams. The KNX panel renders no cameras; this alone was 1.3 MB of the wheel.",
+    // Resolve the exact entry ha-hls-player imports, not the bare package.
+    test: exactly(npm("hls.js/dist/hls.light.mjs")),
+    replacement: stub("hls.ts"),
+  },
+  {
+    name: "qr-scanner",
+    why: "Camera-based QR code scanner, dynamically imported by ha-qr-scanner. Nothing in the KNX panel scans QR codes.",
+    // The "module" entry is the one in the bundle; require.resolve() would give the
+    // CommonJS "main" (qr-scanner.umd.min.js), which never appears in it.
+    test: exactly(npm("qr-scanner/qr-scanner.min.js")),
+    replacement: stub("qr-scanner.ts"),
+  },
+  {
+    name: "maps",
+    why: "<ha-map> and <ha-locations-editor> are the only modules that reach leaflet, leaflet-draw, leaflet.markercluster and maplibre-gl — 2 MB of map renderer for a panel that draws no maps.",
+    test: exactly(...ha("components/map/ha-map.ts", "components/map/ha-locations-editor.ts")),
+    replacement: stub("ha-map.ts"),
+  },
+  {
+    name: "echarts",
+    why: "resources/echarts is the only door echarts, zrender and the chart2music extension come in through — 2 MB of chart engine for a panel that draws no charts. The chart components under components/chart stay: they are small, other modules import helpers out of them, and with no engine behind them they draw nothing.",
+    test: haDirectory("resources/echarts"),
+    replacement: stub("echarts.ts"),
+  },
+  {
+    name: "calendars",
+    why: "<ha-full-calendar> and <ha-schedule-form> are the only modules that reach @fullcalendar, and through it luxon and rrule. The KNX panel shows no calendars and edits no schedule helpers. Neither module has a value export — both are only ever imported for the element they define.",
+    test: exactly(
+      ...ha(
+        "panels/calendar/ha-full-calendar.ts",
+        "panels/config/helpers/forms/ha-schedule-form.ts",
+      ),
+    ),
+    replacement: stub("calendar.ts"),
+  },
+  {
+    name: "media browser",
+    why: "The media browse dialogs and the component behind them, plus the virtualizer's grid layout, whose only user ha-media-player-browse is (the virtualizer itself stays — ha-data-table renders one). KNX has no media_player entities, so nothing in the panel can open one. Small change on its own — kept because it is one console warning away from being obvious if that ever stops being true.",
+    test: exactly(
+      ...ha(
+        "components/media-player/dialog-join-media-players.ts",
+        "components/media-player/dialog-media-manage.ts",
+        "components/media-player/dialog-media-player-browse.ts",
+        "components/media-player/ha-browse-media-manual.ts",
+        "components/media-player/ha-browse-media-tts.ts",
+        "components/media-player/ha-media-browser-thumbnail.ts",
+        "components/media-player/ha-media-manage-button.ts",
+        "components/media-player/ha-media-player-browse.ts",
+        "components/media-player/ha-media-upload-button.ts",
+      ),
+    ),
+    replacement: stub("media-player.ts"),
+  },
+  {
+    name: "cropperjs",
+    why: "Image cropper, imported statically by image-cropper-dialog for picture uploads the KNX panel never makes. This is the one the old empty-file mechanism could not take: a static default import needs something to import.",
+    // `browser` is the entry rspack picks here; `main` (cropper.common.js) never appears.
+    test: exactly(npm("cropperjs/dist/cropper.js")),
+    replacement: stub("cropperjs.ts"),
+  },
+];
+
+module.exports.stubs = stubs;
+
+/** `[{ test, replacement }]` for rspack's NormalModuleReplacementPlugin. */
+module.exports.moduleReplacements = () =>
+  stubs.map(({ test, replacement }) => ({ test, replacement }));
