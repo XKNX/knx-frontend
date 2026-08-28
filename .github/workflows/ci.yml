@@ -42,6 +42,12 @@ jobs:
       - name: Setup Node and Dependencies
         uses: ./.github/actions/setup
 
+      # tsc resolves imports of build/mdi/iconList.json and build/translations/
+      # translationMetadata.json, which do not exist until these have run. Every other job
+      # that needs them gets them from `yarn build`; this one has no reason to build.
+      - name: Generate build inputs
+        run: yarn gulp gen-icons-json build-translations
+
       - name: Run tsc
         run: yarn run lint:types
 
