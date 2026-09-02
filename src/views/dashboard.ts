@@ -160,7 +160,7 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
 
   protected render() {
     return html`
-      <hass-subpage .narrow=${this.narrow} .hass=${this.hass} header="KNX" back-path="/config">
+      <hass-subpage .narrow=${this.narrow} .hass=${this.hass} header="KNX" back-path="/config/connectivity">
         <ha-config-section .isWide=${this.isWide}>
           <ha-card outlined>
             <ha-config-navigation-list
