@@ -18,7 +18,7 @@ import type { HomeAssistant } from "@ha/types";
 
 import "./knx-payload-selector";
 import type { PayloadConfigValue } from "./knx-payload-selector";
-import { getValidationError } from "../utils/validation";
+import { extractValidationErrors, getValidationError } from "../utils/validation";
 import type { ErrorDescription } from "../types/entity_data";
 import type { KNX } from "../types/knx";
 
@@ -152,6 +152,7 @@ export class KnxSelectOptionsList extends LitElement {
   // complete, no matter whether the list itself is required.
   private _renderOption(option: SelectOption, index: number, canDelete: boolean): TemplateResult {
     const { option: name, ...payload } = option;
+    const { name: nameError, payload: payloadErrors } = this._optionValidationErrors(index);
     return html`<div class="option">
       <div class="option-header">
         <ha-input
@@ -160,6 +161,8 @@ export class KnxSelectOptionsList extends LitElement {
           .label=${this._localize("option")}
           .type=${"text"}
           .required=${true}
+          .invalid=${!!nameError}
+          .validationMessage=${nameError?.message}
           data-index=${index}
           @input=${this._optionNameChanged}
           @change=${this._optionNameChanged}
@@ -182,11 +185,29 @@ export class KnxSelectOptionsList extends LitElement {
         .rawLength=${this._effectiveDpt ? undefined : this._payloadLength}
         .required=${true}
         .value=${payload as PayloadConfigValue}
+        .validationErrors=${payloadErrors}
         .localizeFunction=${this._emptyLocalize}
         data-index=${index}
         @value-changed=${this._payloadChanged}
       ></knx-payload-selector>
     </div>`;
+  }
+
+  /** Backend errors for one option, split into the name error and the payload subtree.
+   *
+   * Options are validated as a list, so their errors are indexed by position.
+   * The name is validated alongside the payload keys, both below that index.
+   */
+  private _optionValidationErrors(index: number): {
+    name?: ErrorDescription;
+    payload?: ErrorDescription[];
+  } {
+    const errors = extractValidationErrors(this.validationErrors, String(index));
+    const payload = errors?.filter((error) => error.path?.[0] !== "option");
+    return {
+      name: getValidationError(errors, "option"),
+      payload: payload?.length ? payload : undefined,
+    };
   }
 
   private _emptyLocalize = (_key: string): string => "";
