@@ -9,6 +9,7 @@ import "@ha/components/input/ha-input";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
 import { conditionalClamp } from "@ha/common/number/clamp";
+import { deepEqual } from "@ha/common/util/deep-equal";
 import type { HaInput } from "@ha/components/input/ha-input";
 import type { NumberSelector, SelectSelector, StringSelector } from "@ha/data/selector";
 import type { HomeAssistant } from "@ha/types";
@@ -129,11 +130,12 @@ export class KnxPayloadSelector extends LitElement {
     const dpt = this._effectiveDpt();
     const dptMeta = dpt ? this.knx.dptMetadata[dpt] : undefined;
     const typedValue = this._typedValueForDpt(dptMeta);
-    const rawLength = dptMeta?.payload_length ?? this._clampRawLength(this._rawLength);
+    // DPT 1, 2 and 3 report a bit count, but a raw payload for them uses length 0
+    const rawLength = this._clampRawLength(dptMeta?.payload_length ?? this._rawLength);
     const rawPayload = this._clampRawPayload(this._rawPayload);
 
     if (
-      typedValue === this._typedValue &&
+      deepEqual(typedValue, this._typedValue) &&
       rawLength === this._rawLength &&
       rawPayload === this._rawPayload
     ) {
@@ -147,9 +149,9 @@ export class KnxPayloadSelector extends LitElement {
 
   /** Typed value to use for a DPT.
    *
-   * Numeric, enum and string values are kept when they still fit the DPT, while
-   * complex values are reset - their fields are specific to the previous DPT.
-   * Otherwise a default is used, so required fields validate without user input.
+   * Values are kept when they still fit the DPT - complex ones are merged onto
+   * the DPT defaults so missing required fields are filled in. Otherwise a
+   * default is used, so required fields validate without user input.
    */
   private _typedValueForDpt(dptMeta?: DPTMetadata): PayloadConfigValue["value"] {
     if (!dptMeta) {
@@ -167,8 +169,21 @@ export class KnxPayloadSelector extends LitElement {
         return dptMeta.options?.includes(this._typedValue as string)
           ? this._typedValue
           : dptMeta.options?.[0];
-      case "complex":
-        return dptMeta.schema ? this._complexDefaults(dptMeta.schema) : undefined;
+      case "complex": {
+        if (!dptMeta.schema) {
+          return undefined;
+        }
+        const defaults = this._complexDefaults(dptMeta.schema);
+        const current = this._typedValue;
+        // Keep the configured fields when they still fit - a complex value is
+        // specific to its DPT, so it is reset when switching to a DPT with a
+        // different shape (e.g. DPT 2.001 `on`/`off` -> 2.008 `up`/`down`).
+        return current !== null &&
+          typeof current === "object" &&
+          this._complexValueFitsSchema(current, dptMeta.schema)
+          ? { ...defaults, ...current }
+          : defaults;
+      }
       case "string":
         if (typeof this._typedValue === "string") {
           return this._typedValue;
@@ -194,6 +209,34 @@ export class KnxPayloadSelector extends LitElement {
       }
     }
     return value;
+  }
+
+  // Whether every field of a stored complex value is known to `schema` and has a
+  // type the schema accepts - values from a different DPT don't fit.
+  private _complexValueFitsSchema(
+    value: Record<string, unknown>,
+    schema: DPTComplexFieldSchema[],
+  ): boolean {
+    const fields = new Map(schema.map((field) => [field.name, field]));
+    return Object.entries(value).every(([name, fieldValue]) => {
+      const field = fields.get(name);
+      if (!field) {
+        return false;
+      }
+      switch (field.type) {
+        case "boolean":
+          return typeof fieldValue === "boolean";
+        case "enum":
+          return typeof fieldValue === "string" && !!field.options?.includes(fieldValue);
+        case "integer":
+        case "float":
+          return typeof fieldValue === "number";
+        case "string":
+          return typeof fieldValue === "string";
+        default:
+          return false;
+      }
+    });
   }
 
   private _complexFieldDefault(
@@ -561,6 +604,12 @@ export class KnxPayloadSelector extends LitElement {
       this._cachedRawLength = this._rawLength;
       this._rawPayload = undefined;
       this._typedValue = this._cachedTypedValue;
+      if (this._typedValue === undefined) {
+        // nothing cached (config was raw from the start) - seed the DPT defaults
+        // so required fields are stored, matching what the selectors display
+        const dpt = this._effectiveDpt();
+        this._typedValue = this._typedValueForDpt(dpt ? this.knx.dptMetadata[dpt] : undefined);
+      }
     }
     this._mode = nextMode;
     this._emitValue();
@@ -622,9 +671,11 @@ export class KnxPayloadSelector extends LitElement {
       const main = Number.parseInt(dpt.split(".")[0], 10);
       if (isApciPackedDptMain(main)) {
         // DPT 1.x, 2.x, and 3.x use payload_length 0 to indicate payload integrated in APDU header
+        // their reported payload_length is a bit count, so the max raw value
+        // is 2**bits - 1 (1 for DPT 1.x, 3 for DPT 2.x, 15 for DPT 3.x)
         const dptLength = this.knx.dptMetadata[dpt]?.payload_length;
         if (dptLength !== undefined) {
-          return BigInt(dptLength);
+          return 2n ** BigInt(dptLength) - 1n;
         }
         return 63n;
       }
