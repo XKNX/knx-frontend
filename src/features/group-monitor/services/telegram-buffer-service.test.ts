@@ -183,6 +183,28 @@ describe("TelegramBufferService", () => {
       expect(service.snapshot).toEqual([withOffset]);
     });
 
+    it.each(["add", "merge"] as const)(
+      "should deduplicate %s batches before sorting and eviction",
+      (method) => {
+        service = new TelegramBufferService(2);
+        const [oldest, middle, newest] = createTelegrams(3);
+        const duplicate = createTelegramRow(middle.timestampIso, "1");
+
+        const result = service[method]([newest, middle, duplicate, oldest, newest]);
+
+        expect(result).toEqual(
+          method === "add" ? [oldest] : { added: [oldest, middle, newest], removed: [oldest] },
+        );
+        expect(service.snapshot).toEqual([middle, newest]);
+        expect(service.snapshot[0]).toBe(middle);
+        const snapshot = service.snapshot;
+        expect(service[method]([duplicate, newest])).toEqual(
+          method === "add" ? [] : { added: [], removed: [] },
+        );
+        expect(service.snapshot).toBe(snapshot);
+      },
+    );
+
     it("should merge unique telegrams", () => {
       const telegram1 = createTelegramRow("2024-01-01T10:00:01.000Z", "1");
       const telegram2 = createTelegramRow("2024-01-01T10:00:03.000Z", "3");
@@ -223,6 +245,38 @@ describe("TelegramBufferService", () => {
       expect(result.added.length).toBe(1);
       expect(result.added[0].timestampIso).toBe("2024-01-01T10:00:03.000Z");
       expect(service.length).toBe(3);
+    });
+
+    it("maintains existingIds cache across merge, eviction, setMaxSize, and clear", () => {
+      service = new TelegramBufferService(3);
+      const [t1, t2, t3, t4] = createTelegrams(4);
+
+      // Add 3 telegrams
+      service.merge([t1, t2, t3]);
+      expect((service as any)._existingIds.has(t1.id)).toBe(true);
+      expect((service as any)._existingIds.size).toBe(3);
+
+      // Adding duplicate should return empty added without scanning/altering
+      const duplicateRes = service.merge([t1]);
+      expect(duplicateRes.added).toEqual([]);
+
+      // Adding 4th overflows t1
+      const overflowRes = service.merge([t4]);
+      expect(overflowRes.added).toEqual([t4]);
+      expect(overflowRes.removed).toEqual([t1]);
+      expect((service as any)._existingIds.has(t1.id)).toBe(false);
+      expect((service as any)._existingIds.has(t4.id)).toBe(true);
+      expect((service as any)._existingIds.size).toBe(3);
+
+      // setMaxSize eviction
+      const evicted = service.setMaxSize(2);
+      expect(evicted).toEqual([t2]);
+      expect((service as any)._existingIds.has(t2.id)).toBe(false);
+      expect((service as any)._existingIds.size).toBe(2);
+
+      // clear
+      service.clear();
+      expect((service as any)._existingIds.size).toBe(0);
     });
   });
 
@@ -277,6 +331,26 @@ describe("TelegramBufferService", () => {
       expect(service.getById(telegrams[0].id)).toBe(telegrams[0]);
       expect(service.getById("non-existent")).toBeUndefined();
     });
+
+    it("should reuse its immutable snapshot until the buffer changes", () => {
+      const first = service.snapshot;
+
+      expect(service.snapshot).toBe(first);
+
+      service.add(createTelegramRow("2024-01-01T10:00:03.000Z", "3"));
+      const afterAdd = service.snapshot;
+      expect(afterAdd).not.toBe(first);
+      expect(service.snapshot).toBe(afterAdd);
+
+      service.setMaxSize(2);
+      const afterTrim = service.snapshot;
+      expect(afterTrim).not.toBe(afterAdd);
+      expect(service.snapshot).toBe(afterTrim);
+
+      service.clear();
+      expect(service.snapshot).not.toBe(afterTrim);
+      expect(service.snapshot).toEqual([]);
+    });
   });
 
   describe("Edge Cases", () => {
@@ -305,7 +379,7 @@ describe("TelegramBufferService", () => {
       const snapshot1 = service.snapshot;
       const snapshot2 = service.snapshot;
 
-      expect(snapshot1).not.toBe(snapshot2); // Different instances
+      expect(snapshot1).toBe(snapshot2); // Reused until the buffer changes
       expect(snapshot1).toEqual(snapshot2); // Same content
     });
   });
