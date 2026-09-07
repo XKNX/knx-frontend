@@ -76,7 +76,11 @@ export class TelegramBufferService {
     const existingIds = new Set(this._buffer.map((t) => t.id));
 
     // Filter out duplicates from new telegrams
-    const uniqueNewTelegrams = newTelegrams.filter((telegram) => !existingIds.has(telegram.id));
+    const uniqueNewTelegrams = newTelegrams.filter((telegram) => {
+      if (existingIds.has(telegram.id)) return false;
+      existingIds.add(telegram.id);
+      return true;
+    });
 
     // Sort new telegrams by timestamp to maintain chronological order
     uniqueNewTelegrams.sort((a, b) =>

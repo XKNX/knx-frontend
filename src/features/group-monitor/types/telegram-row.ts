@@ -9,7 +9,7 @@
 import type { DataTableRowData } from "@ha/components/data-table/ha-data-table";
 import { slugify } from "@ha/common/string/slugify";
 import type { TelegramDict } from "../../../types/websocket";
-import { TelegramDictFormatter } from "../../../utils/format";
+import { extractMicrosecondsFromIso, TelegramDictFormatter } from "../../../utils/format";
 
 /**
  * Time offset in microseconds for relative timestamp calculations
@@ -186,7 +186,9 @@ export class TelegramRow implements DataTableRowData {
      * Combines multiple fields to minimize collision risk
      * Format: "timestamp_source_destination" (sanitized)
      */
-    this.id = slugify(`${telegram.timestamp}_${telegram.source}_${telegram.destination}`);
+    this.id = slugify(
+      `${extractMicrosecondsFromIso(telegram.timestamp)}_${telegram.source}_${telegram.destination}`,
+    );
 
     // ============================================================================
     // Timestamp Processing

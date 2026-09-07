@@ -173,6 +173,16 @@ describe("TelegramBufferService", () => {
   });
 
   describe("Merge Operations", () => {
+    it("deduplicates equivalent timestamp serializations", () => {
+      const withOffset = createTelegramRow("2024-01-01T10:00:00.123456+02:00");
+      const asUtc = createTelegramRow("2024-01-01T08:00:00.123456Z");
+
+      const result = service.merge([withOffset, asUtc]);
+
+      expect(result.added).toEqual([withOffset]);
+      expect(service.snapshot).toEqual([withOffset]);
+    });
+
     it("should merge unique telegrams", () => {
       const telegram1 = createTelegramRow("2024-01-01T10:00:01.000Z", "1");
       const telegram2 = createTelegramRow("2024-01-01T10:00:03.000Z", "3");
