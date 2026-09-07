@@ -351,6 +351,15 @@ describe("TelegramBufferService", () => {
       expect(service.snapshot).not.toBe(afterTrim);
       expect(service.snapshot).toEqual([]);
     });
+
+    it("prevents runtime mutations of a cached snapshot", () => {
+      const snapshot = service.snapshot;
+      const mutableSnapshot = snapshot as TelegramRow[];
+
+      expect(() => mutableSnapshot.pop()).toThrow(TypeError);
+      expect(service.snapshot).toBe(snapshot);
+      expect(service.snapshot).toEqual(telegrams);
+    });
   });
 
   describe("Edge Cases", () => {

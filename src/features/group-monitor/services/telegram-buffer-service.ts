@@ -136,7 +136,7 @@ export class TelegramBufferService {
    * Safe for external use without risk of modification
    */
   get snapshot(): readonly TelegramRow[] {
-    if (this._snapshot === undefined) this._snapshot = [...this._buffer];
+    if (this._snapshot === undefined) this._snapshot = Object.freeze([...this._buffer]);
     return this._snapshot;
   }
 
