@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { FacetIndex, type FacetTelegram, type FilterMap, UNKNOWN_DPT_ID } from "./facet-index";
+import {
+  FacetIndex,
+  FILTER_FIELDS,
+  type FacetTelegram,
+  type FilterMap,
+  UNKNOWN_DPT_ID,
+} from "./facet-index";
 
 const telegram = (
   id: string,
@@ -95,6 +101,30 @@ describe("FacetIndex", () => {
     const result = index.query([d], filters());
     expect(result.distinctValues.source["1.1.1"]).toBeUndefined();
     expect(result.distinctValues.source["1.1.3"].crossFilteredCount).toBe(1);
+  });
+
+  it("enriches an existing facet value when a later telegram supplies its name", () => {
+    const index = new FacetIndex();
+    const unnamedSource = { ...a, id: "unnamed-source", sourceText: null };
+    const namedSource = { ...a, id: "named-source", sourceText: "Living room switch" };
+
+    index.update([unnamedSource, namedSource], []);
+
+    expect(
+      index.query([unnamedSource, namedSource], filters()).distinctValues.source["1.1.1"].name,
+    ).toBe("Living room switch");
+  });
+
+  it("rejects an unsupported filter field", () => {
+    const index = new FacetIndex();
+    const mutableFilterFields = FILTER_FIELDS as unknown as string[];
+    mutableFilterFields.push("unsupported");
+
+    try {
+      expect(() => index.update([a], [])).toThrow("Unknown filter field: unsupported");
+    } finally {
+      mutableFilterFields.pop();
+    }
   });
 
   it("clears every indexed value", () => {
