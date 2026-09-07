@@ -1120,7 +1120,7 @@ export class GroupMonitorController implements ReactiveController {
       }
 
       // A just-added telegram can also overflow immediately when the buffer is full.
-      this._facetIndex.update(removed.includes(telegramRow) ? [] : added, removed);
+      this._facetIndex.update(added, removed);
       this._bufferVersion++;
 
       // Persist live telegram to IndexedDB cache.
