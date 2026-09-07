@@ -130,6 +130,27 @@ describe("KNXGroupMonitor", () => {
     expect(mockController.clearTelegrams).toHaveBeenCalled();
   });
 
+  it("merges DPT metadata with cross-filter counts", () => {
+    element.knx = {
+      dptMetadata: { "1.001": { name: "Switch" }, "5.001": { name: "Percent" } },
+    } as any;
+
+    const data = (element as any)._getDptFilterData({
+      source: {},
+      destination: {},
+      direction: {},
+      telegramtype: {},
+      dpt: {
+        "1.001": { id: "1.001", name: "", crossFilteredCount: 3 },
+        unknown: { id: "unknown", name: "", crossFilteredCount: 2 },
+      },
+    });
+
+    expect(data).toContainEqual({ id: "1.001", name: "Switch", crossFilteredCount: 3 });
+    expect(data).toContainEqual({ id: "5.001", name: "Percent", crossFilteredCount: 0 });
+    expect(data).toContainEqual({ id: "unknown", name: "", crossFilteredCount: 2 });
+  });
+
   describe("migrateStoredColumns", () => {
     it("inserts the offset column right after timestampIso for both layouts", () => {
       const migrated = migrateStoredColumns({

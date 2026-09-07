@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { TelegramDict } from "../../../types/websocket";
 import { GroupMonitorController } from "./group-monitor-controller";
-import { TelegramRow } from "../types/telegram-row";
 import { getGroupMonitorInfo } from "../../../services/websocket.service";
 
 vi.mock("../../../services/websocket.service", () => ({
@@ -157,14 +156,9 @@ describe("GroupMonitorController - Historical Telegrams", () => {
     // Wait, if I want it to evict, I need to ensure the limit stays 10.
 
     // Add 1 newer telegram - this should trigger eviction of the oldest initial telegram
-    const newRow = new TelegramRow(
+    (controller as any)._handleIncomingTelegram(
       createMockTelegram({ timestamp: "2024-01-01T13:00:00.000Z", source: "1.2.1" }),
     );
-    (controller as any)._addToDistinctValues(newRow);
-    const removed = (controller as any)._telegramBuffer.add(newRow);
-    if (removed.length > 0) {
-      (controller as any)._removeFromDistinctValues(removed);
-    }
 
     const result = controller.getFilteredTelegramsAndDistinctValues();
     expect(result.filteredTelegrams).toHaveLength(10);

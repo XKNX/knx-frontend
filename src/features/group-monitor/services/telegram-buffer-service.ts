@@ -11,28 +11,52 @@ import type { TelegramRow } from "../types/telegram-row";
  */
 export class TelegramBufferService {
   private _buffer: TelegramRow[] = [];
+  private _snapshot?: readonly TelegramRow[];
+  private _existingIds = new Set<string>();
+
+  private _invalidateSnapshot(): void {
+    this._snapshot = undefined;
+  }
 
   constructor(private _maxSize = 2000) {}
 
   /**
-   * Adds one or more telegrams to the buffer
+   * Adds one or more telegrams to the buffer, avoiding duplicate IDs
    * Telegrams are inserted in chronological order based on their timestamp (microsecond precision)
    * Only sorts if necessary for optimal performance
    * @param telegrams - Single telegram or array of telegrams to add
    * @returns Array of telegrams that were removed due to buffer overflow (empty if no overflow)
    */
   add(telegrams: TelegramRow | TelegramRow[]): TelegramRow[] {
-    const telegramArray = Array.isArray(telegrams) ? telegrams : [telegrams];
+    return this.merge(Array.isArray(telegrams) ? telegrams : [telegrams]).removed;
+  }
 
-    // Quick check: if buffer is empty, add and sort if necessary
+  /**
+   * Adds multiple telegrams, avoiding duplicates.
+   *
+   * The separate added and removed collections let dependent indexes stay in
+   * sync without rescanning the buffer after a merge or an overflow.
+   *
+   * @param newTelegrams - Array of telegrams to merge
+   * @returns Unique rows added and rows removed because the buffer overflowed.
+   */
+  merge(newTelegrams: TelegramRow[]): { added: TelegramRow[]; removed: TelegramRow[] } {
+    if (newTelegrams.length === 0) return { added: [], removed: [] };
+
+    const telegramArray = newTelegrams.filter((telegram) => {
+      if (this._existingIds.has(telegram.id)) return false;
+      this._existingIds.add(telegram.id);
+      return true;
+    });
+    if (telegramArray.length === 0) return { added: [], removed: [] };
+
+    telegramArray.sort((a, b) =>
+      a.timestampIso < b.timestampIso ? -1 : a.timestampIso > b.timestampIso ? 1 : 0,
+    );
+
+    // Quick check: if buffer is empty, add directly (already sorted above)
     if (this._buffer.length === 0) {
       this._buffer.push(...telegramArray);
-      // Sort if we have multiple telegrams that might be unsorted
-      if (telegramArray.length > 1) {
-        this._buffer.sort((a, b) =>
-          a.timestampIso < b.timestampIso ? -1 : a.timestampIso > b.timestampIso ? 1 : 0,
-        );
-      }
     } else {
       const lastTimestamp = this._buffer[this._buffer.length - 1].timestampIso;
 
@@ -60,40 +84,15 @@ export class TelegramBufferService {
     if (this._buffer.length > this._maxSize) {
       const excessCount = this._buffer.length - this._maxSize;
       const removedTelegrams = this._buffer.splice(0, excessCount);
-      return removedTelegrams;
+      for (const removed of removedTelegrams) {
+        this._existingIds.delete(removed.id);
+      }
+      this._invalidateSnapshot();
+      return { added: telegramArray, removed: removedTelegrams };
     }
 
-    return [];
-  }
-
-  /**
-   * Adds multiple telegrams, avoiding duplicates
-   * @param newTelegrams - Array of telegrams to merge
-   * @returns Object containing unique new telegrams added and removed telegrams due to overflow
-   */
-  merge(newTelegrams: TelegramRow[]): { added: TelegramRow[]; removed: TelegramRow[] } {
-    // Create a Set of existing telegram IDs for efficient lookup
-    const existingIds = new Set(this._buffer.map((t) => t.id));
-
-    // Filter out duplicates from new telegrams
-    const uniqueNewTelegrams = newTelegrams.filter((telegram) => {
-      if (existingIds.has(telegram.id)) return false;
-      existingIds.add(telegram.id);
-      return true;
-    });
-
-    // Sort new telegrams by timestamp to maintain chronological order
-    uniqueNewTelegrams.sort((a, b) =>
-      a.timestampIso < b.timestampIso ? -1 : a.timestampIso > b.timestampIso ? 1 : 0,
-    );
-
-    // Add new telegrams and get removed telegrams
-    const removedTelegrams = this.add(uniqueNewTelegrams);
-
-    return {
-      added: uniqueNewTelegrams,
-      removed: removedTelegrams,
-    };
+    this._invalidateSnapshot();
+    return { added: telegramArray, removed: [] };
   }
 
   /**
@@ -108,6 +107,10 @@ export class TelegramBufferService {
     if (this._buffer.length > size) {
       const excessCount = this._buffer.length - size;
       const removedTelegrams = this._buffer.splice(0, excessCount);
+      for (const removed of removedTelegrams) {
+        this._existingIds.delete(removed.id);
+      }
+      this._invalidateSnapshot();
       return removedTelegrams;
     }
 
@@ -133,7 +136,8 @@ export class TelegramBufferService {
    * Safe for external use without risk of modification
    */
   get snapshot(): readonly TelegramRow[] {
-    return [...this._buffer];
+    if (this._snapshot === undefined) this._snapshot = [...this._buffer];
+    return this._snapshot;
   }
 
   /**
@@ -141,8 +145,11 @@ export class TelegramBufferService {
    * @returns Array of all telegrams that were cleared
    */
   clear(): TelegramRow[] {
+    if (this._buffer.length === 0) return [];
     const clearedTelegrams = [...this._buffer];
     this._buffer.length = 0;
+    this._existingIds.clear();
+    this._invalidateSnapshot();
     return clearedTelegrams;
   }
 
