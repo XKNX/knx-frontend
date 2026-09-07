@@ -151,6 +151,37 @@ describe("KNXGroupMonitor", () => {
     expect(data).toContainEqual({ id: "unknown", name: "", crossFilteredCount: 2 });
   });
 
+  it("uses a telegram-provided DPT name when it has no metadata", () => {
+    element.knx = { dptMetadata: {} } as any;
+
+    const data = (element as any)._getDptFilterData({
+      source: {},
+      destination: {},
+      direction: {},
+      telegramtype: {},
+      dpt: {
+        "7.001": { id: "7.001", name: "DPT 7.001", crossFilteredCount: 1 },
+      },
+    });
+
+    expect(data).toContainEqual({ id: "7.001", name: "DPT 7.001", crossFilteredCount: 1 });
+  });
+
+  it("uses cross-filter counts in every filter badge", () => {
+    const item = { id: "1.1.1", name: "Switch", crossFilteredCount: 4 };
+    const filterConfigs = [
+      (element as any)._sourceFilterConfig("en"),
+      (element as any)._destinationFilterConfig("en"),
+      (element as any)._directionFilterConfig("en"),
+      (element as any)._telegramTypeFilterConfig("en"),
+      (element as any)._dptFilterConfig("en"),
+    ];
+
+    for (const config of filterConfigs) {
+      expect(config.badgeField.mapper(item)).toBe("4");
+    }
+  });
+
   describe("migrateStoredColumns", () => {
     it("inserts the offset column right after timestampIso for both layouts", () => {
       const migrated = migrateStoredColumns({
