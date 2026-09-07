@@ -103,6 +103,14 @@ describe("FacetIndex", () => {
     expect(result.distinctValues.source["1.1.3"].crossFilteredCount).toBe(1);
   });
 
+  it("does not index a row added and removed in the same update", () => {
+    const index = new FacetIndex();
+
+    index.update([a], [a]);
+
+    expect(index.query([], filters()).distinctValues.source["1.1.1"]).toBeUndefined();
+  });
+
   it("enriches an existing facet value when a later telegram supplies its name", () => {
     const index = new FacetIndex();
     const unnamedSource = { ...a, id: "unnamed-source", sourceText: null };

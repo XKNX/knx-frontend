@@ -148,6 +148,24 @@ describe("GroupMonitorController cross-filtering", () => {
     expect(result.distinctValues.source["1.1.2"]).toBeUndefined();
   });
 
+  it("does not index an old recent telegram evicted during reload", async () => {
+    const survivor = telegram("2024-01-01T10:00:00.000Z", "1.1.1", "Incoming");
+    const evicted = telegram("2024-01-01T09:59:00.000Z", "1.1.2", "Incoming");
+    (controller as any)._calculateTelegramStorageBuffer = vi.fn().mockReturnValue(0);
+
+    vi.mocked(getGroupMonitorInfo)
+      .mockResolvedValueOnce({ project_loaded: true, recent_telegrams: [survivor] } as any)
+      .mockResolvedValueOnce({ project_loaded: true, recent_telegrams: [evicted] } as any);
+    await controller.reload({} as any);
+    await controller.reload({} as any);
+
+    const result = controller.getFilteredTelegramsAndDistinctValues();
+
+    expect(result.filteredTelegrams.map((row) => row.sourceAddress)).toEqual(["1.1.1"]);
+    expect(result.distinctValues.source["1.1.1"].crossFilteredCount).toBe(1);
+    expect(result.distinctValues.source["1.1.2"]).toBeUndefined();
+  });
+
   it("ignores duplicate live telegrams without incrementing version or updating host", async () => {
     const host = createMockHost();
     const localController = new GroupMonitorController(host as any);

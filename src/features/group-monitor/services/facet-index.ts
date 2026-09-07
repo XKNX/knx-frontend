@@ -122,8 +122,11 @@ export class FacetIndex {
    * immediately when a row is added in the same update.
    */
   public update(added: readonly FacetTelegram[], removed: readonly FacetTelegram[]): void {
+    const removedRows = new Set(removed);
     for (const telegram of removed) this._remove(telegram);
-    for (const telegram of added) this._add(telegram);
+    for (const telegram of added) {
+      if (!removedRows.has(telegram)) this._add(telegram);
+    }
   }
 
   /**
