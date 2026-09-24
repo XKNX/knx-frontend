@@ -182,6 +182,17 @@ describe("KNXGroupMonitor", () => {
     }
   });
 
+  it("shows DPT identifiers, names, and the localized unknown label", () => {
+    const config = (element as any)._dptFilterConfig("en");
+    const known = { id: "1.001", name: "Switch", crossFilteredCount: 3 };
+    const unknown = { id: "unknown", name: "", crossFilteredCount: 0 };
+
+    expect(config.idField.mapper(known)).toBe("1.001");
+    expect(config.primaryField.mapper(known)).toBe("1.001");
+    expect(config.primaryField.mapper(unknown)).toBe("state.default.unknown");
+    expect(config.secondaryField.mapper(known)).toBe("Switch");
+  });
+
   describe("migrateStoredColumns", () => {
     it("inserts the offset column right after timestampIso for both layouts", () => {
       const migrated = migrateStoredColumns({
