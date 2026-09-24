@@ -11,14 +11,14 @@ import { getConnectionStatus, KnxDashboard } from "./dashboard";
 
 describe("getConnectionStatus", () => {
   it.each([
-    ["loaded", true, undefined, "connected"],
-    ["loaded", false, undefined, "disconnected"],
-    ["loaded", true, "unavailable", "disconnected"],
-    ["loaded", false, "2026-09-24T10:00:00+00:00", "connected"],
-    ["not_loaded", true, "2026-09-24T10:00:00+00:00", "unavailable"],
-    ["setup_retry", false, undefined, "unavailable"],
-  ] as const)("maps %s, %s, and %s to %s", (configState, connected, sensorState, expected) => {
-    expect(getConnectionStatus(configState, connected, sensorState)).toBe(expected);
+    ["loaded", undefined, "unavailable"],
+    ["loaded", "unknown", "unavailable"],
+    ["loaded", "unavailable", "disconnected"],
+    ["loaded", "2026-09-24T10:00:00+00:00", "connected"],
+    ["not_loaded", "2026-09-24T10:00:00+00:00", "unavailable"],
+    ["setup_retry", undefined, "unavailable"],
+  ] as const)("maps %s and %s to %s", (configState, sensorState, expected) => {
+    expect(getConnectionStatus(configState, sensorState)).toBe(expected);
   });
 });
 
@@ -35,7 +35,24 @@ describe("dashboard status details", () => {
       language: "de",
       config: { version: "2026.9.0" },
       auth: { data: { hassUrl: "http://localhost:8123" } },
-      states: {},
+      states: {
+        "sensor.connected_since": { state: "2026-09-24T10:00:00+00:00" },
+        "sensor.individual_address": { state: "1.1.250" },
+      },
+      entities: {
+        "sensor.connected_since": {
+          entity_id: "sensor.connected_since",
+          device_id: "interface_id",
+          platform: "knx",
+          translation_key: "connected_since",
+        },
+        "sensor.individual_address": {
+          entity_id: "sensor.individual_address",
+          device_id: "interface_id",
+          platform: "knx",
+          translation_key: "individual_address",
+        },
+      },
       devices: { interface_id: interfaceDevice },
       localize: (key: string) =>
         key === "ui.panel.config.integrations.config_flow.open_documentation"
@@ -82,5 +99,10 @@ describe("dashboard status details", () => {
     expect(host.querySelector(".status-detail")?.textContent?.replace(/\s+/g, " ").trim()).toBe(
       "via KNX Interface · Address: 1.1.250",
     );
+
+    view.hass.states["sensor.connected_since"].state = "unavailable";
+    render((view as unknown as { render: () => TemplateResult }).render(), host);
+    expect(host.querySelector(".status-heading")?.textContent?.trim()).toBe("Disconnected");
+    expect(host.querySelector(".address")).toBeNull();
   });
 });

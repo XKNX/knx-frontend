@@ -27,7 +27,6 @@ import "@ha/layouts/hass-subpage";
 import { showConfigFlowDialog } from "@ha/dialogs/config-flow/show-dialog-config-flow";
 import { showOptionsFlowDialog } from "@ha/dialogs/config-flow/show-dialog-options-flow";
 import { subscribeConfigEntries } from "@ha/data/config_entries";
-import { subscribeEntityRegistry } from "@ha/data/entity/entity_registry";
 import type { ConfigEntry } from "@ha/data/config_entries";
 import type { HomeAssistant } from "@ha/types";
 import { documentationUrl } from "@ha/util/documentation-url";
@@ -47,13 +46,13 @@ const logger = new KNXLogger("knx-dashboard");
 
 export const getConnectionStatus = (
   configState: ConfigEntry["state"],
-  connected: boolean,
   sensorState?: string,
 ): "connected" | "disconnected" | "unavailable" => {
   if (configState !== "loaded") return "unavailable";
   if (sensorState === "unavailable") return "disconnected";
+  // The connected_since sensor is available only while the KNX bus is connected.
   if (sensorState && sensorState !== "unknown") return "connected";
-  return connected ? "connected" : "disconnected";
+  return "unavailable";
 };
 
 /** One of the action buttons below the navigation list. */
@@ -76,19 +75,8 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
 
   @state() private _configEntryState: ConfigEntry["state"] | "unknown" = "unknown";
 
-  @state() private _connectionSensorId?: string;
-
-  protected hassSubscribeRequiredHostProps = ["knx"];
-
   protected hassSubscribe(): UnsubscribeFunc[] {
-    return [
-      this._unsubscribeConfigEntries(),
-      subscribeEntityRegistry(this.hass.connection, (entries) => {
-        this._connectionSensorId = entries.find(
-          (entry) => entry.unique_id === `_${this.knx.config_entry.entry_id}_connected_since`,
-        )?.entity_id;
-      }),
-    ];
+    return [this._unsubscribeConfigEntries()];
   }
 
   private _unsubscribeConfigEntries() {
@@ -196,12 +184,21 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
   }
 
   protected render() {
-    const sensorState = this._connectionSensorId
-      ? this.hass.states[this._connectionSensorId]?.state
+    const interfaceDevice = deviceFromIdentifier(
+      this.hass,
+      `_${this.knx.config_entry.entry_id}_interface`,
+    );
+    const interfaceEntities = Object.values(this.hass.entities).filter(
+      (entity) => entity.platform === "knx" && entity.device_id === interfaceDevice?.id,
+    );
+    const connectionSensor = interfaceEntities.find(
+      (entity) => entity.translation_key === "connected_since",
+    );
+    const sensorState = connectionSensor
+      ? this.hass.states[connectionSensor.entity_id]?.state
       : undefined;
     const status = getConnectionStatus(
       this._configEntryState === "unknown" ? this.knx.config_entry.state : this._configEntryState,
-      this.knx.connectionInfo.connected,
       sensorState,
     );
     const statusIcon =
@@ -210,12 +207,11 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
         : status === "disconnected"
           ? mdiCloseCircleOutline
           : mdiAlertCircleOutline;
-    const address = this.knx.connectionInfo.current_address;
-    const hasAddress = status !== "unavailable" && address && address !== "0.0.0";
-    const interfaceDevice = deviceFromIdentifier(
-      this.hass,
-      `_${this.knx.config_entry.entry_id}_interface`,
+    const addressSensor = interfaceEntities.find(
+      (entity) => entity.translation_key === "individual_address",
     );
+    const address = addressSensor ? this.hass.states[addressSensor.entity_id]?.state : undefined;
+    const hasAddress = status === "connected" && address && address !== "0.0.0";
     const interfaceName = interfaceDevice?.name_by_user || interfaceDevice?.name;
     const hasStatusDetail = Boolean(hasAddress || (interfaceDevice && interfaceName));
     const statusDetailContent = html`
