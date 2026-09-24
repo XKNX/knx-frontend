@@ -269,7 +269,11 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
                 </div>
                 <div class="details">
                   <span class="status-heading" role="status"
-                    >${this.knx.localize(`dashboard_status_${status}`)}</span
+                    >${
+                      status === "unavailable"
+                        ? this.hass.localize("state.default.unavailable")
+                        : this.knx.localize(`dashboard_status_${status}`)
+                    }</span
                   >
                   ${
                     hasStatusDetail

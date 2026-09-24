@@ -57,7 +57,9 @@ describe("dashboard status details", () => {
       localize: (key: string) =>
         key === "ui.panel.config.integrations.config_flow.open_documentation"
           ? "Open documentation"
-          : key,
+          : key === "state.default.unavailable"
+            ? "Shared unavailable"
+            : key,
     } as unknown as HomeAssistant;
     view.knx = {
       config_entry: { entry_id: "entry", state: "loaded" },
@@ -113,5 +115,9 @@ describe("dashboard status details", () => {
     render((view as unknown as { render: () => TemplateResult }).render(), host);
     expect(host.querySelector(".status-heading")?.textContent?.trim()).toBe("Disconnected");
     expect(host.querySelector(".address")).toBeNull();
+
+    view.hass.states["sensor.connected_since"].state = "unknown";
+    render((view as unknown as { render: () => TemplateResult }).render(), host);
+    expect(host.querySelector(".status-heading")?.textContent?.trim()).toBe("Shared unavailable");
   });
 });

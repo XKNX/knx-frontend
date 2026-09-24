@@ -2,7 +2,6 @@
   "title": "KNX",
   "dashboard_status_connected": "Verbunden",
   "dashboard_status_disconnected": "Nicht verbunden",
-  "dashboard_status_unavailable": "Nicht verfügbar",
   "dashboard_status_address": "Adresse: {address}",
   "dashboard_status_via": "über {interface}",
   "attention": "Achtung",
