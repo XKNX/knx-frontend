@@ -256,6 +256,7 @@ export class KNXExposeView extends LitElement {
     primaryField: {
       filterable: true,
       sortable: true,
+      fieldName: this.hass.localize("ui.common.name"),
       mapper: (item) => item.name,
     },
     secondaryField: {
