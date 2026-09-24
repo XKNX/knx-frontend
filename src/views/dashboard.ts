@@ -204,7 +204,12 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
       (entity) => entity.translation_key === "individual_address",
     );
     const address = addressSensor ? this.hass.states[addressSensor.entity_id]?.state : undefined;
-    const hasAddress = status === "connected" && address && address !== "0.0.0";
+    const hasAddress =
+      status === "connected" &&
+      address &&
+      address !== "unavailable" &&
+      address !== "unknown" &&
+      address !== "0.0.0";
     const interfaceName = interfaceDevice?.name_by_user || interfaceDevice?.name;
     const [interfacePrefix, interfaceSuffix] =
       status === "connected" && interfaceName
