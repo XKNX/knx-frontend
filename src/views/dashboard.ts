@@ -15,7 +15,6 @@ import { map } from "lit/directives/map";
 import { SubscribeMixin } from "@ha/mixins/subscribe-mixin";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
-import { navigate } from "@ha/common/navigate";
 import "@ha/components/ha-card";
 import "@ha/components/ha-icon-button";
 import "@ha/components/ha-icon-next";
@@ -177,12 +176,6 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
     });
   }
 
-  private _interfaceLinkClicked(ev: MouseEvent): void {
-    if (ev.defaultPrevented || ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey) return;
-    ev.preventDefault();
-    navigate((ev.currentTarget as HTMLAnchorElement).href);
-  }
-
   protected render() {
     const interfaceDevice = deviceFromIdentifier(
       this.hass,
@@ -219,10 +212,7 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
         interfaceDevice && interfaceName
           ? html`<span class="interface">
               ${status === "connected" ? this.knx.localize("dashboard_status_via") : nothing}
-              <a
-                href=${`/config/devices/device/${interfaceDevice.id}`}
-                title=${interfaceName}
-                @click=${this._interfaceLinkClicked}
+              <a href=${`/config/devices/device/${interfaceDevice.id}`} title=${interfaceName}
                 >${interfaceName}</a
               >
             </span>`
