@@ -106,7 +106,7 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
   }
 
   private _localizeStatus(
-    key: "connected" | "disconnected" | "address" | "via",
+    key: "connected" | "disconnected" | "address",
     replace?: Record<string, string>,
   ): string {
     return (
@@ -221,28 +221,14 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
       address !== "unknown" &&
       address !== "0.0.0";
     const interfaceName = interfaceDevice?.name_by_user || interfaceDevice?.name;
-    const [interfacePrefix, interfaceSuffix] =
-      status === "connected" && interfaceName
-        ? this._localizeStatus("via", { interface: "\uFFFC" }).split("\uFFFC")
-        : ["", ""];
     const hasStatusDetail = Boolean(hasAddress || (interfaceDevice && interfaceName));
     const statusDetailContent = html`
       ${
         interfaceDevice && interfaceName
           ? html`<span class="interface">
-              ${
-                interfacePrefix
-                  ? html`<span class="interface-affix">${interfacePrefix}</span>`
-                  : nothing
-              }
               <a href=${`/config/devices/device/${interfaceDevice.id}`} title=${interfaceName}
                 >${interfaceName}</a
               >
-              ${
-                interfaceSuffix
-                  ? html`<span class="interface-affix">${interfaceSuffix}</span>`
-                  : nothing
-              }
             </span>`
           : nothing
       }
@@ -469,9 +455,6 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
     .status-detail .interface {
       display: inline-flex;
       min-width: 0;
-    }
-    .status-detail .interface-affix {
-      white-space: pre;
     }
     .status-detail .interface a {
       min-width: 0;

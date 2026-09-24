@@ -3,7 +3,6 @@
   "dashboard_status_connected": "Connected",
   "dashboard_status_disconnected": "Disconnected",
   "dashboard_status_address": "Address: {address}",
-  "dashboard_status_via": "via {interface}",
   "attention": "Attention",
   "info_title": "Info",
   "info_connected_to_bus": "Connected to bus",

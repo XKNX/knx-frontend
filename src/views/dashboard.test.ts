@@ -83,9 +83,9 @@ const statusDetail = (host: HTMLElement) =>
 
 describe("dashboard status details", () => {
   it.each([
-    ["de", "My KNX gateway", "über My KNX gateway · Adresse: 1.1.250"],
-    ["de", "", "über KNX Interface · Adresse: 1.1.250"],
-    ["en", "", "via KNX Interface · Address: 1.1.250"],
+    ["de", "My KNX gateway", "My KNX gateway · Adresse: 1.1.250"],
+    ["de", "", "KNX Interface · Adresse: 1.1.250"],
+    ["en", "", "KNX Interface · Address: 1.1.250"],
   ])("renders %s with interface name %s", (language, nameByUser, expected) => {
     const host = renderDashboard(createDashboard(language, nameByUser));
     expect(statusDetail(host)).toBe(expected);
@@ -95,24 +95,12 @@ describe("dashboard status details", () => {
     expect(host.querySelectorAll(".status-detail a")).toHaveLength(1);
   });
 
-  it("keeps translated words after the linked interface name", () => {
-    const view = createDashboard("en", "");
-    view.knx.localize = (key: string, replace?: Record<string, string>) =>
-      key === "dashboard_status_via"
-        ? `${replace?.interface} via`
-        : localize(view.hass, key, replace);
-    expect(statusDetail(renderDashboard(view))).toBe("KNX Interface via · Address: 1.1.250");
-  });
-
   it("prefers backend dashboard translations when available", () => {
     const view = createDashboard("en");
     const fallback = view.hass.localize;
     view.hass.localize = (key, replace) => {
       if (key === "component.knx.config_panel.dashboard.status.connected") {
         return "Backend connected";
-      }
-      if (key === "component.knx.config_panel.dashboard.status.via") {
-        return `through ${replace?.interface}`;
       }
       if (key === "component.knx.config_panel.dashboard.status.address") {
         return `IA ${replace?.address}`;
@@ -121,7 +109,7 @@ describe("dashboard status details", () => {
     };
     const host = renderDashboard(view);
     expect(host.querySelector(".status-heading")?.textContent?.trim()).toBe("Backend connected");
-    expect(statusDetail(host)).toBe("through My KNX gateway · IA 1.1.250");
+    expect(statusDetail(host)).toBe("My KNX gateway · IA 1.1.250");
   });
 
   it("hides the address when the live sensor disconnects", () => {
@@ -141,6 +129,23 @@ describe("dashboard status details", () => {
     const view = createDashboard("en");
     view.hass.states["sensor.individual_address"].state = "unavailable";
     expect(renderDashboard(view).querySelector(".address")).toBeNull();
+  });
+
+  it("keeps the interface link when the connection sensor is missing", () => {
+    const view = createDashboard("en");
+    delete view.hass.entities["sensor.connected_since"];
+    const host = renderDashboard(view);
+    expect(host.querySelector(".status-heading")?.textContent?.trim()).toBe("Shared unavailable");
+    expect(statusDetail(host)).toBe("My KNX gateway");
+    expect(host.querySelector(".address")).toBeNull();
+  });
+
+  it("shows no connection details before the interface device exists", () => {
+    const view = createDashboard("en");
+    view.hass.devices = {};
+    const host = renderDashboard(view);
+    expect(host.querySelector(".status-heading")?.textContent?.trim()).toBe("Shared unavailable");
+    expect(host.querySelector(".status-detail")).toBeNull();
   });
 
   it("shows the documentation and native navigation links", () => {
