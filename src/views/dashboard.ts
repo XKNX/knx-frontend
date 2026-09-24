@@ -105,6 +105,16 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
     }));
   }
 
+  private _localizeStatus(
+    key: "connected" | "disconnected" | "address" | "via",
+    replace?: Record<string, string>,
+  ): string {
+    return (
+      this.hass.localize(`component.knx.config_panel.dashboard.status.${key}`, replace) ||
+      this.knx.localize(`dashboard_status_${key}`, replace)
+    );
+  }
+
   private _buttonItems: DashboardButton[] = [
     {
       translationKey: "component.knx.config_panel.dashboard.send",
@@ -213,7 +223,7 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
     const interfaceName = interfaceDevice?.name_by_user || interfaceDevice?.name;
     const [interfacePrefix, interfaceSuffix] =
       status === "connected" && interfaceName
-        ? this.knx.localize("dashboard_status_via", { interface: "\uFFFC" }).split("\uFFFC")
+        ? this._localizeStatus("via", { interface: "\uFFFC" }).split("\uFFFC")
         : ["", ""];
     const hasStatusDetail = Boolean(hasAddress || (interfaceDevice && interfaceName));
     const statusDetailContent = html`
@@ -239,9 +249,11 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
       ${
         hasAddress
           ? html`<span class="address"
-              >${interfaceDevice && interfaceName ? "· " : nothing}${this.knx.localize(
-                "dashboard_status_address",
-                { address },
+              >${interfaceDevice && interfaceName ? "· " : nothing}${this._localizeStatus(
+                "address",
+                {
+                  address,
+                },
               )}</span
             >`
           : nothing
@@ -277,7 +289,7 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
                     >${
                       status === "unavailable"
                         ? this.hass.localize("state.default.unavailable")
-                        : this.knx.localize(`dashboard_status_${status}`)
+                        : this._localizeStatus(status)
                     }</span
                   >
                   ${

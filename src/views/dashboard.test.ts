@@ -59,7 +59,9 @@ const createDashboard = (language = "de", nameByUser = "My KNX gateway") => {
         ? "Open documentation"
         : key === "state.default.unavailable"
           ? "Shared unavailable"
-          : key,
+          : key.startsWith("component.knx.config_panel.dashboard.status.")
+            ? ""
+            : key,
   } as unknown as HomeAssistant;
   view.knx = {
     config_entry: { entry_id: "entry", state: "loaded" },
@@ -100,6 +102,26 @@ describe("dashboard status details", () => {
         ? `${replace?.interface} via`
         : localize(view.hass, key, replace);
     expect(statusDetail(renderDashboard(view))).toBe("KNX Interface via · Address: 1.1.250");
+  });
+
+  it("prefers backend dashboard translations when available", () => {
+    const view = createDashboard("en");
+    const fallback = view.hass.localize;
+    view.hass.localize = (key, replace) => {
+      if (key === "component.knx.config_panel.dashboard.status.connected") {
+        return "Backend connected";
+      }
+      if (key === "component.knx.config_panel.dashboard.status.via") {
+        return `through ${replace?.interface}`;
+      }
+      if (key === "component.knx.config_panel.dashboard.status.address") {
+        return `IA ${replace?.address}`;
+      }
+      return fallback(key, replace);
+    };
+    const host = renderDashboard(view);
+    expect(host.querySelector(".status-heading")?.textContent?.trim()).toBe("Backend connected");
+    expect(statusDetail(host)).toBe("through My KNX gateway · IA 1.1.250");
   });
 
   it("hides the address when the live sensor disconnects", () => {
