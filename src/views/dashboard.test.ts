@@ -100,6 +100,15 @@ describe("dashboard status details", () => {
       "via KNX Interface · Address: 1.1.250",
     );
 
+    view.knx.localize = (key: string, replace?: Record<string, string>) =>
+      key === "dashboard_status_via"
+        ? `${replace?.interface} via`
+        : localize(view.hass, key, replace);
+    render((view as unknown as { render: () => TemplateResult }).render(), host);
+    expect(host.querySelector(".status-detail")?.textContent?.replace(/\s+/g, " ").trim()).toBe(
+      "KNX Interface via · Address: 1.1.250",
+    );
+
     view.hass.states["sensor.connected_since"].state = "unavailable";
     render((view as unknown as { render: () => TemplateResult }).render(), host);
     expect(host.querySelector(".status-heading")?.textContent?.trim()).toBe("Disconnected");

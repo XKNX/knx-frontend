@@ -206,15 +206,28 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
     const address = addressSensor ? this.hass.states[addressSensor.entity_id]?.state : undefined;
     const hasAddress = status === "connected" && address && address !== "0.0.0";
     const interfaceName = interfaceDevice?.name_by_user || interfaceDevice?.name;
+    const [interfacePrefix, interfaceSuffix] =
+      status === "connected" && interfaceName
+        ? this.knx.localize("dashboard_status_via", { interface: "\uFFFC" }).split("\uFFFC")
+        : ["", ""];
     const hasStatusDetail = Boolean(hasAddress || (interfaceDevice && interfaceName));
     const statusDetailContent = html`
       ${
         interfaceDevice && interfaceName
           ? html`<span class="interface">
-              ${status === "connected" ? this.knx.localize("dashboard_status_via") : nothing}
+              ${
+                interfacePrefix
+                  ? html`<span class="interface-affix">${interfacePrefix}</span>`
+                  : nothing
+              }
               <a href=${`/config/devices/device/${interfaceDevice.id}`} title=${interfaceName}
                 >${interfaceName}</a
               >
+              ${
+                interfaceSuffix
+                  ? html`<span class="interface-affix">${interfaceSuffix}</span>`
+                  : nothing
+              }
             </span>`
           : nothing
       }
@@ -435,7 +448,9 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
     .status-detail .interface {
       display: inline-flex;
       min-width: 0;
-      gap: var(--ha-space-1);
+    }
+    .status-detail .interface-affix {
+      white-space: pre;
     }
     .status-detail .interface a {
       min-width: 0;
