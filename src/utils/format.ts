@@ -65,6 +65,7 @@ export const TelegramDictFormatter = {
 
   dptNameNumber: (telegram: TelegramDict): string => {
     const dptNumber = TelegramDictFormatter.dptNumber(telegram);
+    if (!dptNumber && telegram.dpt_name == null) return "";
     if (telegram.dpt_name == null) return `DPT ${dptNumber}`;
     return dptNumber ? `DPT ${dptNumber} ${telegram.dpt_name}` : telegram.dpt_name;
   },

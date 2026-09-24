@@ -29,19 +29,24 @@ import "../../../components/data-table/filter/knx-time-range-filter";
 
 import { customElement, property, query, state } from "lit/decorators";
 import { storage } from "@ha/common/decorators/storage";
+import { navigate } from "@ha/common/navigate";
 import {
   mdiClose,
   mdiDatabaseRemove,
   mdiDeleteSweep,
   mdiFastForward,
   mdiPause,
+  mdiPlus,
   mdiRefresh,
+  mdiRobot,
 } from "@mdi/js";
 
 import { showTelegramInfoDialog } from "../dialogs/show-telegram-info-dialog";
 import type { TelegramInfoDialogParams } from "../dialogs/telegram-info-dialog";
 import { formatTimeWithMilliseconds, formatTimeDelta, formatDate } from "../../../utils/format";
 import type { TelegramRow, TelegramRowKeys } from "../types/telegram-row";
+import { openAutomationEditor } from "../../../utils/automation";
+import { buildAutomationFromTelegram } from "../utils/automation";
 import type { ToggleFilterEvent } from "../../../components/data-table/cell/knx-table-cell-filterable";
 import { GroupMonitorController, UNKNOWN_DPT_ID } from "../controller/group-monitor-controller";
 import type {
@@ -61,6 +66,7 @@ import type {
 import type { TimeDeltaChangedEvent } from "../../../components/data-table/filter/knx-time-delta-filter";
 import type { TimeRangeChangedEvent } from "../../../components/data-table/filter/knx-time-range-filter";
 import { showKnxProjectUploadDialog } from "../../../dialogs/show-knx-project-upload-dialog";
+import { dptInClasses, stringToDpt } from "../../../utils/dpt";
 
 /** Persisted column layout (order + hidden columns) for one breakpoint. */
 interface StoredColumnLayout {
@@ -1068,8 +1074,75 @@ export class KNXGroupMonitor extends LitElement {
           `;
         },
       },
+
+      // Actions column
+      actions: {
+        lastFixed: true,
+        showNarrow: true,
+        title: "",
+        label: this.hass.localize("ui.panel.config.generic.headers.actions"),
+        type: "overflow-menu",
+        template: (row) => this._telegramRowMenu(row),
+      },
     }),
   );
+
+  /**
+   * Generates the row action menu for a telegram row
+   */
+  private _telegramRowMenu(row: TelegramRow): TemplateResult {
+    return html`
+      <ha-icon-overflow-menu
+        .hass=${this.hass}
+        narrow
+        .items=${this._telegramRowMenuItems(row)}
+      ></ha-icon-overflow-menu>
+    `;
+  }
+
+  private _telegramRowMenuItems(row: TelegramRow): IconOverflowMenuItem[] {
+    const items: IconOverflowMenuItem[] = [
+      {
+        path: mdiRobot,
+        label: this.hass.localize("ui.panel.config.automation.picker.add_automation"),
+        action: () => this._createAutomationFromTelegram(row),
+      },
+    ];
+
+    const dpt = row.dptId ? stringToDpt(row.dptId) : null;
+    if (!dpt) return items;
+
+    if (dpt.main === 1) {
+      items.push({
+        path: mdiPlus,
+        label: this.knx.localize("project_view_menu_create_binary_sensor"),
+        action: () =>
+          navigate(
+            `/knx/entities/create/binary_sensor?knx.ga_sensor.state=${row.destinationAddress}`,
+          ),
+      });
+    } else if (dptInClasses(dpt, ["numeric", "string"], this.knx.dptMetadata)) {
+      items.push({
+        path: mdiPlus,
+        label: this.knx.localize("project_view_menu_create_sensor"),
+        action: () =>
+          navigate(
+            `/knx/entities/create/sensor?knx.ga_sensor.state=${row.destinationAddress}&knx.ga_sensor.dpt=${row.dptId}`,
+          ),
+      });
+    }
+
+    return items;
+  }
+
+  /**
+   * Opens the HA automation editor prefilled with a knx.telegram trigger
+   * that matches the selected telegram row.
+   */
+  private _createAutomationFromTelegram(row: TelegramRow): void {
+    const config = buildAutomationFromTelegram(row);
+    openAutomationEditor(config, true);
+  }
 
   // ============================================================================
   // Render Helper Methods

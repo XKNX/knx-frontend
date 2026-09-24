@@ -1,6 +1,7 @@
 import {
   mdiPlus,
   mdiMathLog,
+  mdiRobot,
   mdiClose,
   mdiFilterVariant,
   mdiFilterVariantRemove,
@@ -80,6 +81,7 @@ import { subscribeKnxTelegrams, getGroupTelegrams } from "../services/websocket.
 import type { GroupAddress, TelegramDict, KNXProject } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
 import { TelegramDictFormatter } from "../utils/format";
+import { buildAutomationFromKnx, openAutomationEditor } from "../utils/automation";
 
 const logger = new KNXLogger("knx-project-view");
 // Minimum XKNXProject Version needed which was used for parsing the ETS Project
@@ -310,9 +312,11 @@ export class KNXProjectView extends LitElement {
           title: "Exposes",
         },
         actions: {
+          lastFixed: true,
           showNarrow: true,
           defaultHidden: narrow,
           title: "",
+          label: this.hass.localize("ui.panel.config.generic.headers.actions"),
           type: "overflow-menu",
           template: (ga: GroupAddress) => this._groupAddressMenu(ga),
         },
@@ -329,6 +333,19 @@ export class KNXProjectView extends LitElement {
       label: this.knx.localize("project_view_menu_view_telegrams"),
       action: () => {
         navigate(`/knx/group_monitor?destination=${groupAddress.address}`);
+      },
+    });
+
+    items.push({
+      path: mdiRobot,
+      label: this.hass.localize("ui.panel.config.automation.picker.add_automation"),
+      action: () => {
+        openAutomationEditor(
+          buildAutomationFromKnx({
+            destination: groupAddress.address,
+            destinationName: groupAddress.name,
+          }),
+        );
       },
     });
 

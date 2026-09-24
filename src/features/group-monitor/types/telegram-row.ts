@@ -231,7 +231,7 @@ export class TelegramRow implements DataTableRowData {
     this.payload = TelegramDictFormatter.payload(telegram);
 
     /** Extract and format DPT information for technical reference */
-    this.dpt = TelegramDictFormatter.dptNameNumber(telegram);
+    this.dpt = TelegramDictFormatter.dptNameNumber(telegram) || null;
     this.dptId = TelegramDictFormatter.dptNumber(telegram) || null;
 
     /** Store unit information for value context */

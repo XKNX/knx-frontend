@@ -1,5 +1,5 @@
 import { consume } from "@lit/context";
-import { mdiArrowLeft, mdiArrowRight } from "@mdi/js";
+import { mdiArrowLeft, mdiArrowRight, mdiRobot } from "@mdi/js";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
@@ -23,6 +23,8 @@ import {
   formatIsoTimestampWithMicroseconds,
 } from "../../../utils/format";
 import type { TelegramRow } from "../types/telegram-row";
+import { openAutomationEditor } from "../../../utils/automation";
+import { buildAutomationFromTelegram } from "../utils/automation";
 
 /**
  * Parameters for TelegramInfoDialog
@@ -298,23 +300,39 @@ export class GroupMonitorTelegramInfoDialog
           </div>
         </div>
 
-        <!-- Navigation buttons footer -->
-        <div slot="footer">
-          <ha-button
-            appearance="plain"
-            @click=${this._previousTelegram}
-            .disabled=${disablePrevious}
-          >
-            <ha-svg-icon .path=${mdiArrowLeft} slot="start"></ha-svg-icon>
-            ${this.hass.localize("ui.common.previous")}
-          </ha-button>
-          <ha-button appearance="plain" @click=${this._nextTelegram} .disabled=${disableNext}>
-            ${this.hass.localize("ui.common.next")}
-            <ha-svg-icon .path=${mdiArrowRight} slot="end"></ha-svg-icon>
+        <!-- Footer -->
+        <div slot="footer" class="dialog-footer">
+          <div class="nav-buttons">
+            <ha-button
+              appearance="plain"
+              @click=${this._previousTelegram}
+              .disabled=${disablePrevious}
+            >
+              <ha-svg-icon .path=${mdiArrowLeft} slot="start"></ha-svg-icon>
+              ${this.hass.localize("ui.common.previous")}
+            </ha-button>
+            <ha-button appearance="plain" @click=${this._nextTelegram} .disabled=${disableNext}>
+              ${this.hass.localize("ui.common.next")}
+              <ha-svg-icon .path=${mdiArrowRight} slot="end"></ha-svg-icon>
+            </ha-button>
+          </div>
+          <ha-button appearance="filled" @click=${this._createAutomation}>
+            <ha-svg-icon .path=${mdiRobot} slot="start"></ha-svg-icon>
+            ${this.hass.localize("ui.panel.config.automation.picker.add_automation")}
           </ha-button>
         </div>
       </ha-dialog>
     `;
+  }
+
+  /**
+   * Opens the Home Assistant automation editor prefilled with this telegram
+   */
+  private _createAutomation(): void {
+    if (!this._params) return;
+    const config = buildAutomationFromTelegram(this._params.telegram);
+    openAutomationEditor(config, true);
+    this.closeDialog();
   }
 
   /**
@@ -424,6 +442,21 @@ export class GroupMonitorTelegramInfoDialog
 
         ha-button {
           --ha-button-radius: 8px; /* Default is --wa-border-radius-pill */
+        }
+
+        .dialog-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          width: 100%;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .nav-buttons {
+          display: flex;
+          align-items: center;
+          gap: 8px;
         }
 
         /* General content styling */

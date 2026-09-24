@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [tsconfigPaths()],
   define: {
     __DEMO__: false,
+    __DEV__: false,
   },
   test: {
     alias: [

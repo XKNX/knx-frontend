@@ -486,9 +486,9 @@ describe("TelegramDictFormatter", () => {
       expect(TelegramDictFormatter.dptNameNumber(telegram)).toBe("DPT 1.001 ");
     });
 
-    it("should handle both null main and name", () => {
+    it("should return an empty string when no DPT information is available", () => {
       const telegram = createMockTelegram({ dpt_main: null, dpt_name: null });
-      expect(TelegramDictFormatter.dptNameNumber(telegram)).toBe("DPT ");
+      expect(TelegramDictFormatter.dptNameNumber(telegram)).toBe("");
     });
   });
 });

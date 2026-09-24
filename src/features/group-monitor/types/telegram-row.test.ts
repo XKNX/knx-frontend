@@ -24,6 +24,7 @@ describe("TelegramRow", () => {
     const row = new TelegramRow(mockTelegram());
     expect(row.sourceAddress).toBe("1.1.1");
     expect(row.value).toBe("On");
+    expect(row.dptId).toBe("1.001");
   });
 
   it("should use payload as fallback value", () => {

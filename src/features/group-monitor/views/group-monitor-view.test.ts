@@ -1,8 +1,15 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render } from "lit";
+import { TelegramRow } from "../types/telegram-row";
 import { KNXGroupMonitor, migrateStoredColumns } from "./group-monitor-view";
 
 vi.mock("@lit-labs/virtualizer", () => ({}));
+
+const { navigateMock } = vi.hoisted(() => ({ navigateMock: vi.fn() }));
+vi.mock("@ha/common/navigate", async (importOriginal) => ({
+  ...(await importOriginal()),
+  navigate: navigateMock,
+}));
 
 describe("KNXGroupMonitor", () => {
   let element: KNXGroupMonitor;
@@ -20,6 +27,10 @@ describe("KNXGroupMonitor", () => {
       connected: true,
       localize: vi.fn((key) => key),
     } as any;
+  });
+
+  afterEach(() => {
+    delete (window.parent as { customPanel?: HTMLElement }).customPanel;
   });
 
   it("opens the ETS project upload dialog from the missing-project alert", () => {
@@ -167,6 +178,115 @@ describe("KNXGroupMonitor", () => {
 
     it("is a no-op when nothing is stored", () => {
       expect(migrateStoredColumns(undefined)).toBeUndefined();
+    });
+  });
+
+  describe("actions column", () => {
+    it("keeps the labeled actions column fixed at the end", () => {
+      const columns = (element as any)._columns(false, true, "en");
+      expect(columns.actions).toMatchObject({
+        label: "ui.panel.config.generic.headers.actions",
+        lastFixed: true,
+        type: "overflow-menu",
+      });
+    });
+
+    it("opens the automation editor from a row action", () => {
+      const row = new TelegramRow({
+        timestamp: "2026-09-06T12:00:00Z",
+        source: "1.1.1",
+        source_name: "",
+        destination: "1/2/3",
+        destination_name: "Ceiling Light",
+        telegramtype: "GroupValueWrite",
+        direction: "Incoming",
+        payload: [1],
+        dpt_main: null,
+        dpt_sub: null,
+        dpt_name: null,
+        value: "On",
+        unit: null,
+      });
+      const customPanel = document.createElement("div");
+      let editorEvent: CustomEvent | undefined;
+      customPanel.addEventListener("hass-automation-editor", (event) => {
+        editorEvent = event as CustomEvent;
+      });
+      (window.parent as { customPanel?: HTMLElement }).customPanel = customPanel;
+      const container = document.createElement("div");
+      const columns = (element as any)._columns(false, true, "en");
+
+      render(columns.actions.template(row), container, { host: element });
+      const menu = container.querySelector("ha-icon-overflow-menu") as HTMLElement & {
+        items: { action: () => void }[];
+      };
+      menu.items[0].action();
+
+      expect(editorEvent?.detail.data).toMatchObject({
+        alias: "KNX: 1/2/3 Ceiling Light",
+        triggers: [{ trigger: "knx.telegram", options: { destination: ["1/2/3"] } }],
+      });
+    });
+
+    it("offers a binary sensor for DPT 1 telegrams", () => {
+      const row = new TelegramRow({
+        timestamp: "2026-09-06T12:00:00Z",
+        source: "1.1.1",
+        source_name: "",
+        destination: "1/2/3",
+        destination_name: "",
+        telegramtype: "GroupValueWrite",
+        direction: "Incoming",
+        payload: [1],
+        dpt_main: 1,
+        dpt_sub: 1,
+        dpt_name: "Switch",
+        value: "On",
+        unit: null,
+      });
+
+      const items = (element as any)._telegramRowMenuItems(row);
+
+      expect(items.map((item) => item.label)).toEqual([
+        "ui.panel.config.automation.picker.add_automation",
+        "project_view_menu_create_binary_sensor",
+      ]);
+      items[1].action();
+      expect(navigateMock).toHaveBeenCalledWith(
+        "/knx/entities/create/binary_sensor?knx.ga_sensor.state=1/2/3",
+      );
+    });
+
+    it("offers a sensor for numeric telegrams", () => {
+      element.knx.dptMetadata = {
+        "9.001": { dpt_class: "numeric" },
+      } as any;
+      const row = new TelegramRow({
+        timestamp: "2026-09-06T12:00:00Z",
+        source: "1.1.1",
+        source_name: "",
+        destination: "1/2/3",
+        destination_name: "",
+        telegramtype: "GroupValueWrite",
+        direction: "Incoming",
+        payload: [1],
+        dpt_main: 9,
+        dpt_sub: 1,
+        dpt_name: "Temperature",
+        value: "20",
+        unit: "°C",
+      });
+
+      const items = (element as any)._telegramRowMenuItems(row);
+
+      expect(items.map((item) => item.label)).toEqual([
+        "ui.panel.config.automation.picker.add_automation",
+        "project_view_menu_create_sensor",
+      ]);
+      items[1].action();
+      expect(navigateMock).toHaveBeenCalledWith(
+        "/knx/entities/create/sensor?knx.ga_sensor.state=1/2/3&knx.ga_sensor.dpt=9.001",
+      );
     });
   });
 });
