@@ -32,7 +32,8 @@
   "type": "module",
   "dependenciesOverride": {
     "compare-versions": "6.1.0",
-    "@lit/task": "1.0.2"
+    "@lit/task": "1.0.2",
+    "typedfastbitset": "0.8.0"
   },
   "resolutionsOverride": {},
   "dependencies": {
