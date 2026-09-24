@@ -31,6 +31,7 @@ import { subscribeEntityRegistry } from "@ha/data/entity/entity_registry";
 import type { ConfigEntry } from "@ha/data/config_entries";
 import type { HomeAssistant } from "@ha/types";
 import { documentationUrl } from "@ha/util/documentation-url";
+import { brandsUrl } from "@ha/util/brands-url";
 import type { UnsubscribeFunc } from "home-assistant-js-websocket";
 
 import { showKnxProjectUploadDialog } from "../dialogs/show-knx-project-upload-dialog";
@@ -286,7 +287,10 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
                   alt="KNX"
                   crossorigin="anonymous"
                   referrerpolicy="no-referrer"
-                  src="https://brands.home-assistant.io/knx/icon.png"
+                  src=${brandsUrl(
+                    { domain: "knx", type: "icon", darkOptimized: this.hass.themes?.darkMode },
+                    this.hass.auth.data.hassUrl,
+                  )}
                 />
               </div>
             </div>

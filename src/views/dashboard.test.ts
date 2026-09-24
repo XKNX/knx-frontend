@@ -34,6 +34,7 @@ describe("dashboard status details", () => {
     view.hass = {
       language: "de",
       config: { version: "2026.9.0" },
+      auth: { data: { hassUrl: "http://localhost:8123" } },
       states: {},
       devices: { interface_id: interfaceDevice },
       localize: (key: string) =>
