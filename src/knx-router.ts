@@ -16,6 +16,7 @@ import { mainWindow } from "@ha/common/dom/get_main_window";
 import type { KNX } from "./types/knx";
 import { KNXLogger } from "./tools/knx-logger";
 import type { KnxPageNavigation, KnxTranslationKey } from "./types/navigation";
+import type { KnxNotFound } from "./views/not_found";
 
 const logger = new KNXLogger("router");
 
@@ -77,6 +78,17 @@ export const dptReferenceTab = _knxPageNavigationFactory({
   iconColor: "var(--light-green-color)",
 });
 
+/** Route rendered for pages no router knows - see `KnxRouter._beforeRender`. */
+export const notFoundRoute: RouterOptions["routes"] = {
+  not_found: {
+    tag: "knx-not-found",
+    load: () => {
+      logger.debug("Importing knx-not-found");
+      return import("./views/not_found");
+    },
+  },
+};
+
 export const knxMainTabs = (hasProject: boolean): KnxPageNavigation[] => [
   entitiesTab,
   exposeTab,
@@ -96,10 +108,17 @@ export class KnxRouter extends HassRouterPage {
 
   @property({ type: Boolean }) public narrow!: boolean;
 
+  /**
+   * Full path that led to the not-found page. Captured before the base router
+   * rewrites the URL to `<prefix>/not_found`, so the page can still show it.
+   */
+  private _requestedPath?: string;
+
   protected routerOptions: RouterOptions = {
     defaultPage: "dashboard",
-    beforeRender: (page: string) => (page === "" ? this.routerOptions.defaultPage : undefined),
+    beforeRender: (page: string) => this._beforeRender(page),
     routes: {
+      ...notFoundRoute,
       dashboard: {
         tag: "knx-dashboard",
         load: () => {
@@ -156,6 +175,24 @@ export class KnxRouter extends HassRouterPage {
     },
   };
 
+  /**
+   * Shared `beforeRender` hook: the empty page goes to the default page,
+   * pages without a route go to `not_found`.
+   */
+  protected _beforeRender(page: string): string | undefined {
+    if (page === "") {
+      return this.routerOptions.defaultPage;
+    }
+    if (page in this.routerOptions.routes) {
+      if (page !== "not_found") {
+        this._requestedPath = undefined;
+      }
+      return undefined;
+    }
+    this._requestedPath = `${this.route.prefix}${this.route.path}`;
+    return "not_found";
+  }
+
   protected updatePageEl(el, changedProps) {
     // skip title setting when sub-router is called - it will set the title itself when calling this method
     // changedProps is undefined when the element was just loaded
@@ -175,6 +212,9 @@ export class KnxRouter extends HassRouterPage {
     el.knx = this.knx;
     el.route = this.routeTail;
     el.narrow = this.narrow;
+    if (el.localName === "knx-not-found") {
+      (el as KnxNotFound).requestedPath = this._requestedPath;
+    }
   }
 }
 
