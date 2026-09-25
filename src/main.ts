@@ -13,6 +13,7 @@ import { makeDialogManager } from "@ha/dialogs/make-dialog-manager";
 import "@ha/layouts/hass-loading-screen";
 import "@ha/resources/append-ha-style";
 import { contextMixin } from "@ha/state/context-mixin";
+import { clearBrandsTokenRefresh, fetchAndScheduleBrandsAccessToken } from "@ha/util/brands-url";
 
 import type { HomeAssistant, Route } from "@ha/types";
 
@@ -55,6 +56,14 @@ class KnxFrontend extends contextMixin(KnxElement) {
     if (this.knx && !this._translationsLoaded) {
       await this._loadTranslations();
     }
+
+    void fetchAndScheduleBrandsAccessToken(this.hass).then((changed) => {
+      if (!this.isConnected) {
+        clearBrandsTokenRefresh();
+      } else if (changed) {
+        this._updateHass({});
+      }
+    });
 
     this.addEventListener("knx-location-changed", (e) => this._setRoute(e as LocationChangedEvent));
 
@@ -102,6 +111,11 @@ class KnxFrontend extends contextMixin(KnxElement) {
     });
 
     makeDialogManager(this);
+  }
+
+  public disconnectedCallback() {
+    super.disconnectedCallback();
+    clearBrandsTokenRefresh();
   }
 
   protected willUpdate(changedProperties: PropertyValues<this>) {

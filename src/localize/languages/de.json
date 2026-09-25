@@ -1,5 +1,8 @@
 {
   "title": "KNX",
+  "dashboard_status_connected": "Verbunden",
+  "dashboard_status_disconnected": "Nicht verbunden",
+  "dashboard_status_address": "Adresse: {address}",
   "attention": "Achtung",
   "info_title": "Info",
   "info_connected_to_bus": "Verbunden",
