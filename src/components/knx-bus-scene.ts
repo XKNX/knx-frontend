@@ -31,6 +31,11 @@ const RATE = { window: 1000, fadeFrom: 2, fadeTo: 6, tick: 100 };
 /** The scheduled telegrams stay off the bus until the user has been quiet this long. */
 const QUIET_AFTER_TAP = 1500;
 
+/** The same query as the scene's reduced-motion styles; jsdom has no `matchMedia`. */
+const prefersReducedMotion = (): boolean =>
+  typeof window.matchMedia === "function" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 /**
  * Decorative KNX bus line with telegrams travelling along it.
  *
@@ -48,7 +53,8 @@ const QUIET_AFTER_TAP = 1500;
  * blue. While the user is sending, the scheduled telegrams stay off the bus.
  *
  * Pure SVG + CSS keyframes; timers only tick while the user is tapping.
- * Honours `prefers-reduced-motion` by showing the end of the story instead.
+ * Honours `prefers-reduced-motion` by showing the end of the story instead;
+ * taps then still give the haptic and the readout, but send no telegram.
  */
 @customElement("knx-bus-scene")
 export class KnxBusScene extends LitElement {
@@ -149,13 +155,18 @@ export class KnxBusScene extends LitElement {
 
   /** Send one telegram by hand; in the error story a random device rejects it. */
   public fire(): void {
-    const device =
-      this.variant === "error" ? ((1 + Math.floor(Math.random() * 3)) as BusDevice) : undefined;
-    this._sent = [...this._sent, { id: this._nextId++, device }];
     fireEvent(mainWindow, "haptic", "light" satisfies HapticType);
     this._tapTimes.push(Date.now());
     this._updateRate();
     this._holdSchedule();
+    // a hidden shot never animates, so its story would never end and it
+    // would never be removed - under reduced motion nothing is sent
+    if (prefersReducedMotion()) {
+      return;
+    }
+    const device =
+      this.variant === "error" ? ((1 + Math.floor(Math.random() * 3)) as BusDevice) : undefined;
+    this._sent = [...this._sent, { id: this._nextId++, device }];
   }
 
   /** The answer is the last animation of a shot; when it ends, the shot is done. */
@@ -201,6 +212,8 @@ export class KnxBusScene extends LitElement {
     window.clearTimeout(this._rateTick);
     window.clearTimeout(this._quietTimer);
     this._rateTick = this._quietTimer = undefined;
+    // the quiet timer is gone, so the schedule must not stay on hold
+    this.busy = false;
   }
 
   static styles = css`

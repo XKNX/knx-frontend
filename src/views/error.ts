@@ -22,7 +22,8 @@ const ISSUES_URL = "https://github.com/XKNX/knx-integration/issues";
 @customElement("knx-error")
 export class KNXError extends KnxStatusView {
   protected render(): TemplateResult {
-    const message = mainWindow.history.state?.message ?? this.knx.localize("error_unknown");
+    const message =
+      mainWindow.history.state?.message ?? this.hass.localize("ui.common.unknown_error");
     return html`
       <knx-status-page
         .hass=${this.hass}
@@ -30,6 +31,7 @@ export class KNXError extends KnxStatusView {
         header="KNX"
         variant="error"
         .eyebrow=${this.knx.localize("error_eyebrow")}
+        .rateUnit=${this.knx.localize("status_rate_unit")}
         .headline=${this.knx.localize("error_headline")}
         .description=${this.knx.localize("error_description")}
         .detailLabel=${this.knx.localize("error_message")}

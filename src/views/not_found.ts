@@ -25,9 +25,9 @@ export class KnxNotFound extends KnxStatusView {
         header="KNX"
         headline="4/0/4"
         variant="not-found"
-        .eyebrow=${this.knx.localize("not_found_eyebrow")}
+        .eyebrow=${this.hass.localize("panel.notfound")}
         .description=${this.knx.localize("not_found_description")}
-        .rateUnit=${this.knx.localize("not_found_rate_unit")}
+        .rateUnit=${this.knx.localize("status_rate_unit")}
         .detailLabel=${this.knx.localize("not_found_requested_path")}
         .detail=${this.requestedPath}
       >

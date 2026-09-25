@@ -8,6 +8,7 @@ describe("KnxBusScene", () => {
   afterEach(() => {
     element?.remove();
     vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
   const mount = async (variant: KnxBusScene["variant"]) => {
@@ -71,6 +72,28 @@ describe("KnxBusScene", () => {
     expect(count(".shot")).toBe(2);
     await endStory(element.shadowRoot?.querySelector(".shot"));
     expect(count(".shot")).toBe(1);
+  });
+
+  it("sends nothing by hand under reduced motion, where a shot could never end", async () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({ matches: true })),
+    );
+    await mount("not-found");
+    const haptics: string[] = [];
+    const listener = (ev: Event) => haptics.push((ev as CustomEvent).detail);
+    window.addEventListener("haptic", listener);
+    try {
+      await tap(3);
+    } finally {
+      window.removeEventListener("haptic", listener);
+    }
+    expect(window.matchMedia).toHaveBeenCalledWith("(prefers-reduced-motion: reduce)");
+    expect(count(".shot")).toBe(0);
+    expect(count(".ripple")).toBe(0);
+    // the tap is still acknowledged
+    expect(haptics).toHaveLength(3);
+    expect(element.hasAttribute("busy")).toBe(true);
   });
 
   it("ripples behind the still logo, once per tap", async () => {
@@ -178,6 +201,16 @@ describe("KnxBusScene", () => {
       vi.advanceTimersByTime(200);
       await element.updateComplete;
       expect(element.hasAttribute("busy")).toBe(false);
+    });
+
+    it("lets the schedule go when removed while on hold", async () => {
+      vi.useFakeTimers();
+      await mount("not-found");
+      await tap();
+      element.remove();
+      await element.updateComplete;
+      expect(element.hasAttribute("busy")).toBe(false);
+      expect(vi.getTimerCount()).toBe(0);
     });
 
     it("keeps waiting as long as taps keep coming", async () => {

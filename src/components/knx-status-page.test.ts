@@ -111,6 +111,23 @@ describe("KnxStatusPage", () => {
       tap(element.shadowRoot?.querySelector(".description"), 2);
       expect(fire).not.toHaveBeenCalled();
     });
+
+    it("leaves the copy button alone", async () => {
+      const element = await mount(
+        html`<knx-status-page
+          .hass=${{ localize: (key: string) => key } as any}
+          header="KNX"
+          headline="Error"
+          detail-label="Error message"
+          detail="Connection lost"
+          copyable
+        ></knx-status-page>`,
+      );
+      const scene = element.shadowRoot?.querySelector("knx-bus-scene") as any;
+      const fire = vi.spyOn(scene, "fire");
+      tap(element.shadowRoot?.querySelector(".detail ha-icon-button"));
+      expect(fire).not.toHaveBeenCalled();
+    });
   });
 
   describe("technical detail", () => {

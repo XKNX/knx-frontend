@@ -33,6 +33,13 @@ describe("KnxRouter", () => {
     expect((router as any).routerOptions.routes.not_found?.tag).toBe("knx-not-found");
   });
 
+  it("treats inherited object keys as unknown pages", () => {
+    for (const page of ["constructor", "toString", "__proto__"]) {
+      const router = routerAt("knx-router", "/knx", `/${page}`);
+      expect(beforeRender(router, page)).toBe("not_found");
+    }
+  });
+
   it("passes the requested path to the not-found page", () => {
     const router = routerAt("knx-router", "/knx", "/foo/bar");
     beforeRender(router, "foo");

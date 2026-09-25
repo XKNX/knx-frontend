@@ -53,6 +53,7 @@ describe("KNXError", () => {
     const page = element.shadowRoot?.querySelector("knx-status-page") as any;
     expect(page.getAttribute("variant")).toBe("error");
     expect(page.eyebrow).toBe("error_eyebrow");
+    expect(page.rateUnit).toBe("status_rate_unit");
   });
 
   it("shows the error message from the history state as copyable detail", async () => {
@@ -68,7 +69,7 @@ describe("KNXError", () => {
     fakeMainWindow.history.state = null;
     await mount();
     expect((element.shadowRoot?.querySelector("knx-status-page") as any).detail).toBe(
-      "error_unknown",
+      "ui.common.unknown_error",
     );
   });
 

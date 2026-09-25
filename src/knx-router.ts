@@ -183,7 +183,8 @@ export class KnxRouter extends HassRouterPage {
     if (page === "") {
       return this.routerOptions.defaultPage;
     }
-    if (page in this.routerOptions.routes) {
+    // own routes only: `/knx/constructor` must not find `Object.prototype`
+    if (Object.prototype.hasOwnProperty.call(this.routerOptions.routes, page)) {
       if (page !== "not_found") {
         this._requestedPath = undefined;
       }
