@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-import { exitFlow, navigateInFlow } from "./navigation";
+import { exitFlow, navigateInFlow, navigateToError } from "./navigation";
 
 const navigateMock = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
 vi.mock("@ha/common/navigate", () => ({ navigate: navigateMock }));
@@ -14,6 +14,7 @@ const fakeMainWindow = vi.hoisted(() => {
       state: null as { dialog?: string } | null,
       back: vi.fn(),
     },
+    location: { pathname: "/knx/entities/create/switch" },
     setTimeout: (...args: Parameters<typeof setTimeout>) => setTimeout(...args),
     clearTimeout: (handle?: any) => clearTimeout(handle),
     addEventListener: target.addEventListener.bind(target),
@@ -31,6 +32,20 @@ describe("navigateInFlow", () => {
   it("replaces the current history entry", () => {
     navigateInFlow("/knx/entities/create/switch");
     expect(navigateMock).toHaveBeenCalledWith("/knx/entities/create/switch", { replace: true });
+  });
+});
+
+describe("navigateToError", () => {
+  beforeEach(() => {
+    navigateMock.mockClear();
+  });
+
+  it("replaces the failed page with the error page and remembers where it happened", () => {
+    navigateToError(new Error("Connection lost"));
+    expect(navigateMock).toHaveBeenCalledWith("/knx/error", {
+      replace: true,
+      data: { message: "Connection lost", retryPath: "/knx/entities/create/switch" },
+    });
   });
 });
 

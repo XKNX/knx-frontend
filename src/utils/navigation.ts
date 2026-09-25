@@ -35,7 +35,8 @@ const _dialogHistorySettled = (): Promise<void> =>
   mainWindow.history.state?.dialog ? _historyChanged() : Promise.resolve();
 
 /**
- * Show the error page, replacing the current history entry.
+ * Show the error page, replacing the current history entry. The page where
+ * it happened is remembered as `retryPath`, so "Try again" can return there.
  *
  * The message is passed as a plain object: `navigate()` merges its own
  * bookkeeping into the history state, which would drop the non-enumerable
@@ -44,7 +45,10 @@ const _dialogHistorySettled = (): Promise<void> =>
 export const navigateToError = (error: unknown): Promise<boolean> =>
   navigate("/knx/error", {
     replace: true,
-    data: { message: error instanceof Error ? error.message : String(error) },
+    data: {
+      message: error instanceof Error ? error.message : String(error),
+      retryPath: mainWindow.location.pathname,
+    },
   });
 
 /** Navigate between the steps of a flow, without adding a history entry. */
