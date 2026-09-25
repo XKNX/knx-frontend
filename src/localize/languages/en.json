@@ -147,5 +147,16 @@
   "group_monitor_time_delta_before": "- Before (ms)",
   "group_monitor_time_delta_after": "+ After (ms)",
   "group_monitor_time_delta_disabled": "Set a filter to use the context time span.",
-  "group_monitor_time_delta_summary": "Within -{before} ms / +{after} ms"
+  "group_monitor_time_delta_summary": "Within -{before} ms / +{after} ms",
+
+  "status_try_again": "Try again",
+  "status_rate_unit": "telegrams/s",
+  "status_go_to_dashboard": "Dashboard",
+  "not_found_description": "We could not find this page. Go back or check the path below.",
+  "not_found_requested_path": "Requested path",
+  "error_eyebrow": "KNX integration",
+  "error_headline": "Please try again",
+  "error_description": "The request failed. A second try usually does it. If the error stays, copy the message below and report the problem.",
+  "error_message": "Error message",
+  "error_report": "Report a problem"
 }

@@ -1,39 +1,63 @@
 import type { TemplateResult } from "lit";
-import { html, LitElement } from "lit";
-import { customElement, property } from "lit/decorators";
+import { html } from "lit";
+import { customElement } from "lit/decorators";
 
+import { navigate } from "@ha/common/navigate";
 import { mainWindow } from "@ha/common/dom/get_main_window";
-import "@ha/layouts/hass-tabs-subpage";
-import "@ha/layouts/hass-error-screen";
 
-import type { PageNavigation } from "@ha/layouts/hass-tabs-subpage";
-import type { HomeAssistant, Route } from "@ha/types";
+import { KnxStatusView } from "./status_view";
 
-import type { KNX } from "../types/knx";
+/** Issue tracker of the KNX integration, where backend errors belong. */
+const ISSUES_URL = "https://github.com/XKNX/knx-integration/issues";
 
+/**
+ * Error page of the KNX panel, reached through `navigateToError` when a
+ * backend call fails.
+ *
+ * The history state carries the error message, shown as copyable detail, and
+ * the path of the page where the call failed: "Try again" returns there so
+ * the user can redo the action. Without that path, e.g. after a reload, it
+ * is a plain step back. The bus scene tells the story of rejected telegrams.
+ */
 @customElement("knx-error")
-export class KNXError extends LitElement {
-  @property({ type: Object }) public hass!: HomeAssistant;
-
-  @property({ attribute: false }) public knx!: KNX;
-
-  @property({ type: Boolean, reflect: true }) public narrow!: boolean;
-
-  @property({ type: Object }) public route?: Route;
-
-  @property({ type: Array, reflect: false }) public tabs!: PageNavigation[];
-
+export class KNXError extends KnxStatusView {
   protected render(): TemplateResult {
-    const error = mainWindow.history.state?.message ?? "Unknown error";
+    const message =
+      mainWindow.history.state?.message ?? this.hass.localize("ui.common.unknown_error");
     return html`
-      <hass-error-screen
+      <knx-status-page
         .hass=${this.hass}
-        .error=${error}
-        .toolbar=${true}
-        .rootnav=${false}
         .narrow=${this.narrow}
-      ></hass-error-screen>
+        header="KNX"
+        variant="error"
+        .eyebrow=${this.knx.localize("error_eyebrow")}
+        .rateUnit=${this.knx.localize("status_rate_unit")}
+        .headline=${this.knx.localize("error_headline")}
+        .description=${this.knx.localize("error_description")}
+        .detailLabel=${this.knx.localize("error_message")}
+        .detail=${message}
+        copyable
+      >
+        <ha-button appearance="filled" size="s" @click=${this._retry}>
+          ${this.knx.localize("status_try_again")}
+        </ha-button>
+        <ha-button appearance="plain" size="s" @click=${this._goToDashboard}>
+          ${this.knx.localize("status_go_to_dashboard")}
+        </ha-button>
+        <ha-button appearance="plain" size="s" href=${ISSUES_URL} target="_blank" rel="noreferrer">
+          ${this.knx.localize("error_report")}
+        </ha-button>
+      </knx-status-page>
     `;
+  }
+
+  private _retry(): void {
+    const retryPath: string | undefined = mainWindow.history.state?.retryPath;
+    if (retryPath) {
+      navigate(retryPath, { replace: true });
+    } else {
+      this._goBack();
+    }
   }
 }
 

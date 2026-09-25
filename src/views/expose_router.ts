@@ -1,7 +1,7 @@
 import { customElement } from "lit/decorators";
 import type { RouterOptions } from "@ha/layouts/hass-router-page";
 
-import { KnxRouter } from "../knx-router";
+import { KnxRouter, notFoundRoute } from "../knx-router";
 import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("knx-expose-router");
@@ -10,8 +10,9 @@ const logger = new KNXLogger("knx-expose-router");
 class KnxExposesRouter extends KnxRouter {
   protected routerOptions: RouterOptions = {
     defaultPage: "view",
-    beforeRender: (page: string) => (page === "" ? this.routerOptions.defaultPage : undefined),
+    beforeRender: (page: string) => this._beforeRender(page),
     routes: {
+      ...notFoundRoute,
       view: {
         tag: "knx-expose-view",
         load: () => {
