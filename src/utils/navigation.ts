@@ -34,10 +34,16 @@ const _historyChanged = (): Promise<void> =>
 const _dialogHistorySettled = (): Promise<void> =>
   mainWindow.history.state?.dialog ? _historyChanged() : Promise.resolve();
 
+const ERROR_PATH = "/knx/error";
+
 /**
  * Show the error page, replacing the current history entry. The page where
  * it happened is remembered as `retryPath`, so "Try again" can return there -
  * including its query, which flows read their presets from.
+ *
+ * When the error page is already shown - a second call failing shortly after
+ * the first, e.g. a delayed validation - the remembered page is kept, so
+ * "Try again" still returns to the flow and not to the error page itself.
  *
  * The message is passed as a plain object: `navigate()` merges its own
  * bookkeeping into the history state, which would drop the non-enumerable
@@ -45,11 +51,13 @@ const _dialogHistorySettled = (): Promise<void> =>
  */
 export const navigateToError = (error: unknown): Promise<boolean> => {
   const { pathname, search, hash } = mainWindow.location;
-  return navigate("/knx/error", {
+  const retryPath: string | undefined =
+    pathname === ERROR_PATH ? mainWindow.history.state?.retryPath : `${pathname}${search}${hash}`;
+  return navigate(ERROR_PATH, {
     replace: true,
     data: {
       message: error instanceof Error ? error.message : String(error),
-      retryPath: `${pathname}${search}${hash}`,
+      retryPath,
     },
   });
 };
