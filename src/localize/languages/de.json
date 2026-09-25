@@ -150,15 +150,13 @@
   "group_monitor_time_delta_summary": "Innerhalb -{before} ms / +{after} ms",
 
   "status_try_again": "Erneut versuchen",
+  "status_rate_unit": "Telegramme/s",
   "status_go_to_dashboard": "Dashboard",
-  "not_found_eyebrow": "Seite nicht gefunden",
   "not_found_description": "Diese Seite haben wir nicht gefunden. Geh zurück oder prüfe den Pfad unten.",
-  "not_found_rate_unit": "Telegramme/s",
   "not_found_requested_path": "Angefragter Pfad",
   "error_eyebrow": "KNX-Integration",
   "error_headline": "Bitte noch einmal versuchen",
   "error_description": "Die Anfrage ist fehlgeschlagen. Meist reicht ein zweiter Versuch. Bleibt der Fehler, kopiere die Meldung unten und melde das Problem.",
   "error_message": "Fehlermeldung",
-  "error_report": "Problem melden",
-  "error_unknown": "Unbekannter Fehler"
+  "error_report": "Problem melden"
 }

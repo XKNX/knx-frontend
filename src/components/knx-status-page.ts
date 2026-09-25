@@ -13,7 +13,15 @@ import "./knx-bus-scene";
 import type { KnxBusScene, KnxBusSceneVariant } from "./knx-bus-scene";
 
 /** Taps on these keep their own meaning instead of sending a telegram. */
-const CONTROLS = new Set(["ha-button", "button", "a", "input", "select", "textarea"]);
+const CONTROLS = new Set([
+  "ha-button",
+  "ha-icon-button",
+  "button",
+  "a",
+  "input",
+  "select",
+  "textarea",
+]);
 
 /**
  * Full-page status screen of the KNX panel: a subpage with the bus scene,

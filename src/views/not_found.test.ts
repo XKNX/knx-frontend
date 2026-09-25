@@ -39,9 +39,9 @@ describe("KnxNotFound", () => {
   it("tells the not-found story in plain words above the group address", () => {
     const page = element.shadowRoot?.querySelector("knx-status-page") as any;
     expect(page.getAttribute("variant")).toBe("not-found");
-    expect(page.eyebrow).toBe("not_found_eyebrow");
+    expect(page.eyebrow).toBe("panel.notfound");
     expect(page.headline).toBe("4/0/4");
-    expect(page.rateUnit).toBe("not_found_rate_unit");
+    expect(page.rateUnit).toBe("status_rate_unit");
   });
 
   it("hands the path that was not found to the status page as detail", async () => {

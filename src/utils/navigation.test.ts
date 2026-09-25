@@ -14,7 +14,7 @@ const fakeMainWindow = vi.hoisted(() => {
       state: null as { dialog?: string } | null,
       back: vi.fn(),
     },
-    location: { pathname: "/knx/entities/create/switch" },
+    location: { pathname: "/knx/entities/create/switch", search: "", hash: "" },
     setTimeout: (...args: Parameters<typeof setTimeout>) => setTimeout(...args),
     clearTimeout: (handle?: any) => clearTimeout(handle),
     addEventListener: target.addEventListener.bind(target),
@@ -38,6 +38,8 @@ describe("navigateInFlow", () => {
 describe("navigateToError", () => {
   beforeEach(() => {
     navigateMock.mockClear();
+    fakeMainWindow.location.search = "";
+    fakeMainWindow.location.hash = "";
   });
 
   it("replaces the failed page with the error page and remembers where it happened", () => {
@@ -45,6 +47,16 @@ describe("navigateToError", () => {
     expect(navigateMock).toHaveBeenCalledWith("/knx/error", {
       replace: true,
       data: { message: "Connection lost", retryPath: "/knx/entities/create/switch" },
+    });
+  });
+
+  it("keeps the query of the failed page, which flows read their presets from", () => {
+    fakeMainWindow.location.search = "?preset=light";
+    fakeMainWindow.location.hash = "#step";
+    navigateToError("boom");
+    expect(navigateMock).toHaveBeenCalledWith("/knx/error", {
+      replace: true,
+      data: { message: "boom", retryPath: "/knx/entities/create/switch?preset=light#step" },
     });
   });
 });
