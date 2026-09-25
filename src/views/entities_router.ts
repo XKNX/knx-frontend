@@ -26,6 +26,13 @@ class KnxEntitiesRouter extends KnxRouter {
           return import("./entities_create");
         },
       },
+      suggestions: {
+        tag: "knx-entities-suggestions",
+        load: () => {
+          logger.debug("Importing knx-entities-suggestions");
+          return import("./entities_suggestions");
+        },
+      },
       edit: {
         tag: "knx-create-entity",
         load: () => {

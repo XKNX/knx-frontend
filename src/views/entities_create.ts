@@ -1,4 +1,4 @@
-import { mdiPlus, mdiFloppy, mdiCodeBraces, mdiPlaylistEdit } from "@mdi/js";
+import { mdiAutoFix, mdiPlus, mdiFloppy, mdiCodeBraces, mdiPlaylistEdit } from "@mdi/js";
 import deepClone from "deep-clone-simple";
 import type { TemplateResult, PropertyValues } from "lit";
 import { LitElement, html, css, nothing } from "lit";
@@ -122,9 +122,13 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
   /**
    * The config a new entity starts out with - `knx-configure-entity` applies url
    * parameters the same way, eg. when creating an entity from the project view,
-   * so an untouched form doesn't count as changed.
+   * so an untouched form doesn't count as changed. Entity suggestions pass a
+   * complete config in the history state instead.
    */
   private _newEntityConfig(): EntityData {
+    if (mainWindow.history.state?.entityData) {
+      return deepClone(mainWindow.history.state.entityData) as EntityData;
+    }
     const config = { entity: {}, knx: {} } as EntityData;
     const urlParams = new URLSearchParams(mainWindow.location.search);
     for (const [path, value] of urlParams.entries()) {
@@ -164,6 +168,10 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
         // knx/entities/create/light -> path: "/light"
         this.entityId = undefined; // clear entityId for create intent
         this.entityPlatform = this.route.path.split("/")[1];
+        if (mainWindow.history.state?.entityData) {
+          // unlike url parameters, `knx-configure-entity` can't apply this itself
+          this._config = this._newEntityConfig();
+        }
         this._initDirtyTracking({ type: "deep" }, this._newEntityConfig());
       } else if (intent === "edit") {
         // knx/entities/edit/light.living_room -> path: "/light.living_room"
@@ -264,6 +272,23 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
         .header=${this.hass.localize("component.knx.config_panel.entities.create.title")}
       >
         <div class="type-selection" @click=${this._typeSelected}>
+          ${
+            this.knx.projectInfo
+              ? html`
+                  <ha-card outlined .header=${this.knx.localize("suggestions_title")}>
+                    <div class="card-content">
+                      ${this.knx.localize("suggestions_type_selection_description")}
+                    </div>
+                    <div class="card-actions">
+                      <ha-button @click=${this._navigateSuggestions}>
+                        <ha-svg-icon slot="start" .path=${mdiAutoFix}></ha-svg-icon>
+                        ${this.knx.localize("suggestions_title")}
+                      </ha-button>
+                    </div>
+                  </ha-card>
+                `
+              : nothing
+          }
           <ha-card
             outlined
             .header=${this.hass.localize(
@@ -574,6 +599,10 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
     this._validationBaseError = undefined;
     logger.debug("Validation passed", result.entity_id);
     return false;
+  }
+
+  private _navigateSuggestions() {
+    navigateInFlow("/knx/entities/suggestions");
   }
 
   private _entityMoreInfoSettings(entityId: string) {
