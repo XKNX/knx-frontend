@@ -71,8 +71,9 @@ checkout it is the fork, and its `main` is stale.
 
 Order: `close-superseded` and `close-direct` first (they do not touch `main`), then Actions PRs,
 then lock-only PRs, oldest first. Before each PR run `node $SKILL/scripts/triage.mjs <nr>` again:
-every merge changes `main`. Ask at most twice per PR, once for the repair (rebase or recreate
-comment, dedupe push) and once for the outcome (merge or close). Each question names the PR,
+every merge changes `main`. Each outward action needs its own yes: usually one for the repair
+(rebase or recreate comment) and one for the outcome (merge or close), plus one more for every
+further repair, such as a dedupe push after a rebase. Each question names the PR,
 package, action and reason.
 
 | Action             | Meaning                                                                               | What to do after the user's yes for this PR                                                                                                                                                                                                |
@@ -90,8 +91,9 @@ package, action and reason.
 
 ### Close texts
 
-Fill in `<pkg>` and `<version>`, keep the rest verbatim. Write the text to a file and pass it
-with `"$(cat …)"`: inline backticks in a double-quoted `--comment` would run as shell commands.
+Fill in `<pkg>` and `<version>`, keep the rest verbatim. Write the text to a file with an
+absolute path (not inline in a shell string: the backticks would run as commands), comment from
+that file, and close only if the comment succeeded:
 
 close-direct:
 
@@ -106,7 +108,8 @@ Closing: `main` already resolves `<pkg>` to `<version>`, which includes this upd
 ```
 
 ```bash
-gh pr close <nr> -R XKNX/knx-frontend --comment "$(cat "$TMPDIR/close-<nr>.md")"
+gh pr comment <nr> -R XKNX/knx-frontend --body-file /absolute/path/close-<nr>.md \
+  && gh pr close <nr> -R XKNX/knx-frontend
 ```
 
 ### Waiting
@@ -129,7 +132,9 @@ yarn install
 
 `headRefName` comes from `triage.mjs --json <nr>`. Drop `--reference …` if that directory does not
 exist. If `yarn install` fails on `npmMinimalAgeGate` (3 days, `.yarnrc.yml`), the action is `wait`
-until the version is three days old. When done: `git worktree remove .worktrees/dependabot-<nr>`.
+until the version is three days old. When done, from the checkout root:
+`git worktree remove --force .worktrees/dependabot-<nr>`. `--force` is needed because the worktree
+contains a submodule; use it only on a worktree this skill created.
 
 ### Dedupe fix
 
