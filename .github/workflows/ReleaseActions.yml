@@ -39,6 +39,9 @@ jobs:
 
       - name: Build
         run: yarn build
+        env:
+          # Build without the babel-loader cache.
+          BABEL_CACHE_DIR: "false"
 
       - name: Publish to PyPi
         env:

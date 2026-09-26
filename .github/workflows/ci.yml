@@ -108,8 +108,43 @@ jobs:
       - name: Setup Node and Dependencies
         uses: ./.github/actions/setup
 
+      # The key covers inputs that babel-loader does not hash itself: the custom babel plugins
+      # and the browserslist data. The month accounts for the relative `last 2 years` target.
+      - name: Compute babel-loader cache key
+        id: babel-key
+        env:
+          INPUTS_HASH: >-
+            ${{ hashFiles(
+              'yarn.lock',
+              '.browserslistrc',
+              'build-scripts/bundle.cjs',
+              'homeassistant-frontend/build-scripts/babel-plugins/**'
+            ) }}
+        run: |
+          prefix="babel-loader-${RUNNER_OS}-$(date -u +%Y-%m)-${INPUTS_HASH}-"
+          echo "prefix=${prefix}" >> "$GITHUB_OUTPUT"
+
+      # Restores the newest cache matching the key prefix. Only runs on main save a cache, each
+      # under a new key (prefix + commit SHA).
+      - name: Restore babel-loader cache
+        id: babel-cache
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ runner.temp }}/babel-loader
+          key: ${{ steps.babel-key.outputs.prefix }}${{ github.sha }}
+          restore-keys: ${{ steps.babel-key.outputs.prefix }}
+
       - name: Build
         run: yarn build
+        env:
+          BABEL_CACHE_DIR: ${{ runner.temp }}/babel-loader
+
+      - name: Save babel-loader cache
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ runner.temp }}/babel-loader
+          key: ${{ steps.babel-cache.outputs.cache-primary-key }}
 
       - name: Report output size
         id: size

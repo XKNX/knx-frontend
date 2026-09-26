@@ -30,6 +30,13 @@ class LogStartCompilePlugin {
   }
 }
 
+// Directory of the babel-loader cache. Defaults to babel-loader's own location under
+// node_modules/.cache. Set BABEL_CACHE_DIR to use another directory or to "false" to disable it.
+const babelCacheDirectory = () => {
+  const dir = process.env.BABEL_CACHE_DIR;
+  return dir === "false" ? false : dir || true;
+};
+
 const createRspackConfig = ({
   entry,
   outputPath,
@@ -69,7 +76,7 @@ const createRspackConfig = ({
                 loader: "babel-loader",
                 options: {
                   ...bundle.babelOptions({ latestBuild, sw: info.issuerLayer === "sw" }),
-                  cacheDirectory: !isProdBuild,
+                  cacheDirectory: babelCacheDirectory(),
                   cacheCompression: false,
                 },
               },
