@@ -148,8 +148,8 @@ delivery; a gate "not run" (usually smoke) does not, but say so before the push 
    (`<owner>`: fork owner, or `XKNX` for a direct push). Never enable auto-merge, never merge.
 4. **Final summary.** Old → new tag, commits, gate results, delivery state (local, pushed where,
    PR URL, or the compare URL from `delivery.md` that works once the branch is pushed), and the
-   worktree path to remove later with `git worktree remove <path>` (the branch stays until
-   `git branch -d`).
+   worktree path to remove later with `git worktree remove --force <path>` (`--force` because
+   the worktree contains the submodule; the branch stays until `git branch -d`).
 
 ## Common mistakes
 
