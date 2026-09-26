@@ -145,8 +145,9 @@ sub diff --name-status "$OLD" "$NEW" -- build-scripts | grep -E '^[ADR]' | sed '
 
 section "Upstream paths referenced by KNX build config and stubs"
 {
-  grep -rhoE 'homeassistant-frontend/[A-Za-z0-9_./-]+\.[a-z]+' build-scripts gulpfile.js rspack.config.cjs vitest.config.ts tsconfig.json 2>/dev/null |
-    sed 's#^homeassistant-frontend/##'
+  # Files and directories alike (babel-plugins, polyfills, translations); skip the generated build/.
+  grep -rhoE --exclude='*.md' 'homeassistant-frontend/[A-Za-z0-9_./-]+' build-scripts gulpfile.js rspack.config.cjs vitest.config.ts tsconfig.json 2>/dev/null |
+    sed -e 's#^homeassistant-frontend/##' -e 's#/*$##' | grep -vE '^build(/|$)'
   # ha("…") / haDirectory("…") entries in stubs.cjs are relative to src/
   sed -n '/^const stubs/,$p' build-scripts/stubs.cjs | grep -oE '"[A-Za-z0-9_./-]+(\.ts)?"' |
     tr -d '"' | grep -vE '\.(mjs|js)$' | grep -E '/' | sed 's#^#src/#'
