@@ -91,7 +91,7 @@ adds the prerelease flag.
 
 | Impact section                                | Required action                                                                                                                                                                                                                             |
 | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Toolchain (`.nvmrc`, `.browserslistrc`, Yarn) | The script copies these. Run `nvm install && nvm use` before the next `yarn install`                                                                                                                                                        |
+| Toolchain (`.nvmrc`, `.browserslistrc`, Yarn) | The script copies these and runs `yarn install` itself. Switch to the new Node before it (Phase 2)                                                                                                                                          |
 | Dependency changes, `[MAJOR]`                 | Check the changelog of every package KNX imports directly                                                                                                                                                                                   |
 | KNX override                                  | Find its reason with `git log -S'"<pkg>"' -- package.json`. Drop it if upstream now provides a version ≥ the override and the reason is gone; otherwise keep it and mention it under "Not adopted". A `KNX-only dependency` needs no action |
 | Mirrored build/config files                   | Port the upstream diff (`git -C homeassistant-frontend diff OLD NEW -- <file>`) into the KNX copy, keeping KNX-specific parts                                                                                                               |
@@ -102,8 +102,10 @@ adds the prerelease flag.
 
 ## Phase 2: Execute (after approval)
 
-1. `script/upgrade-frontend <tag>` (it runs `yarn install` and `yarn dedupe` itself). If `.nvmrc`
-   changed: `nvm install && nvm use && yarn install`.
+1. If the impact report lists `.nvmrc` as changed, switch Node first, because the script runs
+   `yarn install` itself right after copying `.nvmrc`:
+   `NODE=$(git -C homeassistant-frontend show <tag>:.nvmrc) && nvm install "$NODE" && nvm use "$NODE"`.
+   Then run `script/upgrade-frontend <tag>` (it runs `yarn install` and `yarn dedupe` itself).
 2. Check `git -C homeassistant-frontend describe --tags --exact-match`. It must print `<tag>`.
 3. Commit the bump by itself: `Update upstream to <tag>`. It contains the pointer, `package.json`,
    `yarn.lock` and, when they changed, `.nvmrc`, `.browserslistrc` and `.yarnrc.yml`.
