@@ -18,6 +18,8 @@ test/coverage/
 AGENTS.md
 CLAUDE.md
 GEMINI.md
+/.claude/skills
+/.worktrees/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -38,6 +40,8 @@ downloads/
 eggs/
 .eggs/
 lib/
+# Agent skill scripts, not a Python build directory
+!.agents/skills/*/scripts/lib/
 lib64/
 parts/
 sdist/

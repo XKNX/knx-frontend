@@ -139,7 +139,7 @@ import { KNXLogger } from "../tools/knx-logger";
   - `bootstrap`: Initialize submodules and install dependencies
   - `build`: Production build script
   - `develop`: Development server with live reload
-  - `upgrade-frontend`: Update Home Assistant frontend submodule
+  - `upgrade-frontend`: Update Home Assistant frontend submodule (follow the skill below)
 - `/homeassistant-frontend`: Submodule (AI agents should not modify directly)
 - `/test`: Test files that AI agents should maintain and extend
 
@@ -191,7 +191,8 @@ import { KNXLogger } from "../tools/knx-logger";
 ### Project Maintenance
 
 - `make update`: Pull latest from upstream main branch
-- `script/upgrade-frontend`: Upgrade Home Assistant frontend to latest version
+- `script/upgrade-frontend <tag>`: Upgrade the Home Assistant frontend submodule. Before any submodule update, read and follow `.agents/skills/upgrading-knx-frontend-submodule/SKILL.md` (path from the repository root; this file is also symlinked there as `AGENTS.md`, `CLAUDE.md` and `GEMINI.md`)
+- Dependabot PRs: Before merging, closing or repairing any PR from `app/dependabot`, read and follow `.agents/skills/merging-knx-frontend-dependabot-prs/SKILL.md` (path from the repository root)
 
 ## Key Guidelines
 

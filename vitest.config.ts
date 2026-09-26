@@ -32,6 +32,7 @@ export default defineConfig({
       "knx-frontend/**/*",
       ".git/**",
       ".claude/**",
+      ".worktrees/**",
     ],
     bail: 0, // Don't stop after first failure, run all tests
     coverage: {
