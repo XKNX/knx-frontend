@@ -123,6 +123,12 @@ jobs:
         env:
           BABEL_CACHE_DIR: ${{ runner.temp }}/babel-loader
 
+      # babel-loader writes an entry only on a cache miss, so a file's age is the time since it was
+      # created. Entries older than 30 days are dropped and transpiled again on their next use.
+      - name: Prune old babel-loader cache entries
+        if: github.ref == 'refs/heads/main'
+        run: find "${{ runner.temp }}/babel-loader" -type f -mtime +30 -delete
+
       - name: Save babel-loader cache
         if: github.ref == 'refs/heads/main'
         uses: actions/cache/save@v5
