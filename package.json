@@ -32,7 +32,8 @@
   "type": "module",
   "dependenciesOverride": {
     "compare-versions": "6.1.0",
-    "@lit/task": "1.0.2"
+    "@lit/task": "1.0.2",
+    "typedfastbitset": "0.8.0"
   },
   "resolutionsOverride": {},
   "dependencies": {
@@ -129,6 +130,7 @@
     "stacktrace-js": "2.0.2",
     "superstruct": "2.0.2",
     "tinykeys": "patch:tinykeys@npm%3A4.0.0#~/homeassistant-frontend/.yarn/patches/tinykeys-npm-4.0.0-a6ca3fd771.patch",
+    "typedfastbitset": "0.8.0",
     "weekstart": "2.0.0",
     "workbox-cacheable-response": "7.4.1",
     "workbox-core": "7.4.1",

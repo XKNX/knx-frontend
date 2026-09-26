@@ -130,6 +130,69 @@ describe("KNXGroupMonitor", () => {
     expect(mockController.clearTelegrams).toHaveBeenCalled();
   });
 
+  it("merges DPT metadata with cross-filter counts", () => {
+    element.knx = {
+      dptMetadata: { "1.001": { name: "Switch" }, "5.001": { name: "Percent" } },
+    } as any;
+
+    const data = (element as any)._getDptFilterData({
+      source: {},
+      destination: {},
+      direction: {},
+      telegramtype: {},
+      dpt: {
+        "1.001": { id: "1.001", name: "", crossFilteredCount: 3 },
+        unknown: { id: "unknown", name: "", crossFilteredCount: 2 },
+      },
+    });
+
+    expect(data).toContainEqual({ id: "1.001", name: "Switch", crossFilteredCount: 3 });
+    expect(data).toContainEqual({ id: "5.001", name: "Percent", crossFilteredCount: 0 });
+    expect(data).toContainEqual({ id: "unknown", name: "", crossFilteredCount: 2 });
+  });
+
+  it("uses a telegram-provided DPT name when it has no metadata", () => {
+    element.knx = { dptMetadata: {} } as any;
+
+    const data = (element as any)._getDptFilterData({
+      source: {},
+      destination: {},
+      direction: {},
+      telegramtype: {},
+      dpt: {
+        "7.001": { id: "7.001", name: "DPT 7.001", crossFilteredCount: 1 },
+      },
+    });
+
+    expect(data).toContainEqual({ id: "7.001", name: "DPT 7.001", crossFilteredCount: 1 });
+  });
+
+  it("uses cross-filter counts in every filter badge", () => {
+    const item = { id: "1.1.1", name: "Switch", crossFilteredCount: 4 };
+    const filterConfigs = [
+      (element as any)._sourceFilterConfig("en"),
+      (element as any)._destinationFilterConfig("en"),
+      (element as any)._directionFilterConfig("en"),
+      (element as any)._telegramTypeFilterConfig("en"),
+      (element as any)._dptFilterConfig("en"),
+    ];
+
+    for (const config of filterConfigs) {
+      expect(config.badgeField.mapper(item)).toBe("4");
+    }
+  });
+
+  it("shows DPT identifiers, names, and the localized unknown label", () => {
+    const config = (element as any)._dptFilterConfig("en");
+    const known = { id: "1.001", name: "Switch", crossFilteredCount: 3 };
+    const unknown = { id: "unknown", name: "", crossFilteredCount: 0 };
+
+    expect(config.idField.mapper(known)).toBe("1.001");
+    expect(config.primaryField.mapper(known)).toBe("1.001");
+    expect(config.primaryField.mapper(unknown)).toBe("state.default.unknown");
+    expect(config.secondaryField.mapper(known)).toBe("Switch");
+  });
+
   describe("migrateStoredColumns", () => {
     it("inserts the offset column right after timestampIso for both layouts", () => {
       const migrated = migrateStoredColumns({

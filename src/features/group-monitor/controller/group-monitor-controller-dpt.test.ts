@@ -93,7 +93,12 @@ describe("GroupMonitorController - DPT Filtering & URL Syncing", () => {
       await injectTelegrams([
         createMockTelegram({ dpt_main: 1, dpt_sub: 1, source: "1.1.1" }),
         createMockTelegram({ dpt_main: 1, dpt_sub: 1, source: "1.1.2" }),
-        createMockTelegram({ dpt_main: 5, dpt_sub: 1, source: "1.1.1" }),
+        createMockTelegram({
+          timestamp: "2024-01-01T10:00:01.000Z",
+          dpt_main: 5,
+          dpt_sub: 1,
+          source: "1.1.1",
+        }),
       ]);
 
       controller.setFilterFieldValue("dpt", ["1.001"]);
@@ -117,8 +122,8 @@ describe("GroupMonitorController - DPT Filtering & URL Syncing", () => {
       const { distinctValues } = controller.getFilteredTelegramsAndDistinctValues();
 
       expect(distinctValues.dpt[UNKNOWN_DPT_ID]).toBeDefined();
-      expect(distinctValues.dpt[UNKNOWN_DPT_ID].totalCount).toBe(2);
-      expect(distinctValues.dpt["1.001"].totalCount).toBe(1);
+      expect(distinctValues.dpt[UNKNOWN_DPT_ID].crossFilteredCount).toBe(2);
+      expect(distinctValues.dpt["1.001"].crossFilteredCount).toBe(1);
     });
 
     it("should filter for telegrams without DPT", async () => {
