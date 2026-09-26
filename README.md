@@ -29,19 +29,17 @@ $ script/build
 
 ### Update the home assistant frontend
 
-Get the latest release tag.
+Always pass the release tag (`YYYYMMDD.N`) that Home Assistant Core pins. Without one, the
+script picks the most recently tagged commit, usually the newest beta.
 
 ```shell
-$ script/upgrade-frontend
+$ script/upgrade-frontend <tag>
 ...
 ```
 
-Or get a specific tag or sha.
-
-```shell
-$ script/upgrade-frontend <tag-or-sha>
-...
-```
+The script only moves the submodule and merges dependencies. Follow
+[the upgrade skill](.agents/skills/upgrading-knx-frontend-submodule/SKILL.md) for choosing the
+tag, porting the mirrored build tooling and the checks before opening a PR.
 
 ### Testing the panel
 

@@ -8,8 +8,10 @@
 # --pins     Only print the home-assistant-frontend pins of HA Core dev, rc and master, to pick
 #            the target tag before the worktree exists. Needs gh.
 # <new-tag>  Upstream release tag, e.g. 20260826.7
-# [old-ref]  Defaults to the submodule commit recorded in upstream/main (or HEAD if there is no
-#            upstream remote), so the report stays correct after the bump is already committed.
+# [old-ref]  Defaults to the submodule commit recorded in <remote>/main of the remote pointing at
+#            XKNX/knx-frontend (whatever its name), so the report stays correct after the bump is
+#            already committed. Without such a remote it falls back to HEAD; pass old-ref
+#            explicitly once the bump is committed.
 #
 # Changes nothing. Requires the tags to be present in the submodule; fetch them first with
 #   git -C homeassistant-frontend fetch --tags origin
@@ -33,7 +35,13 @@ if [ "$NEW" = --pins ]; then
   core_pins
   exit 0
 fi
-base=$(git rev-parse -q --verify upstream/main >/dev/null && echo upstream/main || echo HEAD)
+# The canonical remote may be named upstream, origin or anything else; match it by URL.
+canonical=$(git remote -v |
+  awk '$3 == "(fetch)" && tolower($2) ~ "github.com[:/]xknx/knx-frontend(\\.git)?$" {print $1; exit}')
+base=HEAD
+if [ -n "$canonical" ] && git rev-parse -q --verify "$canonical/main" >/dev/null; then
+  base=$canonical/main
+fi
 OLD=${2:-$(git ls-tree "$base" "$SUB" | awk '{print $3}')}
 
 if [ ! -e "$SUB/.git" ]; then
@@ -52,6 +60,11 @@ if ! [[ $NEW =~ ^[0-9]{8}\.[0-9]+$ ]]; then
 fi
 if ! sub rev-parse -q --verify "refs/tags/$NEW" >/dev/null; then
   echo "BLOCKER: tag $NEW not found. Run: git -C $SUB fetch --tags origin" >&2
+  exit 2
+fi
+if [ -z "${2:-}" ] && [ "$(sub rev-parse "$OLD^{commit}")" = "$(sub rev-parse "$NEW^{commit}")" ]; then
+  echo "BLOCKER: the pointer in $base is already $NEW, so the report would be empty." >&2
+  echo "Pass the pre-bump submodule commit as old-ref." >&2
   exit 2
 fi
 

@@ -27,14 +27,14 @@ Phases: **access check → plan → user approval → execute → optional deliv
   their own answer in Phase 3.
 - Do not edit files inside `homeassistant-frontend/`.
 - Never create, move or push tags, never create releases, never push to `main`, never merge.
-- Do not switch, stash, rebase or reset anyone's branch. Work in a fresh worktree from
-  `upstream/main`; repairing an existing bump branch means redoing the bump there.
+- Do not switch, stash, rebase or reset anyone's branch. Work in a fresh worktree from the
+  canonical `main`; repairing an existing bump branch means redoing the bump there.
 
 ## Phase 0: Access check
 
 Set `SKILL` to the absolute path of this skill's directory in the checkout you are reading it
-from; the worktree created in Phase 1 comes from `upstream/main` and may not contain the skill
-yet. The scripts act on the repository of the current directory, so always call them as
+from; the worktree created in Phase 1 comes from the canonical `main` and may not contain the
+skill yet. The scripts act on the repository of the current directory, so always call them as
 `bash $SKILL/scripts/<name>` from inside the checkout they should inspect.
 
 Run `bash $SKILL/scripts/access.sh` (read-only). It prints `login`, `xknx_write`, `fork`,
@@ -46,8 +46,10 @@ Run `bash $SKILL/scripts/access.sh` (read-only). It prints `login`, `xknx_write`
 - `login=unknown`: `gh` is missing or not logged in. Plan and execute; delivery stays local until
   the user runs `gh auth login` and you re-run the check.
 
-Wherever these steps say `upstream`, use the reported `upstream_remote`; if it is `none`, use
-`https://github.com/XKNX/knx-frontend.git`.
+Phase 1 starts from the canonical `main`, called `START` below. With a reported
+`upstream_remote` (any name, e.g. `upstream` or `origin`): `git fetch <upstream_remote>` and
+`START=<upstream_remote>/main`. With `upstream_remote=none`:
+`git fetch https://github.com/XKNX/knx-frontend.git main` and `START=$(git rev-parse FETCH_HEAD)`.
 
 ## Choosing the target tag
 
@@ -66,14 +68,15 @@ adds the prerelease flag.
 
 ## Phase 1: Plan (no changes to tracked files)
 
-1. `git fetch upstream`, then `git worktree add -b update-upstream-<tag> .worktrees/update-upstream-<tag> upstream/main`
+1. Fetch as described in Phase 0, then `git worktree add -b update-upstream-<tag> .worktrees/update-upstream-<tag> $START`
    (`.worktrees/` is git-ignored and excluded from vitest).
    In it: `git submodule update --init homeassistant-frontend` (non-recursive; a new worktree
    clones the submodule again, so add `--reference $(git rev-parse --git-common-dir)/modules/homeassistant-frontend`
    if that directory exists), `git -C homeassistant-frontend fetch --tags origin`, `nvm use`,
    `yarn install`.
 2. In the worktree: `bash $SKILL/scripts/impact.sh <tag>`. The old ref defaults to the pointer
-   in `upstream/main`.
+   in `main` of the remote pointing at XKNX/knx-frontend. Without one it is `HEAD`, so record
+   `git ls-tree HEAD homeassistant-frontend` now and pass that commit as old ref after the bump.
 3. Record both baselines outside the repo (`BASE=$(mktemp -d)`); the Types and Size gates compare
    against them:
    `yarn gulp gen-icons-json build-translations && yarn lint:types > $BASE/types.txt 2>&1`
@@ -154,7 +157,7 @@ delivery; a gate "not run" (usually smoke) does not, but say so before the push 
 | "Tests pass, so it's ready"               | Tests don't touch the gulp/rspack build. #440 still failed `yarn build`                          |
 | Re-adding a package upstream dropped      | `merge_requirements.js` removes it again on the next update. Port upstream's replacement instead |
 | Ignoring the mirrored `build-scripts/`    | Build breaks or diverges silently (compression, terser targets, polyfills)                       |
-| Fixing a stale bump branch in place       | It may predate earlier adaptations (e.g. #440). Redo the bump from `upstream/main`               |
+| Fixing a stale bump branch in place       | It may predate earlier adaptations (e.g. #440). Redo the bump from the canonical `main`          |
 | Trusting `yarn lint:types` exit code      | It is already red on `main`. Compare against the baseline                                        |
 | Skipping the size check                   | Stubs stop matching after upstream moves files, and the wheel grows                              |
 | Pushing to `XKNX/knx-frontend` by default | Only users with write access who explicitly chose it; everyone else uses their fork              |
