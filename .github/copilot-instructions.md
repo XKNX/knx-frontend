@@ -192,6 +192,7 @@ import { KNXLogger } from "../tools/knx-logger";
 
 - `make update`: Pull latest from upstream main branch
 - `script/upgrade-frontend <tag>`: Upgrade the Home Assistant frontend submodule. Before any submodule update, read and follow `.agents/skills/upgrading-knx-frontend-submodule/SKILL.md` (path from the repository root; this file is also symlinked there as `AGENTS.md`, `CLAUDE.md` and `GEMINI.md`)
+- Dependabot PRs: Before merging, closing or repairing any PR from `app/dependabot`, read and follow `.agents/skills/merging-knx-frontend-dependabot-prs/SKILL.md` (path from the repository root)
 
 ## Key Guidelines
 
