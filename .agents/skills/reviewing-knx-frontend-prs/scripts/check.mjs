@@ -53,7 +53,11 @@ try {
   fail(`cannot resolve ${values.base} and ${values.head} to commits with a common ancestor`);
 }
 
-const files = parseDiff(git.diff(base, head));
+const diffText = git.diff(base, head);
+const files = parseDiff(diffText);
+if (diffText.trim() !== "" && files.length === 0) {
+  fail("could not parse the output of git diff; check diff.* settings in your git config");
+}
 const changed = new Set(files.map((file) => file.path));
 const packageText = git.show(head, "package.json");
 if (packageText === null) fail(`${head.slice(0, 7)} has no package.json; is this knx-frontend?`);
@@ -67,6 +71,15 @@ try {
 
 const findings = [];
 const notRun = [];
+
+if (values.head === "HEAD") {
+  const dirty = git.uncommitted();
+  if (dirty.length > 0) {
+    notRun.push(
+      `${dirty.length} file(s) with uncommitted changes are not checked; commit them and run again`,
+    );
+  }
+}
 
 if (changed.has("package.json") || changed.has("homeassistant-frontend")) {
   let before = new Set();
@@ -84,7 +97,13 @@ if (changed.has("package.json") || changed.has("homeassistant-frontend")) {
 
 const srcEntries = new Set(git.list(head, "src").map((name) => name.replace(/\.(ts|js)$/, "")));
 findings.push(...importFindings(files, knx, core, srcEntries));
-findings.push(...lockFindings(files));
+let basePkg = null;
+try {
+  basePkg = JSON.parse(git.show(base, "package.json") ?? "null");
+} catch {
+  basePkg = null;
+}
+findings.push(...lockFindings(files, basePkg, knx));
 findings.push(
   ...staleOverrideFindings(
     files.find((file) => file.path === "package.json"),

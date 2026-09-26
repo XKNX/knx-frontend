@@ -18,8 +18,29 @@ export const topLevel = () => git("rev-parse", "--show-toplevel").trim();
 export const resolveCommit = (ref) =>
   git("rev-parse", "--verify", "--quiet", `${ref}^{commit}`).trim();
 export const mergeBase = (a, b) => git("merge-base", a, b).trim();
+// Fixed prefixes and unquoted paths, whatever the user's diff.* and core.quotePath settings are:
+// parseDiff relies on "diff --git a/<path> b/<path>" headers.
 export const diff = (base, head) =>
-  git("diff", "--no-color", "--no-ext-diff", "--no-renames", "-U0", base, head, "--");
+  git(
+    "-c",
+    "core.quotePath=false",
+    "diff",
+    "--no-color",
+    "--no-ext-diff",
+    "--no-renames",
+    "--src-prefix=a/",
+    "--dst-prefix=b/",
+    "-U0",
+    base,
+    head,
+    "--",
+  );
+
+// Tracked files with uncommitted changes; check.mjs compares commits and does not see them.
+export const uncommitted = () =>
+  git("status", "--porcelain", "--untracked-files=no", "--ignore-submodules")
+    .split("\n")
+    .filter(Boolean);
 
 export function show(ref, path) {
   try {

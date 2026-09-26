@@ -129,16 +129,21 @@ export function importFindings(files, knx, core, srcEntries) {
   return results;
 }
 
-export function lockFindings(files) {
+// Only a change to what gets installed needs a new lockfile; scripts or metadata do not.
+export function lockFindings(files, basePkg, headPkg) {
   const paths = new Set(files.map((file) => file.path));
   if (!paths.has("package.json") || paths.has("yarn.lock")) return [];
+  const installed = (pkg) =>
+    JSON.stringify(SECTIONS.map(([section]) => Object.entries(pkg?.[section] ?? {}).sort()));
+  if (installed(basePkg) === installed(headPkg)) return [];
   return [
     finding({
       rule: "DEP-lock",
       severity: "should-fix",
       file: "package.json",
       line: null,
-      message: "package.json changed but yarn.lock did not; run yarn install and yarn dedupe.",
+      message:
+        "Dependencies in package.json changed but yarn.lock did not; run yarn install and yarn dedupe.",
     }),
   ];
 }

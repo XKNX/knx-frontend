@@ -129,13 +129,22 @@ test("DEP-import ignores files outside src and build-scripts", () => {
   assert.deepEqual(importFindings(files, knx(), core, new Set()), []);
 });
 
-test("DEP-lock flags package.json without yarn.lock", () => {
+test("DEP-lock flags changed dependency sections without yarn.lock", () => {
   const only = parseDiff("diff --git a/package.json b/package.json\n@@ -1 +1 @@\n+{}\n");
-  assert.equal(lockFindings(only)[0].rule, "DEP-lock");
+  const before = knx();
+  const after = knx({ dependencies: { ...knx().dependencies, typedfastbitset: "0.8.0" } });
+  assert.equal(lockFindings(only, before, after)[0].rule, "DEP-lock");
   const both = parseDiff(
     "diff --git a/package.json b/package.json\n@@ -1 +1 @@\n+{}\ndiff --git a/yarn.lock b/yarn.lock\n@@ -1 +1 @@\n+x\n",
   );
-  assert.deepEqual(lockFindings(both), []);
+  assert.deepEqual(lockFindings(both, before, after), []);
+});
+
+test("DEP-lock ignores package.json changes outside the dependency sections", () => {
+  const only = parseDiff("diff --git a/package.json b/package.json\n@@ -1 +1 @@\n+{}\n");
+  const before = knx({ scripts: { build: "a" } });
+  const after = knx({ scripts: { build: "a", "build:size": "b" } });
+  assert.deepEqual(lockFindings(only, before, after), []);
 });
 
 test("DEP-stale-override flags a touched override that upstream has caught up with", () => {

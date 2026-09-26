@@ -73,6 +73,13 @@ test("hard-coded back paths are flagged", () => {
   );
 });
 
+test("back paths outside the panel are not flagged", () => {
+  assert.deepEqual(
+    rules(added("src/views/dashboard.ts", ['<hass-subpage back-path="/config/connectivity">'])),
+    [],
+  );
+});
+
 test("deleted files and files outside src are ignored", () => {
   assert.deepEqual(rules(added("build-scripts/a.cjs", ['console.log("x");'])), []);
 });

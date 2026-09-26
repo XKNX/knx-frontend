@@ -34,7 +34,8 @@ const RULES = [
   },
   {
     rule: "CODE-backpath",
-    test: (text) => /\.backPath=\$\{\s*["'`]|\bback-path=["']|\bbackPath:\s*["'`]/.test(text),
+    // Only paths inside the panel: navigateInFlow/exitFlow are for flows within /knx.
+    test: (text) => /(?:\.backPath=\$\{\s*|\bback-path=|\bbackPath:\s*)["'`]\/knx\b/.test(text),
     message:
       "Hard-coded back paths grow the history; use navigateInFlow/exitFlow (src/utils/navigation).",
     evidence: ["#299", "#312"],
