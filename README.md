@@ -89,7 +89,9 @@ This repository ships a set of instructions for AI coding agents.
 * For other agents, you can easy symlink the Copilot instructions with:
 
     ```shell
-    yarn agent:claude   # Creates CLAUDE.md
+    yarn agent:claude   # Creates CLAUDE.md and links .claude/skills
     yarn agent:gemini   # Creates GEMINI.md  
     yarn agent:codex    # Creates AGENTS.md
     ```
+
+* Agent skills live in `.agents/skills/`, the cross-tool convention from [agentskills.io](https://agentskills.io), which Codex, Gemini CLI and GitHub Copilot read directly. Claude Code only reads `.claude/skills/`, so `yarn agent:claude` links that directory to `.agents/skills`.

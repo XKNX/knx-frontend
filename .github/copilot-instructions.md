@@ -139,7 +139,7 @@ import { KNXLogger } from "../tools/knx-logger";
   - `bootstrap`: Initialize submodules and install dependencies
   - `build`: Production build script
   - `develop`: Development server with live reload
-  - `upgrade-frontend`: Update Home Assistant frontend submodule
+  - `upgrade-frontend`: Update Home Assistant frontend submodule (follow the skill below)
 - `/homeassistant-frontend`: Submodule (AI agents should not modify directly)
 - `/test`: Test files that AI agents should maintain and extend
 
@@ -191,7 +191,7 @@ import { KNXLogger } from "../tools/knx-logger";
 ### Project Maintenance
 
 - `make update`: Pull latest from upstream main branch
-- `script/upgrade-frontend`: Upgrade Home Assistant frontend to latest version
+- `script/upgrade-frontend <tag>`: Upgrade the Home Assistant frontend submodule. Before any submodule update, read and follow [.agents/skills/upgrading-knx-frontend-submodule/SKILL.md](.agents/skills/upgrading-knx-frontend-submodule/SKILL.md)
 
 ## Key Guidelines
 
