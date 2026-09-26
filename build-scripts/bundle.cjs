@@ -1,5 +1,8 @@
 const { execFileSync } = require("child_process");
+const { createHash } = require("crypto");
+const fs = require("fs");
 const path = require("path");
+const browserslist = require("browserslist");
 const env = require("./env.cjs");
 const paths = require("./paths.cjs");
 const { dependencies } = require("../package.json");
@@ -8,6 +11,33 @@ const BABEL_PLUGINS = path.join(
   paths.root_dir,
   "homeassistant-frontend/build-scripts/babel-plugins",
 );
+
+const hashFiles = (files) => {
+  const hash = createHash("sha256");
+  files.forEach((file) => hash.update(file).update(fs.readFileSync(file)));
+  return hash.digest("hex");
+};
+
+// Identifier that invalidates the babel-loader cache. babel-loader hashes the source and the
+// normalized Babel options, but not what those options point to: the custom Babel plugins, the
+// resolved Browserslist targets and the installed dependency versions (via yarn.lock).
+module.exports.babelCacheIdentifier = ({ latestBuild }) => {
+  const pluginFiles = fs
+    .readdirSync(BABEL_PLUGINS, { recursive: true })
+    .map((file) => path.join(BABEL_PLUGINS, file))
+    .filter((file) => fs.statSync(file).isFile())
+    .sort();
+  return JSON.stringify({
+    core: require("@babel/core/package.json").version,
+    loader: require("babel-loader/package.json").version,
+    browsers: browserslist(undefined, {
+      path: paths.root_dir,
+      env: latestBuild ? "modern" : "legacy",
+    }),
+    plugins: hashFiles(pluginFiles),
+    lockfile: hashFiles([path.join(paths.root_dir, "yarn.lock")]),
+  });
+};
 
 // GitHub base URL for production source maps of this repo's own `src/`.
 // Release builds write the tag into VERSION (see .github/workflows/ReleaseActions.yml),

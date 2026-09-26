@@ -30,6 +30,13 @@ class LogStartCompilePlugin {
   }
 }
 
+// Directory of the babel-loader cache. Defaults to babel-loader's own location under
+// node_modules/.cache. Set BABEL_CACHE_DIR to use another directory or to "false" to disable it.
+const babelCacheDirectory = () => {
+  const dir = process.env.BABEL_CACHE_DIR;
+  return dir === "false" ? false : dir || true;
+};
+
 const createRspackConfig = ({
   entry,
   outputPath,
@@ -44,6 +51,7 @@ const createRspackConfig = ({
     dontHash = new Set();
   }
   const ignorePackages = bundle.ignorePackages({ latestBuild });
+  const babelCacheIdentifier = bundle.babelCacheIdentifier({ latestBuild });
   const litHtmlRoot = path.resolve(__dirname, "../node_modules/lit-html");
   const litHtmlDevelopmentRoot = path.join(litHtmlRoot, "development");
   const litDisableDevModeLoader = path.join(__dirname, "lit-disable-dev-mode-loader.cjs");
@@ -69,7 +77,8 @@ const createRspackConfig = ({
                 loader: "babel-loader",
                 options: {
                   ...bundle.babelOptions({ latestBuild, sw: info.issuerLayer === "sw" }),
-                  cacheDirectory: !isProdBuild,
+                  cacheDirectory: babelCacheDirectory(),
+                  cacheIdentifier: babelCacheIdentifier,
                   cacheCompression: false,
                 },
               },
