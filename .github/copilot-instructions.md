@@ -191,7 +191,7 @@ import { KNXLogger } from "../tools/knx-logger";
 ### Project Maintenance
 
 - `make update`: Pull latest from upstream main branch
-- `script/upgrade-frontend <tag>`: Upgrade the Home Assistant frontend submodule. Before any submodule update, read and follow [.agents/skills/upgrading-knx-frontend-submodule/SKILL.md](.agents/skills/upgrading-knx-frontend-submodule/SKILL.md)
+- `script/upgrade-frontend <tag>`: Upgrade the Home Assistant frontend submodule. Before any submodule update, read and follow `.agents/skills/upgrading-knx-frontend-submodule/SKILL.md` (path from the repository root; this file is also symlinked there as `AGENTS.md`, `CLAUDE.md` and `GEMINI.md`)
 
 ## Key Guidelines
 
