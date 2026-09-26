@@ -40,6 +40,8 @@ downloads/
 eggs/
 .eggs/
 lib/
+# Agent skill scripts, not a Python build directory
+!.agents/skills/*/scripts/lib/
 lib64/
 parts/
 sdist/
