@@ -49,8 +49,13 @@ introduces or worsens it.
 ## iframe panel
 
 - The panel runs in an iframe inside the host HA (`embed_iframe=True`). Reach the main window only
-  through `mainWindow` or `window.parent.customPanel`; a plain same-origin `<a href>` already
-  navigates the main window. From #457, #466.
+  through `mainWindow` or `window.parent.customPanel`. From #457.
+- Links need no click handler: `homeassistant-frontend/src/entrypoints/custom-panel.ts` listens for
+  navigation clicks on the iframe's body (via `composedPath()`, so inside shadow DOM too) and
+  routes them through the main window's `navigate()`. A plain same-origin `<a href>` is enough.
+  Flag new `navigate()` click handlers on anchors as unnecessary. The existing `_linkClicked`
+  handlers in `src/components/data-table/knx-data-table-*-label.ts` and their "avoids iframe
+  double-menu" comment are a mistake to not copy, not a precedent. From #466.
 - WebSocket results come from another realm: clone them before `deepEqual` or dirty-state
   baselines. From #427.
 - A shared subscription does not necessarily emit on subscribe; do not rely on it for the first
