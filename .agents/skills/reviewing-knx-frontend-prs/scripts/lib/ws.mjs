@@ -9,15 +9,13 @@ const isSource = (file) =>
   file.status !== "deleted" && /^src\/.+\.ts$/.test(file.path) && !file.path.endsWith(".test.ts");
 
 export function addedCommands(files) {
-  return files
-    .filter(isSource)
-    .flatMap((file) =>
-      matchAdded(file, TYPE).map(({ match, line }) => ({
-        file: file.path,
-        line,
-        command: match[1],
-      })),
-    );
+  return files.filter(isSource).flatMap((file) =>
+    matchAdded(file, TYPE).map(({ match, line }) => ({
+      file: file.path,
+      line,
+      command: match[1],
+    })),
+  );
 }
 
 export function wsFindings(files, coreText) {
