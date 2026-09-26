@@ -49,6 +49,13 @@ merged once their checks pass. Follow
 [the Dependabot skill](.agents/skills/merging-knx-frontend-dependabot-prs/SKILL.md) to triage and
 merge them.
 
+### Reviewing pull requests
+
+Before opening a PR, or when reviewing someone else's, follow
+[the review skill](.agents/skills/reviewing-knx-frontend-prs/SKILL.md). It checks the rules
+maintainers keep asking for: dependency overrides, localization, the HA Core contract and the
+iframe panel.
+
 ### Testing the panel
 
 First of all we recommend to follow the instructions for

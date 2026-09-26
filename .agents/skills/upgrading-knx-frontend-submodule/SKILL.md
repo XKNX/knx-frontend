@@ -99,6 +99,7 @@ adds the prerelease flag.
 | Referenced paths MISSING                      | Fix `stubs.cjs` or the build config. A stale stub matches nothing, silently                                                                                                                                                                 |
 | `@ha/*` REMOVED                               | Blocker. Migrate to the replacement before building                                                                                                                                                                                         |
 | `@ha/*` changed                               | Read the diff and adjust KNX call sites                                                                                                                                                                                                     |
+| HA agent skills changed                       | Update `.agents/skills/reviewing-knx-frontend-prs/ha-skills.md` when skills were added, renamed or removed                                                                                                                                  |
 
 ## Phase 2: Execute (after approval)
 

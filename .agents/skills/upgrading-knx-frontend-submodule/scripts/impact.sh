@@ -173,6 +173,8 @@ grep -rhoE '"@ha/[^"]+"' src test 2>/dev/null | tr -d '"' | sed 's#^@ha/##' | so
       fi
     done
   done
+section "HA agent skills changed upstream (update reviewing-knx-frontend-prs/ha-skills.md)"
+sub diff --name-status "$OLD" "$NEW" -- .agents/skills | sed 's/^/    /' | grep . || echo "none"
 echo
 echo "Total upstream: $(sub diff --shortstat "$OLD" "$NEW")"
 echo "Direct imports catch renames; type/behavior changes further down only show up in tsc, tests and the smoke test."
