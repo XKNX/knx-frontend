@@ -41,6 +41,14 @@ The script only moves the submodule and merges dependencies. Follow
 [the upgrade skill](.agents/skills/upgrading-knx-frontend-submodule/SKILL.md) for choosing the
 tag, porting the mirrored build tooling and the checks before opening a PR.
 
+### Dependabot pull requests
+
+Dependabot opens PRs for GitHub Actions and for npm security updates. Bumps of direct dependencies
+are closed rather than merged, because `package.json` follows the submodule; lock-only bumps are
+merged once their checks pass. Follow
+[the Dependabot skill](.agents/skills/merging-knx-frontend-dependabot-prs/SKILL.md) to triage and
+merge them.
+
 ### Testing the panel
 
 First of all we recommend to follow the instructions for
