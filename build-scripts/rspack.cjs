@@ -51,6 +51,7 @@ const createRspackConfig = ({
     dontHash = new Set();
   }
   const ignorePackages = bundle.ignorePackages({ latestBuild });
+  const babelCacheIdentifier = bundle.babelCacheIdentifier({ latestBuild });
   const litHtmlRoot = path.resolve(__dirname, "../node_modules/lit-html");
   const litHtmlDevelopmentRoot = path.join(litHtmlRoot, "development");
   const litDisableDevModeLoader = path.join(__dirname, "lit-disable-dev-mode-loader.cjs");
@@ -77,6 +78,7 @@ const createRspackConfig = ({
                 options: {
                   ...bundle.babelOptions({ latestBuild, sw: info.issuerLayer === "sw" }),
                   cacheDirectory: babelCacheDirectory(),
+                  cacheIdentifier: babelCacheIdentifier,
                   cacheCompression: false,
                 },
               },
