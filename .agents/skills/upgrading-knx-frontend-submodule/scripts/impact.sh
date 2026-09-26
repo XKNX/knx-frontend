@@ -69,10 +69,12 @@ if [ -z "${2:-}" ] && [ "$(sub rev-parse "$OLD^{commit}")" = "$(sub rev-parse "$
 fi
 
 old_tag=$(sub describe --tags --exact-match "$OLD" 2>/dev/null || echo "NOT A TAG: $(sub describe --tags --match '20[0-9]*' "$OLD" 2>/dev/null || echo "$OLD")")
+# Compare against the exact tag when there is one, otherwise against the full commit SHA.
+old_compare=$(sub describe --tags --exact-match "$OLD" 2>/dev/null || sub rev-parse "$OLD^{commit}")
 echo "# homeassistant-frontend upgrade impact"
 echo "old: ${OLD:0:10} ($old_tag)"
 echo "new: $(sub rev-parse --short=10 "$NEW^{commit}") ($NEW)"
-echo "upstream diff: https://github.com/home-assistant/frontend/compare/${old_tag%% *}...$NEW"
+echo "upstream diff: https://github.com/home-assistant/frontend/compare/$old_compare...$NEW"
 if ! sub merge-base --is-ancestor "$OLD" "$NEW"; then
   echo "WARNING: old is not an ancestor of $NEW (downgrade or parallel release line)."
 fi
