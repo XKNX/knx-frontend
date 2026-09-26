@@ -1,0 +1,15 @@
+{
+  "name": "knx-frontend",
+  "dependenciesOverride": {
+    "@scope/runtime-lib": "1.0.0"
+  },
+  "devDependenciesOverride": {},
+  "resolutionsOverride": {},
+  "dependencies": {
+    "@scope/runtime-lib": "1.0.0"
+  },
+  "devDependencies": {
+    "alias-name": "npm:real-name@4.0.0",
+    "dev-tool": "2.0.0"
+  }
+}
