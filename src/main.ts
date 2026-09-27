@@ -1,3 +1,4 @@
+import { ContextProvider } from "@lit/context";
 import type { LitElement, PropertyValues } from "lit";
 import { css, html } from "lit";
 import { customElement, property, state } from "lit/decorators";
@@ -9,6 +10,7 @@ import { mainWindow } from "@ha/common/dom/get_main_window";
 import { listenMediaQuery } from "@ha/common/dom/media_query";
 import { computeRTL, computeDirectionStyles } from "@ha/common/util/compute_rtl";
 import { navigate } from "@ha/common/navigate";
+import { narrowViewportContext } from "@ha/data/context";
 import { makeDialogManager } from "@ha/dialogs/make-dialog-manager";
 import "@ha/layouts/hass-loading-screen";
 import "@ha/resources/append-ha-style";
@@ -36,11 +38,21 @@ class KnxFrontend extends contextMixin(KnxElement) {
 
   @property({ attribute: false }) public knx!: KNX;
 
-  @property({ attribute: false }) public narrow!: boolean;
+  /** Host panel viewport flag, mirrored into the iframe's HA context for tab/header layout. */
+  @property({ attribute: false }) public narrow = false;
 
   @property({ attribute: false }) public route!: Route;
 
   @state() private _translationsLoaded = false;
+
+  /**
+   * Provides HA's viewport context inside the iframe, which outer context events cannot cross.
+   * `knx-tabs-subpage-data`'s HA subpage consumes this independently of the view's own `narrow` property.
+   */
+  private _narrowViewportProvider = new ContextProvider(this, {
+    context: narrowViewportContext,
+    initialValue: this.narrow,
+  });
 
   protected async firstUpdated(_changedProps: PropertyValues<this>) {
     if (!this.hass) {
@@ -118,7 +130,11 @@ class KnxFrontend extends contextMixin(KnxElement) {
     clearBrandsTokenRefresh();
   }
 
+  /** Publishes changed host values to descendant HA contexts before rendering the KNX page. */
   protected willUpdate(changedProperties: PropertyValues<this>) {
+    if (changedProperties.has("narrow")) {
+      this._narrowViewportProvider.setValue(this.narrow);
+    }
     if (changedProperties.has("hass")) {
       // update context providers when hass changes
       this._updateHass(this.hass);
