@@ -108,8 +108,8 @@ jobs:
       - name: Setup Node and Dependencies
         uses: ./.github/actions/setup
 
-      # Restores the newest cache for the current yarn.lock. Only runs on main save a cache, each
-      # under a new key (yarn.lock hash + commit SHA).
+      # Restores the newest cache for the current yarn.lock. Only runs on `main` save the cache,
+      # each under a new key (yarn.lock hash + commit SHA).
       - name: Restore babel-loader cache
         id: babel-cache
         uses: actions/cache/restore@v5
