@@ -2,9 +2,6 @@ import {
   mdiPlus,
   mdiMathLog,
   mdiRobot,
-  mdiClose,
-  mdiFilterVariant,
-  mdiFilterVariantRemove,
   mdiNetworkOutline,
   mdiTableLarge,
   mdiUnfoldLessHorizontal,
@@ -18,20 +15,15 @@ import { consume } from "@lit/context";
 import memoize from "memoize-one";
 
 import { storage } from "@ha/common/decorators/storage";
-import type { HASSDomEvent } from "@ha/common/dom/fire_event";
+import type { HASSDomCurrentTargetEvent, HASSDomEvent } from "@ha/common/dom/fire_event";
 import { navigate } from "@ha/common/navigate";
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-tabs-subpage";
 import "@ha/layouts/hass-tabs-subpage-data-table";
 import "@ha/components/ha-alert";
-import "@ha/components/ha-button";
 import "@ha/components/ha-button-toggle-group";
-import "@ha/components/ha-dialog";
-import "@ha/components/ha-dialog-footer";
 import "@ha/components/ha-icon-button";
 import "@ha/components/ha-icon-overflow-menu";
-import "@ha/components/ha-svg-icon";
-import "@ha/components/chips/ha-assist-chip";
 import "@ha/components/input/ha-input-search";
 import type { HaInputSearch } from "@ha/components/input/ha-input-search";
 import type {
@@ -43,6 +35,7 @@ import { relativeTime } from "@ha/common/datetime/relative_time";
 
 import "../components/knx-project-tree-view";
 import "../components/knx-project-devices-view";
+import "../layouts/knx-tabs-subpage-data";
 import "../components/data-table/knx-data-table-related-label";
 import "../components/data-table/filter/knx-list-filter";
 
@@ -579,14 +572,14 @@ export class KNXProjectView extends LitElement {
     ).length;
   }
 
-  private _toggleDevicesFilters(): void {
-    this._devicesShowFilters = !this._devicesShowFilters;
+  /** Keeps the page's filter visibility in sync with the shared shell across rerenders. */
+  private _devicesShowFiltersChanged(
+    ev: HASSDomEvent<HASSDomEvents["show-filters-changed"]>,
+  ): void {
+    this._devicesShowFilters = ev.detail.value;
   }
 
-  private _closeDevicesFilters(): void {
-    this._devicesShowFilters = false;
-  }
-
+  /** Resets domain filters while retaining search text and the open filter pane. */
   private _clearDevicesFilters(): void {
     this._devicesFilterDpt = [];
     this._devicesFilterLocation = [];
@@ -687,8 +680,9 @@ export class KNXProjectView extends LitElement {
       ).length,
   );
 
-  private _devicesSearchChanged(ev: Event): void {
-    this._devicesSearchText = (ev.target as HaInputSearch).value ?? "";
+  /** Stores input from the search control, wherever the shell places it. */
+  private _devicesSearchChanged(ev: HASSDomCurrentTargetEvent<HaInputSearch>): void {
+    this._devicesSearchText = ev.currentTarget.value ?? "";
   }
 
   private _devicesExpandAll(): void {
@@ -699,38 +693,26 @@ export class KNXProjectView extends LitElement {
     this._devicesView?.collapseAll();
   }
 
+  /** Supplies a single search control for the wide toolbar and narrow page header. */
   private _renderDevicesSearch(): TemplateResult {
     return html`<ha-input-search
+      slot="toolbar-search"
       appearance="outlined"
+      .placeholder=${this.hass.localize("ui.components.data-table.search")}
       .value=${this._devicesSearchText}
       @input=${this._devicesSearchChanged}
     ></ha-input-search>`;
   }
 
-  private _renderDevicesToolbar(
-    projectData: KNXProject,
-    activeFilterCount: number,
-  ): TemplateResult {
+  /** Supplies result information and tree actions; filter controls belong to the shared shell. */
+  private _renderDevicesActions(projectData: KNXProject): TemplateResult {
     const filterActive = hasDeviceTreeFilterActive({
       searchText: this._devicesSearchText,
       dpt: this._devicesFilterDpt,
       location: this._devicesFilterLocation,
       line: this._devicesFilterLine,
     });
-    const filterButton = !(this._devicesShowFilters && !this.narrow)
-      ? html`<div class="relative">
-          <ha-assist-chip
-            .label=${this.hass.localize("ui.components.subpage-data-table.filters")}
-            .active=${activeFilterCount > 0}
-            @click=${this._toggleDevicesFilters}
-          >
-            <ha-svg-icon slot="icon" .path=${mdiFilterVariant}></ha-svg-icon>
-          </ha-assist-chip>
-          ${activeFilterCount ? html`<div class="badge">${activeFilterCount}</div>` : nothing}
-        </div>`
-      : nothing;
-    return html`<div class="devices-toolbar">
-      ${filterButton} ${!this.narrow ? this._renderDevicesSearch() : nothing}
+    return html`<div slot="toolbar-trailing" class="devices-actions">
       ${
         filterActive
           ? html`<span class="result-count">
@@ -761,102 +743,48 @@ export class KNXProjectView extends LitElement {
     </div>`;
   }
 
+  /** Uses `knx-tabs-subpage-data` for layout while this page retains device data, filters and tree state. */
   private _renderDevices(projectData: KNXProject): TemplateResult {
-    const activeFilterCount = this._devicesActiveFilterCount;
-    const showPane = this._devicesShowFilters && !this.narrow;
     const exposesByGA = this._exposeGroupsCtx?.groups
       ? createExposesByGroupAddressMap(this._exposeGroupsCtx.groups)
       : null;
-    return html`<hass-tabs-subpage
+    return html`<knx-tabs-subpage-data
+      .hass=${this.hass}
+      .narrow=${this.narrow}
+      .route=${this.route}
+      .tabs=${[projectTab]}
+      .hasFilters=${true}
+      .activeFilterCount=${this._devicesActiveFilterCount}
+      .showFilters=${this._devicesShowFilters}
+      .resultCount=${this._devicesFilteredCount(
+        projectData,
+        this._devicesSearchText,
+        this._devicesFilterDpt,
+        this._devicesFilterLocation,
+        this._devicesFilterLine,
+      )}
+      @show-filters-changed=${this._devicesShowFiltersChanged}
+      @clear-filter=${this._clearDevicesFilters}
+    >
+      ${this._renderViewToggle()} ${this._renderDevicesSearch()}
+      ${this._renderDevicesActions(projectData)}
+      <div slot="filter-pane">${this._renderDevicesFilters(projectData)}</div>
+      <knx-project-devices-view
         .hass=${this.hass}
+        .knx=${this.knx}
+        .data=${projectData}
+        .lastTelegrams=${this._lastTelegrams}
         .narrow=${this.narrow}
-        .route=${this.route}
-        .tabs=${[projectTab]}
-        .pane=${showPane}
-      >
-        ${this._renderViewToggle()}
-        ${
-          this.narrow
-            ? html`<div slot="header" class="search-toolbar">${this._renderDevicesSearch()}</div>`
-            : nothing
-        }
-        ${
-          showPane
-            ? html`<div class="filter-pane" slot="pane">
-                <div class="filter-pane-header">
-                  <ha-assist-chip
-                    .label=${this.hass.localize("ui.components.subpage-data-table.filters")}
-                    active
-                    @click=${this._toggleDevicesFilters}
-                  >
-                    <ha-svg-icon slot="icon" .path=${mdiFilterVariant}></ha-svg-icon>
-                  </ha-assist-chip>
-                  ${
-                    activeFilterCount
-                      ? html`<ha-icon-button
-                          .path=${mdiFilterVariantRemove}
-                          .label=${this.hass.localize("ui.components.subpage-data-table.clear_filter")}
-                          @click=${this._clearDevicesFilters}
-                        ></ha-icon-button>`
-                      : nothing
-                  }
-                </div>
-                <div class="filter-pane-content">${this._renderDevicesFilters(projectData)}</div>
-              </div>`
-            : nothing
-        }
-        <div class="devices-layout">
-          ${this._renderDevicesToolbar(projectData, activeFilterCount)}
-          <knx-project-devices-view
-            .hass=${this.hass}
-            .knx=${this.knx}
-            .data=${projectData}
-            .lastTelegrams=${this._lastTelegrams}
-            .narrow=${this.narrow}
-            .searchText=${this._devicesSearchText}
-            .filterDpt=${this._devicesFilterDpt}
-            .filterLocation=${this._devicesFilterLocation}
-            .filterLine=${this._devicesFilterLine}
-            .locationByDevice=${this._locationByDevice(projectData.locations ?? null)}
-            .lineByDevice=${this._lineByDevice(projectData)}
-            .entitiesByGroup=${this._entitiesByGroupCtx?.groups ?? null}
-            .exposesByGA=${exposesByGA}
-          ></knx-project-devices-view>
-        </div>
-      </hass-tabs-subpage>
-      ${
-        this._devicesShowFilters && this.narrow
-          ? html`<ha-dialog
-              .open=${true}
-              width="full"
-              header-title=${this.hass.localize("ui.components.subpage-data-table.filters")}
-              @closed=${this._closeDevicesFilters}
-            >
-              <ha-icon-button
-                slot="headerNavigationIcon"
-                .path=${mdiClose}
-                .label=${this.hass.localize("ui.components.subpage-data-table.close_filter")}
-                @click=${this._closeDevicesFilters}
-              ></ha-icon-button>
-              ${
-                activeFilterCount
-                  ? html`<ha-icon-button
-                      slot="headerActionItems"
-                      .path=${mdiFilterVariantRemove}
-                      .label=${this.hass.localize("ui.components.subpage-data-table.clear_filter")}
-                      @click=${this._clearDevicesFilters}
-                    ></ha-icon-button>`
-                  : nothing
-              }
-              <div class="filter-dialog-content">${this._renderDevicesFilters(projectData)}</div>
-              <ha-dialog-footer slot="footer">
-                <ha-button slot="primaryAction" @click=${this._closeDevicesFilters}>
-                  ${this.hass.localize("ui.common.close")}
-                </ha-button>
-              </ha-dialog-footer>
-            </ha-dialog>`
-          : nothing
-      }`;
+        .searchText=${this._devicesSearchText}
+        .filterDpt=${this._devicesFilterDpt}
+        .filterLocation=${this._devicesFilterLocation}
+        .filterLine=${this._devicesFilterLine}
+        .locationByDevice=${this._locationByDevice(projectData.locations ?? null)}
+        .lineByDevice=${this._lineByDevice(projectData)}
+        .entitiesByGroup=${this._entitiesByGroupCtx?.groups ?? null}
+        .exposesByGA=${exposesByGA}
+      ></knx-project-devices-view>
+    </knx-tabs-subpage-data>`;
   }
 
   private _handleColumnsChanged(
@@ -876,67 +804,32 @@ export class KNXProjectView extends LitElement {
       --app-header-text-color: var(--sidebar-text-color);
     }
 
-    .devices-layout {
-      display: flex;
-      flex-direction: column;
-      height: calc(
-        100vh -
-          1px - var(--header-height, 0px) - var(--safe-area-inset-top, 0px) - var(
-            --safe-area-inset-bottom,
-            0px
-          )
-      );
+    :host {
+      display: block;
+      height: 100%;
     }
 
-    .devices-layout > knx-project-devices-view {
-      flex: 1;
-      min-height: 0;
+    knx-project-devices-view {
+      height: 100%;
       overflow-y: auto;
-      /* establish a stacking context so the sticky device headers (z-index: 2)
-         stay contained here; otherwise an ancestor paints them above this
-         scroller and they hide the overlay scrollbar, which has no layout
-         width of its own and floats over the cards' right edge */
+      /* Contain sticky device headers so they do not cover the overlay scrollbar. */
       isolation: isolate;
     }
 
-    /* mirrors the .table-header of hass-tabs-subpage-data-table */
-    .devices-toolbar {
-      flex: 0 0 auto;
+    /* Expanded list filters divide the available pane/dialog height as flex children. */
+    [slot="filter-pane"] {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .devices-actions {
       display: flex;
       align-items: center;
-      height: 56px;
-      width: 100%;
-      padding: 0 16px;
       gap: var(--ha-space-4, 16px);
-      box-sizing: border-box;
-      background: var(--primary-background-color);
-      border-bottom: 1px solid var(--divider-color);
-    }
-
-    .devices-toolbar ha-input-search {
-      flex: 1;
-    }
-
-    @media (min-width: 871px) {
-      .devices-toolbar ha-input-search {
-        --ha-input-search-height: 32px;
-        --ha-input-search-border-radius: 10px;
-      }
-    }
-
-    ha-assist-chip {
-      --ha-assist-chip-container-shape: 10px;
-      --ha-assist-chip-container-color: var(--card-background-color);
-    }
-
-    .devices-toolbar ha-icon-button {
+      white-space: nowrap;
       color: var(--secondary-text-color);
-    }
-
-    :host([narrow]) hass-tabs-subpage {
-      /* same as hass-tabs-subpage-data-table so the search field
-         doesn't jump when switching between the two view modes */
-      --main-title-margin: 0;
     }
 
     :host([narrow]) ha-button-toggle-group {
@@ -944,83 +837,10 @@ export class KNXProjectView extends LitElement {
       margin-inline-start: 4px;
     }
 
-    .search-toolbar {
-      display: flex;
-      align-items: center;
-      flex: 1;
-      min-width: 0;
-      color: var(--secondary-text-color);
-    }
-
-    .search-toolbar ha-input-search {
-      flex: 1;
-      min-width: 0;
-    }
-
     .result-count {
       flex: 0 0 auto;
       font-size: 0.85rem;
       color: var(--secondary-text-color);
-    }
-
-    .relative {
-      position: relative;
-    }
-
-    .badge {
-      position: absolute;
-      top: -4px;
-      right: -4px;
-      inset-inline-end: -4px;
-      inset-inline-start: initial;
-      min-width: 16px;
-      box-sizing: border-box;
-      border-radius: var(--ha-border-radius-circle, 50%);
-      font-size: var(--ha-font-size-xs, 11px);
-      font-weight: var(--ha-font-weight-normal, 400);
-      background-color: var(--primary-color);
-      line-height: var(--ha-line-height-normal, 1.4);
-      text-align: center;
-      padding: 0 2px;
-      color: var(--text-primary-color);
-      pointer-events: none;
-    }
-
-    .filter-pane {
-      display: flex;
-      flex-direction: column;
-      height: calc(
-        100vh -
-          1px - var(--header-height, 0px) - var(--safe-area-inset-top, 0px) - var(
-            --safe-area-inset-bottom,
-            0px
-          )
-      );
-    }
-
-    .filter-pane-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-sizing: border-box;
-      height: var(--header-height, 56px);
-      flex: 0 0 auto;
-      padding: 0 12px;
-      border-bottom: 1px solid var(--divider-color);
-    }
-
-    .filter-pane-content {
-      flex: 1;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-      overflow-y: auto;
-    }
-
-    .filter-dialog-content {
-      height: calc(100vh - 1px - 61px - var(--header-height, 0px));
-      display: flex;
-      flex-direction: column;
     }
   `;
 }
