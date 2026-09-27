@@ -393,3 +393,23 @@ test(
     assert.doesNotMatch(yarn.fix ?? "", /corepack/);
   }),
 );
+
+test(
+  "without --ha-config the start command asks for an own config directory",
+  withFixture({}, (fixture) => {
+    makeHealthy(fixture);
+    const start = run(fixture, ["--ha-python", fixture.python, "--json"], { STUB_PY: "checkout" })
+      .json.start;
+    assert.match(start, /\/hass -c <your own config dir>/);
+    const config = join(fixture.root, "ha-config");
+    mkdirSync(config);
+    const withConfig = run(
+      fixture,
+      ["--ha-python", fixture.python, "--ha-config", config, "--json"],
+      {
+        STUB_PY: "checkout",
+      },
+    ).json.start;
+    assert.match(withConfig, new RegExp(`/hass -c ${config}`));
+  }),
+);

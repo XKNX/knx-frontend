@@ -96,7 +96,9 @@ never stop the process holding port $port"
 start_command() {
   local hass
   hass="$(dirname "$HA_PYTHON")/hass"
-  printf 'PYTHONPATH=%s AIOHTTP_NOSENDFILE=1 %s%s\n' "$TOP" "$hass" "${HA_CONFIG:+ -c $HA_CONFIG}"
+  # Always name a config directory: without -c, hass uses ~/.homeassistant, which a running
+  # instance may already use, and two processes must never share one.
+  printf 'PYTHONPATH=%s AIOHTTP_NOSENDFILE=1 %s -c %s\n' "$TOP" "$hass" "${HA_CONFIG:-<your own config dir>}"
   printf 'open http://<host>:%s/knx\n' "${HA_PORT:-8123}"
   printf '%s\n' "PYTHONPATH makes Home Assistant import this checkout's knx_frontend instead of the PyPI one;"
   printf '%s' "AIOHTTP_NOSENDFILE=1 was needed on macOS to reach the instance from other devices."
