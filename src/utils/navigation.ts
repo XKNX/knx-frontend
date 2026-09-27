@@ -1,6 +1,8 @@
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { navigate, updateHistoryState } from "@ha/common/navigate";
 
+import { BASE_URL } from "../knx-router";
+
 /**
  * Navigation helpers for sub-page flows - eg. creating or editing an entity.
  *
@@ -34,7 +36,7 @@ const _historyChanged = (): Promise<void> =>
 const _dialogHistorySettled = (): Promise<void> =>
   mainWindow.history.state?.dialog ? _historyChanged() : Promise.resolve();
 
-const ERROR_PATH = "/knx/error";
+const ERROR_PATH = `${BASE_URL}/error`;
 
 /**
  * Show the error page, replacing the current history entry. The page where
