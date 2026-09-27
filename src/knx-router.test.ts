@@ -10,6 +10,9 @@ vi.mock("@ha/common/navigate", () => ({ navigate: vi.fn(() => Promise.resolve(tr
 const routerAt = (tag: string, prefix: string, path: string) => {
   const router = document.createElement(tag) as KnxRouter;
   router.route = { prefix, path };
+  router.hass = {
+    localize: (key: string) => (key === "panel.notfound" ? "Page not found" : ""),
+  } as any;
   return router;
 };
 
@@ -63,6 +66,17 @@ describe("KnxRouter", () => {
     } finally {
       window.history.replaceState(null, "", "/");
     }
+  });
+
+  it.each([
+    ["knx-not-found", "Page not found - KNX - Home Assistant"],
+    ["knx-error", "KNX - Home Assistant"],
+  ])("replaces the previous page's tab title for %s", (tag, title) => {
+    document.title = "Entities - KNX - Home Assistant";
+    const router = routerAt("knx-router", "/knx", "/foo");
+    (router as any).updatePageEl(document.createElement(tag), undefined);
+
+    expect(document.title).toBe(title);
   });
 
   it("keeps the requested path through the redirect to not_found", () => {

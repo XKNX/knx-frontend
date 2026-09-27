@@ -196,6 +196,21 @@ export class KnxRouter extends HassRouterPage {
     return "not_found";
   }
 
+  /**
+   * Tab title of a full-page status view - empty for the plain panel title,
+   * `undefined` for any other page.
+   */
+  private _statusPageTitle(tag: string): string | undefined {
+    switch (tag) {
+      case "knx-not-found":
+        return this.hass.localize("panel.notfound");
+      case "knx-error":
+        return "";
+      default:
+        return undefined;
+    }
+  }
+
   protected updatePageEl(el, changedProps) {
     // skip title setting when sub-router is called - it will set the title itself when calling this method
     // changedProps is undefined when the element was just loaded
@@ -203,8 +218,11 @@ export class KnxRouter extends HassRouterPage {
       const pageNavigation = knxMainTabs(true).find((page) => page.path === this.routeTail.prefix);
       // sub-routers will not have a matching pageNavigation
       // but the parent router will and title will stay at the set value of parent router
-      if (pageNavigation) {
-        const title = this.hass.localize(pageNavigation.translationKey);
+      // status pages have no tab - they must not keep the title of the previous page
+      const title = pageNavigation
+        ? this.hass.localize(pageNavigation.translationKey)
+        : this._statusPageTitle(el.localName);
+      if (title !== undefined) {
         mainWindow.document.title = !title
           ? "KNX - Home Assistant"
           : `${title} - KNX - Home Assistant`;
