@@ -13,6 +13,7 @@ set -o pipefail
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 . "$HERE/lib/report.sh"
 . "$HERE/lib/repo.sh"
+. "$HERE/lib/toolchain.sh"
 
 die() {
   printf 'doctor: %s\n' "$1" >&2
@@ -49,6 +50,14 @@ check_upstream
 check_fork
 check_submodule
 check_submodule_release
+check_nvm
+check_node
+check_yarn
+check_deps
+check_hooks
+check_agents
+check_build
+check_types_inputs
 # --- end checks ---
 
 START=""

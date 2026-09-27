@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { cleanup, git, makeFixture, run, runIn } from "./helpers.mjs";
+import { cleanup, git, makeFixture, makeHealthy, run, runIn } from "./helpers.mjs";
 
 const withFixture = (options, fn) => async () => {
   const fixture = makeFixture(options);
@@ -189,5 +189,96 @@ test(
     assert.equal(release.status, "info");
     assert.match(release.message, /checked out 20260826\.4/);
     assert.match(release.message, /not checked \(gh unavailable or offline\)/);
+  }),
+);
+
+test(
+  "node 26 in this shell fails with nvm use as the fix",
+  withFixture({}, (fixture) => {
+    const node = run(fixture, ["--json"], { STUB_NODE: "26.1.0" }).check("node");
+    assert.equal(node.status, "fail");
+    assert.match(node.message, /node 26\.1\.0 is active, \.nvmrc wants 24\.19\.0/);
+    assert.match(node.fix, /nvm use/);
+  }),
+);
+
+test(
+  "the .nvmrc version missing in nvm warns with nvm install, asking first",
+  withFixture({}, (fixture) => {
+    rmSync(join(fixture.nvm, "versions"), { recursive: true, force: true });
+    const nvm = run(fixture, ["--json"]).check("nvm");
+    assert.equal(nvm.status, "warn");
+    assert.match(nvm.fix, /nvm install/);
+    assert.match(nvm.fix, /ask the user first/);
+  }),
+);
+
+test(
+  "nvm missing warns",
+  withFixture({}, (fixture) => {
+    const empty = mkdtempSync(join(tmpdir(), "doctor-nvm-"));
+    try {
+      const nvm = run(fixture, ["--json"], { NVM_DIR: empty }).check("nvm");
+      assert.equal(nvm.status, "warn");
+      assert.match(nvm.message, /nvm not found/);
+    } finally {
+      rmSync(empty, { recursive: true, force: true });
+    }
+  }),
+);
+
+test(
+  "a yarn version other than packageManager fails",
+  withFixture({}, (fixture) => {
+    const yarn = run(fixture, ["--json"], { STUB_YARN: "1.22.22" }).check("yarn");
+    assert.equal(yarn.status, "fail");
+    assert.match(yarn.message, /yarn 1\.22\.22, package\.json wants 4\.18\.0/);
+  }),
+);
+
+test(
+  "yarn is not checked without the submodule",
+  withFixture({ initSubmodule: false }, (fixture) => {
+    const yarn = run(fixture, ["--json"]).check("yarn");
+    assert.equal(yarn.status, "fail");
+    assert.match(yarn.message, /submodule/);
+  }),
+);
+
+test(
+  "node_modules older than yarn.lock fails",
+  withFixture({}, (fixture) => {
+    makeHealthy(fixture);
+    const later = new Date(Date.now() + 120_000);
+    utimesSync(join(fixture.repo, "yarn.lock"), later, later);
+    const deps = run(fixture, ["--json"]).check("deps");
+    assert.equal(deps.status, "fail");
+    assert.match(deps.message, /older than yarn\.lock/);
+    assert.equal(deps.fix, "yarn install");
+  }),
+);
+
+test(
+  "a bare checkout: deps fail; hooks, agents, build and types-inputs warn",
+  withFixture({}, (fixture) => {
+    const result = run(fixture, ["--json"]);
+    assert.equal(result.check("deps").status, "fail");
+    for (const id of ["hooks", "agents", "build", "types-inputs"]) {
+      assert.equal(result.check(id).status, "warn", id);
+    }
+    assert.match(result.check("agents").fix, /yarn agent:claude/);
+    assert.match(result.check("build").fix, /script\/build/);
+    assert.match(result.check("types-inputs").fix, /yarn gulp gen-icons-json build-translations/);
+  }),
+);
+
+test(
+  "local setup in place: toolchain checks are ok",
+  withFixture({}, (fixture) => {
+    makeHealthy(fixture);
+    const result = run(fixture, ["--json"]);
+    for (const id of ["nvm", "node", "yarn", "deps", "hooks", "agents", "build", "types-inputs"]) {
+      assert.equal(result.check(id).status, "ok", id);
+    }
   }),
 );
