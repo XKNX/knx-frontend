@@ -169,6 +169,9 @@ export class FacetIndex {
    * facet, but excludes the facet itself. This lets users see which values can
    * be selected next without hiding alternatives in the currently open facet.
    *
+   * Values without indexed telegrams are pruned here unless they are selected,
+   * so selected values keep their label after their last telegram is evicted.
+   *
    * @param scope - Telegrams eligible for this query after time-range filtering.
    * @param filters - Currently selected values for every facet.
    * @param isFullScope - Whether `scope` contains every currently indexed row.
@@ -207,8 +210,13 @@ export class FacetIndex {
         if (activeField !== field) crossBits.intersection(mask);
       }
 
-      for (const [id, entry] of this._entries.get(field)!) {
-        if (entry.bits.isEmpty() && !filters[field].has(id)) continue;
+      const values = this._entries.get(field)!;
+      for (const [id, entry] of values) {
+        if (entry.bits.isEmpty() && !filters[field].has(id)) {
+          // Drop values that lost their last telegram once they are no longer selected.
+          values.delete(id);
+          continue;
+        }
         distinctValues[field][id] = {
           id,
           name: entry.name,
@@ -268,11 +276,10 @@ export class FacetIndex {
 
     for (const field of FILTER_FIELDS) {
       const { id } = facetValue(telegram, field);
-      const values = this._entries.get(field)!;
-      const entry = values.get(id);
+      const entry = this._entries.get(field)!.get(id);
       if (!entry) continue;
+      // Empty entries are pruned by `query()` so selected values keep their label.
       entry.bits.remove(index);
-      if (entry.bits.isEmpty()) values.delete(id);
     }
 
     this._idToIndex.delete(telegram.id);

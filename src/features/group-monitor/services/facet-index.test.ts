@@ -177,6 +177,32 @@ describe("FacetIndex", () => {
     expect(result.distinctValues.source["1.1.1"]).toBeUndefined();
   });
 
+  it("keeps the label of a selected value after its last telegram is removed", () => {
+    const index = new FacetIndex();
+    index.update([a], []);
+    index.update([], [a]);
+
+    const result = index.query([], filters({ source: ["1.1.1"] }));
+
+    expect(result.distinctValues.source["1.1.1"]).toEqual({
+      id: "1.1.1",
+      name: "Source 1.1.1",
+      crossFilteredCount: 0,
+    });
+  });
+
+  it("prunes removed values once they are no longer selected", () => {
+    const index = new FacetIndex();
+    index.update([a], []);
+    index.update([], [a]);
+
+    index.query([], filters({ source: ["1.1.1"] }));
+    expect((index as any)._entries.get("source").has("1.1.1")).toBe(true);
+
+    index.query([], filters());
+    expect((index as any)._entries.get("source").has("1.1.1")).toBe(false);
+  });
+
   it("uses cloned _all bitset on full scope query", () => {
     const index = new FacetIndex();
     index.update([a, b, c], []);
