@@ -195,6 +195,7 @@ import { KNXLogger } from "../tools/knx-logger";
 - `script/upgrade-frontend <tag>`: Upgrade the Home Assistant frontend submodule. Before any submodule update, read and follow `.agents/skills/upgrading-knx-frontend-submodule/SKILL.md` (path from the repository root; this file is also symlinked there as `AGENTS.md`, `CLAUDE.md` and `GEMINI.md`)
 - Dependabot PRs: Before merging, closing or repairing any PR from `app/dependabot`, read and follow `.agents/skills/merging-knx-frontend-dependabot-prs/SKILL.md` (path from the repository root)
 - Pull request reviews and self-checks: read and follow `.agents/skills/reviewing-knx-frontend-prs/SKILL.md` (path from the repository root)
+- Setting up the repository, a worktree, or running the panel in Home Assistant: read and follow `.agents/skills/setting-up-knx-frontend/SKILL.md` (path from the repository root)
 
 ## Key Guidelines
 

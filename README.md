@@ -27,6 +27,17 @@ $ script/build
 ...
 ```
 
+### Set up and check your environment
+
+Follow [the setup skill](.agents/skills/setting-up-knx-frontend/SKILL.md), or run its
+doctor directly. It checks remotes, the submodule and its release, Node, Yarn,
+dependencies and the build, and whether your Home Assistant loads this checkout:
+
+```shell
+$ bash .agents/skills/setting-up-knx-frontend/scripts/doctor.sh --ha-python <ha-venv>/bin/python
+...
+```
+
 ### Update the home assistant frontend
 
 Always pass the release tag (`YYYYMMDD.N`) that Home Assistant Core pins. Without one, the
