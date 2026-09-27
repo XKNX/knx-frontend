@@ -47,6 +47,10 @@ describe("KnxStatusPage", () => {
     const eyebrow = element.shadowRoot?.querySelector(".eyebrow");
     expect(eyebrow?.textContent?.trim()).toBe("Page not found");
     expect(eyebrow?.nextElementSibling?.textContent).toBe("4/0/4");
+    // the plain-language eyebrow is part of the heading, for screen readers
+    expect(eyebrow?.closest("h1")?.textContent?.replace(/\s+/g, " ").trim()).toBe(
+      "Page not found 4/0/4",
+    );
     expect(element.shadowRoot?.querySelector(".description")?.textContent).toBe("No receiver");
   });
 

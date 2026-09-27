@@ -25,7 +25,7 @@ const CONTROLS = new Set([
 
 /**
  * Full-page status screen of the KNX panel: a subpage with the bus scene,
- * an eyebrow, a headline, a description, an optional technical detail
+ * a heading of eyebrow and headline, a description, an optional technical detail
  * (a path, an error message) and slotted actions below.
  *
  * The whole content area is the send button: every pointer-down that is not
@@ -71,8 +71,10 @@ export class KnxStatusPage extends LitElement {
       <hass-subpage .hass=${this.hass} .narrow=${this.narrow} .header=${this.header}>
         <div class="content" @pointerdown=${this._tap}>
           <knx-bus-scene .variant=${this.variant} .rateUnit=${this.rateUnit}></knx-bus-scene>
-          ${this.eyebrow ? html`<p class="eyebrow">${this.eyebrow}</p>` : nothing}
-          <h1>${this.headline}</h1>
+          <h1>
+            ${this.eyebrow ? html`<span class="eyebrow">${this.eyebrow}</span>` : nothing}
+            <span class="headline">${this.headline}</span>
+          </h1>
           ${this.description ? html`<p class="description">${this.description}</p>` : nothing}
           ${
             this.detail
@@ -146,7 +148,14 @@ export class KnxStatusPage extends LitElement {
       margin-bottom: 28px;
     }
 
+    /* the eyebrow is part of the heading: "4/0/4" alone means nothing to a screen reader */
+    h1 {
+      margin: 0 0 12px;
+      font: inherit;
+    }
+
     .eyebrow {
+      display: block;
       margin: 0 0 6px;
       color: var(--secondary-text-color);
       font-size: var(--ha-font-size-s, 12px);
@@ -155,8 +164,8 @@ export class KnxStatusPage extends LitElement {
       text-transform: uppercase;
     }
 
-    h1 {
-      margin: 0 0 12px;
+    .headline {
+      display: block;
       font-family: var(--knx-status-page-headline-font, var(--ha-font-family-body, inherit));
       font-size: var(--knx-status-page-headline-size, var(--ha-font-size-3xl, 28px));
       font-weight: var(--ha-font-weight-medium, 500);
