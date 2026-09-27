@@ -76,21 +76,19 @@ describe("navigateToError", () => {
     });
   });
 
-  it("keeps the remembered page when the error page is already shown", () => {
+  it("keeps the shown error when a second call fails", async () => {
     // a second call failing shortly after the first - eg. a delayed validation
     fakeMainWindow.location.pathname = "/knx/error";
-    fakeMainWindow.history.state = {
+    const shown = {
       message: "Connection lost",
       retryPath: "/knx/entities/create/switch?preset=light",
     };
-    navigateToError(new Error("Validation failed"));
-    expect(navigateMock).toHaveBeenCalledWith("/knx/error", {
-      replace: true,
-      data: {
-        message: "Validation failed",
-        retryPath: "/knx/entities/create/switch?preset=light",
-      },
-    });
+    fakeMainWindow.history.state = shown;
+
+    await expect(navigateToError(new Error("Validation failed"))).resolves.toBe(false);
+
+    expect(navigateMock).not.toHaveBeenCalled();
+    expect(fakeMainWindow.history.state).toBe(shown);
   });
 
   it("keeps the error details on the first history entry of a tab", async () => {
@@ -117,16 +115,6 @@ describe("navigateToError", () => {
     await navigateToError(new Error("Connection lost"));
 
     expect(fakeMainWindow.history.state).toBeNull();
-  });
-
-  it("leaves the remembered page unset when the error page was opened directly", () => {
-    fakeMainWindow.location.pathname = "/knx/error";
-    fakeMainWindow.history.state = null;
-    navigateToError("boom");
-    expect(navigateMock).toHaveBeenCalledWith("/knx/error", {
-      replace: true,
-      data: { message: "boom", retryPath: undefined },
-    });
   });
 });
 

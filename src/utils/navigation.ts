@@ -42,8 +42,9 @@ const ERROR_PATH = "/knx/error";
  * including its query, which flows read their presets from.
  *
  * When the error page is already shown - a second call failing shortly after
- * the first, e.g. a delayed validation - the remembered page is kept, so
- * "Try again" still returns to the flow and not to the error page itself.
+ * the first, e.g. a delayed validation - it is left as it is: the first error
+ * is the cause, and "Try again" still returns to the flow and not to the
+ * error page itself.
  *
  * The message is passed as a plain object: `navigate()` merges its own
  * bookkeeping into the history state, which would drop the non-enumerable
@@ -56,11 +57,12 @@ const ERROR_PATH = "/knx/error";
  */
 export const navigateToError = async (error: unknown): Promise<boolean> => {
   const { pathname, search, hash } = mainWindow.location;
-  const retryPath: string | undefined =
-    pathname === ERROR_PATH ? mainWindow.history.state?.retryPath : `${pathname}${search}${hash}`;
+  if (pathname === ERROR_PATH) {
+    return false;
+  }
   const data = {
     message: error instanceof Error ? error.message : String(error),
-    retryPath,
+    retryPath: `${pathname}${search}${hash}`,
   };
   const navigated = await navigate(ERROR_PATH, { replace: true, data });
   if (navigated) {
