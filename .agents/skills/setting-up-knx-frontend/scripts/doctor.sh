@@ -47,6 +47,8 @@ if [ -n "$PORT" ] && ! [[ $PORT =~ ^[0-9]+$ ]]; then die "--port needs a number"
 check_repo
 check_upstream
 check_fork
+check_submodule
+check_submodule_release
 # --- end checks ---
 
 START=""

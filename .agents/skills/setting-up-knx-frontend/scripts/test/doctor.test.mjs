@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { cleanup, makeFixture, run, runIn } from "./helpers.mjs";
+import { cleanup, git, makeFixture, run, runIn } from "./helpers.mjs";
 
 const withFixture = (options, fn) => async () => {
   const fixture = makeFixture(options);
@@ -94,5 +94,100 @@ test(
     assert.match(result.stdout, /^FAIL +upstream +no remote points at XKNX\/knx-frontend/m);
     assert.match(result.stdout, /^ {24}fix: git remote add upstream/m);
     assert.match(result.stdout, /\d+ ok, \d+ info, \d+ warn, \d+ fail/);
+  }),
+);
+
+const RELEASES = [
+  "20260930.0 true",
+  "20260826.7 false",
+  "20260826.4 false",
+  "20260801.0 true",
+].join("\n");
+const pins = (tag) => `{"requirements": ["home-assistant-frontend==${tag}"]}`;
+
+test(
+  "an uninitialized submodule fails and blocks yarn and the release check",
+  withFixture({ initSubmodule: false }, (fixture) => {
+    const result = run(fixture, ["--json"]);
+    assert.equal(result.check("submodule").status, "fail");
+    assert.match(
+      result.check("submodule").fix,
+      /git submodule update --init homeassistant-frontend/,
+    );
+    assert.doesNotMatch(result.check("submodule").fix, /--recursive/);
+    assert.equal(result.check("submodule-release").status, "fail");
+    assert.match(result.check("submodule-release").message, /not initialized/);
+  }),
+);
+
+test(
+  "a submodule at another commit than the pointer fails",
+  withFixture({}, (fixture) => {
+    git(join(fixture.repo, "homeassistant-frontend"), "checkout", "-q", "20260826.7");
+    const submodule = run(fixture, ["--json"]).check("submodule");
+    assert.equal(submodule.status, "fail");
+    assert.match(submodule.message, /different commit than the pointer/);
+  }),
+);
+
+test(
+  "the submodule at its pointer is ok",
+  withFixture({}, (fixture) => {
+    assert.equal(run(fixture, ["--json"]).check("submodule").status, "ok");
+  }),
+);
+
+test(
+  "release: newer stable and beta with compare links, warn when HA Core pins newer",
+  withFixture({}, (fixture) => {
+    const release = run(fixture, ["--json"], {
+      STUB_GH_RELEASES: RELEASES,
+      STUB_GH_MANIFEST: pins("20260826.7"),
+    }).check("submodule-release");
+    assert.equal(release.status, "warn");
+    assert.match(release.message, /^checked out 20260826\.4 \(stable\)/);
+    assert.match(
+      release.message,
+      /newer stable: 20260826\.7 {2}https:\/\/github\.com\/home-assistant\/frontend\/compare\/20260826\.4\.\.\.20260826\.7/,
+    );
+    assert.match(
+      release.message,
+      /newer beta: {3}20260930\.0 {2}https:\/\/github\.com\/home-assistant\/frontend\/compare\/20260826\.4\.\.\.20260930\.0/,
+    );
+    assert.match(release.message, /HA Core dev pins: 20260826\.7/);
+    assert.match(release.fix, /upgrading-knx-frontend-submodule/);
+  }),
+);
+
+test(
+  "release: a beta older than the newest stable is not shown, an equal pin is info",
+  withFixture({}, (fixture) => {
+    const release = run(fixture, ["--json"], {
+      STUB_GH_RELEASES: ["20260826.7 false", "20260826.5 true", "20260826.4 false"].join("\n"),
+      STUB_GH_MANIFEST: pins("20260826.4"),
+    }).check("submodule-release");
+    assert.equal(release.status, "info");
+    assert.match(release.message, /newer stable: 20260826\.7/);
+    assert.doesNotMatch(release.message, /newer beta/);
+  }),
+);
+
+test(
+  "release: a pointer between tags is not a release tag",
+  withFixture({ afterLastTag: true }, (fixture) => {
+    const release = run(fixture, ["--json"], { STUB_GH_RELEASES: RELEASES }).check(
+      "submodule-release",
+    );
+    assert.match(release.message, /not a release tag; nearest tag 20260826\.7/);
+  }),
+);
+
+test(
+  "release: gh failing is reported as not checked, not as a failure",
+  withFixture({}, (fixture) => {
+    const release = run(fixture, ["--json"], { STUB_GH_FAIL: "1" }).check("submodule-release");
+    assert.equal(release.status, "info");
+    assert.match(release.message, /checked out 20260826\.4/);
+    assert.match(release.message, /not checked \(gh unavailable or offline\)/);
   }),
 );
