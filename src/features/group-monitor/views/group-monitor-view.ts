@@ -705,18 +705,6 @@ export class KNXGroupMonitor extends LitElement {
     this.controller.toggleFilterValue("telegramtype", ev.detail.value, this.route);
   };
 
-  /**
-   * Handles sort changes emitted by knx-list-filter components.
-   * Triggers a re-render so memoized configs re-evaluate with the latest sort criterion.
-   */
-  private _handleFilterSortChanged = (
-    _ev: CustomEvent<{ criterion: string; direction: string }>,
-  ): void => {
-    // The child updates its sortCriterion before emitting the event.
-    // Force a re-render so memoized filter configs re-compute using the updated criterion.
-    this.requestUpdate();
-  };
-
   // ============================================================================
   // Data Table Column Definitions
   // ============================================================================
@@ -1264,7 +1252,6 @@ export class KNXGroupMonitor extends LitElement {
           .filterTitle=${this.knx.localize("group_monitor_source")}
           @selection-changed=${this._handleSourceFilterChange}
           @expanded-changed=${this._handleSourceFilterExpanded}
-          @sort-changed=${this._handleFilterSortChanged}
         ></knx-list-filter>
 
         <!-- Filter for Destination Address -->
@@ -1282,7 +1269,6 @@ export class KNXGroupMonitor extends LitElement {
           .filterTitle=${this.knx.localize("group_monitor_destination")}
           @selection-changed=${this._handleDestinationFilterChange}
           @expanded-changed=${this._handleDestinationFilterExpanded}
-          @sort-changed=${this._handleFilterSortChanged}
         ></knx-list-filter>
 
         <!-- Filter for Direction -->
@@ -1334,7 +1320,6 @@ export class KNXGroupMonitor extends LitElement {
           .filterTitle=${this.knx.localize("telegram_filter_dpt_title")}
           @selection-changed=${this._handleDptFilterChange}
           @expanded-changed=${this._handleDptFilterExpanded}
-          @sort-changed=${this._handleFilterSortChanged}
         ></knx-list-filter>
 
         <!-- Time-Delta Context Filter -->
