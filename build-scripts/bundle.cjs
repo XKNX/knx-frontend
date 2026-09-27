@@ -11,6 +11,8 @@ const BABEL_PLUGINS = path.join(
   paths.root_dir,
   "homeassistant-frontend/build-scripts/babel-plugins",
 );
+// Imported by custom-polyfill-plugin.js to resolve the polyfill paths.
+const BABEL_PLUGIN_DEPS = [path.join(BABEL_PLUGINS, "../paths.cjs")];
 
 const hashFiles = (files) => {
   const hash = createHash("sha256");
@@ -20,13 +22,15 @@ const hashFiles = (files) => {
 
 // Identifier that invalidates the babel-loader cache. babel-loader hashes the source and the
 // normalized Babel options, but not what those options point to: the custom Babel plugins, the
-// resolved Browserslist targets and the installed dependency versions (via yarn.lock).
+// resolved Browserslist targets and the installed dependency versions (via yarn.lock). The plugin
+// hash also covers the local modules the plugins import.
 module.exports.babelCacheIdentifier = ({ latestBuild }) => {
   const pluginFiles = fs
     .readdirSync(BABEL_PLUGINS, { recursive: true })
     .map((file) => path.join(BABEL_PLUGINS, file))
     .filter((file) => fs.statSync(file).isFile())
-    .sort();
+    .sort()
+    .concat(BABEL_PLUGIN_DEPS);
   return JSON.stringify({
     core: require("@babel/core/package.json").version,
     loader: require("babel-loader/package.json").version,
