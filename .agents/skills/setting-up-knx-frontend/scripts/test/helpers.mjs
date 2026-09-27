@@ -103,6 +103,8 @@ export function makeFixture({
       'if [ "$STUB_PY" = checkout ]; then echo "$PYTHONPATH/knx_frontend/__init__.py";',
       "else echo /venv/lib/python3/site-packages/knx_frontend/__init__.py; fi",
       "echo entrypoint.abc123.js",
+      'echo "${STUB_PY_INSTALLED-2026.9.4.1}"',
+      'echo "${STUB_PY_PIN-2026.9.4.1}"',
     ].join("\n"),
   );
   const nvm = join(root, "nvm");

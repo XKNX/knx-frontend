@@ -413,3 +413,21 @@ test(
     assert.match(withConfig, new RegExp(`/hass -c ${config}`));
   }),
 );
+
+test(
+  "an installed knx-frontend that does not match Core's pin adds --skip-pip-packages",
+  withFixture({}, (fixture) => {
+    makeHealthy(fixture);
+    const env = {
+      STUB_PY: "checkout",
+      STUB_PY_INSTALLED: "2026.9.4.1",
+      STUB_PY_PIN: "2026.8.28.1",
+    };
+    const result = run(fixture, ["--ha-python", fixture.python, "--json"], env);
+    assert.equal(result.check("ha").status, "ok");
+    assert.match(result.check("ha").message, /2026\.9\.4\.1 does not match .*2026\.8\.28\.1/);
+    assert.match(result.json.start, /--skip-pip-packages knx-frontend/);
+    const same = run(fixture, ["--ha-python", fixture.python, "--json"], { STUB_PY: "checkout" });
+    assert.doesNotMatch(same.json.start, /--skip-pip-packages/);
+  }),
+);

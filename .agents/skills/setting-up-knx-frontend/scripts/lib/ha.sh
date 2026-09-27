@@ -2,20 +2,46 @@
 # port is free (and who holds it), and the command that starts Home Assistant on this checkout.
 
 HA_PORT=""
+SKIP_PIP=0
+
+# Prints knx_frontend.__file__, its entrypoint, the installed knx-frontend version and the version
+# HA Core's KNX manifest pins. find_spec locates the manifest without importing the integration.
+HA_PROBE='import importlib.metadata as m, importlib.util, json, pathlib
+import knx_frontend as k
+print(k.__file__)
+print(k.entrypoint_js)
+try:
+    print(m.version("knx-frontend"))
+except Exception:
+    print("")
+try:
+    spec = importlib.util.find_spec("homeassistant.components.knx")
+    manifest = json.loads((pathlib.Path(spec.origin).parent / "manifest.json").read_text())
+    print(next((r.split("==")[1] for r in manifest["requirements"] if r.startswith("knx-frontend==")), ""))
+except Exception:
+    print("")'
 
 check_ha() {
-  local out file entry
+  local out file entry installed pin
   if [ ! -x "$HA_PYTHON" ]; then
     report ha fail "$HA_PYTHON is not an executable Python" \
       "pass the python of your Home Assistant venv: --ha-python <ha-venv>/bin/python"
     return
   fi
-  out=$(PYTHONPATH="$TOP" "$HA_PYTHON" -c \
-    'import knx_frontend as k; print(k.__file__); print(k.entrypoint_js)' 2>&1)
+  out=$(PYTHONPATH="$TOP" "$HA_PYTHON" -c "$HA_PROBE" 2>&1)
   file=$(printf '%s\n' "$out" | sed -n 1p)
   entry=$(printf '%s\n' "$out" | sed -n 2p)
+  installed=$(printf '%s\n' "$out" | sed -n 3p)
+  pin=$(printf '%s\n' "$out" | sed -n 4p)
   if [[ $file == "$TOP/knx_frontend/"* ]] && [ -n "$entry" ] && [ -f "$TOP/knx_frontend/$entry" ]; then
-    report ha ok "Home Assistant's Python loads this checkout: knx_frontend/$entry"
+    if [ -n "$installed" ] && [ -n "$pin" ] && [ "$installed" != "$pin" ]; then
+      SKIP_PIP=1
+      report ha ok "Home Assistant's Python loads this checkout: knx_frontend/$entry
+installed knx-frontend $installed does not match the $pin that HA Core's KNX manifest pins:
+start with --skip-pip-packages knx-frontend, or Home Assistant reinstalls it into its venv"
+    else
+      report ha ok "Home Assistant's Python loads this checkout: knx_frontend/$entry"
+    fi
   else
     report ha fail \
       "with PYTHONPATH=$TOP, Home Assistant's Python loads ${file:-nothing}, not this checkout's built panel" \
@@ -98,7 +124,9 @@ start_command() {
   hass="$(dirname "$HA_PYTHON")/hass"
   # Always name a config directory: without -c, hass uses ~/.homeassistant, which a running
   # instance may already use, and two processes must never share one.
-  printf 'PYTHONPATH=%s AIOHTTP_NOSENDFILE=1 %s -c %s\n' "$TOP" "$hass" "${HA_CONFIG:-<your own config dir>}"
+  local skip=""
+  if [ $SKIP_PIP = 1 ]; then skip=" --skip-pip-packages knx-frontend"; fi
+  printf 'PYTHONPATH=%s AIOHTTP_NOSENDFILE=1 %s -c %s%s\n' "$TOP" "$hass" "${HA_CONFIG:-<your own config dir>}" "$skip"
   printf 'open http://<host>:%s/knx\n' "${HA_PORT:-8123}"
   printf '%s\n' "PYTHONPATH makes Home Assistant import this checkout's knx_frontend instead of the PyPI one;"
   printf '%s' "AIOHTTP_NOSENDFILE=1 was needed on macOS to reach the instance from other devices."
