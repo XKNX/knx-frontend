@@ -50,6 +50,21 @@ describe("KnxRouter", () => {
     expect(page.requestedPath).toBe("/knx/foo/bar");
   });
 
+  it("passes query and hash of the requested path to the not-found page", () => {
+    window.history.replaceState(null, "", "/knx/foo?preset=light#step");
+    try {
+      const router = routerAt("knx-router", "/knx", "/foo");
+      beforeRender(router, "foo");
+
+      const page = document.createElement("knx-not-found") as any;
+      (router as any).updatePageEl(page, undefined);
+
+      expect(page.requestedPath).toBe("/knx/foo?preset=light#step");
+    } finally {
+      window.history.replaceState(null, "", "/");
+    }
+  });
+
   it("keeps the requested path through the redirect to not_found", () => {
     const router = routerAt("knx-router", "/knx", "/foo");
     beforeRender(router, "foo");

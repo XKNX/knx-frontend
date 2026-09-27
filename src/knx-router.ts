@@ -190,7 +190,9 @@ export class KnxRouter extends HassRouterPage {
       }
       return undefined;
     }
-    this._requestedPath = `${this.route.prefix}${this.route.path}`;
+    // the route carries the path only - query and hash are part of a stale link, too
+    const { search, hash } = mainWindow.location;
+    this._requestedPath = `${this.route.prefix}${this.route.path}${search}${hash}`;
     return "not_found";
   }
 
