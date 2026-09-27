@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, utimesSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -281,4 +283,103 @@ test(
       assert.equal(result.check(id).status, "ok", id);
     }
   }),
+);
+
+const hasLsof = spawnSync("sh", ["-c", "command -v lsof"]).status === 0;
+
+const listen = () =>
+  new Promise((resolvePort) => {
+    const server = createServer();
+    server.listen(0, "127.0.0.1", () => resolvePort(server));
+  });
+
+test(
+  "ha: the Python loading this checkout is ok and the start command is printed",
+  withFixture({}, (fixture) => {
+    makeHealthy(fixture);
+    const result = run(fixture, ["--ha-python", fixture.python, "--json"], { STUB_PY: "checkout" });
+    assert.equal(result.check("ha").status, "ok");
+    assert.match(result.json.start, /^PYTHONPATH=\S+ AIOHTTP_NOSENDFILE=1 \S+\/hass/);
+    assert.match(result.json.start, /\/knx$/m);
+    assert.notEqual(result.code, 2);
+  }),
+);
+
+test(
+  "ha: the Python loading site-packages fails",
+  withFixture({}, (fixture) => {
+    makeHealthy(fixture);
+    const result = run(fixture, ["--ha-python", fixture.python, "--json"]);
+    assert.equal(result.check("ha").status, "fail");
+    assert.match(result.check("ha").message, /site-packages/);
+    assert.equal(result.code, 1);
+  }),
+);
+
+test(
+  "ha: a path that is not executable fails",
+  withFixture({}, (fixture) => {
+    const ha = run(fixture, ["--ha-python", "/nonexistent/python", "--json"]).check("ha");
+    assert.equal(ha.status, "fail");
+    assert.match(ha.message, /not an executable/);
+  }),
+);
+
+test(
+  "port: a busy port warns with the holder and a free port",
+  withFixture({}, async (fixture) => {
+    const server = await listen();
+    try {
+      const { port } = server.address();
+      const check = run(fixture, ["--port", String(port), "--json"]).check("port");
+      assert.equal(check.status, "warn");
+      assert.match(check.message, new RegExp(`port ${port} is in use`));
+      assert.match(check.message, /free port: \d+/);
+      if (hasLsof) assert.match(check.message, new RegExp(`PID ${process.pid}`));
+      assert.match(check.fix, /never stop the process/);
+    } finally {
+      server.close();
+    }
+  }),
+);
+
+test(
+  "port: a free port is ok, and configuration.yaml sets Home Assistant's port",
+  withFixture({}, async (fixture) => {
+    const server = await listen();
+    const { port } = server.address();
+    await new Promise((done) => server.close(done));
+    const config = join(fixture.root, "ha-config");
+    mkdirSync(config);
+    writeFileSync(
+      join(config, "configuration.yaml"),
+      `default_config:\nhttp:\n  server_port: ${port}\n`,
+    );
+    const result = run(fixture, ["--ha-config", config, "--json"]);
+    assert.equal(result.check("port").status, "ok");
+    assert.match(result.check("port").message, new RegExp(`port ${port} is free`));
+  }),
+);
+
+test(
+  "a healthy checkout with a fork exits 0 without warnings or failures",
+  withFixture(
+    {
+      remotes: {
+        upstream: "https://github.com/XKNX/knx-frontend.git",
+        fork: "https://github.com/someone/knx-frontend.git",
+      },
+    },
+    (fixture) => {
+      makeHealthy(fixture);
+      const result = run(fixture, ["--json"], {
+        STUB_GH_RELEASES: "20260826.4 false",
+        STUB_GH_MANIFEST: `{"requirements": ["home-assistant-frontend==20260826.4"]}`,
+      });
+      assert.equal(result.code, 0);
+      for (const item of result.json.checks)
+        assert.ok(["ok", "info"].includes(item.status), item.id);
+      assert.equal(result.json.start, null);
+    },
+  ),
 );

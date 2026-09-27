@@ -14,6 +14,7 @@ HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 . "$HERE/lib/report.sh"
 . "$HERE/lib/repo.sh"
 . "$HERE/lib/toolchain.sh"
+. "$HERE/lib/ha.sh"
 
 die() {
   printf 'doctor: %s\n' "$1" >&2
@@ -58,9 +59,12 @@ check_hooks
 check_agents
 check_build
 check_types_inputs
+if [ -n "$HA_PYTHON" ]; then check_ha; fi
+if [ -n "$PORT" ] || [ -n "$HA_PYTHON" ] || [ -n "$HA_CONFIG" ]; then check_port; fi
 # --- end checks ---
 
 START=""
+if [ -n "$HA_PYTHON" ]; then START=$(start_command); fi
 if [ $JSON = 1 ]; then print_json "$START"; else print_text "$START"; fi
 if has_fail; then exit 1; fi
 exit 0
