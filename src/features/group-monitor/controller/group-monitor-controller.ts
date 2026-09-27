@@ -1115,6 +1115,7 @@ export class GroupMonitorController implements ReactiveController {
 
     if (!this._isPaused) {
       const { added, removed } = this._telegramBuffer.merge([telegramRow]);
+      // A duplicate is already buffered, cached and covered, so there is nothing to update.
       if (added.length === 0 && removed.length === 0) {
         return;
       }
