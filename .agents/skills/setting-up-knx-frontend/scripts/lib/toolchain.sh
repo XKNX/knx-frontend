@@ -20,6 +20,8 @@ check_nvm() {
   fi
 }
 
+NODE_OK=0
+
 check_node() {
   local want have
   want=$(nvmrc_version)
@@ -31,6 +33,7 @@ check_node() {
     report node fail "node $have is active, .nvmrc wants $want (tests fail on other versions)" \
       "$NVM_USE   (in every new shell)"
   else
+    NODE_OK=1
     report node ok "node $have matches .nvmrc"
   fi
 }
@@ -40,6 +43,10 @@ check_yarn() {
   want=$(sed -n 's/.*"packageManager"[[:space:]]*:[[:space:]]*"yarn@\([^"]*\)".*/\1/p' package.json | head -1)
   if [ "$SUBMODULE" = missing ]; then
     report yarn fail "not checked: .yarnrc.yml takes yarn from the submodule (see submodule)"
+    return
+  fi
+  if [ $NODE_OK != 1 ]; then
+    report yarn fail "not checked: yarn needs the Node version from .nvmrc (see node)"
     return
   fi
   have=$(COREPACK_ENABLE_NETWORK=0 COREPACK_ENABLE_DOWNLOAD_PROMPT=0 yarn --version 2>/dev/null | tail -1)

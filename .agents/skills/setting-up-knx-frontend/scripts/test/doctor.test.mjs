@@ -383,3 +383,13 @@ test(
     },
   ),
 );
+
+test(
+  "yarn is not judged while node is wrong, so the fix is nvm use and not corepack",
+  withFixture({}, (fixture) => {
+    const yarn = run(fixture, ["--json"], { STUB_NODE: "26.1.0", STUB_YARN: "" }).check("yarn");
+    assert.equal(yarn.status, "fail");
+    assert.match(yarn.message, /see node/);
+    assert.doesNotMatch(yarn.fix ?? "", /corepack/);
+  }),
+);
