@@ -39,6 +39,10 @@ jobs:
 
       - name: Build
         run: yarn build
+        env:
+          # Release runners start cold, and building without the babel-loader cache keeps the
+          # release output independent of any cache state.
+          BABEL_CACHE_DIR: "false"
 
       - name: Publish to PyPi
         env:

@@ -170,6 +170,7 @@ import { KNXLogger } from "../tools/knx-logger";
 
 - `make build` or `script/build`: Production build (runs gulp build-knx)
 - Outputs to `build/` directory for distribution
+- Builds reuse the babel-loader cache in `node_modules/.cache/babel-loader`, so repeated builds are much faster. Set `BABEL_CACHE_DIR` to use another directory, or `BABEL_CACHE_DIR=false` to build without it. Delete the directory to reclaim space, as entries are never pruned locally.
 
 ### Code Quality & Linting
 
