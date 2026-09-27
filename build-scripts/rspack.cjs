@@ -32,6 +32,8 @@ class LogStartCompilePlugin {
 
 // Directory of the babel-loader cache. Defaults to babel-loader's own location under
 // node_modules/.cache. Set BABEL_CACHE_DIR to use another directory or to "false" to disable it.
+// Local entries are never pruned: every yarn.lock change invalidates all entries and adds a new
+// transpile of both bundles. Delete node_modules/.cache/babel-loader to reclaim the space.
 const babelCacheDirectory = () => {
   const dir = process.env.BABEL_CACHE_DIR;
   return dir === "false" ? false : dir || true;
