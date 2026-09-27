@@ -48,8 +48,9 @@ export function makeFixture({
   afterLastTag = false,
   remotes = { upstream: "https://github.com/XKNX/knx-frontend.git" },
   initSubmodule = true,
+  prefix = "doctor-",
 } = {}) {
-  const root = mkdtempSync(join(tmpdir(), "doctor-"));
+  const root = mkdtempSync(join(tmpdir(), prefix));
   const sub = join(root, "sub");
   mkdirSync(sub);
   git(sub, "init", "-q", "-b", "dev");

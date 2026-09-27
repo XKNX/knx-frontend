@@ -34,7 +34,12 @@ check_ha() {
   installed=$(printf '%s\n' "$out" | sed -n 3p)
   pin=$(printf '%s\n' "$out" | sed -n 4p)
   if [[ $file == "$TOP/knx_frontend/"* ]] && [ -n "$entry" ] && [ -f "$TOP/knx_frontend/$entry" ]; then
-    if [ -n "$installed" ] && [ -n "$pin" ] && [ "$installed" != "$pin" ]; then
+    if [ -z "$installed" ] && [ -n "$pin" ]; then
+      SKIP_PIP=1
+      report ha ok "Home Assistant's Python loads this checkout: knx_frontend/$entry
+knx-frontend is not installed in the venv, and HA Core's KNX manifest pins $pin:
+start with --skip-pip-packages knx-frontend, or Home Assistant installs it into its venv"
+    elif [ -n "$installed" ] && [ -n "$pin" ] && [ "$installed" != "$pin" ]; then
       SKIP_PIP=1
       report ha ok "Home Assistant's Python loads this checkout: knx_frontend/$entry
 installed knx-frontend $installed does not match the $pin that HA Core's KNX manifest pins:
@@ -56,14 +61,16 @@ config_port() {
     "$1/configuration.yaml" 2>/dev/null
 }
 
-# port_holder <port>: "<pid> <command>" or "unknown" when in use, nothing when free
+# port_holder <port>: "<pid> <command>" or "unknown" when in use, nothing when free.
+# lsof only sees our own processes without root, so a port it cannot attribute is still probed.
 port_holder() {
+  local holder=""
   if command -v lsof >/dev/null 2>&1; then
-    lsof -nP -iTCP:"$1" -sTCP:LISTEN -Fpc 2>/dev/null |
-      awk '/^p/ { pid = substr($0, 2) } /^c/ { print pid, substr($0, 2); exit }'
-  elif (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null; then
-    echo unknown
+    holder=$(lsof -nP -iTCP:"$1" -sTCP:LISTEN -Fpc 2>/dev/null |
+      awk '/^p/ { pid = substr($0, 2) } /^c/ { print pid, substr($0, 2); exit }')
   fi
+  if [ -z "$holder" ] && (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null; then holder=unknown; fi
+  printf '%s' "$holder"
 }
 
 # served_checkout <pid>: PYTHONPATH of a running process, where the system lets us read it
@@ -93,7 +100,7 @@ check_port() {
     fi
   done
   if [ "$holder" = unknown ]; then
-    msg="port $port is in use (lsof is not available to tell by whom)"
+    msg="port $port is in use (the owner is not visible: another user's process, or no lsof)"
   else
     pid=${holder%% *}
     cmd=$(ps -o command= -p "$pid" 2>/dev/null)
@@ -126,7 +133,10 @@ start_command() {
   # instance may already use, and two processes must never share one.
   local skip=""
   if [ $SKIP_PIP = 1 ]; then skip=" --skip-pip-packages knx-frontend"; fi
-  printf 'PYTHONPATH=%s AIOHTTP_NOSENDFILE=1 %s -c %s%s\n' "$TOP" "$hass" "${HA_CONFIG:-<your own config dir>}" "$skip"
+  local config='<your own config dir>'
+  if [ -n "$HA_CONFIG" ]; then config=$(printf '%q' "$HA_CONFIG"); fi
+  # %q quotes paths with spaces or shell characters, so the line can be pasted as is.
+  printf 'PYTHONPATH=%q AIOHTTP_NOSENDFILE=1 %q -c %s%s\n' "$TOP" "$hass" "$config" "$skip"
   printf 'open http://<host>:%s/knx\n' "${HA_PORT:-8123}"
   printf '%s\n' "PYTHONPATH makes Home Assistant import this checkout's knx_frontend instead of the PyPI one;"
   printf '%s' "AIOHTTP_NOSENDFILE=1 was needed on macOS to reach the instance from other devices."

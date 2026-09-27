@@ -441,3 +441,76 @@ test(
     assert.equal(run(fixture, ["--json"]).check("agents").status, "ok");
   }),
 );
+
+// Splits the first start line the way a shell would, to prove it survives copy and paste.
+const shellWords = (line) =>
+  spawnSync("bash", ["-c", `eval "set -- $1"; printf '%s\\n' "$@"`, "_", line], {
+    encoding: "utf8",
+  })
+    .stdout.trimEnd()
+    .split("\n");
+
+test(
+  "the start command quotes paths with spaces",
+  withFixture({ prefix: "doctor with space-" }, (fixture) => {
+    makeHealthy(fixture);
+    const config = join(fixture.root, "my config");
+    mkdirSync(config);
+    const start = run(fixture, ["--ha-python", fixture.python, "--ha-config", config, "--json"], {
+      STUB_PY: "checkout",
+    }).json.start;
+    const words = shellWords(start.split("\n")[0]);
+    assert.ok(words[0].startsWith("PYTHONPATH=") && words[0].endsWith("/repo"), words[0]);
+    assert.ok(words[0].includes("doctor with space-"), words[0]);
+    assert.equal(words[1], "AIOHTTP_NOSENDFILE=1");
+    assert.equal(words[2], join(fixture.root, "hass"));
+    assert.deepEqual(words.slice(3, 5), ["-c", config]);
+  }),
+);
+
+test(
+  "a port lsof cannot attribute is still reported as in use",
+  withFixture({}, async (fixture) => {
+    writeFileSync(join(fixture.bin, "lsof"), "#!/bin/sh\nexit 1\n", { mode: 0o755 });
+    const server = await listen();
+    try {
+      const { port } = server.address();
+      const check = run(fixture, ["--port", String(port), "--json"]).check("port");
+      assert.equal(check.status, "warn");
+      assert.match(check.message, new RegExp(`port ${port} is in use`));
+    } finally {
+      server.close();
+    }
+  }),
+);
+
+test(
+  "relative --ha-python and --ha-config work from a subdirectory",
+  withFixture({}, (fixture) => {
+    makeHealthy(fixture);
+    mkdirSync(join(fixture.repo, "src"));
+    mkdirSync(join(fixture.root, "cfg"));
+    const result = runIn(
+      join(fixture.repo, "src"),
+      ["--ha-python", "../../python", "--ha-config", "../../cfg", "--json"],
+      { STUB_PY: "checkout" },
+      fixture,
+    );
+    assert.equal(result.check("ha").status, "ok");
+    assert.match(result.json.start, /-c \/\S*\/cfg\s/);
+  }),
+);
+
+test(
+  "knx-frontend missing from the venv while Core pins it adds --skip-pip-packages",
+  withFixture({}, (fixture) => {
+    makeHealthy(fixture);
+    const result = run(fixture, ["--ha-python", fixture.python, "--json"], {
+      STUB_PY: "checkout",
+      STUB_PY_INSTALLED: "",
+      STUB_PY_PIN: "2026.8.28.1",
+    });
+    assert.match(result.check("ha").message, /not installed in the venv/);
+    assert.match(result.json.start, /--skip-pip-packages knx-frontend/);
+  }),
+);

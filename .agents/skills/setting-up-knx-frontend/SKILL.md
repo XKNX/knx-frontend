@@ -84,8 +84,9 @@ Drop `--reference …` if that directory does not exist. Add
 `yarn gulp gen-icons-json build-translations` when you need `yarn lint:types`.
 
 Remove a worktree from the main checkout with `git worktree remove --force .worktrees/<name>`:
-`--force` is needed because the worktree contains the submodule. Use it only for worktrees an
-agent created, and only after stopping every server started from it.
+`--force` is needed because the worktree contains the submodule, and it discards uncommitted work.
+Use it only for a worktree you created in this task, never for another agent's, and only after
+stopping every server started from it.
 
 ## Test the panel in Home Assistant
 

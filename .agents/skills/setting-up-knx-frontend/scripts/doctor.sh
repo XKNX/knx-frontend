@@ -45,6 +45,23 @@ while [ $# -gt 0 ]; do
 done
 if [ -n "$PORT" ] && ! [[ $PORT =~ ^[0-9]+$ ]]; then die "--port needs a number"; fi
 
+# absolute <path>: resolved against the directory the doctor was started in, before check_repo
+# changes into the checkout root.
+absolute() {
+  case "$1" in
+    "" | /*) printf '%s' "$1" ;;
+    *)
+      if [ -d "$1" ]; then
+        (cd "$1" && pwd)
+      else
+        printf '%s/%s' "$(cd "$(dirname "$1")" 2>/dev/null && pwd || pwd)" "$(basename "$1")"
+      fi
+      ;;
+  esac
+}
+HA_PYTHON=$(absolute "$HA_PYTHON")
+HA_CONFIG=$(absolute "$HA_CONFIG")
+
 # --- checks ---
 check_repo
 check_upstream
