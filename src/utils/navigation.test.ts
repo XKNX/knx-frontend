@@ -3,7 +3,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { exitFlow, navigateInFlow, navigateToError } from "./navigation";
 
 const navigateMock = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
-vi.mock("@ha/common/navigate", () => ({ navigate: navigateMock }));
+vi.mock("@ha/common/navigate", () => ({
+  navigate: navigateMock,
+  updateHistoryState: (patch: Record<string, unknown>) => {
+    fakeMainWindow.history.state = { ...fakeMainWindow.history.state, ...patch };
+  },
+}));
 
 /** Minimal `mainWindow` stub - jsdom doesn't allow manipulating `history.length`. */
 const fakeMainWindow = vi.hoisted(() => {
@@ -11,7 +16,12 @@ const fakeMainWindow = vi.hoisted(() => {
   return {
     history: {
       length: 1,
-      state: null as { dialog?: string; message?: string; retryPath?: string } | null,
+      state: null as {
+        dialog?: string;
+        root?: boolean;
+        message?: string;
+        retryPath?: string;
+      } | null,
       back: vi.fn(),
     },
     location: { pathname: "/knx/entities/create/switch", search: "", hash: "" },
@@ -81,6 +91,32 @@ describe("navigateToError", () => {
         retryPath: "/knx/entities/create/switch?preset=light",
       },
     });
+  });
+
+  it("keeps the error details on the first history entry of a tab", async () => {
+    // `navigate()` replaces the data of the root entry with its `root` marker
+    fakeMainWindow.history.state = { root: true };
+    navigateMock.mockImplementationOnce(() => {
+      fakeMainWindow.history.state = { root: true };
+      return Promise.resolve(true);
+    });
+
+    await navigateToError(new Error("Connection lost"));
+
+    expect(fakeMainWindow.history.state).toEqual({
+      root: true,
+      message: "Connection lost",
+      retryPath: "/knx/entities/create/switch",
+    });
+  });
+
+  it("leaves the history state alone when the navigation was blocked", async () => {
+    // eg. a dialog refused to close
+    navigateMock.mockImplementationOnce(() => Promise.resolve(false));
+
+    await navigateToError(new Error("Connection lost"));
+
+    expect(fakeMainWindow.history.state).toBeNull();
   });
 
   it("leaves the remembered page unset when the error page was opened directly", () => {
