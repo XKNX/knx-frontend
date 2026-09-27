@@ -146,11 +146,6 @@ export class KnxStatusPage extends LitElement {
       margin-bottom: 28px;
     }
 
-    /* the requested path stays copyable */
-    ::slotted(*) {
-      user-select: text;
-    }
-
     .eyebrow {
       margin: 0 0 6px;
       color: var(--secondary-text-color);
