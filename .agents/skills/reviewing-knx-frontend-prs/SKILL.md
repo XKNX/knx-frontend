@@ -62,14 +62,14 @@ files under `Not run`.
 ```bash
 gh pr view <nr> -R XKNX/knx-frontend --json author,headRefOid,title,body,url
 git fetch <upstream_remote> pull/<nr>/head
-git worktree add --detach .worktrees/review-<nr> FETCH_HEAD
-cd .worktrees/review-<nr>
-git submodule update --init --reference "$(git rev-parse --git-common-dir)/modules/homeassistant-frontend" homeassistant-frontend
-BASE=$(git merge-base HEAD <upstream_remote>/main)
 ```
 
-Drop `--reference …` if that directory does not exist. Record `headRefOid`: the review is posted
-against exactly that commit.
+Create `.worktrees/review-<nr>` detached at `FETCH_HEAD`, following the "Worktree" section of
+`.agents/skills/setting-up-knx-frontend/SKILL.md`, but stop after the submodule: `nvm use` and
+`yarn install` run the PR's code and need the user's yes (see the hard rules). Then
+`BASE=$(git merge-base HEAD <upstream_remote>/main)`.
+
+Record `headRefOid`: the review is posted against exactly that commit.
 
 **Handover:** a PR from `app/dependabot` belongs to `merging-knx-frontend-dependabot-prs`; use that
 skill instead and stop. When `check.mjs` prints `Handover: upgrading-knx-frontend-submodule` (the
@@ -203,8 +203,8 @@ After the user's yes to this exact draft:
 3. `gh api repos/XKNX/knx-frontend/pulls/<nr>/reviews --method POST --input "$TMPDIR/review-<nr>.json"`.
    A 422 about a line means that comment is not on a changed line: move it into the summary, show
    the change, and ask again.
-4. From the checkout root: `git worktree remove --force .worktrees/review-<nr>` (`--force` because
-   the worktree contains the submodule; only for worktrees this skill created).
+4. Remove the worktree as described in the "Worktree" section of
+   `.agents/skills/setting-up-knx-frontend/SKILL.md`.
 
 ## Maintaining this skill
 

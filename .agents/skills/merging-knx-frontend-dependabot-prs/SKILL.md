@@ -121,20 +121,13 @@ After a rebase or recreate comment, Dependabot pushes within minutes. Check
 
 ### Worktree (dedupe-fix, local-gates)
 
-```bash
-git fetch <upstream_remote> <headRefName>
-git worktree add --detach .worktrees/dependabot-<nr> <upstream_remote>/<headRefName>
-cd .worktrees/dependabot-<nr>
-git submodule update --init --reference "$(git rev-parse --git-common-dir)/modules/homeassistant-frontend" homeassistant-frontend
-nvm use
-yarn install
-```
+Create `.worktrees/dependabot-<nr>` detached at `<upstream_remote>/<headRefName>` (after
+`git fetch <upstream_remote> <headRefName>`), following the "Worktree" section of
+`.agents/skills/setting-up-knx-frontend/SKILL.md`.
 
-`headRefName` comes from `triage.mjs --json <nr>`. Drop `--reference …` if that directory does not
-exist. If `yarn install` fails on `npmMinimalAgeGate` (3 days, `.yarnrc.yml`), the action is `wait`
-until the version is three days old. When done, from the checkout root:
-`git worktree remove --force .worktrees/dependabot-<nr>`. `--force` is needed because the worktree
-contains a submodule; use it only on a worktree this skill created.
+`headRefName` comes from `triage.mjs --json <nr>`. If `yarn install` fails on
+`npmMinimalAgeGate` (3 days, `.yarnrc.yml`), the action is `wait` until the version is three days
+old. When done, remove it as described in that section.
 
 ### Dedupe fix
 

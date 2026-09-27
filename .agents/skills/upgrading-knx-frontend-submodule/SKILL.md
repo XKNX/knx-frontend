@@ -68,12 +68,10 @@ adds the prerelease flag.
 
 ## Phase 1: Plan (no changes to tracked files)
 
-1. Fetch as described in Phase 0, then `git worktree add -b update-upstream-<tag> .worktrees/update-upstream-<tag> $START`
-   (`.worktrees/` is git-ignored and excluded from vitest).
-   In it: `git submodule update --init homeassistant-frontend` (non-recursive; a new worktree
-   clones the submodule again, so add `--reference $(git rev-parse --git-common-dir)/modules/homeassistant-frontend`
-   if that directory exists), `git -C homeassistant-frontend fetch --tags origin`, `nvm use`,
-   `yarn install`.
+1. Fetch as described in Phase 0, then create the worktree `.worktrees/update-upstream-<tag>` on a
+   new branch `update-upstream-<tag>` from `$START`, following the "Worktree" section of
+   `.agents/skills/setting-up-knx-frontend/SKILL.md` (submodule with `--reference`, `nvm use`,
+   `yarn install`, doctor). Then `git -C homeassistant-frontend fetch --tags origin`.
 2. In the worktree: `bash $SKILL/scripts/impact.sh <tag>`. The old ref defaults to the pointer
    in `main` of the remote pointing at XKNX/knx-frontend. Without one it is `HEAD`, so record
    `git ls-tree HEAD homeassistant-frontend` now and pass that commit as old ref after the bump.
