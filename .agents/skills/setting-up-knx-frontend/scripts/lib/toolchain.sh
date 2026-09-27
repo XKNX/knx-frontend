@@ -90,7 +90,9 @@ link_to() { [ -L "$1" ] && [ "$(readlink "$1")" = "$2" ]; }
 
 check_agents() {
   local missing="" fixes=""
-  if ! link_to CLAUDE.md .github/copilot-instructions.md || ! link_to .claude/skills ../.agents/skills; then
+  # .claude/skills only exists where the repository ships skills in .agents/skills.
+  if ! link_to CLAUDE.md .github/copilot-instructions.md ||
+    { [ -d .agents/skills ] && ! link_to .claude/skills ../.agents/skills; }; then
     missing+=" CLAUDE.md+.claude/skills"
     fixes+=$'\n'"yarn agent:claude"
   fi

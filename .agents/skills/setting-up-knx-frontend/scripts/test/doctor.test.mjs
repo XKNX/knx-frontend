@@ -431,3 +431,13 @@ test(
     assert.doesNotMatch(same.json.start, /--skip-pip-packages/);
   }),
 );
+
+test(
+  "without .agents/skills only CLAUDE.md is needed for Claude",
+  withFixture({}, (fixture) => {
+    makeHealthy(fixture);
+    rmSync(join(fixture.repo, ".claude"), { recursive: true, force: true });
+    rmSync(join(fixture.repo, ".agents"), { recursive: true, force: true });
+    assert.equal(run(fixture, ["--json"]).check("agents").status, "ok");
+  }),
+);
