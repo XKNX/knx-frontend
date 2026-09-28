@@ -55,7 +55,7 @@ describe("KNXProjectView", () => {
     update();
     const shell = host.querySelector<KnxTabsSubpageData>("knx-tabs-subpage-data");
     expect(shell).not.toBeNull();
-    expect(shell!.activeFilterCount).toBe(2);
+    expect(shell!.filters).toBe(2);
     fireEvent(shell!, "clear-filter");
     update();
     const devices = host.querySelector("knx-project-devices-view")!;
@@ -63,7 +63,7 @@ describe("KNXProjectView", () => {
     expect(devices.filterLocation).toEqual([]);
     expect(devices.filterLine).toEqual([]);
     expect(devices.searchText).toBe("Kitchen");
-    expect(shell!.activeFilterCount).toBe(0);
+    expect(shell!.filters).toBe(0);
     expect(shell!.showFilters).toBe(true);
   });
 

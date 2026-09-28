@@ -146,7 +146,7 @@ describe("KnxTabsSubpageData", () => {
     const view = new KnxTabsSubpageData();
     view.hasFilters = true;
     view.showFilters = true;
-    view.activeFilterCount = 2;
+    view.setAttribute("filters", "2");
     view.resultCount = 7;
     const host = draw(view);
     const pane = host.querySelector("knx-tabs-subpage-data-filter-pane")!;
@@ -204,7 +204,7 @@ describe("KnxTabsSubpageData", () => {
     const view = new KnxTabsSubpageData();
     view.hasFilters = true;
     view.showFilters = true;
-    view.activeFilterCount = 2;
+    view.filters = 2;
     const host = draw(view);
     const changed = vi.fn();
     const cleared = vi.fn();
@@ -219,7 +219,7 @@ describe("KnxTabsSubpageData", () => {
     expect(changed).toHaveBeenCalledTimes(1);
     pane.dispatchEvent(new Event("clear-filter", { bubbles: true, composed: true }));
     expect(cleared).toHaveBeenCalledTimes(1);
-    expect(view.activeFilterCount).toBe(2);
+    expect(view.filters).toBe(2);
   });
 
   it("opens filters from the toolbar chip exactly once", () => {

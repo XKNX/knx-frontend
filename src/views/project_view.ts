@@ -566,7 +566,7 @@ export class KNXProjectView extends LitElement {
     }),
   );
 
-  private get _devicesActiveFilterCount(): number {
+  private get _devicesActiveFilterGroupCount(): number {
     return [this._devicesFilterDpt, this._devicesFilterLocation, this._devicesFilterLine].filter(
       (filter) => filter.length,
     ).length;
@@ -664,7 +664,7 @@ export class KNXProjectView extends LitElement {
     `;
   }
 
-  private _devicesFilteredCount = memoize(
+  private _devicesMatchingCount = memoize(
     (
       projectData: KNXProject,
       searchText: string,
@@ -719,7 +719,7 @@ export class KNXProjectView extends LitElement {
               ${this.hass.localize("ui.components.data-table.hidden", {
                 number:
                   this._devicesTree(projectData).length -
-                  this._devicesFilteredCount(
+                  this._devicesMatchingCount(
                     projectData,
                     this._devicesSearchText,
                     this._devicesFilterDpt,
@@ -754,9 +754,9 @@ export class KNXProjectView extends LitElement {
       .route=${this.route}
       .tabs=${[projectTab]}
       .hasFilters=${true}
-      .activeFilterCount=${this._devicesActiveFilterCount}
+      .filters=${this._devicesActiveFilterGroupCount}
       .showFilters=${this._devicesShowFilters}
-      .resultCount=${this._devicesFilteredCount(
+      .resultCount=${this._devicesMatchingCount(
         projectData,
         this._devicesSearchText,
         this._devicesFilterDpt,

@@ -70,7 +70,7 @@ import "./knx-tabs-subpage-data-toolbar";
  * import "@ha/components/input/ha-input-search";
  * html`<knx-tabs-subpage-data
  *   .hass=${this.hass} .route=${this.route} .tabs=${this.tabs} .narrow=${this.narrow}
- *   .hasFilters=${true} .activeFilterCount=${this._activeFilterCount} .showFilters=${this._showFilters}
+ *   .hasFilters=${true} .filters=${this._activeFilterCount} .showFilters=${this._showFilters}
  *   @show-filters-changed=${this._showFiltersChanged}
  *   @clear-filter=${this._clearFilters}
  * >
@@ -97,7 +97,7 @@ export class KnxTabsSubpageData extends LitElement {
   /** Enables the filter toggle and pane; independent of whether any filters are active. */
   @property({ attribute: "has-filters", type: Boolean }) public hasFilters = false;
   /** Active-filter count for the toggle badge and clear action; supplied by the page. */
-  @property({ attribute: "active-filter-count", type: Number }) public activeFilterCount = 0;
+  @property({ type: Number }) public filters = 0;
   /** Opens the filter pane when `hasFilters` is true; user actions also update this value. */
   @property({ attribute: "show-filters", type: Boolean }) public showFilters = false;
   /** Result count for the filter dialog's close action; undefined uses the generic Close label. */
@@ -112,13 +112,13 @@ export class KnxTabsSubpageData extends LitElement {
   @property({ attribute: false }) public filterPaneNarrow?: boolean;
   @state() private _hasHeader = false;
   @state() private _hasSearch = false;
-  @state() private _hasActiveFilters = false;
+  @state() private _hasActiveFilterContent = false;
 
   @queryAssignedElements({ slot: "toolbar-search", flatten: true })
   private _searchElements!: HTMLElement[];
 
   @queryAssignedElements({ slot: "active-filters", flatten: true })
-  private _activeFilterElements!: HTMLElement[];
+  private _activeFilterSlotElements!: HTMLElement[];
 
   /** Measures component width, not viewport width, to place the filter pane inline or in a dialog. */
   private _showPaneController = new ResizeController(this, {
@@ -137,8 +137,8 @@ export class KnxTabsSubpageData extends LitElement {
   }
 
   /** Collapses the active filters row when its last assigned element is removed. */
-  private _activeFiltersChanged(): void {
-    this._hasActiveFilters = this._activeFilterElements.length > 0;
+  private _activeFilterContentChanged(): void {
+    this._hasActiveFilterContent = this._activeFilterSlotElements.length > 0;
   }
 
   /** Applies user-requested visibility and emits once per change, without altering filters. */
@@ -164,7 +164,7 @@ export class KnxTabsSubpageData extends LitElement {
       ? html`<knx-tabs-subpage-data-filter-pane
           .narrow=${compact}
           .label=${this.filterLabel}
-          .count=${this.activeFilterCount}
+          .count=${this.filters}
           .resultCount=${this.resultCount}
           @close-filter-pane=${this._closeFilters}
         >
@@ -181,8 +181,8 @@ export class KnxTabsSubpageData extends LitElement {
           slot="leading"
           .label=${this.filterLabel ?? this.hass.localize("ui.components.subpage-data-table.filters")}
           .path=${mdiFilterVariant}
-          .count=${this.activeFilterCount}
-          .active=${Boolean(this.activeFilterCount)}
+          .count=${this.filters}
+          .active=${Boolean(this.filters)}
           @click=${this._toggleFilters}
         ></ha-filter-pane-chip>`
       : nothing;
@@ -221,8 +221,8 @@ export class KnxTabsSubpageData extends LitElement {
             <slot name="toolbar-leading" slot="leading"></slot>
             ${searchInHeader ? nothing : search}
             <slot name="toolbar-trailing" slot="trailing"></slot>
-            <div class="active-filters" slot="summary" ?hidden=${!this._hasActiveFilters}>
-              <slot name="active-filters" @slotchange=${this._activeFiltersChanged}></slot>
+            <div class="active-filters" slot="summary" ?hidden=${!this._hasActiveFilterContent}>
+              <slot name="active-filters" @slotchange=${this._activeFilterContentChanged}></slot>
             </div>
           </knx-tabs-subpage-data-toolbar>
           <div class="banner"><slot name="banner"></slot></div>
