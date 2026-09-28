@@ -2,10 +2,20 @@ import { describe, expect, it, vi } from "vitest";
 
 import "./knx-router";
 import type { KnxRouter } from "./knx-router";
+import type { KnxStatusPage } from "./components/knx-status-page";
+import type { KNX } from "./types/knx";
+import type { KnxStatusView } from "./views/status_view";
 import "./views/entities_router";
 import "./views/expose_router";
 
-vi.mock("@ha/common/navigate", () => ({ navigate: vi.fn(() => Promise.resolve(true)) }));
+vi.mock("@ha/common/navigate", () => ({
+  navigate: vi.fn(() => Promise.resolve(true)),
+  goBack: vi.fn(),
+}));
+// Keep jsdom's missing ElementInternals and HA localization context out of routing tests.
+vi.mock("@ha/components/ha-button", () => ({}));
+vi.mock("@ha/components/ha-icon-button", () => ({}));
+vi.mock("@ha/layouts/hass-subpage", () => ({}));
 
 const routerAt = (tag: string, prefix: string, path: string) => {
   const router = document.createElement(tag) as KnxRouter;
@@ -34,6 +44,55 @@ describe("KnxRouter", () => {
     const router = routerAt("knx-router", "/knx", "/foo");
     expect(beforeRender(router, "foo")).toBe("not_found");
     expect((router as any).routerOptions.routes.not_found?.tag).toBe("knx-not-found");
+  });
+
+  it.each([
+    ["knx-router", "/knx", "/missing", "knx-not-found", "/knx/missing"],
+    ["knx-entities-router", "/knx/entities", "/missing", "knx-not-found", "/knx/entities/missing"],
+    ["knx-expose-router", "/knx/expose", "/missing", "knx-not-found", "/knx/expose/missing"],
+    ["knx-router", "/knx", "/error", "knx-error", "Connection lost"],
+  ])(
+    "loads and renders %s at %s%s with its status detail",
+    async (tag, prefix, path, pageTag, detail) => {
+      const oldTitle = document.title;
+      const oldState = window.history.state;
+      window.history.replaceState({ message: "Connection lost" }, "");
+      const router = routerAt(tag, prefix, path);
+      router.knx = { localize: (key: string) => key } as KNX;
+      document.body.appendChild(router);
+      try {
+        await (router as unknown as { pageRendered: Promise<void> }).pageRendered;
+        const page = router.querySelector(pageTag) as KnxStatusView;
+        expect(page).toBeInstanceOf(customElements.get(pageTag)!);
+        await page.updateComplete;
+        const status = page.shadowRoot?.querySelector("knx-status-page") as KnxStatusPage;
+        expect(status.detail).toBe(detail);
+        expect(document.title).toBe(
+          pageTag === "knx-not-found"
+            ? "Page not found - KNX - Home Assistant"
+            : "KNX - Home Assistant",
+        );
+      } finally {
+        router.remove();
+        window.history.replaceState(oldState, "");
+        document.title = oldTitle;
+      }
+    },
+  );
+
+  it("uses the translated tab title for a known page", () => {
+    const router = routerAt("knx-router", "/knx", "/info");
+    router.hass.localize = (key: string) =>
+      key === "component.knx.config_panel.info.title" ? "Information" : key;
+    (router as any).updatePageEl(document.createElement("knx-info"), undefined);
+    expect(document.title).toBe("Information - KNX - Home Assistant");
+  });
+
+  it("keeps the existing title for a page without a tab or status title", () => {
+    document.title = "Entities - KNX - Home Assistant";
+    const router = routerAt("knx-entities-router", "/knx/entities", "/view");
+    (router as any).updatePageEl(document.createElement("knx-entities-view"), undefined);
+    expect(document.title).toBe("Entities - KNX - Home Assistant");
   });
 
   it("treats inherited object keys as unknown pages", () => {
