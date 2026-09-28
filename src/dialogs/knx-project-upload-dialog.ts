@@ -64,6 +64,20 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
   private _backendLocalize = (key: string) =>
     this.hass.localize(`component.knx.config_panel.dialogs.project_upload.${key}`);
 
+  // Core translations take precedence; local keys remain as fallback during the migration.
+  private _currentProjectLocalize(
+    coreKey: string,
+    localKey: string,
+    replace?: Record<string, string>,
+  ): string {
+    return (
+      this.hass.localize(
+        `component.knx.config_panel.dialogs.project_upload.current_project.${coreKey}`,
+        replace,
+      ) || this.params!.knx.localize(localKey, replace)
+    );
+  }
+
   protected render() {
     if (!this.params) {
       return nothing;
@@ -118,16 +132,15 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
     if (!projectInfo) {
       return nothing;
     }
-    const knx = this.params!.knx;
     const lastModified = parseLastModified(projectInfo);
     const summary = [
       projectInfo.tool_version
-        ? knx.localize("project_upload_ets_version_short", {
+        ? this._currentProjectLocalize("short_ets_version", "project_upload_ets_version_short", {
             version: shortToolVersion(projectInfo.tool_version),
           })
         : undefined,
       lastModified
-        ? knx.localize("project_upload_modified", {
+        ? this._currentProjectLocalize("modified", "project_upload_modified", {
             time: relativeTime(lastModified, this.hass.locale),
           })
         : undefined,
@@ -138,7 +151,7 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
     return html`
       <section class="current-project" aria-labelledby="current-project-header">
         <div class="section-header" id="current-project-header">
-          ${knx.localize("project_upload_current_project")}
+          ${this._currentProjectLocalize("title", "project_upload_current_project")}
         </div>
         <ha-expansion-panel outlined .header=${projectInfo.name} .secondary=${summary}>
           <div slot="leading-icon" class="project-icon" aria-hidden="true">
@@ -148,7 +161,10 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
             ${
               lastModified
                 ? html`<ha-list-item-value
-                    .label=${knx.localize("info_project_data_last_modified")}
+                    .label=${this._currentProjectLocalize(
+                      "last_modified.label",
+                      "info_project_data_last_modified",
+                    )}
                   >
                     ${formatDateTime(lastModified, this.hass.locale, this.hass.config)}
                   </ha-list-item-value>`
@@ -156,12 +172,22 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
             }
             ${
               projectInfo.tool_version
-                ? html`<ha-list-item-value .label=${knx.localize("project_upload_ets_version")}>
+                ? html`<ha-list-item-value
+                    .label=${this._currentProjectLocalize(
+                      "ets_version.label",
+                      "project_upload_ets_version",
+                    )}
+                  >
                     ${projectInfo.tool_version}
                   </ha-list-item-value>`
                 : nothing
             }
-            <ha-list-item-value .label=${knx.localize("project_upload_imported_with")}>
+            <ha-list-item-value
+              .label=${this._currentProjectLocalize(
+                "imported_with.label",
+                "project_upload_imported_with",
+              )}
+            >
               xknxproject ${projectInfo.xknxproject_version}
             </ha-list-item-value>
           </ha-list-base>

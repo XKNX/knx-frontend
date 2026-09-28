@@ -17,7 +17,10 @@ const PROJECT_INFO: KNXProjectInfo = {
   xknxproject_version: "3.9.0",
 };
 
-const createHass = () =>
+const CORE_PREFIX = "component.knx.config_panel.dialogs.project_upload.current_project";
+
+// Like Home Assistant, unknown keys resolve to an empty string.
+const createHass = (backendTranslations: Record<string, string> = {}) =>
   ({
     language: "en",
     locale: {
@@ -29,11 +32,16 @@ const createHass = () =>
       first_weekday: "language",
     },
     config: { time_zone: "Etc/UTC" },
-    localize: vi.fn((key: string) => key),
+    localize: vi.fn((key: string, replace?: Record<string, string>) =>
+      (backendTranslations[key] ?? "").replace(/\{(\w+)\}/g, (_, name) => replace?.[name] ?? ""),
+    ),
   }) as unknown as HomeAssistant;
 
-const renderDialog = (projectInfo: KNXProjectInfo | null) => {
-  const hass = createHass();
+const renderDialog = (
+  projectInfo: KNXProjectInfo | null,
+  backendTranslations: Record<string, string> = {},
+) => {
+  const hass = createHass(backendTranslations);
   const knx = {
     localize: (key: string, replace?: Record<string, any>) => localize(hass, key, replace),
     projectInfo,
@@ -77,6 +85,26 @@ describe("KnxProjectUploadDialog", () => {
     expect(container.querySelector("ha-expansion-panel")).toBeNull();
     expect(container.textContent).not.toContain("Currently loaded");
     expect(container.querySelector("ha-file-upload")).not.toBeNull();
+  });
+
+  it("prefers Core translations over the local fallback", () => {
+    const container = renderDialog(PROJECT_INFO, {
+      [`${CORE_PREFIX}.title`]: "Aktuell geladen",
+      [`${CORE_PREFIX}.short_ets_version`]: "ETS {version}",
+      [`${CORE_PREFIX}.modified`]: "Geändert {time}",
+      [`${CORE_PREFIX}.last_modified.label`]: "Zuletzt geändert",
+      [`${CORE_PREFIX}.ets_version.label`]: "ETS-Version",
+      [`${CORE_PREFIX}.imported_with.label`]: "Importiert mit",
+    });
+
+    expect(container.textContent).toContain("Aktuell geladen");
+    const panel = container.querySelector<HaExpansionPanel>("ha-expansion-panel")!;
+    expect(panel.secondary).toMatch(/^ETS 6\.1 · Geändert .+/);
+    expect(Object.keys(valueRows(container))).toEqual([
+      "Zuletzt geändert",
+      "ETS-Version",
+      "Importiert mit",
+    ]);
   });
 
   it("omits missing modification date and ETS version", () => {
