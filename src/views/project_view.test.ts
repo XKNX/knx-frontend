@@ -107,6 +107,24 @@ describe("KNXProjectView", () => {
     expect(tableSearch).toBe(devicesSearch);
   });
 
+  it("reads search from the listening control and clears missing input values", () => {
+    const { host, update } = drawDevices();
+    const search = host.querySelector("ha-input-search")!;
+    const inner = document.createElement("input");
+    inner.value = "Other target";
+    search.value = "Kitchen";
+    const event = new Event("input");
+    Object.defineProperty(event, "target", { value: inner });
+    search.dispatchEvent(event);
+    update();
+    expect(host.querySelector("knx-project-devices-view")!.searchText).toBe("Kitchen");
+
+    Object.defineProperty(search, "value", { value: undefined, writable: true });
+    search.dispatchEvent(new Event("input"));
+    update();
+    expect(host.querySelector("knx-project-devices-view")!.searchText).toBe("");
+  });
+
   it("opens the automation editor from a group-address action", () => {
     const element = new KNXProjectView();
     element.hass = { localize: vi.fn((key) => key) } as any;

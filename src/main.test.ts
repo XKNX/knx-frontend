@@ -1,6 +1,9 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
+import { ContextEvent } from "@lit/context";
+import type { PropertyValues } from "lit";
 
 import type { HomeAssistant } from "@ha/types";
+import { narrowViewportContext } from "@ha/data/context";
 import { clearBrandsTokenRefresh, fetchAndScheduleBrandsAccessToken } from "@ha/util/brands-url";
 import type * as BrandsUrl from "@ha/util/brands-url";
 
@@ -59,5 +62,31 @@ describe("KNX brand token", () => {
     vi.mocked(clearBrandsTokenRefresh).mockClear();
     document.createElement("knx-frontend").disconnectedCallback();
     expect(clearBrandsTokenRefresh).toHaveBeenCalledOnce();
+  });
+});
+
+describe("KNX viewport context", () => {
+  it("publishes viewport changes to descendants and ignores unrelated updates", () => {
+    const view = document.createElement("knx-frontend");
+    const child = document.createElement("div");
+    view.append(child);
+    const received = vi.fn();
+    child.dispatchEvent(new ContextEvent(narrowViewportContext, child, received, true));
+    expect(received).toHaveBeenLastCalledWith(false, expect.any(Function));
+
+    for (const narrow of [true, false]) {
+      const changes: PropertyValues<typeof view> = new Map();
+      changes.set("narrow", view.narrow);
+      view.narrow = narrow;
+      view["willUpdate"](changes);
+      expect(received).toHaveBeenLastCalledWith(narrow, expect.any(Function));
+    }
+    expect(received).toHaveBeenCalledTimes(3);
+    view.narrow = true;
+    const changes: PropertyValues<typeof view> = new Map();
+    changes.set("route", view.route);
+    view["willUpdate"](changes);
+    expect(received).toHaveBeenCalledTimes(3);
+    received.mock.calls[0][1]();
   });
 });

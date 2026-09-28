@@ -8,6 +8,7 @@ import { KnxTabsSubpageData } from "./knx-tabs-subpage-data";
 const draw = (view: KnxTabsSubpageData) => {
   view.hass = { localize: (key: string) => key } as unknown as HomeAssistant;
   const host = view.attachShadow({ mode: "open" });
+  Reflect.set(view, "renderRoot", host);
   render(view["render"](), host, { host: view });
   return host;
 };
@@ -90,6 +91,57 @@ describe("KnxTabsSubpageData", () => {
     expect(host.querySelector("knx-tabs-subpage-data-filter-pane, ha-filter-pane-chip")).toBeNull();
   });
 
+  it("moves slotted search into the narrow header unless a custom header is supplied", () => {
+    const view = new KnxTabsSubpageData();
+    const host = draw(view);
+    const search = document.createElement("input");
+    search.slot = "toolbar-search";
+    view.append(search);
+    host.querySelector('slot[name="toolbar-search"]')!.dispatchEvent(new Event("slotchange"));
+    render(view["render"](), host, { host: view });
+    expect(host.querySelector('slot[name="toolbar-search"]')!.parentElement!.localName).toBe(
+      "knx-tabs-subpage-data-toolbar",
+    );
+
+    view.narrow = true;
+    render(view["render"](), host, { host: view });
+    expect(host.querySelectorAll('slot[name="toolbar-search"]')).toHaveLength(1);
+    expect(host.querySelector('slot[name="toolbar-search"]')!.parentElement!.slot).toBe("header");
+
+    const header = document.createElement("span");
+    header.slot = "header";
+    view.append(header);
+    host.querySelector('slot[name="header"]')!.dispatchEvent(new Event("slotchange"));
+    render(view["render"](), host, { host: view });
+    expect(host.querySelector('slot[name="toolbar-search"]')!.parentElement!.localName).toBe(
+      "knx-tabs-subpage-data-toolbar",
+    );
+
+    header.remove();
+    host.querySelector('slot[name="header"]')!.dispatchEvent(new Event("slotchange"));
+    search.remove();
+    host.querySelector('slot[name="toolbar-search"]')!.dispatchEvent(new Event("slotchange"));
+    render(view["render"](), host, { host: view });
+    expect(host.querySelector(".header-search")).toBeNull();
+  });
+
+  it("shows active filters only while the consumer supplies chips", () => {
+    const view = new KnxTabsSubpageData();
+    const host = draw(view);
+    const chip = document.createElement("ha-input-chip");
+    chip.slot = "active-filters";
+    view.append(chip);
+    const slot = host.querySelector('slot[name="active-filters"]')!;
+    slot.dispatchEvent(new Event("slotchange"));
+    render(view["render"](), host, { host: view });
+    expect(host.querySelector<HTMLElement>(".active-filters")!.hidden).toBe(false);
+
+    chip.remove();
+    slot.dispatchEvent(new Event("slotchange"));
+    render(view["render"](), host, { host: view });
+    expect(host.querySelector<HTMLElement>(".active-filters")!.hidden).toBe(true);
+  });
+
   it("renders one pane with consumer filters and result count", () => {
     const view = new KnxTabsSubpageData();
     view.hasFilters = true;
@@ -163,6 +215,8 @@ describe("KnxTabsSubpageData", () => {
     expect(view.showFilters).toBe(false);
     expect(changed).toHaveBeenCalledTimes(1);
     expect((changed.mock.calls[0][0] as CustomEvent).detail).toEqual({ value: false });
+    pane.dispatchEvent(new Event("close-filter-pane"));
+    expect(changed).toHaveBeenCalledTimes(1);
     pane.dispatchEvent(new Event("clear-filter", { bubbles: true, composed: true }));
     expect(cleared).toHaveBeenCalledTimes(1);
     expect(view.activeFilterCount).toBe(2);

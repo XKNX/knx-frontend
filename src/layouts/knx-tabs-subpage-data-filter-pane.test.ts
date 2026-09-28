@@ -4,9 +4,9 @@ import { describe, expect, it, vi } from "vitest";
 import { KnxTabsSubpageDataFilterPane } from "./knx-tabs-subpage-data-filter-pane";
 
 /** Injects identity localization and renders a disconnected pane directly into its shadow root. */
-const draw = (pane: KnxTabsSubpageDataFilterPane) => {
+const draw = (pane: KnxTabsSubpageDataFilterPane, localize = (key: string) => key) => {
   // consumeLocalize takes the context value and keeps its `localize`.
-  Reflect.set(pane, "_localize", { localize: (key: string) => key });
+  Reflect.set(pane, "_localize", { localize });
   const host = pane.attachShadow({ mode: "open" });
   render(pane["render"](), host, { host: pane });
   return host;
@@ -57,4 +57,25 @@ describe("KnxTabsSubpageDataFilterPane", () => {
     expect(closed).toHaveBeenCalledTimes(1);
     expect(cleared).toHaveBeenCalledTimes(1);
   });
+
+  it.each([0, 7])(
+    "includes %s results in the dialog close action and reports dismissal",
+    (count) => {
+      const pane = new KnxTabsSubpageDataFilterPane();
+      pane.narrow = true;
+      pane.resultCount = count;
+      const localize = vi.fn((key: string) => key);
+      const host = draw(pane, localize);
+      expect(localize).toHaveBeenCalledWith("ui.components.subpage-data-table.show_results", {
+        number: count,
+      });
+      expect(localize).not.toHaveBeenCalledWith("ui.common.close");
+
+      const closed = vi.fn();
+      pane.addEventListener("close-filter-pane", closed);
+      host.querySelector("ha-adaptive-dialog")!.dispatchEvent(new Event("closed"));
+      expect(closed).toHaveBeenCalledOnce();
+      expect(pane.resultCount).toBe(count);
+    },
+  );
 });
