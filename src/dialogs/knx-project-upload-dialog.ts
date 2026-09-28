@@ -223,7 +223,7 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
     } catch (err: any) {
       error = err;
       showAlertDialog(this, {
-        title: "Upload failed",
+        title: this.hass.localize("ui.components.selectors.file.upload_failed"),
         text: extractApiErrorMessage(err),
       });
     } finally {

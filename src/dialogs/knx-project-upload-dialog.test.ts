@@ -28,6 +28,8 @@ const PROJECT_INFO: KNXProjectInfo = {
   xknxproject_version: "3.9.0",
 };
 
+const UPLOAD_FAILED = { "ui.components.selectors.file.upload_failed": "Upload fehlgeschlagen" };
+
 const CORE_PREFIX = "component.knx.config_panel.dialogs.project_upload.current_project";
 
 // Like Home Assistant, unknown keys resolve to an empty string.
@@ -392,7 +394,7 @@ describe("KnxProjectUploadDialog", () => {
     ])("shows the processing error for %s and keeps the dialog open", async (_, error, text) => {
       vi.mocked(uploadFile).mockResolvedValue("file-id");
       vi.mocked(processProjectFile).mockRejectedValue(error);
-      const rendered = createDialog();
+      const rendered = createDialog(PROJECT_INFO, UPLOAD_FAILED);
       const closeDialog = vi.spyOn(rendered.dialog, "closeDialog");
       const reload = vi.fn();
       rendered.dialog.addEventListener("knx-reload", reload);
@@ -402,7 +404,7 @@ describe("KnxProjectUploadDialog", () => {
       rendered.rerender();
 
       expect(showAlertDialog).toHaveBeenCalledWith(rendered.dialog, {
-        title: "Upload failed",
+        title: "Upload fehlgeschlagen",
         text,
       });
       expect(closeDialog).not.toHaveBeenCalled();
@@ -414,7 +416,7 @@ describe("KnxProjectUploadDialog", () => {
 
     it("shows the upload error and skips processing when the file upload fails", async () => {
       vi.mocked(uploadFile).mockRejectedValue(new Error("File too large"));
-      const rendered = createDialog();
+      const rendered = createDialog(PROJECT_INFO, UPLOAD_FAILED);
       const closeDialog = vi.spyOn(rendered.dialog, "closeDialog");
       pickFile(rendered);
 
@@ -422,7 +424,7 @@ describe("KnxProjectUploadDialog", () => {
 
       expect(processProjectFile).not.toHaveBeenCalled();
       expect(showAlertDialog).toHaveBeenCalledWith(rendered.dialog, {
-        title: "Upload failed",
+        title: "Upload fehlgeschlagen",
         text: "File too large",
       });
       expect(closeDialog).not.toHaveBeenCalled();
