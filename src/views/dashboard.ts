@@ -164,7 +164,7 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
   }
 
   private _openProjectUploadDialog() {
-    showKnxProjectUploadDialog(this, { hass: this.hass });
+    showKnxProjectUploadDialog(this, { hass: this.hass, knx: this.knx });
   }
 
   private _openTimeServerDialog() {
