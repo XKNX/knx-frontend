@@ -1,5 +1,7 @@
 import { mainWindow } from "@ha/common/dom/get_main_window";
-import { navigate } from "@ha/common/navigate";
+import { navigate, updateHistoryState } from "@ha/common/navigate";
+
+import { BASE_URL } from "../knx-router";
 
 /**
  * Navigation helpers for sub-page flows - eg. creating or editing an entity.
@@ -34,18 +36,42 @@ const _historyChanged = (): Promise<void> =>
 const _dialogHistorySettled = (): Promise<void> =>
   mainWindow.history.state?.dialog ? _historyChanged() : Promise.resolve();
 
+const ERROR_PATH = `${BASE_URL}/error`;
+
 /**
- * Show the error page, replacing the current history entry.
+ * Show the error page, replacing the current history entry. The page where
+ * it happened is remembered as `retryPath`, so "Try again" can return there -
+ * including its query, which flows read their presets from.
+ *
+ * When the error page is already shown - a second call failing shortly after
+ * the first, e.g. a delayed validation - it is left as it is: the first error
+ * is the cause, and "Try again" still returns to the flow and not to the
+ * error page itself.
  *
  * The message is passed as a plain object: `navigate()` merges its own
  * bookkeeping into the history state, which would drop the non-enumerable
  * `message` of an `Error` instance.
+ *
+ * On the first history entry of a tab `navigate()` keeps only its `root`
+ * marker and drops our data, so it is merged into the new entry afterwards.
+ * The error page renders only after the router picked up the new route, so
+ * it already reads the complete state.
  */
-export const navigateToError = (error: unknown): Promise<boolean> =>
-  navigate("/knx/error", {
-    replace: true,
-    data: { message: error instanceof Error ? error.message : String(error) },
-  });
+export const navigateToError = async (error: unknown): Promise<boolean> => {
+  const { pathname, search, hash } = mainWindow.location;
+  if (pathname === ERROR_PATH) {
+    return false;
+  }
+  const data = {
+    message: error instanceof Error ? error.message : String(error),
+    retryPath: `${pathname}${search}${hash}`,
+  };
+  const navigated = await navigate(ERROR_PATH, { replace: true, data });
+  if (navigated) {
+    updateHistoryState(data);
+  }
+  return navigated;
+};
 
 /** Navigate between the steps of a flow, without adding a history entry. */
 export const navigateInFlow = (path: string): Promise<boolean> => navigate(path, { replace: true });
