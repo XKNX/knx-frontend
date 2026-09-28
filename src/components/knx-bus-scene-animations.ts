@@ -228,6 +228,20 @@ const nakFlash = (hit: number, off: string[], on: string[], lag = 0): Frame[] =>
   [hit + BOUNCE.flash, off],
 ];
 
+const flash = (
+  name: string,
+  cycle: number,
+  hits: number[],
+  off: string[],
+  on: string[],
+  lag = 0,
+): string =>
+  keyframes(name, cycle, [
+    [0, off],
+    ...hits.flatMap((hit) => nakFlash(hit, off, on, lag)),
+    [cycle, off],
+  ]);
+
 /**
  * Keyframes of the error story, per device: `knx-reject-<n>` for the flights
  * to it (each device has its own lane, carrying its own group address),
@@ -248,21 +262,9 @@ export const errorKeyframes = (schedule: RejectSchedule = ERROR_SCHEDULE): strin
           .flatMap((send) => rejectedFlight(send.at, send.device)),
         [cycle, at(0, 0)],
       ]),
-      keyframes(`knx-nak-body-${device}`, cycle, [
-        [0, BODY_OFF],
-        ...hits(device).flatMap((hit) => nakFlash(hit, BODY_OFF, BODY_ON)),
-        [cycle, BODY_OFF],
-      ]),
-      keyframes(`knx-nak-led-${device}`, cycle, [
-        [0, LED_OFF],
-        ...hits(device).flatMap((hit) => nakFlash(hit, LED_OFF, LED_ON)),
-        [cycle, LED_OFF],
-      ]),
-      keyframes(`knx-nak-text-${device}`, cycle, [
-        [0, HIDDEN],
-        ...hits(device).flatMap((hit) => nakFlash(hit, HIDDEN, SHOWN, 0.06)),
-        [cycle, HIDDEN],
-      ]),
+      flash(`knx-nak-body-${device}`, cycle, hits(device), BODY_OFF, BODY_ON),
+      flash(`knx-nak-led-${device}`, cycle, hits(device), LED_OFF, LED_ON),
+      flash(`knx-nak-text-${device}`, cycle, hits(device), HIDDEN, SHOWN, 0.06),
     ]),
   ].join("\n\n  ");
 };
@@ -276,24 +278,9 @@ export const shotRejectKeyframes = (): string =>
         [REJECT.flight[device], at(0, 0)],
       ]),
     ),
-    keyframes("knx-shot-nak-body", REJECT.flash, [
-      [0, ["stroke-opacity: 0"]],
-      [0.03, ["stroke-opacity: 1"]],
-      [0.58, ["stroke-opacity: 1"]],
-      [REJECT.flash, ["stroke-opacity: 0"]],
-    ]),
-    keyframes("knx-shot-nak-led", REJECT.flash, [
-      [0, HIDDEN],
-      [0.03, LED_ON],
-      [0.58, LED_ON],
-      [REJECT.flash, HIDDEN],
-    ]),
-    keyframes("knx-shot-nak", REJECT.flash, [
-      [0, HIDDEN],
-      [0.09, SHOWN],
-      [0.64, SHOWN],
-      [REJECT.flash, HIDDEN],
-    ]),
+    flash("knx-shot-nak-body", REJECT.flash, [0.03], ["stroke-opacity: 0"], ["stroke-opacity: 1"]),
+    flash("knx-shot-nak-led", REJECT.flash, [0.03], HIDDEN, LED_ON),
+    flash("knx-shot-nak", REJECT.flash, [0.03], HIDDEN, SHOWN, 0.06),
   ].join("\n\n  ");
 
 const rule = (selector: string, declarations: string): string =>
