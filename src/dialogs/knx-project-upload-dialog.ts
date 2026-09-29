@@ -68,6 +68,15 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
     }
   }
 
+  // Keep the dialog open while uploading, also when closed programmatically
+  // (e.g. on browser back navigation); the dialog manager keeps it on its stack.
+  public closeDialog(historyState?: unknown): Promise<boolean> | boolean {
+    if (this._uploading) {
+      return false;
+    }
+    return super.closeDialog(historyState);
+  }
+
   private _backendLocalize = (key: string, replace?: Record<string, string>) =>
     this.hass.localize(`component.knx.config_panel.dialogs.project_upload.${key}`, replace);
 

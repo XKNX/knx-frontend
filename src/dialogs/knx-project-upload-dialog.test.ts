@@ -417,6 +417,29 @@ describe("KnxProjectUploadDialog", () => {
       ).toBe(false);
     });
 
+    it("refuses to close while uploading, e.g. on browser back navigation", async () => {
+      let finishProcessing!: () => void;
+      vi.mocked(uploadFile).mockResolvedValue("file-id");
+      vi.mocked(processProjectFile).mockReturnValue(
+        new Promise<void>((resolve) => {
+          finishProcessing = resolve;
+        }),
+      );
+      const rendered = createDialog();
+      pickFile(rendered);
+
+      click(primaryButton(rendered.container));
+      await vi.waitFor(() => expect(processProjectFile).toHaveBeenCalled());
+
+      // The dialog manager keeps a dialog open when closeDialog() returns false.
+      expect(rendered.dialog.closeDialog()).toBe(false);
+
+      finishProcessing();
+      await flushPromises();
+
+      expect(rendered.dialog.closeDialog()).not.toBe(false);
+    });
+
     it("processes the submitted password even if the field changes during the upload", async () => {
       let finishUpload!: (fileId: string) => void;
       vi.mocked(uploadFile).mockReturnValue(
