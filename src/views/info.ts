@@ -6,7 +6,6 @@ import { fireEvent } from "@ha/common/dom/fire_event";
 import "@ha/components/ha-card";
 import "@ha/layouts/hass-subpage";
 import "@ha/components/ha-button";
-import { extractApiErrorMessage } from "@ha/data/hassio/common";
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 import type { HomeAssistant, Route } from "@ha/types";
 
@@ -15,6 +14,8 @@ import { removeProjectFile } from "../services/websocket.service";
 import type { KNX } from "../types/knx";
 import type { KNXProjectInfo } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
+import { errorMessage } from "../utils/error";
+import { parseProjectLastModified } from "../utils/project-info";
 import { VERSION } from "../version";
 import { infoTab } from "../knx-router";
 
@@ -126,6 +127,7 @@ export class KNXInfo extends LitElement {
   }
 
   private _renderProjectDataCard(projectInfo: KNXProjectInfo) {
+    const lastModified = parseProjectLastModified(projectInfo);
     return html`
       <ha-card class="knx-info">
           <div class="card-content knx-content">
@@ -137,10 +139,10 @@ export class KNXInfo extends LitElement {
               <div>${projectInfo.name}</div>
             </div>
             ${
-              projectInfo.last_modified
+              lastModified
                 ? html`<div class="knx-content-row">
                     <div>${this.knx.localize("info_project_data_last_modified")}</div>
-                    <div>${new Date(projectInfo.last_modified).toUTCString()}</div>
+                    <div>${lastModified.toUTCString()}</div>
                   </div>`
                 : nothing
             }
@@ -177,10 +179,10 @@ export class KNXInfo extends LitElement {
 
     try {
       await removeProjectFile(this.hass);
-    } catch (err: any) {
+    } catch (err: unknown) {
       showAlertDialog(this, {
-        title: "Deletion failed",
-        text: extractApiErrorMessage(err),
+        title: this.hass.localize("ui.common.deleting_failed"),
+        text: errorMessage(err) ?? this.hass.localize("ui.common.unknown_error"),
       });
     } finally {
       fireEvent(this, "knx-reload");

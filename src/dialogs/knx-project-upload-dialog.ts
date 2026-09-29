@@ -25,21 +25,13 @@ import type { HomeAssistant, ValueChangedEvent } from "@ha/types";
 
 import { processProjectFile } from "../services/websocket.service";
 import type { KNX } from "../types/knx";
-import type { KNXProjectInfo } from "../types/websocket";
 import { errorMessage } from "../utils/error";
+import { parseProjectLastModified } from "../utils/project-info";
 
 export interface KnxProjectUploadDialogParams {
   hass: HomeAssistant;
   knx: KNX;
 }
-
-const parseLastModified = (projectInfo: KNXProjectInfo): Date | undefined => {
-  if (!projectInfo.last_modified) {
-    return undefined;
-  }
-  const date = new Date(projectInfo.last_modified);
-  return Number.isNaN(date.getTime()) ? undefined : date;
-};
 
 /** Leading major[.minor] of a numeric ETS tool version like `6.1.5686.0`. */
 const NUMERIC_TOOL_VERSION = /^\d+(?:\.\d+)?/;
@@ -157,7 +149,7 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
     if (!projectInfo) {
       return nothing;
     }
-    const lastModified = parseLastModified(projectInfo);
+    const lastModified = parseProjectLastModified(projectInfo);
     const summary = [
       projectInfo.tool_version ? this._etsVersionSummary(projectInfo.tool_version) : undefined,
       lastModified
