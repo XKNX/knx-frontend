@@ -19,7 +19,6 @@ import { formatDateTime } from "@ha/common/datetime/format_date_time";
 import { relativeTime } from "@ha/common/datetime/relative_time";
 import { DialogMixin } from "@ha/dialogs/dialog-mixin";
 import { uploadFile } from "@ha/data/file_upload";
-import { extractApiErrorMessage } from "@ha/data/hassio/common";
 import type { StringSelector } from "@ha/data/selector";
 import { showAlertDialog } from "@ha/dialogs/generic/show-dialog-box";
 import type { HomeAssistant, ValueChangedEvent } from "@ha/types";
@@ -27,6 +26,7 @@ import type { HomeAssistant, ValueChangedEvent } from "@ha/types";
 import { processProjectFile } from "../services/websocket.service";
 import type { KNX } from "../types/knx";
 import type { KNXProjectInfo } from "../types/websocket";
+import { errorMessage } from "../utils/error";
 
 export interface KnxProjectUploadDialogParams {
   hass: HomeAssistant;
@@ -239,10 +239,9 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
       await processProjectFile(this.hass, projectFileId, password);
     } catch (err: unknown) {
       this._uploading = false;
-      const message = err ? extractApiErrorMessage(err) : undefined;
       showAlertDialog(this, {
         title: this.hass.localize("ui.components.selectors.file.upload_failed"),
-        text: message || this.hass.localize("ui.common.unknown_error"),
+        text: errorMessage(err) ?? this.hass.localize("ui.common.unknown_error"),
       });
       return;
     }

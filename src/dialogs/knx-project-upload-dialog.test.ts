@@ -440,8 +440,6 @@ describe("KnxProjectUploadDialog", () => {
         "Invalid password",
       ],
       ["an Error", new Error("Project file could not be read"), "Project file could not be read"],
-      ["an error body message", { body: { message: "Body message" } }, "Body message"],
-      ["an error body text", { body: "Body text" }, "Body text"],
       ["a plain string", "Plain failure", "Plain failure"],
     ])("shows the processing error for %s and keeps the dialog open", async (_, error, text) => {
       vi.mocked(uploadFile).mockResolvedValue("file-id");
@@ -469,7 +467,9 @@ describe("KnxProjectUploadDialog", () => {
     it.each([
       ["undefined", undefined],
       ["null", null],
-    ])("treats a rejection with %s as a failure", async (_, error) => {
+      ["an object without message", {}],
+      ["an error code without message", { code: "unknown_error" }],
+    ])("reports a rejection with %s as unknown error", async (_, error) => {
       vi.mocked(uploadFile).mockResolvedValue("file-id");
       vi.mocked(processProjectFile).mockRejectedValue(error);
       const rendered = createDialog(PROJECT_INFO, {
