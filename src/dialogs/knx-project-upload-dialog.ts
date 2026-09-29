@@ -56,8 +56,8 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
     }
   }
 
-  private _backendLocalize = (key: string) =>
-    this.hass.localize(`component.knx.config_panel.dialogs.project_upload.${key}`);
+  private _backendLocalize = (key: string, replace?: Record<string, string>) =>
+    this.hass.localize(`component.knx.config_panel.dialogs.project_upload.${key}`, replace);
 
   // Core translations take precedence; local keys remain as fallback during the migration.
   private _currentProjectLocalize(
@@ -66,10 +66,8 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
     replace?: Record<string, string>,
   ): string {
     return (
-      this.hass.localize(
-        `component.knx.config_panel.dialogs.project_upload.current_project.${coreKey}`,
-        replace,
-      ) || this.params!.knx.localize(localKey, replace)
+      this._backendLocalize(`current_project.${coreKey}`, replace) ||
+      this.params!.knx.localize(localKey, replace)
     );
   }
 
