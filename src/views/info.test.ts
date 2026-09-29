@@ -64,7 +64,7 @@ describe("KNXInfo project data card", () => {
 
     expect(rows).toEqual({
       "Project name": "Einfamilienhaus Musterstraße 12",
-      "Last modified": "Mon, 14 Sep 2026 18:42:12 GMT",
+      "Last modified": "September 14, 2026 at 18:42",
       "Tool version": "6.1.5686.0",
       "XKNXProject version": "3.9.0",
     });

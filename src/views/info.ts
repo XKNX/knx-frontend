@@ -2,6 +2,7 @@ import type { TemplateResult } from "lit";
 import { css, nothing, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators";
 
+import { formatDateTime } from "@ha/common/datetime/format_date_time";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import "@ha/components/ha-card";
 import "@ha/layouts/hass-subpage";
@@ -142,7 +143,7 @@ export class KNXInfo extends LitElement {
               lastModified
                 ? html`<div class="knx-content-row">
                     <div>${this.knx.localize("info_project_data_last_modified")}</div>
-                    <div>${lastModified.toUTCString()}</div>
+                    <div>${formatDateTime(lastModified, this.hass.locale, this.hass.config)}</div>
                   </div>`
                 : nothing
             }
