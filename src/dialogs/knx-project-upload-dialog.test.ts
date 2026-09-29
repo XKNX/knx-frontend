@@ -76,7 +76,13 @@ type Rendered = ReturnType<typeof createDialog>;
 const PROJECT_FILE = new File(["<knx/>"], "house.knxproj");
 
 const fileUpload = (container: HTMLElement) =>
-  container.querySelector("ha-file-upload") as HTMLElement & { uploading: boolean };
+  container.querySelector("ha-file-upload") as HTMLElement & {
+    uploading: boolean;
+    disabled: boolean;
+  };
+
+const passwordField = (container: HTMLElement) =>
+  container.querySelector("ha-selector-text") as HTMLElement & { disabled: boolean };
 
 const primaryButton = (container: HTMLElement) =>
   container.querySelector('ha-button[slot="primaryAction"]') as HTMLElement & {
@@ -377,6 +383,8 @@ describe("KnxProjectUploadDialog", () => {
       rendered.rerender();
 
       expect(fileUpload(rendered.container).uploading).toBe(true);
+      expect(fileUpload(rendered.container).disabled).toBe(true);
+      expect(passwordField(rendered.container).disabled).toBe(true);
       expect(primaryButton(rendered.container).disabled).toBe(true);
       expect(secondaryButton(rendered.container).disabled).toBe(true);
       expect(
@@ -388,10 +396,34 @@ describe("KnxProjectUploadDialog", () => {
       rendered.rerender();
 
       expect(fileUpload(rendered.container).uploading).toBe(false);
+      expect(fileUpload(rendered.container).disabled).toBe(false);
+      expect(passwordField(rendered.container).disabled).toBe(false);
       expect(secondaryButton(rendered.container).disabled).toBe(false);
       expect(
         rendered.container.querySelector("ha-dialog")!.hasAttribute("prevent-scrim-close"),
       ).toBe(false);
+    });
+
+    it("processes the submitted password even if the field changes during the upload", async () => {
+      let finishUpload!: (fileId: string) => void;
+      vi.mocked(uploadFile).mockReturnValue(
+        new Promise<string>((resolve) => {
+          finishUpload = resolve;
+        }),
+      );
+      vi.mocked(processProjectFile).mockResolvedValue(undefined);
+      const rendered = createDialog();
+      vi.spyOn(rendered.dialog, "closeDialog");
+      pickFile(rendered);
+      enterPassword(rendered, "submitted");
+
+      click(primaryButton(rendered.container));
+      await vi.waitFor(() => expect(uploadFile).toHaveBeenCalled());
+      enterPassword(rendered, "changed");
+      finishUpload("file-id");
+      await flushPromises();
+
+      expect(processProjectFile).toHaveBeenCalledWith(rendered.hass, "file-id", "submitted");
     });
 
     it.each([

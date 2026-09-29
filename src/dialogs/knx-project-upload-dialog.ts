@@ -104,6 +104,7 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
             .label=${this._backendLocalize("file_upload_label")}
             .value=${this._projectFile?.name}
             .uploading=${this._uploading}
+            .disabled=${this._uploading}
             @file-picked=${this._filePicked}
             @files-cleared=${this._filePicked}
           ></ha-file-upload>
@@ -112,6 +113,7 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
             .label=${this.hass.localize("ui.login-form.password")}
             .selector=${PASSWORD_SELECTOR}
             .required=${false}
+            .disabled=${this._uploading}
             @value-changed=${this._passwordChanged}
           >
           </ha-selector-text>
@@ -230,12 +232,13 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
     if (!file) {
       return;
     }
+    const password = this._projectPassword || "";
 
     const host = this._host();
     this._uploading = true;
     try {
       const projectFileId = await uploadFile(this.hass, file);
-      await processProjectFile(this.hass, projectFileId, this._projectPassword || "");
+      await processProjectFile(this.hass, projectFileId, password);
     } catch (err: unknown) {
       this._uploading = false;
       const message = err ? extractApiErrorMessage(err) : undefined;
