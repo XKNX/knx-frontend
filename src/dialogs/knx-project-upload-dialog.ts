@@ -152,7 +152,7 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
       projectInfo.tool_version ? this._etsVersionSummary(projectInfo.tool_version) : undefined,
       lastModified
         ? this._currentProjectLocalize("modified", "project_upload_modified", {
-            time: relativeTime(lastModified, this.hass.locale),
+            relative_time: relativeTime(lastModified, this.hass.locale),
           })
         : undefined,
     ]

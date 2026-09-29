@@ -215,7 +215,7 @@ describe("KnxProjectUploadDialog", () => {
       const { container } = createDialog(PROJECT_INFO, {
         [`${CORE_PREFIX}.title`]: "Aktuell geladen",
         [`${CORE_PREFIX}.short_ets_version`]: "ETS {version}",
-        [`${CORE_PREFIX}.modified`]: "Geändert {time}",
+        [`${CORE_PREFIX}.modified`]: "Geändert {relative_time}",
         [`${CORE_PREFIX}.last_modified.label`]: "Zuletzt geändert",
         [`${CORE_PREFIX}.ets_version.label`]: "ETS-Version",
         [`${CORE_PREFIX}.imported_with.label`]: "Importiert mit",
