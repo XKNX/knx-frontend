@@ -51,7 +51,7 @@ export interface KNXEntityIdentifier {
 
 export interface KNXProjectInfo {
   name: string;
-  last_modified: string;
+  last_modified: string | null;
   tool_version: string;
   xknxproject_version: string;
 }

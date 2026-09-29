@@ -19,8 +19,9 @@ import { relativeTime } from "@ha/common/datetime/relative_time";
 import { DialogMixin } from "@ha/dialogs/dialog-mixin";
 import { uploadFile } from "@ha/data/file_upload";
 import { extractApiErrorMessage } from "@ha/data/hassio/common";
+import type { StringSelector } from "@ha/data/selector";
 import { showAlertDialog } from "@ha/dialogs/generic/show-dialog-box";
-import type { HomeAssistant } from "@ha/types";
+import type { HomeAssistant, ValueChangedEvent } from "@ha/types";
 
 import { processProjectFile } from "../services/websocket.service";
 import type { KNX } from "../types/knx";
@@ -39,9 +40,10 @@ const parseLastModified = (projectInfo: KNXProjectInfo): Date | undefined => {
   return Number.isNaN(date.getTime()) ? undefined : date;
 };
 
-/** Reduce an ETS tool version like `6.1.5686.0` to its major.minor part. */
-const shortToolVersion = (toolVersion: string): string =>
-  toolVersion.split(".").slice(0, 2).join(".");
+/** Leading major[.minor] of a numeric ETS tool version like `6.1.5686.0`. */
+const NUMERIC_TOOL_VERSION = /^\d+(?:\.\d+)?/;
+
+const PASSWORD_SELECTOR: StringSelector = { text: { multiline: false, type: "password" } };
 
 @customElement("knx-project-upload-dialog")
 export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogParams>(LitElement) {
@@ -83,7 +85,12 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
       return nothing;
     }
     return html`
-      <ha-dialog open @closed=${this.closeDialog} .headerTitle=${this._backendLocalize("title")}>
+      <ha-dialog
+        open
+        ?prevent-scrim-close=${this._uploading}
+        @closed=${this.closeDialog}
+        .headerTitle=${this._backendLocalize("title")}
+      >
         <div class="content">
           <ha-markdown
             class="description"
@@ -92,7 +99,6 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
           ></ha-markdown>
           ${this._renderCurrentProject()}
           <ha-file-upload
-            .hass=${this.hass}
             accept=".knxproj, .knxprojarchive"
             .icon=${mdiFileUpload}
             .label=${this._backendLocalize("file_upload_label")}
@@ -102,10 +108,9 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
             @files-cleared=${this._filePicked}
           ></ha-file-upload>
           <ha-selector-text
-            .hass=${this.hass}
             .value=${this._projectPassword || ""}
             .label=${this.hass.localize("ui.login-form.password")}
-            .selector=${{ text: { multiline: false, type: "password" } }}
+            .selector=${PASSWORD_SELECTOR}
             .required=${false}
             @value-changed=${this._passwordChanged}
           >
@@ -127,6 +132,16 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
     `;
   }
 
+  private _etsVersionSummary(toolVersion: string): string {
+    const shortVersion = NUMERIC_TOOL_VERSION.exec(toolVersion)?.[0];
+    // ETS 4 reports a descriptive version like "ETS 4.2.0 (Build 3884)"; show it as is.
+    return shortVersion
+      ? this._currentProjectLocalize("short_ets_version", "project_upload_ets_version_short", {
+          version: shortVersion,
+        })
+      : toolVersion;
+  }
+
   private _renderCurrentProject() {
     const projectInfo = this.params?.knx.projectInfo;
     if (!projectInfo) {
@@ -134,11 +149,7 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
     }
     const lastModified = parseLastModified(projectInfo);
     const summary = [
-      projectInfo.tool_version
-        ? this._currentProjectLocalize("short_ets_version", "project_upload_ets_version_short", {
-            version: shortToolVersion(projectInfo.tool_version),
-          })
-        : undefined,
+      projectInfo.tool_version ? this._etsVersionSummary(projectInfo.tool_version) : undefined,
       lastModified
         ? this._currentProjectLocalize("modified", "project_upload_modified", {
             time: relativeTime(lastModified, this.hass.locale),
@@ -196,43 +207,47 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
     `;
   }
 
-  private _filePicked(ev) {
-    if (ev.detail.files) {
-      this._projectFile = ev.detail.files[0];
-    } else {
-      // files-cleared event
-      this._projectFile = undefined;
-    }
+  private _filePicked(ev: CustomEvent<{ files?: File[] }>) {
+    // `files-cleared` is fired without files.
+    this._projectFile = ev.detail.files?.[0];
   }
 
-  private _passwordChanged(ev) {
+  private _passwordChanged(ev: ValueChangedEvent<string>) {
     this._projectPassword = ev.detail.value;
+  }
+
+  /**
+   * The element hosting the dialog. The dialog may be removed while uploading
+   * (e.g. via its close button), so results are reported through its host.
+   */
+  private _host(): HTMLElement {
+    const root = this.getRootNode();
+    return root instanceof ShadowRoot && root.host instanceof HTMLElement ? root.host : this;
   }
 
   private async _uploadFile() {
     const file = this._projectFile;
-    if (typeof file === "undefined") {
+    if (!file) {
       return;
     }
 
-    let error: Error | undefined;
+    const host = this._host();
     this._uploading = true;
     try {
-      const project_file_id = await uploadFile(this.hass, file);
-      await processProjectFile(this.hass, project_file_id, this._projectPassword || "");
-    } catch (err: any) {
-      error = err;
-      showAlertDialog(this, {
-        title: this.hass.localize("ui.components.selectors.file.upload_failed"),
-        text: extractApiErrorMessage(err),
-      });
-    } finally {
+      const projectFileId = await uploadFile(this.hass, file);
+      await processProjectFile(this.hass, projectFileId, this._projectPassword || "");
+    } catch (err: unknown) {
       this._uploading = false;
-      if (!error) {
-        this.closeDialog();
-        fireEvent(this, "knx-reload");
-      }
+      const message = err ? extractApiErrorMessage(err) : undefined;
+      showAlertDialog(host, {
+        title: this.hass.localize("ui.components.selectors.file.upload_failed"),
+        text: message || this.hass.localize("ui.common.unknown_error"),
+      });
+      return;
     }
+    this._uploading = false;
+    this.closeDialog();
+    fireEvent(host, "knx-reload");
   }
 
   static styles = css`

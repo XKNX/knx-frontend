@@ -136,10 +136,14 @@ export class KNXInfo extends LitElement {
               <div>${this.knx.localize("info_project_data_name")}</div>
               <div>${projectInfo.name}</div>
             </div>
-            <div class="knx-content-row">
-              <div>${this.knx.localize("info_project_data_last_modified")}</div>
-              <div>${new Date(projectInfo.last_modified).toUTCString()}</div>
-            </div>
+            ${
+              projectInfo.last_modified
+                ? html`<div class="knx-content-row">
+                    <div>${this.knx.localize("info_project_data_last_modified")}</div>
+                    <div>${new Date(projectInfo.last_modified).toUTCString()}</div>
+                  </div>`
+                : nothing
+            }
             <div class="knx-content-row">
               <div>${this.knx.localize("info_project_data_tool_version")}</div>
               <div>${projectInfo.tool_version}</div>

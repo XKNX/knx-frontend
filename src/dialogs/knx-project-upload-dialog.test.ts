@@ -232,7 +232,11 @@ describe("KnxProjectUploadDialog", () => {
     });
 
     it("omits missing modification date and ETS version", () => {
-      const { container } = createDialog({ ...PROJECT_INFO, last_modified: "", tool_version: "" });
+      const { container } = createDialog({
+        ...PROJECT_INFO,
+        last_modified: null,
+        tool_version: "",
+      });
 
       const panel = container.querySelector<HaExpansionPanel>("ha-expansion-panel")!;
       expect(panel.header).toBe("Einfamilienhaus Musterstraße 12");
@@ -254,7 +258,9 @@ describe("KnxProjectUploadDialog", () => {
       ["6.1.5686.0", "ETS 6.1"],
       ["5.7", "ETS 5.7"],
       ["6", "ETS 6"],
-    ])("shortens the ETS version %s to %s in the summary", (toolVersion, expected) => {
+      // ETS 4 projects report a descriptive tool version.
+      ["ETS 4.2.0 (Build 3884)", "ETS 4.2.0 (Build 3884)"],
+    ])("summarizes the ETS version %s as %s", (toolVersion, expected) => {
       const { container } = createDialog({
         ...PROJECT_INFO,
         last_modified: "",
@@ -281,6 +287,7 @@ describe("KnxProjectUploadDialog", () => {
       const rendered = createDialog();
       pickFile(rendered);
 
+      // Home Assistant's fireEvent sends an empty detail object for files-cleared.
       fileUpload(rendered.container).dispatchEvent(
         new CustomEvent("files-cleared", { detail: {} }),
       );
@@ -372,6 +379,9 @@ describe("KnxProjectUploadDialog", () => {
       expect(fileUpload(rendered.container).uploading).toBe(true);
       expect(primaryButton(rendered.container).disabled).toBe(true);
       expect(secondaryButton(rendered.container).disabled).toBe(true);
+      expect(
+        rendered.container.querySelector("ha-dialog")!.hasAttribute("prevent-scrim-close"),
+      ).toBe(true);
 
       finishProcessing();
       await flushPromises();
@@ -379,7 +389,53 @@ describe("KnxProjectUploadDialog", () => {
 
       expect(fileUpload(rendered.container).uploading).toBe(false);
       expect(secondaryButton(rendered.container).disabled).toBe(false);
+      expect(
+        rendered.container.querySelector("ha-dialog")!.hasAttribute("prevent-scrim-close"),
+      ).toBe(false);
     });
+
+    it.each([
+      ["succeeds", () => Promise.resolve(), "reload"],
+      ["fails", () => Promise.reject(new Error("Invalid password")), "alert"],
+    ])(
+      "reports through the dialog host when the dialog is removed while the upload %s",
+      async (_, outcome, expected) => {
+        let finishProcessing!: () => void;
+        vi.mocked(uploadFile).mockResolvedValue("file-id");
+        vi.mocked(processProjectFile).mockReturnValue(
+          new Promise<void>((resolve) => {
+            finishProcessing = resolve;
+          }).then(outcome),
+        );
+        const rendered = createDialog(PROJECT_INFO, UPLOAD_FAILED);
+        pickFile(rendered);
+        const host = document.createElement("div");
+        host.attachShadow({ mode: "open" });
+        document.body.appendChild(host);
+        // Attach like the dialog manager does; jsdom lacks the form APIs the HA inputs need.
+        vi.spyOn(rendered.dialog as any, "render").mockReturnValue(nothing);
+        host.shadowRoot!.appendChild(rendered.dialog);
+        const reload = vi.fn();
+        host.addEventListener("knx-reload", reload);
+
+        click(primaryButton(rendered.container));
+        await vi.waitFor(() => expect(processProjectFile).toHaveBeenCalled());
+        rendered.dialog.remove();
+        finishProcessing();
+        await flushPromises();
+
+        if (expected === "reload") {
+          expect(reload).toHaveBeenCalledOnce();
+          expect(showAlertDialog).not.toHaveBeenCalled();
+        } else {
+          expect(reload).not.toHaveBeenCalled();
+          expect(showAlertDialog).toHaveBeenCalledWith(host, {
+            title: "Upload fehlgeschlagen",
+            text: "Invalid password",
+          });
+        }
+      },
+    );
 
     it.each([
       [
@@ -412,6 +468,31 @@ describe("KnxProjectUploadDialog", () => {
       expect(fileUpload(rendered.container).uploading).toBe(false);
       // The picked file stays selected so the user can correct the password and retry.
       expect(primaryButton(rendered.container).disabled).toBe(false);
+    });
+
+    it.each([
+      ["undefined", undefined],
+      ["null", null],
+    ])("treats a rejection with %s as a failure", async (_, error) => {
+      vi.mocked(uploadFile).mockResolvedValue("file-id");
+      vi.mocked(processProjectFile).mockRejectedValue(error);
+      const rendered = createDialog(PROJECT_INFO, {
+        ...UPLOAD_FAILED,
+        "ui.common.unknown_error": "Unbekannter Fehler",
+      });
+      const closeDialog = vi.spyOn(rendered.dialog, "closeDialog");
+      const reload = vi.fn();
+      rendered.dialog.addEventListener("knx-reload", reload);
+      pickFile(rendered);
+
+      await submit(rendered);
+
+      expect(showAlertDialog).toHaveBeenCalledWith(rendered.dialog, {
+        title: "Upload fehlgeschlagen",
+        text: "Unbekannter Fehler",
+      });
+      expect(closeDialog).not.toHaveBeenCalled();
+      expect(reload).not.toHaveBeenCalled();
     });
 
     it("shows the upload error and skips processing when the file upload fails", async () => {
