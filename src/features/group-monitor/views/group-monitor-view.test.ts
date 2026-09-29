@@ -47,7 +47,7 @@ describe("KNXGroupMonitor", () => {
 
     expect(dialogEvent?.detail).toMatchObject({
       dialogTag: "knx-project-upload-dialog",
-      dialogParams: { hass: element.hass },
+      dialogParams: { hass: element.hass, knx: element.knx },
     });
   });
 

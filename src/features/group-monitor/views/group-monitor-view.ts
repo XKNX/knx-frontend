@@ -542,7 +542,7 @@ export class KNXGroupMonitor extends LitElement {
   }
 
   private _openProjectUploadDialog(): void {
-    showKnxProjectUploadDialog(this, { hass: this.hass });
+    showKnxProjectUploadDialog(this, { hass: this.hass, knx: this.knx });
   }
 
   private _dismissProjectAlert(): void {

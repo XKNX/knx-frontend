@@ -2,11 +2,11 @@ import type { TemplateResult } from "lit";
 import { css, nothing, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators";
 
+import { formatDateTime } from "@ha/common/datetime/format_date_time";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import "@ha/components/ha-card";
 import "@ha/layouts/hass-subpage";
 import "@ha/components/ha-button";
-import { extractApiErrorMessage } from "@ha/data/hassio/common";
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 import type { HomeAssistant, Route } from "@ha/types";
 
@@ -15,6 +15,8 @@ import { removeProjectFile } from "../services/websocket.service";
 import type { KNX } from "../types/knx";
 import type { KNXProjectInfo } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
+import { errorMessage } from "../utils/error";
+import { parseProjectLastModified } from "../utils/project-info";
 import { VERSION } from "../version";
 import { infoTab } from "../knx-router";
 
@@ -126,6 +128,7 @@ export class KNXInfo extends LitElement {
   }
 
   private _renderProjectDataCard(projectInfo: KNXProjectInfo) {
+    const lastModified = parseProjectLastModified(projectInfo);
     return html`
       <ha-card class="knx-info">
           <div class="card-content knx-content">
@@ -136,10 +139,14 @@ export class KNXInfo extends LitElement {
               <div>${this.knx.localize("info_project_data_name")}</div>
               <div>${projectInfo.name}</div>
             </div>
-            <div class="knx-content-row">
-              <div>${this.knx.localize("info_project_data_last_modified")}</div>
-              <div>${new Date(projectInfo.last_modified).toUTCString()}</div>
-            </div>
+            ${
+              lastModified
+                ? html`<div class="knx-content-row">
+                    <div>${this.knx.localize("info_project_data_last_modified")}</div>
+                    <div>${formatDateTime(lastModified, this.hass.locale, this.hass.config)}</div>
+                  </div>`
+                : nothing
+            }
             <div class="knx-content-row">
               <div>${this.knx.localize("info_project_data_tool_version")}</div>
               <div>${projectInfo.tool_version}</div>
@@ -173,10 +180,10 @@ export class KNXInfo extends LitElement {
 
     try {
       await removeProjectFile(this.hass);
-    } catch (err: any) {
+    } catch (err: unknown) {
       showAlertDialog(this, {
-        title: "Deletion failed",
-        text: extractApiErrorMessage(err),
+        title: this.hass.localize("ui.common.deleting_failed"),
+        text: errorMessage(err) ?? this.hass.localize("ui.common.unknown_error"),
       });
     } finally {
       fireEvent(this, "knx-reload");

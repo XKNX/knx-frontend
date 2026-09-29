@@ -158,3 +158,27 @@ describe("dashboard status details", () => {
     expect(host.querySelector('ha-md-list-item[type="link"][href="/knx/entities"]')).not.toBeNull();
   });
 });
+
+describe("dashboard actions", () => {
+  it("opens the ETS project upload dialog with hass and knx", () => {
+    const view = createDashboard("en");
+    (view as unknown as { _configEntryState: string })._configEntryState = "loaded";
+    let dialogEvent: CustomEvent | undefined;
+    view.addEventListener("show-dialog", (event) => {
+      dialogEvent = event as CustomEvent;
+    });
+    const host = document.createElement("div");
+    render((view as unknown as { render: () => TemplateResult }).render(), host, { host: view });
+
+    const uploadItem = [...host.querySelectorAll('ha-md-list-item[type="button"]')].find((item) =>
+      item.textContent?.includes("component.knx.config_panel.dashboard.project_upload.title"),
+    );
+    expect(uploadItem).toBeDefined();
+    uploadItem!.dispatchEvent(new MouseEvent("click", { bubbles: true, composed: true }));
+
+    expect(dialogEvent?.detail).toMatchObject({
+      dialogTag: "knx-project-upload-dialog",
+      dialogParams: { hass: view.hass, knx: view.knx },
+    });
+  });
+});
