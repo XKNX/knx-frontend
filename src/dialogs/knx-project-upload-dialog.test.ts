@@ -4,8 +4,7 @@ import { nothing, render } from "lit";
 import type { HaExpansionPanel } from "@ha/components/ha-expansion-panel";
 import { uploadFile } from "@ha/data/file_upload";
 import { showAlertDialog } from "@ha/dialogs/generic/show-dialog-box";
-import type { HomeAssistant } from "@ha/types";
-
+import { createMockHass } from "../../test/helpers/mock-hass";
 import { localize } from "../localize/localize";
 import { processProjectFile } from "../services/websocket.service";
 import type { KNX } from "../types/knx";
@@ -32,23 +31,7 @@ const UPLOAD_FAILED = { "ui.components.selectors.file.upload_failed": "Upload fe
 
 const CORE_PREFIX = "component.knx.config_panel.dialogs.project_upload.current_project";
 
-// Like Home Assistant, unknown keys resolve to an empty string.
-const createHass = (backendTranslations: Record<string, string> = {}) =>
-  ({
-    language: "en",
-    locale: {
-      language: "en",
-      number_format: "language",
-      time_format: "24",
-      date_format: "language",
-      time_zone: "server",
-      first_weekday: "language",
-    },
-    config: { time_zone: "Etc/UTC" },
-    localize: vi.fn((key: string, replace?: Record<string, string>) =>
-      (backendTranslations[key] ?? "").replace(/\{(\w+)\}/g, (_, name) => replace?.[name] ?? ""),
-    ),
-  }) as unknown as HomeAssistant;
+const createHass = (translations: Record<string, string> = {}) => createMockHass({ translations });
 
 const createDialog = (
   projectInfo: KNXProjectInfo | null = PROJECT_INFO,

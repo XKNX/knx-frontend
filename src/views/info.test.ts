@@ -3,8 +3,8 @@ import { render } from "lit";
 import type { TemplateResult } from "lit";
 
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
-import type { HomeAssistant } from "@ha/types";
 
+import { createMockHass } from "../../test/helpers/mock-hass";
 import { localize } from "../localize/localize";
 import { removeProjectFile } from "../services/websocket.service";
 import type { KNX } from "../types/knx";
@@ -32,10 +32,7 @@ const PROJECT_INFO: KNXProjectInfo = {
 
 const renderInfo = (projectInfo: KNXProjectInfo | null) => {
   const view = new KNXInfo();
-  view.hass = {
-    language: "en",
-    localize: (key: string) => HASS_TRANSLATIONS[key] ?? "",
-  } as unknown as HomeAssistant;
+  view.hass = createMockHass({ translations: HASS_TRANSLATIONS });
   view.knx = {
     connectionInfo: {
       version: "3.20.0",
