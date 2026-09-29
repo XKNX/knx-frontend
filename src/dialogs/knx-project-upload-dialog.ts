@@ -289,6 +289,11 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
       width: 100%;
     }
 
+    /* Match the current project panel instead of the legacy 4px drop zone corners. */
+    ha-file-upload {
+      --mdc-shape-small: var(--ha-card-border-radius, var(--ha-border-radius-lg));
+    }
+
     ha-markdown {
       color: var(--secondary-text-color);
     }
