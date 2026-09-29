@@ -81,6 +81,11 @@ const fileUpload = (container: HTMLElement) =>
     disabled: boolean;
   };
 
+const closeButton = (container: HTMLElement) =>
+  container.querySelector('ha-icon-button[slot="headerNavigationIcon"]') as HTMLElement & {
+    disabled: boolean;
+  };
+
 const passwordField = (container: HTMLElement) =>
   container.querySelector("ha-selector-text") as HTMLElement & { disabled: boolean };
 
@@ -385,6 +390,7 @@ describe("KnxProjectUploadDialog", () => {
       expect(fileUpload(rendered.container).uploading).toBe(true);
       expect(fileUpload(rendered.container).disabled).toBe(true);
       expect(passwordField(rendered.container).disabled).toBe(true);
+      expect(closeButton(rendered.container).disabled).toBe(true);
       expect(primaryButton(rendered.container).disabled).toBe(true);
       expect(secondaryButton(rendered.container).disabled).toBe(true);
       expect(
@@ -398,6 +404,7 @@ describe("KnxProjectUploadDialog", () => {
       expect(fileUpload(rendered.container).uploading).toBe(false);
       expect(fileUpload(rendered.container).disabled).toBe(false);
       expect(passwordField(rendered.container).disabled).toBe(false);
+      expect(closeButton(rendered.container).disabled).toBe(false);
       expect(secondaryButton(rendered.container).disabled).toBe(false);
       expect(
         rendered.container.querySelector("ha-dialog")!.hasAttribute("prevent-scrim-close"),
@@ -425,49 +432,6 @@ describe("KnxProjectUploadDialog", () => {
 
       expect(processProjectFile).toHaveBeenCalledWith(rendered.hass, "file-id", "submitted");
     });
-
-    it.each([
-      ["succeeds", () => Promise.resolve(), "reload"],
-      ["fails", () => Promise.reject(new Error("Invalid password")), "alert"],
-    ])(
-      "reports through the dialog host when the dialog is removed while the upload %s",
-      async (_, outcome, expected) => {
-        let finishProcessing!: () => void;
-        vi.mocked(uploadFile).mockResolvedValue("file-id");
-        vi.mocked(processProjectFile).mockReturnValue(
-          new Promise<void>((resolve) => {
-            finishProcessing = resolve;
-          }).then(outcome),
-        );
-        const rendered = createDialog(PROJECT_INFO, UPLOAD_FAILED);
-        pickFile(rendered);
-        const host = document.createElement("div");
-        host.attachShadow({ mode: "open" });
-        document.body.appendChild(host);
-        // Attach like the dialog manager does; jsdom lacks the form APIs the HA inputs need.
-        vi.spyOn(rendered.dialog as any, "render").mockReturnValue(nothing);
-        host.shadowRoot!.appendChild(rendered.dialog);
-        const reload = vi.fn();
-        host.addEventListener("knx-reload", reload);
-
-        click(primaryButton(rendered.container));
-        await vi.waitFor(() => expect(processProjectFile).toHaveBeenCalled());
-        rendered.dialog.remove();
-        finishProcessing();
-        await flushPromises();
-
-        if (expected === "reload") {
-          expect(reload).toHaveBeenCalledOnce();
-          expect(showAlertDialog).not.toHaveBeenCalled();
-        } else {
-          expect(reload).not.toHaveBeenCalled();
-          expect(showAlertDialog).toHaveBeenCalledWith(host, {
-            title: "Upload fehlgeschlagen",
-            text: "Invalid password",
-          });
-        }
-      },
-    );
 
     it.each([
       [
@@ -575,6 +539,16 @@ describe("KnxProjectUploadDialog", () => {
 
       expect(closeDialog).toHaveBeenCalledOnce();
       expect(uploadFile).not.toHaveBeenCalled();
+    });
+
+    it("closes with the header close button", () => {
+      const { dialog, rerender } = createDialog();
+      const closeDialog = vi.spyOn(dialog, "closeDialog");
+      const container = rerender();
+
+      click(closeButton(container));
+
+      expect(closeDialog).toHaveBeenCalledOnce();
     });
 
     it("closes when the dialog reports it was closed", () => {

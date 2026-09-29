@@ -1,4 +1,4 @@
-import { mdiFileDocumentOutline, mdiFileUpload } from "@mdi/js";
+import { mdiClose, mdiFileDocumentOutline, mdiFileUpload } from "@mdi/js";
 import { LitElement, css, html, nothing } from "lit";
 import { customElement, state } from "lit/decorators";
 
@@ -6,6 +6,7 @@ import "@ha/components/ha-button";
 import "@ha/components/ha-dialog-footer";
 import "@ha/components/ha-expansion-panel";
 import "@ha/components/ha-file-upload";
+import "@ha/components/ha-icon-button";
 import "@ha/components/ha-markdown";
 import "@ha/components/ha-selector/ha-selector-text";
 import "@ha/components/ha-dialog";
@@ -91,6 +92,13 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
         @closed=${this.closeDialog}
         .headerTitle=${this._backendLocalize("title")}
       >
+        <ha-icon-button
+          slot="headerNavigationIcon"
+          .label=${this.hass.localize("ui.common.close")}
+          .path=${mdiClose}
+          .disabled=${this._uploading}
+          @click=${this.closeDialog}
+        ></ha-icon-button>
         <div class="content">
           <ha-markdown
             class="description"
@@ -218,15 +226,6 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
     this._projectPassword = ev.detail.value;
   }
 
-  /**
-   * The element hosting the dialog. The dialog may be removed while uploading
-   * (e.g. via its close button), so results are reported through its host.
-   */
-  private _host(): HTMLElement {
-    const root = this.getRootNode();
-    return root instanceof ShadowRoot && root.host instanceof HTMLElement ? root.host : this;
-  }
-
   private async _uploadFile() {
     const file = this._projectFile;
     if (!file) {
@@ -234,7 +233,6 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
     }
     const password = this._projectPassword || "";
 
-    const host = this._host();
     this._uploading = true;
     try {
       const projectFileId = await uploadFile(this.hass, file);
@@ -242,7 +240,7 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
     } catch (err: unknown) {
       this._uploading = false;
       const message = err ? extractApiErrorMessage(err) : undefined;
-      showAlertDialog(host, {
+      showAlertDialog(this, {
         title: this.hass.localize("ui.components.selectors.file.upload_failed"),
         text: message || this.hass.localize("ui.common.unknown_error"),
       });
@@ -250,7 +248,7 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
     }
     this._uploading = false;
     this.closeDialog();
-    fireEvent(host, "knx-reload");
+    fireEvent(this, "knx-reload");
   }
 
   static styles = css`
