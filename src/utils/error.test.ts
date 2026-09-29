@@ -23,6 +23,8 @@ describe("errorMessage", () => {
     ["an empty message", { message: "" }],
     ["a non-string message", { message: 42 }],
     ["an empty string", ""],
+    // home-assistant-js-websocket rejects pending commands with ERR_CONNECTION_LOST (3).
+    ["a connection lost code", 3],
   ])("returns undefined for %s", (_, error) => {
     expect(errorMessage(error)).toBeUndefined();
   });

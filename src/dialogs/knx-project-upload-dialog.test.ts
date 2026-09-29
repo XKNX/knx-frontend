@@ -498,6 +498,7 @@ describe("KnxProjectUploadDialog", () => {
       ["null", null],
       ["an object without message", {}],
       ["an error code without message", { code: "unknown_error" }],
+      ["a lost connection (ERR_CONNECTION_LOST)", 3],
     ])("reports a rejection with %s as unknown error", async (_, error) => {
       vi.mocked(uploadFile).mockResolvedValue("file-id");
       vi.mocked(processProjectFile).mockRejectedValue(error);
