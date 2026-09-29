@@ -15,6 +15,7 @@ import "@ha/components/ha-svg-icon";
 import "@ha/components/item/ha-list-item-value";
 import "@ha/components/list/ha-list-base";
 
+import { STRINGS_SEPARATOR_DOT } from "@ha/common/const";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import { formatDateTime } from "@ha/common/datetime/format_date_time";
 import { relativeTime } from "@ha/common/datetime/relative_time";
@@ -195,7 +196,7 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
             : undefined,
         ]
           .filter(Boolean)
-          .join(" · "),
+          .join(STRINGS_SEPARATOR_DOT),
         details,
       };
     },
