@@ -1,6 +1,7 @@
 import { mdiClose, mdiFileDocumentOutline, mdiFileUpload } from "@mdi/js";
 import { LitElement, css, html, nothing } from "lit";
 import { customElement, state } from "lit/decorators";
+import memoizeOne from "memoize-one";
 
 import "@ha/components/ha-button";
 import "@ha/components/ha-dialog-footer";
@@ -21,10 +22,13 @@ import { DialogMixin } from "@ha/dialogs/dialog-mixin";
 import { uploadFile } from "@ha/data/file_upload";
 import type { StringSelector } from "@ha/data/selector";
 import { showAlertDialog } from "@ha/dialogs/generic/show-dialog-box";
+import type { FrontendLocaleData } from "@ha/data/translation";
+import type { HassConfig } from "home-assistant-js-websocket";
 import type { HomeAssistant, ValueChangedEvent } from "@ha/types";
 
 import { processProjectFile } from "../services/websocket.service";
 import type { KNX } from "../types/knx";
+import type { KNXProjectInfo } from "../types/websocket";
 import { errorMessage } from "../utils/error";
 import { parseProjectLastModified } from "../utils/project-info";
 
@@ -37,6 +41,13 @@ export interface KnxProjectUploadDialogParams {
 const NUMERIC_TOOL_VERSION = /^\d+(?:\.\d+)?/;
 
 const PASSWORD_SELECTOR: StringSelector = { text: { multiline: false, type: "password" } };
+
+interface CurrentProjectView {
+  title: string;
+  name: string;
+  summary: string;
+  details: { label: string; value: string }[];
+}
 
 @customElement("knx-project-upload-dialog")
 export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogParams>(LitElement) {
@@ -142,65 +153,78 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
       : toolVersion;
   }
 
+  // Recomputed only when the project or the translation and locale inputs change,
+  // not on every re-render (e.g. while typing the password).
+  private _currentProjectView = memoizeOne(
+    (
+      projectInfo: KNXProjectInfo,
+      _localize: HomeAssistant["localize"],
+      locale: FrontendLocaleData,
+      config: HassConfig,
+    ): CurrentProjectView => {
+      const lastModified = parseProjectLastModified(projectInfo);
+      const details: CurrentProjectView["details"] = [];
+      if (lastModified) {
+        details.push({
+          label: this._currentProjectLocalize(
+            "last_modified.label",
+            "info_project_data_last_modified",
+          ),
+          value: formatDateTime(lastModified, locale, config),
+        });
+      }
+      if (projectInfo.tool_version) {
+        details.push({
+          label: this._currentProjectLocalize("ets_version.label", "project_upload_ets_version"),
+          value: projectInfo.tool_version,
+        });
+      }
+      details.push({
+        label: this._currentProjectLocalize("imported_with.label", "project_upload_imported_with"),
+        value: `xknxproject ${projectInfo.xknxproject_version}`,
+      });
+      return {
+        title: this._currentProjectLocalize("title", "project_upload_current_project"),
+        name: projectInfo.name,
+        summary: [
+          projectInfo.tool_version ? this._etsVersionSummary(projectInfo.tool_version) : undefined,
+          lastModified
+            ? this._currentProjectLocalize("modified", "project_upload_modified", {
+                relative_time: relativeTime(lastModified, locale),
+              })
+            : undefined,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+        details,
+      };
+    },
+  );
+
   private _renderCurrentProject() {
     const projectInfo = this.params?.knx.projectInfo;
     if (!projectInfo) {
       return nothing;
     }
-    const lastModified = parseProjectLastModified(projectInfo);
-    const summary = [
-      projectInfo.tool_version ? this._etsVersionSummary(projectInfo.tool_version) : undefined,
-      lastModified
-        ? this._currentProjectLocalize("modified", "project_upload_modified", {
-            relative_time: relativeTime(lastModified, this.hass.locale),
-          })
-        : undefined,
-    ]
-      .filter(Boolean)
-      .join(" · ");
+    const view = this._currentProjectView(
+      projectInfo,
+      this.hass.localize,
+      this.hass.locale,
+      this.hass.config,
+    );
 
     return html`
       <section class="current-project" aria-labelledby="current-project-header">
-        <div class="section-header" id="current-project-header">
-          ${this._currentProjectLocalize("title", "project_upload_current_project")}
-        </div>
-        <ha-expansion-panel outlined .header=${projectInfo.name} .secondary=${summary}>
+        <div class="section-header" id="current-project-header">${view.title}</div>
+        <ha-expansion-panel outlined .header=${view.name} .secondary=${view.summary}>
           <div slot="leading-icon" class="project-icon" aria-hidden="true">
             <ha-svg-icon .path=${mdiFileDocumentOutline}></ha-svg-icon>
           </div>
           <ha-list-base>
-            ${
-              lastModified
-                ? html`<ha-list-item-value
-                    .label=${this._currentProjectLocalize(
-                      "last_modified.label",
-                      "info_project_data_last_modified",
-                    )}
-                  >
-                    ${formatDateTime(lastModified, this.hass.locale, this.hass.config)}
-                  </ha-list-item-value>`
-                : nothing
-            }
-            ${
-              projectInfo.tool_version
-                ? html`<ha-list-item-value
-                    .label=${this._currentProjectLocalize(
-                      "ets_version.label",
-                      "project_upload_ets_version",
-                    )}
-                  >
-                    ${projectInfo.tool_version}
-                  </ha-list-item-value>`
-                : nothing
-            }
-            <ha-list-item-value
-              .label=${this._currentProjectLocalize(
-                "imported_with.label",
-                "project_upload_imported_with",
-              )}
-            >
-              xknxproject ${projectInfo.xknxproject_version}
-            </ha-list-item-value>
+            ${view.details.map(
+              ({ label, value }) =>
+                html`<ha-list-item-value .label=${label}>${value}</ha-list-item-value>`,
+            )}
           </ha-list-base>
         </ha-expansion-panel>
       </section>

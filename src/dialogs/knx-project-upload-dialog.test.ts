@@ -214,6 +214,29 @@ describe("KnxProjectUploadDialog", () => {
       expect(rows["Imported with"]).toBe("xknxproject 3.9.0");
     });
 
+    it("does not recompute the summary on unrelated re-renders", () => {
+      const rendered = createDialog();
+      const summaryLookups = () =>
+        vi
+          .mocked(rendered.hass.localize)
+          .mock.calls.filter(([key]) => String(key).startsWith(CORE_PREFIX)).length;
+      const lookupsAfterFirstRender = summaryLookups();
+
+      enterPassword(rendered, "secret");
+
+      expect(lookupsAfterFirstRender).toBeGreaterThan(0);
+      expect(summaryLookups()).toBe(lookupsAfterFirstRender);
+    });
+
+    it("updates the summary when translations change", () => {
+      const rendered = createDialog();
+      rendered.dialog.hass = createHass({ [`${CORE_PREFIX}.title`]: "Aktuell geladen" });
+
+      rendered.rerender();
+
+      expect(rendered.container.textContent).toContain("Aktuell geladen");
+    });
+
     it("keeps the dialog unchanged when no project is loaded", () => {
       const { container } = createDialog(null);
 
