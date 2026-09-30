@@ -20,6 +20,8 @@ vi.mock("@ha/common/navigate", async (importOriginal) => ({
 
 const fakeMainWindow = vi.hoisted(() => ({
   history: { state: null as { message?: string; retryPath?: string } | null },
+  // @ha/common/navigate reads the current path when it is loaded.
+  location: { pathname: "/knx/error", hash: "" },
   document: { title: "" },
 }));
 vi.mock("@ha/common/dom/get_main_window", () => ({ mainWindow: fakeMainWindow }));

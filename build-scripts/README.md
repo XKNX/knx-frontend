@@ -41,7 +41,7 @@ Configuration for all these steps are specified in [bundle.js](bundle.js).
 ## Output size
 
 The published wheel is `knx_frontend/` zipped up, so build output size is what every Home
-Assistant install pays for. `yarn run build:size` prints a per-build, per-file-type breakdown
+Assistant install pays for. `pnpm run build:size` prints a per-build, per-file-type breakdown
 (also run in CI after every build). Two settings dominate it:
 
 ### Source maps

@@ -55,7 +55,7 @@ const mb = (bytes) => `${(bytes / 1048576).toFixed(2)} MB`;
 
 const root = paths.knx_output_root;
 if (!fs.existsSync(root)) {
-  console.error(`No build output at ${root}. Run \`yarn build\` first.`);
+  console.error(`No build output at ${root}. Run \`pnpm build\` first.`);
   process.exit(1);
 }
 

@@ -81,17 +81,13 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
   private _unsubscribeConfigEntries() {
     // SubscribeMixin checks `instanceof Promise` when unsubscribing, but that doesn't
     // work always work properly across realm boundaries, so we wrap the async unsubscribe
-    const _async_unsub = subscribeConfigEntries(
-      this.hass,
-      async (updates) => {
-        const newState = updates.find((update) => update.entry.domain === "knx")?.entry.state;
-        if (newState && newState !== this._configEntryState) {
-          logger.debug("KNX dashboard config entry state update", newState);
-          this._configEntryState = newState;
-        }
-      },
-      { domain: "knx" },
-    );
+    const _async_unsub = subscribeConfigEntries(this.hass, async (updates) => {
+      const newState = updates.find((update) => update.entry.domain === "knx")?.entry.state;
+      if (newState && newState !== this._configEntryState) {
+        logger.debug("KNX dashboard config entry state update", newState);
+        this._configEntryState = newState;
+      }
+    });
     return () => {
       _async_unsub.then((unsub) => unsub());
     };

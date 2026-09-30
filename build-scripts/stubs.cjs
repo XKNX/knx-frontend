@@ -33,7 +33,7 @@
  *     the bundle gets `browser` or `module`, and a stub aimed at the wrong file matches
  *     nothing at all — silently.
  *
- * Verify with `yarn build && yarn build:size`, and confirm the library is gone rather than
+ * Verify with `pnpm build && pnpm build:size`, and confirm the library is gone rather than
  * merely moved: `grep -rl <marker> knx_frontend/frontend_latest` should come back empty.
  */
 

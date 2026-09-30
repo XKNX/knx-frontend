@@ -48,7 +48,7 @@ Always follow the general Home Assistant frontend guidance in [homeassistant-fro
 
 ### Code Quality
 
-- **Linting**: ESLint + Prettier enforced (`yarn lint`, `yarn format`)
+- **Linting**: ESLint + Prettier enforced (`pnpm lint`, `pnpm format`)
 - **Error Handling**: Show `<ha-alert>` for errors, never fail silently
 - **Resource Cleanup**: Unsubscribe WebSocket listeners on disconnect
 - **Accessibility**: ARIA labels, keyboard navigation, WCAG AA contrast
@@ -159,7 +159,7 @@ import { KNXLogger } from "../tools/knx-logger";
 ### Setup & Bootstrap
 
 - `make bootstrap` or `script/bootstrap`: Initialize submodules and install dependencies
-- `yarn install`: Install Node.js dependencies
+- `pnpm install`: Install Node.js dependencies
 
 ### Development Server
 
@@ -174,20 +174,20 @@ import { KNXLogger } from "../tools/knx-logger";
 
 ### Code Quality & Linting
 
-- `yarn lint`: Run all linting (ESLint + Prettier + TypeScript + Lit analyzer)
-- `yarn lint:eslint`: ESLint only
-- `yarn lint:prettier`: Prettier formatting check
-- `yarn lint:types`: TypeScript compiler check
-- `yarn lint:lit`: Lit analyzer for web components
-- `yarn format`: Auto-fix ESLint and Prettier issues
-- `yarn format:eslint`: Auto-fix ESLint issues
-- `yarn format:prettier`: Auto-fix Prettier formatting
+- `pnpm lint`: Run all linting (ESLint + Prettier + TypeScript + Lit analyzer)
+- `pnpm lint:eslint`: ESLint only
+- `pnpm lint:prettier`: Prettier formatting check
+- `pnpm lint:types`: TypeScript compiler check
+- `pnpm lint:lit`: Lit analyzer for web components
+- `pnpm format`: Auto-fix ESLint and Prettier issues
+- `pnpm format:eslint`: Auto-fix ESLint issues
+- `pnpm format:prettier`: Auto-fix Prettier formatting
 
 ### Testing
 
-- `yarn test`: Run Vitest tests once
-- `yarn test:watch`: Run Vitest in watch mode
-- `yarn test:coverage`: Run tests with coverage report
+- `pnpm test`: Run Vitest tests once
+- `pnpm test:watch`: Run Vitest in watch mode
+- `pnpm test:coverage`: Run tests with coverage report
 
 ### Project Maintenance
 

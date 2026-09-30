@@ -24,7 +24,6 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version-file: ".nvmrc"
-          cache: yarn
       - name: "Set version number from tag"
         run: |
           echo -n '${{ github.ref_name }}' > ./VERSION
@@ -35,10 +34,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install build twine
+          corepack enable pnpm
           ./script/bootstrap
 
       - name: Build
-        run: yarn build
+        run: pnpm build
         env:
           # Release runners start cold, and building without the babel-loader cache keeps the
           # release output independent of any cache state.

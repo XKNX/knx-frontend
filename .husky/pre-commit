@@ -1,2 +1,2 @@
-yarn run lint:eslint
-yarn run lint:prettier
+pnpm run lint:eslint
+pnpm run lint:prettier
