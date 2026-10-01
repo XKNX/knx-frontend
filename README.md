@@ -27,21 +27,45 @@ $ script/build
 ...
 ```
 
+### Set up and check your environment
+
+Follow [the setup skill](.agents/skills/setting-up-knx-frontend/SKILL.md), or run its
+doctor directly. It checks remotes, the submodule and its release, Node, Yarn,
+dependencies and the build, and whether your Home Assistant loads this checkout:
+
+```shell
+$ bash .agents/skills/setting-up-knx-frontend/scripts/doctor.sh --ha-python <ha-venv>/bin/python
+...
+```
+
 ### Update the home assistant frontend
 
-Get the latest release tag.
+Always pass the release tag (`YYYYMMDD.N`) that Home Assistant Core pins. Without one, the
+script picks the most recently tagged commit, usually the newest beta.
 
 ```shell
-$ script/upgrade-frontend
+$ script/upgrade-frontend <tag>
 ...
 ```
 
-Or get a specific tag or sha.
+The script only moves the submodule and merges dependencies. Follow
+[the upgrade skill](.agents/skills/upgrading-knx-frontend-submodule/SKILL.md) for choosing the
+tag, porting the mirrored build tooling and the checks before opening a PR.
 
-```shell
-$ script/upgrade-frontend <tag-or-sha>
-...
-```
+### Dependabot pull requests
+
+Dependabot opens PRs for GitHub Actions and for npm security updates. Bumps of direct dependencies
+are closed rather than merged, because `package.json` follows the submodule; lock-only bumps are
+merged once their checks pass. Follow
+[the Dependabot skill](.agents/skills/merging-knx-frontend-dependabot-prs/SKILL.md) to triage and
+merge them.
+
+### Reviewing pull requests
+
+Before opening a PR, or when reviewing someone else's, follow
+[the review skill](.agents/skills/reviewing-knx-frontend-prs/SKILL.md). It checks the rules
+maintainers keep asking for: dependency overrides, localization, the HA Core contract and the
+iframe panel.
 
 ### Testing the panel
 
@@ -89,7 +113,9 @@ This repository ships a set of instructions for AI coding agents.
 * For other agents, you can easy symlink the Copilot instructions with:
 
     ```shell
-    yarn agent:claude   # Creates CLAUDE.md
+    yarn agent:claude   # Creates CLAUDE.md and links .claude/skills
     yarn agent:gemini   # Creates GEMINI.md  
     yarn agent:codex    # Creates AGENTS.md
     ```
+
+* Agent skills live in `.agents/skills/`, the cross-tool convention from [agentskills.io](https://agentskills.io), which Codex, Gemini CLI and GitHub Copilot read directly. Claude Code only reads `.claude/skills/`, so `yarn agent:claude` links that directory to `.agents/skills`.
