@@ -112,7 +112,7 @@ jobs:
       # each under a new key (yarn.lock hash + commit SHA).
       - name: Restore babel-loader cache
         id: babel-cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: ${{ runner.temp }}/babel-loader
           key: babel-loader-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-${{ github.sha }}
@@ -131,7 +131,7 @@ jobs:
 
       - name: Save babel-loader cache
         if: github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: ${{ runner.temp }}/babel-loader
           key: ${{ steps.babel-cache.outputs.cache-primary-key }}
