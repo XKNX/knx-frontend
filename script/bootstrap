@@ -13,4 +13,14 @@ if [ ! -d "./homeassistant-frontend/src" ]; then
   cd ..
 fi
 
-yarn install
+if [ -n "$DEVCONTAINER" ] && ! command -v pnpm > /dev/null 2>&1; then
+  npm install -g corepack
+  corepack enable pnpm
+fi
+
+if ! command -v pnpm > /dev/null 2>&1; then
+  echo "Error: pnpm not found. Enable it with \`corepack enable pnpm\` or follow https://pnpm.io/installation" >&2
+  exit 1
+fi
+
+pnpm install

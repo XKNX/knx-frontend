@@ -3,8 +3,6 @@ node_modules
 package-lock.json
 src/localize/generated.ts
 
-yarn-error.log
-.yarn
 
 result.md
 

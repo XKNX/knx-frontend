@@ -22,13 +22,13 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Run eslint
-        run: yarn run lint:eslint
+        run: pnpm run lint:eslint
 
       - name: Run prettier
-        run: yarn run lint:prettier
+        run: pnpm run lint:prettier
 
       - name: Check for duplicate dependencies
-        run: yarn dedupe --check
+        run: pnpm dedupe --check
 
   types:
     name: Types
@@ -44,12 +44,12 @@ jobs:
 
       # tsc resolves imports of build/mdi/iconList.json and build/translations/
       # translationMetadata.json, which do not exist until these have run. Every other job
-      # that needs them gets them from `yarn build`; this one has no reason to build.
+      # that needs them gets them from `pnpm build`; this one has no reason to build.
       - name: Generate build inputs
-        run: yarn gulp gen-icons-json build-translations
+        run: pnpm exec gulp gen-icons-json build-translations
 
       - name: Run tsc
-        run: yarn run lint:types
+        run: pnpm run lint:types
 
   test:
     name: Test
@@ -64,7 +64,7 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Run tests
-        run: yarn test
+        run: pnpm test
 
   coverage:
     name: Coverage
@@ -82,7 +82,7 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Run tests with coverage
-        run: yarn run test:coverage
+        run: pnpm run test:coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v7
@@ -108,18 +108,18 @@ jobs:
       - name: Setup Node and Dependencies
         uses: ./.github/actions/setup
 
-      # Restores the newest cache for the current yarn.lock. Only runs on `main` save the cache,
-      # each under a new key (yarn.lock hash + commit SHA).
+      # Restores the newest cache for the current pnpm-lock.yaml. Only runs on `main` save the cache,
+      # each under a new key (pnpm-lock.yaml hash + commit SHA).
       - name: Restore babel-loader cache
         id: babel-cache
         uses: actions/cache/restore@v6
         with:
           path: ${{ runner.temp }}/babel-loader
-          key: babel-loader-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-${{ github.sha }}
-          restore-keys: babel-loader-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-
+          key: babel-loader-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: babel-loader-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
 
       - name: Build
-        run: yarn build
+        run: pnpm build
         env:
           BABEL_CACHE_DIR: ${{ runner.temp }}/babel-loader
 
@@ -139,7 +139,7 @@ jobs:
       - name: Report output size
         id: size
         run: |
-          yarn run build:size --markdown .build-size.md
+          pnpm run build:size --markdown .build-size.md
           cat .build-size.md >> "$GITHUB_STEP_SUMMARY"
 
   # The shipped wheel is just knx_frontend/ zipped up, so its size is what every Home Assistant

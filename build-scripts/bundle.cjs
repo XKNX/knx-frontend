@@ -22,7 +22,7 @@ const hashFiles = (files) => {
 
 // Identifier that invalidates the babel-loader cache. babel-loader hashes the source and the
 // normalized Babel options, but not what those options point to: the custom Babel plugins, the
-// resolved Browserslist targets and the installed dependency versions (via yarn.lock). The plugin
+// resolved Browserslist targets and the installed dependency versions (via pnpm-lock.yaml). The plugin
 // hash also covers the local modules the plugins import.
 module.exports.babelCacheIdentifier = ({ latestBuild }) => {
   const pluginFiles = fs
@@ -39,7 +39,7 @@ module.exports.babelCacheIdentifier = ({ latestBuild }) => {
       env: latestBuild ? "modern" : "legacy",
     }),
     plugins: hashFiles(pluginFiles),
-    lockfile: hashFiles([path.join(paths.root_dir, "yarn.lock")]),
+    lockfile: hashFiles([path.join(paths.root_dir, "pnpm-lock.yaml")]),
   });
 };
 

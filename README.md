@@ -89,7 +89,7 @@ This repository ships a set of instructions for AI coding agents.
 * For other agents, you can easy symlink the Copilot instructions with:
 
     ```shell
-    yarn agent:claude   # Creates CLAUDE.md
-    yarn agent:gemini   # Creates GEMINI.md  
-    yarn agent:codex    # Creates AGENTS.md
+    pnpm agent:claude   # Creates CLAUDE.md
+    pnpm agent:gemini   # Creates GEMINI.md  
+    pnpm agent:codex    # Creates AGENTS.md
     ```

@@ -15,7 +15,7 @@ import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-icon-button";
 import "@ha/components/ha-yaml-editor";
 import type { HaYamlEditor } from "@ha/components/ha-yaml-editor";
-import "@ha/panels/config/components/ha-config-navigation-list";
+import "@ha/components/ha-config-navigation-list";
 import { isNavigationClick } from "@ha/common/dom/is-navigation-click";
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
