@@ -203,7 +203,7 @@ export class KnxRouter extends HassRouterPage {
   private _statusPageTitle(tag: string): string | undefined {
     switch (tag) {
       case "knx-not-found":
-        return this.hass.localize("panel.notfound");
+        return this.knx.localize("panel.notfound");
       case "knx-error":
         return "";
       default:
@@ -219,6 +219,7 @@ export class KnxRouter extends HassRouterPage {
       // sub-routers will not have a matching pageNavigation
       // but the parent router will and title will stay at the set value of parent router
       // status pages have no tab - they must not keep the title of the previous page
+      // hass.localize on purpose: an empty title falls back to "KNX - Home Assistant".
       const title = pageNavigation
         ? this.hass.localize(pageNavigation.translationKey)
         : this._statusPageTitle(el.localName);

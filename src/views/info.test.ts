@@ -5,6 +5,7 @@ import type { TemplateResult } from "lit";
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 
 import { createMockHass } from "../../test/helpers/mock-hass";
+import type { KnxLocalizeKey } from "../localize/localize";
 import { localize } from "../localize/localize";
 import { removeProjectFile } from "../services/websocket.service";
 import type { KNX } from "../types/knx";
@@ -21,6 +22,10 @@ vi.mock("../services/websocket.service", () => ({ removeProjectFile: vi.fn() }))
 const HASS_TRANSLATIONS: Record<string, string> = {
   "ui.common.deleting_failed": "Löschen fehlgeschlagen",
   "ui.common.unknown_error": "Unbekannter Fehler",
+  "component.knx.config_panel.info.project_data.name.label": "Project name",
+  "component.knx.config_panel.info.project_data.last_modified.label": "Last modified",
+  "component.knx.config_panel.info.project_data.tool_version.label": "Tool version",
+  "component.knx.config_panel.info.project_data.xknxproject_version.label": "XKNXProject version",
 };
 
 const PROJECT_INFO: KNXProjectInfo = {
@@ -43,7 +48,8 @@ const renderInfo = (projectInfo: KNXProjectInfo | null) => {
       telegram_max_count: null,
     },
     projectInfo,
-    localize: (key: string, replace?: Record<string, string>) => localize(view.hass, key, replace),
+    localize: (key: KnxLocalizeKey, replace?: Record<string, string>) =>
+      localize(view.hass, key, replace),
   } as unknown as KNX;
   const host = document.createElement("div");
   render((view as unknown as { render: () => TemplateResult }).render(), host, { host: view });

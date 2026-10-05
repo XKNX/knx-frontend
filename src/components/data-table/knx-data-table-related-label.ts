@@ -12,12 +12,12 @@ import "@ha/components/ha-state-icon";
 import "@ha/components/ha-svg-icon";
 
 import { navigate } from "@ha/common/navigate";
-import { consumeLocalize } from "@ha/common/decorators/consume-context-entry";
-import type { LocalizeFunc } from "@ha/common/translations/localize";
 import { stopPropagation } from "@ha/common/dom/stop_propagation";
 import type { HomeAssistant } from "@ha/types";
 
 import { entitiesTab, exposeTab } from "../../knx-router";
+import { consumeKnxLocalize } from "../../localize/consume-knx-localize";
+import type { KnxLocalizeFunc } from "../../localize/localize";
 
 @customElement("knx-data-table-related-label")
 class KnxDataTableRelatedLabel extends LitElement {
@@ -30,8 +30,8 @@ class KnxDataTableRelatedLabel extends LitElement {
   @property({ attribute: false }) public exposes: string[] = [];
 
   @state()
-  @consumeLocalize()
-  private localize!: LocalizeFunc;
+  @consumeKnxLocalize()
+  private localize!: KnxLocalizeFunc;
 
   protected render(): TemplateResult | typeof nothing {
     const totalItems = this.entities.length + this.entitiesYaml.length + this.exposes.length;

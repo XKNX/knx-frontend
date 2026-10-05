@@ -41,11 +41,12 @@ export class KnxDptReference extends LitElement {
 
   private _renderEntry(entry: DptReferenceEntry): TemplateResult {
     const metadata = entry.metadata;
+    // hass.localize on purpose: DPTs without a translation fall back to their metadata name.
     const label =
       this.hass.localize(`component.knx.config_panel.dpt.options.${entry.dpt.replace(".", "_")}`) ||
       (metadata.name
         ? snakeToTitleCase(metadata.name)
-        : this.hass.localize("state.default.unknown"));
+        : this.knx.localize("state.default.unknown"));
     const detailRows: TemplateResult[] = [];
 
     if (metadata.unit) {
@@ -210,7 +211,7 @@ export class KnxDptReference extends LitElement {
   }
 
   private _searchLabel(count: number): string {
-    return this.knx.localize("dpt_reference_search_label", { count });
+    return this.knx.localize("component.knx.config_panel.dpt_reference.search_label", { count });
   }
 
   protected render() {

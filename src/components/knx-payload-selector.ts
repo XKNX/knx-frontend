@@ -746,7 +746,7 @@ export class KnxPayloadSelector extends LitElement {
   };
 
   private _localizeSelector = (key: string): string =>
-    this.hass.localize(`component.knx.config_panel.selectors.knx-payload-selector.${key}`);
+    this.knx.localize(`component.knx.config_panel.selectors.knx-payload-selector.${key}`);
 
   static styles = css`
     :host {

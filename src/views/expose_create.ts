@@ -202,8 +202,12 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
     },
   });
 
-  private _backendLocalize = (key: string) =>
-    this.hass.localize(`component.knx.config_panel.expose.create.${key}`);
+  private _backendLocalize = (key: string) => {
+    const fullKey = `component.knx.config_panel.expose.create.${key}` as const;
+    // Form descriptions are optional (some fields have none on purpose), so look them up
+    // via hass.localize: a missing one renders empty instead of being reported.
+    return key.endsWith(".description") ? this.hass.localize(fullKey) : this.knx.localize(fullKey);
+  };
 
   protected willUpdate(changedProperties: PropertyValues<this>) {
     super.willUpdate(changedProperties); // unsaved changes listeners are handled by the mixin
@@ -248,7 +252,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
       error: (err) => {
         logger.error("Error loading expose config", err);
         return html`<ha-alert alert-type="error"
-          >${this.knx.localize("expose_create_load_error")}</ha-alert
+          >${this.knx.localize("component.knx.config_panel.expose.create.load_error")}</ha-alert
         >`;
       },
       complete: () => {
@@ -260,7 +264,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
           <div class="add-button-row">
             <ha-button @click=${this._addExpose}>
               <ha-svg-icon slot="start" .path=${mdiPlus}></ha-svg-icon>
-              ${this.hass.localize("component.knx.config_panel.expose.create.add_expose")}
+              ${this.knx.localize("component.knx.config_panel.expose.create.add_expose")}
             </ha-button>
           </div>
         `;
@@ -284,17 +288,15 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
         .hass=${this.hass}
         .narrow=${this.narrow}
         .backCallback=${this._exitExposeFlow}
-        .header=${this.hass.localize("component.knx.config_panel.expose.create.title")}
+        .header=${this.knx.localize("component.knx.config_panel.expose.create.title")}
       >
         <div class="content">
           <ha-card outlined>
             <div class="card-content">
               <ha-entity-picker
                 .hass=${this.hass}
-                .label=${this.hass.localize(
-                  "component.knx.config_panel.expose.create.entity.title",
-                )}
-                .helper=${this.hass.localize(
+                .label=${this.knx.localize("component.knx.config_panel.expose.create.entity.label")}
+                .helper=${this.knx.localize(
                   "component.knx.config_panel.expose.create.entity.description",
                 )}
                 .value=${""}
@@ -306,7 +308,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
           ${
             copyFrom
               ? html` <ha-alert alert-type="info">
-                  ${this.hass.localize("component.knx.config_panel.expose.create.copy_info", {
+                  ${this.knx.localize("component.knx.config_panel.expose.create.copy_info", {
                     entity_name: this.hass.states[copyFrom]?.attributes.friendly_name ?? "?",
                     entity_id: copyFrom,
                   })}
@@ -330,13 +332,13 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
         .scrollable=${this._mode === "gui"}
         .header=${
           create
-            ? this.hass.localize("component.knx.config_panel.expose.create.title")
-            : `${this.hass.localize("ui.common.edit")}: ${this._entityId}`
+            ? this.knx.localize("component.knx.config_panel.expose.create.title")
+            : `${this.knx.localize("ui.common.edit")}: ${this._entityId}`
         }
       >
         <ha-icon-button
           slot="toolbar-icon"
-          .label=${this.hass.localize(
+          .label=${this.knx.localize(
             this._mode === "gui"
               ? "ui.panel.config.automation.editor.edit_yaml"
               : "ui.panel.config.automation.editor.edit_ui",
@@ -367,7 +369,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
                       @value-changed=${this._yamlChanged}
                     ></ha-yaml-editor>
                     <p class="yaml-hint">
-                      ${this.hass.localize("component.knx.config_panel.expose.create.yaml.mode_hint")}
+                      ${this.knx.localize("component.knx.config_panel.expose.create.yaml.mode_hint")}
                     </p>
                   `
             }
@@ -384,7 +386,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
           }
         >
           <ha-svg-icon slot="start" .path=${create ? mdiPlus : mdiFloppy}></ha-svg-icon>
-          ${create ? this.hass.localize("ui.common.create") : this.hass.localize("ui.common.save")}
+          ${create ? this.knx.localize("ui.common.create") : this.knx.localize("ui.common.save")}
         </ha-button>
         ${
           this.narrow && this._entityId && this._mode === "gui"
@@ -396,7 +398,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
                   @click=${this._openNotesDialog}
                 >
                   <ha-svg-icon slot="start" .path=${mdiFileDocumentEdit}></ha-svg-icon>
-                  ${this.hass.localize("component.knx.config_panel.expose.create.notes.label")}
+                  ${this.knx.localize("component.knx.config_panel.expose.create.notes.label")}
                 </ha-button>
               `
             : nothing
@@ -429,7 +431,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
             </div>
             <div class="raw-toggle-row">
               <span class="raw-toggle-label"
-                >${this.hass.localize(
+                >${this.knx.localize(
                   "component.knx.config_panel.expose.create.show_raw_values",
                 )}</span
               >
@@ -442,7 +444,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
           <div class="entity-attrs">
             <div class="entity-attr">
               <span class="attr-name"
-                >${this.hass.localize("ui.components.selectors.selector.types.state")}</span
+                >${this.knx.localize("ui.components.selectors.selector.types.state")}</span
               >
               <span class="attr-value"
                 >${
@@ -485,7 +487,9 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
     return html`
       <ha-alert alert-type="error">
         <details>
-          <summary><b>${this.knx.localize("expose_validation_error")}</b></summary>
+          <summary>
+            <b>${this.knx.localize("component.knx.config_panel.expose.create.validation_error")}</b>
+          </summary>
           <p>${this._validationBaseError}</p>
           ${
             this._validationErrors?.map(
@@ -505,10 +509,10 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
     if (this._mode === "yaml") {
       if (this._yamlErrors) {
         const confirmed = await showConfirmationDialog(this, {
-          text: `${this.hass.localize("component.knx.config_panel.expose.create.yaml.yaml_error")} ${this._yamlErrors}`,
-          confirmText: this.hass.localize("ui.common.continue"),
+          text: `${this.knx.localize("component.knx.config_panel.expose.create.yaml.yaml_error")} ${this._yamlErrors}`,
+          confirmText: this.knx.localize("ui.common.continue"),
           destructive: true,
-          dismissText: this.hass.localize("ui.common.cancel"),
+          dismissText: this.knx.localize("ui.common.cancel"),
         });
         if (!confirmed) return;
       }
@@ -534,12 +538,12 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
     return html`
       <ha-card outlined>
         <div class="card-header">
-          ${this.hass.localize("component.knx.config_panel.expose.create.notes.label")}
+          ${this.knx.localize("component.knx.config_panel.expose.create.notes.label")}
         </div>
         <div class="card-content">
           <ha-textarea
             class="notes-textarea"
-            .placeholder=${this.hass.localize(
+            .placeholder=${this.knx.localize(
               "component.knx.config_panel.expose.create.notes.placeholder",
             )}
             .rows=${this._getNotesRows()}
@@ -557,12 +561,12 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
         .hass=${this.hass}
         .open=${this._showNotesDialog}
         @closed=${this._closeNotesDialog}
-        .headerTitle=${this.hass.localize("component.knx.config_panel.expose.create.notes.label")}
+        .headerTitle=${this.knx.localize("component.knx.config_panel.expose.create.notes.label")}
       >
         <ha-textarea
           .rows=${this._getNotesRows()}
           class="notes-textarea"
-          .placeholder=${this.hass.localize(
+          .placeholder=${this.knx.localize(
             "component.knx.config_panel.expose.create.notes.placeholder",
           )}
           .value=${this._config.notes ?? ""}
@@ -616,7 +620,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
     const title = this._stateObj
       ? option.attribute
         ? this.hass.formatEntityAttributeName(this._stateObj, option.attribute)
-        : this.hass.localize("ui.components.selectors.selector.types.state")
+        : this.knx.localize("ui.components.selectors.selector.types.state")
       : "";
     const gaName = option.ga?.write
       ? (this._projectData?.group_addresses[option.ga.write]?.name ?? option.ga.write)
@@ -630,7 +634,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
                   slot="icons"
                   data-idx=${idx}
                   .path=${mdiDelete}
-                  .label=${this.hass.localize("ui.common.delete")}
+                  .label=${this.knx.localize("ui.common.delete")}
                   @click=${this._removeExpose}
                 ></ha-icon-button>
               `
@@ -649,8 +653,8 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
             .key=${"attribute"}
             .entityId=${this._entityId}
             .value=${option.attribute ?? ""}
-            .label=${this.hass.localize("ui.components.selectors.selector.types.attribute")}
-            .helper=${this.hass.localize(
+            .label=${this.knx.localize("ui.components.selectors.selector.types.attribute")}
+            .helper=${this.knx.localize(
               "component.knx.config_panel.expose.create.attribute.description",
             )}
             .hideAttributes=${[...HIDDEN_ATTRIBUTES]}
@@ -667,13 +671,13 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
             .key=${"ga"}
             .options=${GA_SELECTOR_OPTIONS}
             .config=${option.ga ?? {}}
-            .label=${this.hass.localize("component.knx.config_panel.expose.create.ga.label")}
+            .label=${this.knx.localize("component.knx.config_panel.expose.create.ga.label")}
             .localizeFunction=${this._backendLocalize}
             .validationErrors=${gaErrors}
             @value-changed=${this._updateExposeOptionAtIndex}
           ></knx-group-address-selector>
           <ha-expansion-panel
-            .header=${this.hass.localize(
+            .header=${this.knx.localize(
               "component.knx.config_panel.expose.create.section_advanced_options.title",
             )}
           >
@@ -788,9 +792,9 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
   protected override async promptDiscardChanges(): Promise<boolean> {
     if (!this.hasUnsavedChanges()) return true;
     return showConfirmationDialog(this, {
-      text: this.hass.localize("ui.panel.config.common.editor.confirm_unsaved"),
-      confirmText: this.hass.localize("ui.common.leave"),
-      dismissText: this.hass.localize("ui.common.stay"),
+      text: this.knx.localize("ui.panel.config.common.editor.confirm_unsaved"),
+      confirmText: this.knx.localize("ui.common.leave"),
+      dismissText: this.knx.localize("ui.common.stay"),
       destructive: true,
     });
   }

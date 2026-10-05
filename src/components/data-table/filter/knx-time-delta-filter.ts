@@ -117,7 +117,9 @@ export class KnxTimeDeltaFilter extends LitElement {
   // ============================================================================
 
   protected render(): TemplateResult {
-    const headerText = this.knx.localize("group_monitor_time_delta_title");
+    const headerText = this.knx.localize(
+      "component.knx.config_panel.group_monitor.time_delta.title",
+    );
     const hasValues = this.deltaBefore > 0 || this.deltaAfter > 0;
 
     return html`
@@ -138,7 +140,7 @@ export class KnxTimeDeltaFilter extends LitElement {
                     <ha-icon-button
                       .path=${mdiFilterVariantRemove}
                       @click=${this._handleClearFiltersButtonClick}
-                      .title=${this.knx.localize("knx_list_filter_clear")}
+                      .title=${this.knx.localize("ui.components.subpage-data-table.clear_filter")}
                     ></ha-icon-button>
                   `
                 : nothing
@@ -151,21 +153,21 @@ export class KnxTimeDeltaFilter extends LitElement {
             ? html`
                 <div class="filter-content">
                   <p class="description">
-                    ${this.knx.localize("group_monitor_time_delta_description")}
+                    ${this.knx.localize("component.knx.config_panel.group_monitor.time_delta.description")}
                   </p>
 
                   ${
                     this.disabled
                       ? html`
                           <p class="disabled-message">
-                            ${this.knx.localize("group_monitor_time_delta_disabled")}
+                            ${this.knx.localize("component.knx.config_panel.group_monitor.time_delta.disabled")}
                           </p>
                         `
                       : html`
                           <div class="input-row">
                             <div
                               class="input-wrapper"
-                              title=${this.knx.localize("group_monitor_time_delta_before")}
+                              title=${this.knx.localize("component.knx.config_panel.group_monitor.time_delta.before.label")}
                             >
                               <ha-selector-number
                                 id="delta-before"
@@ -173,7 +175,7 @@ export class KnxTimeDeltaFilter extends LitElement {
                                 .value=${this.deltaBefore}
                                 .disabled=${this.disabled}
                                 .required=${false}
-                                .label=${this.knx.localize("group_monitor_time_delta_before")}
+                                .label=${this.knx.localize("component.knx.config_panel.group_monitor.time_delta.before.label")}
                                 .selector=${{
                                   number: {
                                     min: 0,
@@ -190,7 +192,7 @@ export class KnxTimeDeltaFilter extends LitElement {
                           <div class="input-row">
                             <div
                               class="input-wrapper"
-                              title=${this.knx.localize("group_monitor_time_delta_after")}
+                              title=${this.knx.localize("component.knx.config_panel.group_monitor.time_delta.after.label")}
                             >
                               <ha-selector-number
                                 id="delta-after"
@@ -198,7 +200,7 @@ export class KnxTimeDeltaFilter extends LitElement {
                                 .value=${this.deltaAfter}
                                 .disabled=${this.disabled}
                                 .required=${false}
-                                .label=${this.knx.localize("group_monitor_time_delta_after")}
+                                .label=${this.knx.localize("component.knx.config_panel.group_monitor.time_delta.after.label")}
                                 .selector=${{
                                   number: {
                                     min: 0,
@@ -220,10 +222,13 @@ export class KnxTimeDeltaFilter extends LitElement {
                             <div class="summary-text">
                               <div class="summary-primary">
                                 <span class="summary-label">
-                                  ${this.knx.localize("group_monitor_time_delta_summary", {
-                                    before: this.deltaBefore,
-                                    after: this.deltaAfter,
-                                  })}
+                                  ${this.knx.localize(
+                                    "component.knx.config_panel.group_monitor.time_delta.summary",
+                                    {
+                                      before: this.deltaBefore,
+                                      after: this.deltaAfter,
+                                    },
+                                  )}
                                 </span>
                                 <span class="summary-badge">${this.addedCount}</span>
                               </div>

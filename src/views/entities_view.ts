@@ -202,6 +202,7 @@ export class KNXEntitiesView extends LitElement {
           .filter((label): label is LabelRegistryEntry => Boolean(label));
         const groupAddresses = Array.from(groupAddressesByEntity[entry.entity_id]?.groups ?? []);
         const domain = computeDomain(entry.entity_id);
+        // hass.localize on purpose: domains without a loaded title fall back to the domain name.
         const domainName = this.hass.localize(`component.${domain}.title`) || domain;
         return {
           ...entry,
@@ -284,6 +285,7 @@ export class KNXEntitiesView extends LitElement {
     entities.forEach((entity) => {
       const domain = computeDomain(entity.entity_id);
       if (!domains.has(domain)) {
+        // hass.localize on purpose: domains without a loaded title fall back to the domain name.
         const domainName = this.hass.localize(`component.${domain}.title`) || domain;
         domains.set(domain, domainName);
       }
@@ -315,7 +317,7 @@ export class KNXEntitiesView extends LitElement {
     primaryField: {
       filterable: true,
       sortable: true,
-      fieldName: this.hass.localize("ui.common.name"),
+      fieldName: this.knx.localize("ui.common.name"),
       mapper: (item) => item.name,
     },
     secondaryField: {
@@ -378,7 +380,7 @@ export class KNXEntitiesView extends LitElement {
     return {
       icon: {
         title: "",
-        label: this.hass.localize("ui.panel.config.entities.picker.headers.state_icon"),
+        label: this.knx.localize("ui.panel.config.entities.picker.headers.state_icon"),
         minWidth: iconWidth,
         maxWidth: iconWidth,
         filterable: false,
@@ -406,7 +408,7 @@ export class KNXEntitiesView extends LitElement {
         filterable: true,
         sortable: true,
         direction: "asc",
-        title: this.hass.localize("ui.common.name"),
+        title: this.knx.localize("ui.common.name"),
         flex: 1,
         extraTemplate: (entry) =>
           entry.label_entries.length
@@ -418,12 +420,12 @@ export class KNXEntitiesView extends LitElement {
         defaultHidden: narrow,
         filterable: true,
         sortable: true,
-        title: this.hass.localize("ui.panel.config.generic.headers.entity_id"),
+        title: this.knx.localize("ui.panel.config.generic.headers.entity_id"),
         flex: 1,
       },
       group_addresses: {
         showNarrow: true,
-        title: this.hass.localize("component.knx.config_panel.common.group_addresses"),
+        title: this.knx.localize("component.knx.config_panel.common.group_addresses"),
         filterable: true,
         sortable: false,
         flex: 1,
@@ -446,7 +448,7 @@ export class KNXEntitiesView extends LitElement {
       device_name: {
         filterable: true,
         sortable: true,
-        title: this.hass.localize("ui.panel.config.entities.picker.headers.device"),
+        title: this.knx.localize("ui.panel.config.entities.picker.headers.device"),
         flex: 1,
       },
       device_id: {
@@ -455,14 +457,14 @@ export class KNXEntitiesView extends LitElement {
         filterable: true,
       },
       area_name: {
-        title: this.hass.localize("ui.panel.config.generic.headers.area"),
+        title: this.knx.localize("ui.panel.config.generic.headers.area"),
         sortable: true,
         filterable: true,
         groupable: true,
         flex: 1,
       },
       domain: {
-        title: this.hass.localize("ui.panel.config.generic.headers.domain"),
+        title: this.knx.localize("ui.panel.config.generic.headers.domain"),
         sortable: true,
         hidden: true,
         filterable: true,
@@ -471,23 +473,23 @@ export class KNXEntitiesView extends LitElement {
       actions: {
         showNarrow: true,
         title: "",
-        label: this.hass.localize("ui.panel.config.generic.headers.actions"),
+        label: this.knx.localize("ui.panel.config.generic.headers.actions"),
         type: "overflow-menu",
         template: (entry) => {
           const items: IconOverflowMenuItem[] = [
             {
               path: mdiInformationSlabCircleOutline,
-              label: this.hass.localize("ui.dialogs.more_info_control.details"),
+              label: this.knx.localize("ui.dialogs.more_info_control.details"),
               action: () => this._entityMoreInfo(entry),
             },
             {
               path: mdiPencilOutline,
-              label: this.hass.localize("ui.common.edit"),
+              label: this.knx.localize("ui.common.edit"),
               action: () => this._entityEdit(entry),
             },
             {
               path: mdiDelete,
-              label: this.hass.localize("ui.common.delete"),
+              label: this.knx.localize("ui.common.delete"),
               action: () => this._entityDelete(entry),
             },
           ];
@@ -520,7 +522,7 @@ export class KNXEntitiesView extends LitElement {
 
   private _entityDelete(entry: EntityRow) {
     showConfirmationDialog(this, {
-      text: `${this.hass.localize("ui.common.delete")} ${entry.entity_id}?`,
+      text: `${this.knx.localize("ui.common.delete")} ${entry.entity_id}?`,
     }).then((confirmed) => {
       if (confirmed) {
         deleteEntity(this.hass, entry.entity_id)
@@ -572,7 +574,7 @@ export class KNXEntitiesView extends LitElement {
         .columns=${this._columns(this.hass.language, this.narrow)}
         .data=${filteredEntities}
         .hasFab=${true}
-        .searchLabel=${this.hass.localize("ui.panel.config.entities.picker.search", {
+        .searchLabel=${this.knx.localize("ui.panel.config.entities.picker.search", {
           number: filteredEntities.length,
         })}
         .clickable=${false}
@@ -605,7 +607,7 @@ export class KNXEntitiesView extends LitElement {
           .selectedOptions=${this._filters.domain as string[] | undefined}
           .expanded=${this._expandedFilter === "domain"}
           .narrow=${this.narrow}
-          .filterTitle=${this.hass.localize("ui.panel.config.generic.headers.domain")}
+          .filterTitle=${this.knx.localize("ui.panel.config.generic.headers.domain")}
           @selection-changed=${this._onFilterSelectionChanged}
           @expanded-changed=${this._onFilterExpandedChanged}
         ></knx-list-filter>
@@ -619,7 +621,7 @@ export class KNXEntitiesView extends LitElement {
           .selectedOptions=${this._filters.area as string[] | undefined}
           .expanded=${this._expandedFilter === "area"}
           .narrow=${this.narrow}
-          .filterTitle=${this.hass.localize("ui.panel.config.generic.headers.area")}
+          .filterTitle=${this.knx.localize("ui.panel.config.generic.headers.area")}
           @selection-changed=${this._onFilterSelectionChanged}
           @expanded-changed=${this._onFilterExpandedChanged}
         ></knx-list-filter>
@@ -633,7 +635,7 @@ export class KNXEntitiesView extends LitElement {
           .selectedOptions=${this._filters.device as string[] | undefined}
           .expanded=${this._expandedFilter === "device"}
           .narrow=${this.narrow}
-          .filterTitle=${this.hass.localize("ui.panel.config.entities.picker.headers.device")}
+          .filterTitle=${this.knx.localize("ui.panel.config.entities.picker.headers.device")}
           @selection-changed=${this._onFilterSelectionChanged}
           @expanded-changed=${this._onFilterExpandedChanged}
         ></knx-list-filter>
@@ -647,13 +649,13 @@ export class KNXEntitiesView extends LitElement {
           .selectedOptions=${this._filters.label as string[] | undefined}
           .expanded=${this._expandedFilter === "label"}
           .narrow=${this.narrow}
-          .filterTitle=${this.hass.localize("ui.panel.config.labels.caption")}
+          .filterTitle=${this.knx.localize("ui.panel.config.labels.caption")}
           @selection-changed=${this._onFilterSelectionChanged}
           @expanded-changed=${this._onFilterExpandedChanged}
         ></knx-list-filter>
         <ha-button slot="fab" size="l" @click=${this._entityCreate}>
           <ha-svg-icon slot="start" .path=${mdiPlus}></ha-svg-icon>
-          ${this.hass.localize("ui.common.add")}
+          ${this.knx.localize("ui.common.add")}
         </ha-button>
       </hass-tabs-subpage-data-table>
     `;

@@ -47,13 +47,22 @@ export class KNXConfigureEntity extends LitElement {
 
   platformStyle!: PlatformStyle;
 
+  // Platform-specific strings are optional overrides of the generic `_` ones, hence hass.localize.
   private _backendLocalize = (path: string) =>
     this.hass.localize(`component.knx.config_panel.entities.create.${this.platform}.${path}`) ||
-    this.hass.localize(`component.knx.config_panel.entities.create._.${path}`);
+    this.knx.localize(`component.knx.config_panel.entities.create._.${path}`);
 
-  private _backendLocalizeKnx = (path: string) =>
-    this.hass.localize(`component.knx.config_panel.entities.create.${this.platform}.knx.${path}`) ||
-    this.hass.localize(`component.knx.config_panel.entities.create._.knx.${path}`);
+  private _backendLocalizeKnx = (path: string) => {
+    const key = `component.knx.config_panel.entities.create._.knx.${path}` as const;
+    // Platform-specific strings are optional overrides of the generic `_` ones, and form
+    // descriptions are optional (some fields have none on purpose) - so both use hass.localize:
+    // a missing one renders empty instead of being reported.
+    return (
+      this.hass.localize(
+        `component.knx.config_panel.entities.create.${this.platform}.knx.${path}`,
+      ) || (path.endsWith(".description") ? this.hass.localize(key) : this.knx.localize(key))
+    );
+  };
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -81,6 +90,8 @@ export class KNXConfigureEntity extends LitElement {
   protected render(): TemplateResult {
     const errors = extractValidationErrors(this.validationErrors, "data"); // "data" is root key in our python schema
     const knxErrors = extractValidationErrors(errors, "knx");
+    // hass.localize on purpose: falls back to the platform name.
+    const platformTitle = this.hass.localize(`component.${this.platform}.title`) || this.platform;
 
     return html`
       <div class="header">
@@ -89,7 +100,7 @@ export class KNXConfigureEntity extends LitElement {
             .path=${this.platformStyle.iconPath}
             style=${styleMap({ "background-color": this.platformStyle.color })}
           ></ha-svg-icon>
-          ${this.hass.localize(`component.${this.platform}.title`) || this.platform}
+          ${platformTitle}
         </h1>
         <p>${this._backendLocalize("description")}</p>
       </div>

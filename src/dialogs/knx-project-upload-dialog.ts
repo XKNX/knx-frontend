@@ -78,19 +78,7 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
   }
 
   private _backendLocalize = (key: string, replace?: Record<string, string>) =>
-    this.hass.localize(`component.knx.config_panel.dialogs.project_upload.${key}`, replace);
-
-  // Core translations take precedence; local keys remain as fallback during the migration.
-  private _currentProjectLocalize(
-    coreKey: string,
-    localKey: string,
-    replace?: Record<string, string>,
-  ): string {
-    return (
-      this._backendLocalize(`current_project.${coreKey}`, replace) ||
-      this.params!.knx.localize(localKey, replace)
-    );
-  }
+    this.params!.knx.localize(`component.knx.config_panel.dialogs.project_upload.${key}`, replace);
 
   protected render() {
     if (!this.params) {
@@ -105,7 +93,7 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
       >
         <ha-icon-button
           slot="headerNavigationIcon"
-          .label=${this.hass.localize("ui.common.close")}
+          .label=${this.params!.knx.localize("ui.common.close")}
           .path=${mdiClose}
           .disabled=${this._uploading}
           @click=${this.closeDialog}
@@ -129,7 +117,7 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
           ></ha-file-upload>
           <ha-selector-text
             .value=${this._projectPassword || ""}
-            .label=${this.hass.localize("ui.login-form.password")}
+            .label=${this.params!.knx.localize("ui.login-form.password")}
             .selector=${PASSWORD_SELECTOR}
             .required=${false}
             .disabled=${this._uploading}
@@ -143,10 +131,10 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
             @click=${this._uploadFile}
             .disabled=${this._uploading || !this._projectFile}
           >
-            ${this.hass.localize("ui.common.submit")}
+            ${this.params!.knx.localize("ui.common.submit")}
           </ha-button>
           <ha-button slot="secondaryAction" @click=${this.closeDialog} .disabled=${this._uploading}>
-            ${this.hass.localize("ui.common.cancel")}
+            ${this.params!.knx.localize("ui.common.cancel")}
           </ha-button></ha-dialog-footer
         >
       </ha-dialog>
@@ -157,7 +145,7 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
     const shortVersion = NUMERIC_TOOL_VERSION.exec(toolVersion)?.[0];
     // ETS 4 reports a descriptive version like "ETS 4.2.0 (Build 3884)"; show it as is.
     return shortVersion
-      ? this._currentProjectLocalize("short_ets_version", "project_upload_ets_version_short", {
+      ? this._backendLocalize("current_project.short_ets_version", {
           version: shortVersion,
         })
       : toolVersion;
@@ -176,30 +164,27 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
       const details: CurrentProjectView["details"] = [];
       if (lastModified) {
         details.push({
-          label: this._currentProjectLocalize(
-            "last_modified.label",
-            "info_project_data_last_modified",
-          ),
+          label: this._backendLocalize("current_project.last_modified.label"),
           value: formatDateTime(lastModified, locale, config),
         });
       }
       if (projectInfo.tool_version) {
         details.push({
-          label: this._currentProjectLocalize("ets_version.label", "project_upload_ets_version"),
+          label: this._backendLocalize("current_project.ets_version.label"),
           value: projectInfo.tool_version,
         });
       }
       details.push({
-        label: this._currentProjectLocalize("imported_with.label", "project_upload_imported_with"),
+        label: this._backendLocalize("current_project.imported_with.label"),
         value: `xknxproject ${projectInfo.xknxproject_version}`,
       });
       return {
-        title: this._currentProjectLocalize("title", "project_upload_current_project"),
+        title: this._backendLocalize("current_project.title"),
         name: projectInfo.name,
         summary: [
           projectInfo.tool_version ? this._etsVersionSummary(projectInfo.tool_version) : undefined,
           lastModified
-            ? this._currentProjectLocalize("modified", "project_upload_modified", {
+            ? this._backendLocalize("current_project.modified", {
                 relative_time: relativeTime(lastModified, locale),
               })
             : undefined,
@@ -264,8 +249,8 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
     } catch (err: unknown) {
       this._uploading = false;
       showAlertDialog(this, {
-        title: this.hass.localize("ui.components.selectors.file.upload_failed"),
-        text: errorMessage(err) ?? this.hass.localize("ui.common.unknown_error"),
+        title: this.params!.knx.localize("ui.components.selectors.file.upload_failed"),
+        text: errorMessage(err) ?? this.params!.knx.localize("ui.common.unknown_error"),
       });
       return;
     }

@@ -119,8 +119,8 @@ export class KnxTableCellFilterable extends KnxTableCell {
                     @click=${this._handleFilterClick}
                     .title=${this.knx.localize(
                       this.filterActive
-                        ? "knx_table_cell_filterable_filter_remove_tooltip"
-                        : "knx_table_cell_filterable_filter_set_tooltip",
+                        ? "component.knx.config_panel.common.filter.remove_tooltip"
+                        : "component.knx.config_panel.common.filter.set_tooltip",
                       { value: this.filterDisplayText || this.filterValue },
                     )}
                   >

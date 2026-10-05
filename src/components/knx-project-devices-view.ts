@@ -221,11 +221,11 @@ export class KNXProjectDevicesView extends LitElement {
         ${
           !deviceItems.length
             ? html`<ha-alert alert-type="info">
-                ${this.hass.localize("component.knx.config_panel.project.devices.not_found")}
+                ${this.knx.localize("component.knx.config_panel.project.devices.not_found")}
               </ha-alert>`
             : !filtered.length
               ? html`<ha-alert alert-type="info">
-                  ${this.hass.localize("ui.components.data-table.no_match_filter")}
+                  ${this.knx.localize("ui.components.data-table.no_match_filter")}
                 </ha-alert>`
               : html`<div class="devices">
                   ${repeat(
@@ -352,13 +352,13 @@ export class KNXProjectDevicesView extends LitElement {
     const parts: string[] = [];
     if (device.channels.length) {
       parts.push(
-        `${device.channels.length} ${this.hass.localize(
+        `${device.channels.length} ${this.knx.localize(
           "component.knx.config_panel.project.devices.channels",
         )}`,
       );
     }
     parts.push(
-      `${device.comObjectCount} ${this.hass.localize(
+      `${device.comObjectCount} ${this.knx.localize(
         "component.knx.config_panel.project.devices.group_objects",
       )}`,
     );
@@ -444,7 +444,7 @@ export class KNXProjectDevicesView extends LitElement {
 
   private _renderAggregatedRelated(refs: RelatedRefs): TemplateResult {
     return html`<div class="scope-related">
-      <span class="caption">${this.hass.localize("ui.dialogs.entity_registry.related")}</span>
+      <span class="caption">${this.knx.localize("ui.dialogs.entity_registry.related")}</span>
       <knx-data-table-related-label
         .hass=${this.hass}
         .entities=${refs.entities}

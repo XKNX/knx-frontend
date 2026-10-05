@@ -5,12 +5,12 @@ import { customElement, property, state } from "lit/decorators";
 
 import "@ha/components/ha-icon-button";
 
-import { consumeLocalize } from "@ha/common/decorators/consume-context-entry";
-import type { LocalizeFunc } from "@ha/common/translations/localize";
 import { fireEvent } from "@ha/common/dom/fire_event";
 
 import type { KNX } from "../types/knx";
 import { snakeToTitleCase } from "../utils/format";
+import { consumeKnxLocalize } from "../localize/consume-knx-localize";
+import type { KnxLocalizeFunc } from "../localize/localize";
 
 @customElement("knx-dpt-dialog-selector")
 class KnxDptDialogSelector extends LitElement {
@@ -33,8 +33,8 @@ class KnxDptDialogSelector extends LitElement {
   @property({ type: String }) public translation_key?: string;
 
   @state()
-  @consumeLocalize()
-  private localize!: LocalizeFunc;
+  @consumeKnxLocalize()
+  private localize!: KnxLocalizeFunc;
 
   private _baseTranslation = (
     key: string,
@@ -62,7 +62,7 @@ class KnxDptDialogSelector extends LitElement {
                   <div class="dpt-number">${this.value}</div>
                   <div class="dpt-name">
                     ${
-                      this.localize(
+                      this.localize.optional(
                         `component.knx.config_panel.dpt.options.${this.value.replace(".", "_")}`,
                       ) ||
                       (this.knx.dptMetadata[this.value]?.name

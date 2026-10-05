@@ -40,8 +40,12 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
 
   public hass!: HomeAssistant; // no need for @property here - save rendering cycles
 
-  private _backendLocalize = (key: string) =>
-    this.hass.localize(`component.knx.config_panel.dialogs.send.${key}`);
+  private _backendLocalize = (key: string) => {
+    const fullKey = `component.knx.config_panel.dialogs.send.${key}` as const;
+    // Form descriptions are optional (some fields have none on purpose), so look them up
+    // via hass.localize: a missing one renders empty instead of being reported.
+    return key.endsWith(".description") ? this.hass.localize(fullKey) : this.knx.localize(fullKey);
+  };
 
   public connectedCallback() {
     super.connectedCallback();
@@ -70,7 +74,7 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
         ></ha-markdown>
         <knx-group-address-selector
           .knx=${this.knx}
-          .label=${this.hass.localize("component.knx.config_panel.common.group_address")}
+          .label=${this.knx.localize("component.knx.config_panel.common.group_address")}
           .key=${"ga"}
           .options=${{
             write: { required: true },
@@ -109,7 +113,7 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
         ></knx-selector-row>
         <ha-dialog-footer slot="footer">
           <ha-button slot="secondaryAction" appearance="plain" @click=${this.closeDialog}>
-            ${this.hass.localize("ui.common.cancel")}
+            ${this.knx.localize("ui.common.cancel")}
           </ha-button>
           <ha-button
             slot="primaryAction"

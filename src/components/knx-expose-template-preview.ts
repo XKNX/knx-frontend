@@ -6,13 +6,13 @@ import { customElement, property, state } from "lit/decorators";
 import type { HassEntities, UnsubscribeFunc } from "home-assistant-js-websocket";
 
 import { connectionContext, statesContext } from "@ha/data/context";
-import { consumeLocalize } from "@ha/common/decorators/consume-context-entry";
-import type { LocalizeFunc } from "@ha/common/translations/localize";
 
 import { transform } from "@ha/common/decorators/transform";
 import { subscribeRenderTemplate } from "@ha/data/ws-templates";
 
 import { KNXLogger } from "../tools/knx-logger";
+import { consumeKnxLocalize } from "../localize/consume-knx-localize";
+import type { KnxLocalizeFunc } from "../localize/localize";
 
 const logger = new KNXLogger("knx-expose-template-preview");
 
@@ -48,8 +48,8 @@ export class KnxExposeTemplatePreview extends LitElement {
   private _stateOrAttribute?: unknown;
 
   @state()
-  @consumeLocalize()
-  private localize!: LocalizeFunc;
+  @consumeKnxLocalize()
+  private localize!: KnxLocalizeFunc;
 
   private _unsubRenderTemplate?: UnsubscribeFunc;
 

@@ -94,6 +94,7 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
   }
 
   private _getPages(): KnxPageNavigation[] {
+    // hass.localize on purpose: pages fall back to their built-in name and description.
     return knxMainTabs(!!this.knx.projectInfo).map((page) => ({
       ...page,
       name: this.hass.localize(page.translationKey) || page.name,
@@ -105,10 +106,7 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
     key: "connected" | "disconnected" | "address",
     replace?: Record<string, string>,
   ): string {
-    return (
-      this.hass.localize(`component.knx.config_panel.dashboard.status.${key}`, replace) ||
-      this.knx.localize(`dashboard_status_${key}`, replace)
-    );
+    return this.knx.localize(`component.knx.config_panel.dashboard.status.${key}`, replace);
   }
 
   private _buttonItems: DashboardButton[] = [
@@ -252,9 +250,7 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
         <ha-icon-button
           slot="toolbar-icon"
           .path=${mdiHelpCircleOutline}
-          .label=${this.hass.localize(
-            "ui.panel.config.integrations.config_flow.open_documentation",
-          )}
+          .label=${this.knx.localize("ui.panel.config.integrations.config_flow.open_documentation")}
           .href=${documentationUrl(this.hass, "/integrations/knx")}
           target="_blank"
           rel="noopener noreferrer"
@@ -270,7 +266,7 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
                   <span class="status-heading" role="status"
                     >${
                       status === "unavailable"
-                        ? this.hass.localize("state.default.unavailable")
+                        ? this.knx.localize("state.default.unavailable")
                         : this._localizeStatus(status)
                     }</span
                   >
@@ -343,10 +339,10 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
                         <ha-svg-icon .path=${item.iconPath}></ha-svg-icon>
                       </div>
                       <span slot="headline"
-                        >${this.hass.localize(`${item.translationKey}.title`)}</span
+                        >${this.knx.localize(`${item.translationKey}.title`)}</span
                       >
                       <span slot="supporting-text"
-                        >${this.hass.localize(`${item.translationKey}.description`)}</span
+                        >${this.knx.localize(`${item.translationKey}.description`)}</span
                       >
                     </ha-md-list-item>`,
                 )}

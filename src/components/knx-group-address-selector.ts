@@ -8,8 +8,6 @@ import memoize from "memoize-one";
 
 import "@ha/components/ha-icon-button";
 import { fireEvent } from "@ha/common/dom/fire_event";
-import { consumeLocalize } from "@ha/common/decorators/consume-context-entry";
-import type { LocalizeFunc } from "@ha/common/translations/localize";
 
 import "./knx-dpt-option-selector";
 import "./knx-dpt-dialog-selector";
@@ -23,6 +21,8 @@ import { knxProjectContext } from "../data/knx-project-context";
 import type { KNX } from "../types/knx";
 import type { GASelectorOptions } from "../types/schema";
 import type { DPT, GroupAddress, KNXProject } from "../types/websocket";
+import { consumeKnxLocalize } from "../localize/consume-knx-localize";
+import type { KnxLocalizeFunc } from "../localize/localize";
 
 @customElement("knx-group-address-selector")
 export class GroupAddressSelector extends LitElement {
@@ -53,8 +53,8 @@ export class GroupAddressSelector extends LitElement {
   @state() private _showEmptyPassiveField = false;
 
   @state()
-  @consumeLocalize()
-  private localize!: LocalizeFunc;
+  @consumeKnxLocalize()
+  private localize!: KnxLocalizeFunc;
 
   private _selectedDPTValue?: string;
 

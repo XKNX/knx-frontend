@@ -184,7 +184,9 @@ export class GroupMonitorTelegramInfoDialog
 
     return html`
       <ha-dialog .open=${this._open} @closed=${this.closeDialog}>
-        <span slot="headerTitle"> ${this.knx.localize("knx_telegram_info_dialog_telegram")} </span>
+        <span slot="headerTitle">
+          ${this.knx.localize("component.knx.config_panel.dialogs.telegram_info.title")}
+        </span>
         <div slot="headerSubtitle">
           <span title=${formatIsoTimestampWithMicroseconds(telegram.timestampIso)}>
             ${formatDateTimeWithMilliseconds(telegram.timestamp) + " "}
@@ -206,10 +208,10 @@ export class GroupMonitorTelegramInfoDialog
           slot="headerActionItems"
           class="direction-badge ${directionClass}"
           title=${
-            this.knx.localize(telegram.direction) + (telegram.dataSecure ? " DataSecure" : "")
+            this._localizeDirection(telegram.direction) + (telegram.dataSecure ? " DataSecure" : "")
           }
         >
-          ${this.knx.localize(telegram.direction) + (telegram.dataSecure ? " 🔒" : "")}
+          ${this._localizeDirection(telegram.direction) + (telegram.dataSecure ? " 🔒" : "")}
         </div>
 
         <div class="content">
@@ -218,7 +220,7 @@ export class GroupMonitorTelegramInfoDialog
             <div class="addresses-row">
               <div class="address-item">
                 <div class="item-label">
-                  ${this.knx.localize("knx_telegram_info_dialog_source")}
+                  ${this.knx.localize("component.knx.config_panel.dialogs.telegram_info.source")}
                 </div>
                 <div class="address-chip">${telegram.sourceAddress}</div>
                 ${
@@ -229,7 +231,7 @@ export class GroupMonitorTelegramInfoDialog
               </div>
               <div class="address-item">
                 <div class="item-label">
-                  ${this.knx.localize("knx_telegram_info_dialog_destination")}
+                  ${this.knx.localize("component.knx.config_panel.dialogs.telegram_info.destination")}
                 </div>
                 <div class="address-chip">${telegram.destinationAddress}</div>
                 ${
@@ -245,7 +247,7 @@ export class GroupMonitorTelegramInfoDialog
                 ? html`
                     <div class="value-section">
                       <div class="value-label">
-                        ${this.knx.localize("knx_telegram_info_dialog_value")}
+                        ${this.knx.localize("component.knx.config_panel.dialogs.telegram_info.value")}
                       </div>
                       <div class="value-content">${telegram.value}</div>
                     </div>
@@ -257,7 +259,7 @@ export class GroupMonitorTelegramInfoDialog
               <div class="detail-grid">
                 <div class="detail-item">
                   <div class="detail-label">
-                    ${this.knx.localize("knx_telegram_info_dialog_type")}
+                    ${this.knx.localize("component.knx.config_panel.dialogs.telegram_info.type")}
                   </div>
                   <div class="detail-value">${telegram.type}</div>
                 </div>
@@ -270,7 +272,7 @@ export class GroupMonitorTelegramInfoDialog
                     ? html`
                         <div class="detail-item payload">
                           <div class="detail-label">
-                            ${this.knx.localize("knx_telegram_info_dialog_payload")}
+                            ${this.knx.localize("component.knx.config_panel.dialogs.telegram_info.payload")}
                           </div>
                           <code>${telegram.payload}</code>
                         </div>
@@ -285,7 +287,7 @@ export class GroupMonitorTelegramInfoDialog
                 ? html`
                     <div class="item-related">
                       <div class="related-label">
-                        ${this.hass.localize("ui.dialogs.entity_registry.related")}
+                        ${this.knx.localize("ui.dialogs.entity_registry.related")}
                       </div>
                       <knx-data-table-related-label
                         .hass=${this.hass}
@@ -309,16 +311,16 @@ export class GroupMonitorTelegramInfoDialog
               .disabled=${disablePrevious}
             >
               <ha-svg-icon .path=${mdiArrowLeft} slot="start"></ha-svg-icon>
-              ${this.hass.localize("ui.common.previous")}
+              ${this.knx.localize("ui.common.previous")}
             </ha-button>
             <ha-button appearance="plain" @click=${this._nextTelegram} .disabled=${disableNext}>
-              ${this.hass.localize("ui.common.next")}
+              ${this.knx.localize("ui.common.next")}
               <ha-svg-icon .path=${mdiArrowRight} slot="end"></ha-svg-icon>
             </ha-button>
           </div>
           <ha-button appearance="filled" @click=${this._createAutomation}>
             <ha-svg-icon .path=${mdiRobot} slot="start"></ha-svg-icon>
-            ${this.hass.localize("ui.panel.config.automation.picker.add_automation")}
+            ${this.knx.localize("ui.panel.config.automation.picker.add_automation")}
           </ha-button>
         </div>
       </ha-dialog>
@@ -328,6 +330,15 @@ export class GroupMonitorTelegramInfoDialog
   /**
    * Opens the Home Assistant automation editor prefilled with this telegram
    */
+  // hass.localize on purpose: unknown directions fall back to the raw value.
+  private _localizeDirection(direction: string): string {
+    return (
+      this.hass.localize(
+        `component.knx.config_panel.group_monitor.direction.options.${direction.toLowerCase()}`,
+      ) || direction
+    );
+  }
+
   private _createAutomation(): void {
     if (!this._params) return;
     const config = buildAutomationFromTelegram(this._params.telegram);

@@ -5,6 +5,7 @@ import type { TemplateResult } from "lit";
 import type { HomeAssistant } from "@ha/types";
 
 import type { KNX } from "../types/knx";
+import type { KnxLocalizeKey } from "../localize/localize";
 import { localize } from "../localize/localize";
 
 import { getConnectionStatus, KnxDashboard } from "./dashboard";
@@ -21,6 +22,12 @@ describe("getConnectionStatus", () => {
     expect(getConnectionStatus(configState, sensorState)).toBe(expected);
   });
 });
+
+const STATUS_TRANSLATIONS: Record<string, Record<string, string>> = {
+  de: { connected: "Verbunden", disconnected: "Getrennt", address: "Adresse: {address}" },
+  en: { connected: "Connected", disconnected: "Disconnected", address: "Address: {address}" },
+};
+const STATUS_PREFIX = "component.knx.config_panel.dashboard.status.";
 
 const createDashboard = (language = "de", nameByUser = "My KNX gateway") => {
   const view = new KnxDashboard();
@@ -54,20 +61,24 @@ const createDashboard = (language = "de", nameByUser = "My KNX gateway") => {
         name_by_user: nameByUser,
       },
     },
-    localize: (key: string) =>
+    localize: (key: string, replace?: Record<string, string>) =>
       key === "ui.panel.config.integrations.config_flow.open_documentation"
         ? "Open documentation"
         : key === "state.default.unavailable"
           ? "Shared unavailable"
-          : key.startsWith("component.knx.config_panel.dashboard.status.")
-            ? ""
+          : key.startsWith(STATUS_PREFIX)
+            ? STATUS_TRANSLATIONS[language][key.slice(STATUS_PREFIX.length)].replace(
+                "{address}",
+                replace?.address ?? "",
+              )
             : key,
   } as unknown as HomeAssistant;
   view.knx = {
     config_entry: { entry_id: "entry", state: "loaded" },
     connectionInfo: { connected: true, current_address: "1.1.250" },
     projectInfo: null,
-    localize: (key: string, replace?: Record<string, string>) => localize(view.hass, key, replace),
+    localize: (key: KnxLocalizeKey, replace?: Record<string, string>) =>
+      localize(view.hass, key, replace),
   } as unknown as KNX;
   return view;
 };
@@ -93,23 +104,6 @@ describe("dashboard status details", () => {
     expect(link?.getAttribute("href")).toBe("/config/devices/device/interface_id");
     expect(link?.textContent).toBe(nameByUser || "KNX Interface");
     expect(host.querySelectorAll(".status-detail a")).toHaveLength(1);
-  });
-
-  it("prefers backend dashboard translations when available", () => {
-    const view = createDashboard("en");
-    const fallback = view.hass.localize;
-    view.hass.localize = (key, replace) => {
-      if (key === "component.knx.config_panel.dashboard.status.connected") {
-        return "Backend connected";
-      }
-      if (key === "component.knx.config_panel.dashboard.status.address") {
-        return `IA ${replace?.address}`;
-      }
-      return fallback(key, replace);
-    };
-    const host = renderDashboard(view);
-    expect(host.querySelector(".status-heading")?.textContent?.trim()).toBe("Backend connected");
-    expect(statusDetail(host)).toBe("My KNX gateway · IA 1.1.250");
   });
 
   it("hides the address when the live sensor disconnects", () => {

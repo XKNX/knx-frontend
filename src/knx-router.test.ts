@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import "./knx-router";
 import type { KnxRouter } from "./knx-router";
 import type { KnxStatusPage } from "./components/knx-status-page";
+import type { KnxLocalizeKey } from "./localize/localize";
+import { localize } from "./localize/localize";
 import type { KNX } from "./types/knx";
 import type { KnxStatusView } from "./views/status_view";
 import "./views/entities_router";
@@ -23,6 +25,11 @@ const routerAt = (tag: string, prefix: string, path: string) => {
   router.hass = {
     localize: (key: string) => (key === "panel.notfound" ? "Page not found" : ""),
   } as any;
+  // Like the panel's `knx.localize`, resolve against the current hass.
+  router.knx = {
+    localize: (key: KnxLocalizeKey, replace?: Record<string, any>) =>
+      localize(router.hass, key, replace),
+  } as unknown as KNX;
   return router;
 };
 
@@ -58,7 +65,6 @@ describe("KnxRouter", () => {
       const oldState = window.history.state;
       window.history.replaceState({ message: "Connection lost" }, "");
       const router = routerAt(tag, prefix, path);
-      router.knx = { localize: (key: string) => key } as KNX;
       document.body.appendChild(router);
       try {
         await (router as unknown as { pageRendered: Promise<void> }).pageRendered;

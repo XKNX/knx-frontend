@@ -37,8 +37,12 @@ export class KnxTimeServerDialog extends DialogMixin<KnxTimeServerDialogParams>(
 
   public hass!: HomeAssistant; // no need for @property here - save rendering cycles
 
-  private _backendLocalize = (key: string) =>
-    this.hass.localize(`component.knx.config_panel.dialogs.time_server.${key}`);
+  private _backendLocalize = (key: string) => {
+    const fullKey = `component.knx.config_panel.dialogs.time_server.${key}` as const;
+    // Form descriptions are optional (some fields have none on purpose), so look them up
+    // via hass.localize: a missing one renders empty instead of being reported.
+    return key.endsWith(".description") ? this.hass.localize(fullKey) : this.knx.localize(fullKey);
+  };
 
   private _loadConfigTask = new Task(this, {
     args: () => [],
@@ -181,10 +185,10 @@ export class KnxTimeServerDialog extends DialogMixin<KnxTimeServerDialogParams>(
 
       <ha-dialog-footer slot="footer">
         <ha-button slot="secondaryAction" @click=${this.closeDialog}>
-          ${this.hass.localize("ui.common.cancel")}
+          ${this.knx.localize("ui.common.cancel")}
         </ha-button>
         <ha-button slot="primaryAction" @click=${this._save}>
-          ${this.hass.localize("ui.common.save")}
+          ${this.knx.localize("ui.common.save")}
         </ha-button>
       </ha-dialog-footer>
     `;

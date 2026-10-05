@@ -170,7 +170,7 @@ export class KnxSelectOptionsList extends LitElement {
         <ha-icon-button
           class="remove"
           .path=${mdiDelete}
-          .label=${this.hass.localize("ui.common.remove")}
+          .label=${this.knx.localize("ui.common.remove")}
           .disabled=${!canDelete}
           data-index=${index}
           @click=${this._removeOption}
@@ -213,7 +213,7 @@ export class KnxSelectOptionsList extends LitElement {
   private _emptyLocalize = (_key: string): string => "";
 
   private _localizePayload = (key: string): string =>
-    this.hass.localize(`component.knx.config_panel.selectors.knx-payload-selector.${key}`);
+    this.knx.localize(`component.knx.config_panel.selectors.knx-payload-selector.${key}`);
 
   private _payloadLengthChanged(ev: CustomEvent<{ value: number }>): void {
     ev.stopPropagation();
@@ -270,7 +270,7 @@ export class KnxSelectOptionsList extends LitElement {
   }
 
   private _localize = (key: string): string =>
-    this.hass.localize(`component.knx.config_panel.selectors.knx-select-options-selector.${key}`);
+    this.knx.localize(`component.knx.config_panel.selectors.knx-select-options-selector.${key}`);
 
   static styles = css`
     :host {

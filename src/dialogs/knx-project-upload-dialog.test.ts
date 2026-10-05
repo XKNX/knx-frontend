@@ -5,6 +5,7 @@ import type { HaExpansionPanel } from "@ha/components/ha-expansion-panel";
 import { uploadFile } from "@ha/data/file_upload";
 import { showAlertDialog } from "@ha/dialogs/generic/show-dialog-box";
 import { createMockHass } from "../../test/helpers/mock-hass";
+import type { KnxLocalizeKey } from "../localize/localize";
 import { localize } from "../localize/localize";
 import { processProjectFile } from "../services/websocket.service";
 import type { KNX } from "../types/knx";
@@ -31,18 +32,29 @@ const UPLOAD_FAILED = { "ui.components.selectors.file.upload_failed": "Upload fe
 
 const CORE_PREFIX = "component.knx.config_panel.dialogs.project_upload.current_project";
 
+const CURRENT_PROJECT_TRANSLATIONS: Record<string, string> = {
+  [`${CORE_PREFIX}.title`]: "Currently loaded",
+  [`${CORE_PREFIX}.short_ets_version`]: "ETS {version}",
+  [`${CORE_PREFIX}.modified`]: "Modified {relative_time}",
+  [`${CORE_PREFIX}.last_modified.label`]: "Last modified",
+  [`${CORE_PREFIX}.ets_version.label`]: "ETS version",
+  [`${CORE_PREFIX}.imported_with.label`]: "Imported with",
+};
+
 const createHass = (translations: Record<string, string> = {}) => createMockHass({ translations });
 
 const createDialog = (
   projectInfo: KNXProjectInfo | null = PROJECT_INFO,
   backendTranslations: Record<string, string> = {},
 ) => {
-  const hass = createHass(backendTranslations);
+  const hass = createHass({ ...CURRENT_PROJECT_TRANSLATIONS, ...backendTranslations });
+  const dialog = new KnxProjectUploadDialog();
+  // Like the panel's `knx.localize`, resolve against the current hass.
   const knx = {
-    localize: (key: string, replace?: Record<string, any>) => localize(hass, key, replace),
+    localize: (key: KnxLocalizeKey, replace?: Record<string, any>) =>
+      localize(dialog.hass, key, replace),
     projectInfo,
   } as unknown as KNX;
-  const dialog = new KnxProjectUploadDialog();
   dialog.params = { hass, knx };
   dialog.hass = hass;
   const container = document.createElement("div");
@@ -228,7 +240,7 @@ describe("KnxProjectUploadDialog", () => {
       expect(fileUpload(container)).not.toBeNull();
     });
 
-    it("prefers Core translations over the local fallback", () => {
+    it("uses the Core translations for the summary", () => {
       const { container } = createDialog(PROJECT_INFO, {
         [`${CORE_PREFIX}.title`]: "Aktuell geladen",
         [`${CORE_PREFIX}.short_ets_version`]: "ETS {version}",
