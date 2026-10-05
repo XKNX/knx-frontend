@@ -19,7 +19,6 @@ import type { KNX } from "../types/knx";
 import type { TimeServerData, ErrorDescription, CreateEntityResult } from "../types/entity_data";
 import { KNXLogger } from "../tools/knx-logger";
 import { extractValidationErrors, getValidationError } from "../utils/validation";
-import { localizeFormKey } from "../localize/localize";
 
 const logger = new KNXLogger("time-server-dialog");
 
@@ -38,8 +37,12 @@ export class KnxTimeServerDialog extends DialogMixin<KnxTimeServerDialogParams>(
 
   public hass!: HomeAssistant; // no need for @property here - save rendering cycles
 
-  private _backendLocalize = (key: string) =>
-    localizeFormKey(this.hass, `component.knx.config_panel.dialogs.time_server.${key}`);
+  private _backendLocalize = (key: string) => {
+    const fullKey = `component.knx.config_panel.dialogs.time_server.${key}` as const;
+    // Form descriptions are optional (some fields have none on purpose), so look them up
+    // via hass.localize: a missing one renders empty instead of being reported.
+    return key.endsWith(".description") ? this.hass.localize(fullKey) : this.knx.localize(fullKey);
+  };
 
   private _loadConfigTask = new Task(this, {
     args: () => [],

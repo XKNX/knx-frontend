@@ -41,6 +41,7 @@ export class KnxDptReference extends LitElement {
 
   private _renderEntry(entry: DptReferenceEntry): TemplateResult {
     const metadata = entry.metadata;
+    // hass.localize on purpose: DPTs without a translation fall back to their metadata name.
     const label =
       this.hass.localize(`component.knx.config_panel.dpt.options.${entry.dpt.replace(".", "_")}`) ||
       (metadata.name

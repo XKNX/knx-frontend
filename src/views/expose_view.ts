@@ -158,6 +158,7 @@ export class KNXExposeView extends LitElement {
         const areaId = entry.area_id ?? device?.area_id;
         const area = areaId ? this.hass.areas[areaId] : undefined;
         const domain = computeDomain(entry.entity_id);
+        // hass.localize on purpose: domains without a loaded title fall back to the domain name.
         const domainName = this.hass.localize(`component.${domain}.title`) || domain;
         return {
           ...entry,
@@ -238,6 +239,7 @@ export class KNXExposeView extends LitElement {
     entities.forEach((entity) => {
       const domain = computeDomain(entity.entity_id);
       if (!domains.has(domain)) {
+        // hass.localize on purpose: domains without a loaded title fall back to the domain name.
         const domainName = this.hass.localize(`component.${domain}.title`) || domain;
         domains.set(domain, domainName);
       }

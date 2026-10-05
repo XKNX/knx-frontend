@@ -94,6 +94,7 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
   }
 
   private _getPages(): KnxPageNavigation[] {
+    // hass.localize on purpose: pages fall back to their built-in name and description.
     return knxMainTabs(!!this.knx.projectInfo).map((page) => ({
       ...page,
       name: this.hass.localize(page.translationKey) || page.name,

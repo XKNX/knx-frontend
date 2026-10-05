@@ -330,6 +330,7 @@ export class GroupMonitorTelegramInfoDialog
   /**
    * Opens the Home Assistant automation editor prefilled with this telegram
    */
+  // hass.localize on purpose: unknown directions fall back to the raw value.
   private _localizeDirection(direction: string): string {
     return (
       this.hass.localize(
