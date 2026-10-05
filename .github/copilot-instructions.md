@@ -36,7 +36,7 @@ Always follow the general Home Assistant frontend guidance in [homeassistant-fro
 
 - **Web Components (Lit 3.x)**: Use LitElement with `@customElement`, `@property`, `@state`
 - **Strict TypeScript**: No `any` types, define interfaces for KNX data structures
-- **Theming**: Use HA CSS variables and `this.hass.localize()` for text
+- **Theming**: Use HA CSS variables; localize all text (see [Localization](#localization))
 
 ### Naming Conventions
 
@@ -124,6 +124,28 @@ import "../components/knx-configure-entity";
 import { KNXLogger } from "../tools/knx-logger";
 ```
 
+### Localization
+
+Translations come from three sources: Core backend strings (`component.knx.config_panel.*`, loaded by the panel before it renders), HA frontend strings (`ui.*`, `state.*`, `panel.*`, … — the root keys of HA's `src/translations/en.json`), and the few repo-local keys in `src/localize/languages/` (no dots).
+
+At runtime these come from the installed Home Assistant, not from the `homeassistant-frontend` submodule we type-check against. Keys renamed or removed upstream must therefore be noticed at runtime:
+
+- **`this.knx.localize(key)` — default.** Keys with a Core or HA frontend prefix go straight to `hass.localize`, other keys are looked up locally. A missing key is logged (`Translation problem with '<key>'`) and rendered as the key. Keys are typed (`KnxLocalizeKey`): static `ui.*` keys and local keys are checked at compile time; `component.*` and wildcard prefixes like `ui.common.*` are not, so the runtime logging matters.
+- **`this.hass.localize(key)` — only when a miss is expected.** It returns `""` without logging. Use it only together with a fallback (`|| domain`, `|| page.name`, metadata names, optional form descriptions) and add a short comment saying why, e.g. `// hass.localize on purpose: falls back to the domain name.` Components without `knx` (generic `ui.*`-only components) may use it as well.
+- **`@consumeKnxLocalize()` — instead of HA's `@consumeLocalize()`.** For components that get `localize` from context instead of `knx`. The consumed `KnxLocalizeFunc` reports missing keys like `knx.localize`; use `this.localize.optional(key)` for lookups that are expected to miss (plain HA behaviour, `""` without logging). Do not override HA's context provider — HA components inside the panel rely on `""` for missing keys.
+
+```typescript
+@consumeKnxLocalize()
+private localize!: KnxLocalizeFunc;
+
+// reported if missing
+this.localize("component.knx.config_panel.common.group_addresses");
+// DPTs without a translation fall back to their metadata name
+this.localize.optional(`component.knx.config_panel.dpt.options.${dpt}`) || metadataName;
+```
+
+Form fields and sections (`knx-form`, `knx-selector-row`, …) always request `<key>.description`, but some fields have none on purpose. The localize functions passed to forms therefore look up `.description` keys with `hass.localize` and everything else with `knx.localize`.
+
 ## Project Structure
 
 - `/src`: Source code for AI agents to analyze and modify
@@ -198,7 +220,7 @@ import { KNXLogger } from "../tools/knx-logger";
 
 1. **Reuse HA Components**: Prefer existing `<ha-*>` components over custom ones
 2. **Mobile-First**: Responsive design
-3. **Localize Everything (Prefer Backend)**: No hardcoded UI strings. Always prefer Home Assistant backend/core translations (`this.hass.localize()`) over repo-local keys (`this.knx.localize()`). Always verify whether a suitable backend string exists before creating a new frontend translation key.
+3. **Localize Everything (Prefer Backend)**: No hardcoded UI strings. Always prefer Home Assistant backend/core translations (`component.knx.config_panel.*`) and HA frontend strings (`ui.*`, `state.*`, …) over repo-local keys in `src/localize/languages/`. Always verify whether a suitable backend string exists before creating a new frontend translation key. Look them up with `this.knx.localize()` (see [Localization](#localization)).
 4. **KNX Terminology**: Use "Group Address" not "GA", "telegram" for messages
 5. **WebSocket First**: Use integration's WS commands for all backend communication
 6. **Type Safety**: Define interfaces for all KNX data structures
@@ -221,4 +243,5 @@ import { KNXLogger } from "../tools/knx-logger";
 - **Memory Management**: Clean up subscriptions and event listeners
 - **Mobile Responsive**: Ensure components work on small screens
 - **Error States**: Handle loading, error, and unavailable states properly
-- **Redundant Frontend Translations**: Adding keys to `src/localize/` when equivalent strings already exist in Home Assistant backend translations (`this.hass.localize()`)
+- **Redundant Frontend Translations**: Adding keys to `src/localize/` when equivalent strings already exist in Home Assistant backend or frontend translations
+- **Silent Missing Translations**: Using `this.hass.localize()` where `this.knx` is available, without a fallback and a comment explaining why a miss is expected
