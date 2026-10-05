@@ -292,7 +292,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
               <ha-entity-picker
                 .hass=${this.hass}
                 .label=${this.hass.localize(
-                  "component.knx.config_panel.expose.create.entity.title",
+                  "component.knx.config_panel.expose.create.entity.label",
                 )}
                 .helper=${this.hass.localize(
                   "component.knx.config_panel.expose.create.entity.description",
