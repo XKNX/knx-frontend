@@ -290,7 +290,7 @@ export class KNXGroupMonitor extends LitElement {
    */
   private get searchLabel(): string {
     if (this.narrow) {
-      return this.hass.localize("ui.common.search");
+      return this.knx.localize("ui.common.search");
     }
     const { filteredTelegrams } = this._getFilteredData();
     const count = filteredTelegrams.length;
@@ -298,7 +298,7 @@ export class KNXGroupMonitor extends LitElement {
       count === 1
         ? "component.knx.config_panel.group_monitor.search_label_singular"
         : "component.knx.config_panel.group_monitor.search_label";
-    return this.hass.localize(key, { count });
+    return this.knx.localize(key, { count });
   }
 
   // ============================================================================
@@ -316,29 +316,29 @@ export class KNXGroupMonitor extends LitElement {
         mapper: (item: DistinctValueInfo) => item.id,
       },
       primaryField: {
-        fieldName: this.hass.localize(
+        fieldName: this.knx.localize(
           "component.knx.config_panel.group_monitor.filters.source.sort.options.address",
         ),
         filterable: true,
         sortable: true,
-        sortAscendingText: this.hass.localize("component.knx.config_panel.common.sort.ascending"),
-        sortDescendingText: this.hass.localize("component.knx.config_panel.common.sort.descending"),
+        sortAscendingText: this.knx.localize("component.knx.config_panel.common.sort.ascending"),
+        sortDescendingText: this.knx.localize("component.knx.config_panel.common.sort.descending"),
         sortDefaultDirection: "asc",
         mapper: (item: DistinctValueInfo) => item.id,
       },
       secondaryField: {
-        fieldName: this.hass.localize(
+        fieldName: this.knx.localize(
           "component.knx.config_panel.group_monitor.filters.source.sort.options.name",
         ),
         filterable: true,
         sortable: true,
-        sortAscendingText: this.hass.localize("component.knx.config_panel.common.sort.ascending"),
-        sortDescendingText: this.hass.localize("component.knx.config_panel.common.sort.descending"),
+        sortAscendingText: this.knx.localize("component.knx.config_panel.common.sort.ascending"),
+        sortDescendingText: this.knx.localize("component.knx.config_panel.common.sort.descending"),
         sortDefaultDirection: "asc",
         mapper: (item: DistinctValueInfo) => item.name,
       },
       badgeField: {
-        fieldName: this.hass.localize("component.knx.config_panel.common.sort.options.count"),
+        fieldName: this.knx.localize("component.knx.config_panel.common.sort.options.count"),
         filterable: false,
         sortable: true,
         sortDefaultDirection: "desc",
@@ -358,29 +358,29 @@ export class KNXGroupMonitor extends LitElement {
         mapper: (item: DistinctValueInfo) => item.id,
       },
       primaryField: {
-        fieldName: this.hass.localize(
+        fieldName: this.knx.localize(
           "component.knx.config_panel.group_monitor.filters.destination.sort.options.address",
         ),
         filterable: true,
         sortable: true,
-        sortAscendingText: this.hass.localize("component.knx.config_panel.common.sort.ascending"),
-        sortDescendingText: this.hass.localize("component.knx.config_panel.common.sort.descending"),
+        sortAscendingText: this.knx.localize("component.knx.config_panel.common.sort.ascending"),
+        sortDescendingText: this.knx.localize("component.knx.config_panel.common.sort.descending"),
         sortDefaultDirection: "asc",
         mapper: (item: DistinctValueInfo) => item.id,
       },
       secondaryField: {
-        fieldName: this.hass.localize(
+        fieldName: this.knx.localize(
           "component.knx.config_panel.group_monitor.filters.destination.sort.options.name",
         ),
         filterable: true,
         sortable: true,
-        sortAscendingText: this.hass.localize("component.knx.config_panel.common.sort.ascending"),
-        sortDescendingText: this.hass.localize("component.knx.config_panel.common.sort.descending"),
+        sortAscendingText: this.knx.localize("component.knx.config_panel.common.sort.ascending"),
+        sortDescendingText: this.knx.localize("component.knx.config_panel.common.sort.descending"),
         sortDefaultDirection: "asc",
         mapper: (item: DistinctValueInfo) => item.name,
       },
       badgeField: {
-        fieldName: this.hass.localize("component.knx.config_panel.common.sort.options.count"),
+        fieldName: this.knx.localize("component.knx.config_panel.common.sort.options.count"),
         filterable: false,
         sortable: true,
         sortDefaultDirection: "desc",
@@ -455,28 +455,28 @@ export class KNXGroupMonitor extends LitElement {
       mapper: (item: DistinctValueInfo) => item.id,
     },
     primaryField: {
-      fieldName: this.hass.localize(
+      fieldName: this.knx.localize(
         "component.knx.config_panel.common.filter.dpt.sort.options.number",
       ),
       filterable: true,
       sortable: true,
-      sortAscendingText: this.hass.localize("component.knx.config_panel.common.sort.ascending"),
-      sortDescendingText: this.hass.localize("component.knx.config_panel.common.sort.descending"),
+      sortAscendingText: this.knx.localize("component.knx.config_panel.common.sort.ascending"),
+      sortDescendingText: this.knx.localize("component.knx.config_panel.common.sort.descending"),
       sortDefaultDirection: "asc",
       mapper: (item: DistinctValueInfo) =>
         item.id === UNKNOWN_DPT_ID ? this.hass.localize("state.default.unknown") : item.id,
     },
     secondaryField: {
-      fieldName: this.hass.localize("ui.common.name"),
+      fieldName: this.knx.localize("ui.common.name"),
       filterable: true,
       sortable: true,
-      sortAscendingText: this.hass.localize("component.knx.config_panel.common.sort.ascending"),
-      sortDescendingText: this.hass.localize("component.knx.config_panel.common.sort.descending"),
+      sortAscendingText: this.knx.localize("component.knx.config_panel.common.sort.ascending"),
+      sortDescendingText: this.knx.localize("component.knx.config_panel.common.sort.descending"),
       sortDefaultDirection: "asc",
       mapper: (item: DistinctValueInfo) => item.name,
     },
     badgeField: {
-      fieldName: this.hass.localize("component.knx.config_panel.common.sort.options.count"),
+      fieldName: this.knx.localize("component.knx.config_panel.common.sort.options.count"),
       filterable: false,
       sortable: true,
       sortDefaultDirection: "desc",
@@ -600,11 +600,11 @@ export class KNXGroupMonitor extends LitElement {
   private _historyWarningText(warning: HistoryWarning | null): string | undefined {
     switch (warning) {
       case "retention_clamped":
-        return this.hass.localize(
+        return this.knx.localize(
           "component.knx.config_panel.group_monitor.time_range.retention_clamped",
         );
       case "partial_load":
-        return this.hass.localize("component.knx.config_panel.group_monitor.time_range.partial");
+        return this.knx.localize("component.knx.config_panel.group_monitor.time_range.partial");
       default:
         return undefined;
     }
@@ -744,7 +744,7 @@ export class KNXGroupMonitor extends LitElement {
         filterable: true,
         sortable: true,
         direction: "desc",
-        title: this.hass.localize("component.knx.config_panel.group_monitor.columns.time"),
+        title: this.knx.localize("component.knx.config_panel.group_monitor.columns.time"),
         minWidth: "110px",
         maxWidth: "122px",
         template: (row) => html`
@@ -761,7 +761,7 @@ export class KNXGroupMonitor extends LitElement {
         defaultHidden: narrow,
         filterable: false,
         sortable: false,
-        title: this.hass.localize("component.knx.config_panel.group_monitor.columns.time_delta"),
+        title: this.knx.localize("component.knx.config_panel.group_monitor.columns.time_delta"),
         minWidth: "90px",
         maxWidth: "100px",
         template: (row) => {
@@ -787,7 +787,7 @@ export class KNXGroupMonitor extends LitElement {
         showNarrow: true,
         filterable: true,
         sortable: true,
-        title: this.hass.localize("component.knx.config_panel.group_monitor.columns.source"),
+        title: this.knx.localize("component.knx.config_panel.group_monitor.columns.source"),
         flex: 2,
         minWidth: "0",
         template: (row) => html`
@@ -820,7 +820,7 @@ export class KNXGroupMonitor extends LitElement {
         hidden: true,
         filterable: true,
         sortable: true,
-        title: this.hass.localize("component.knx.config_panel.group_monitor.columns.source_name"),
+        title: this.knx.localize("component.knx.config_panel.group_monitor.columns.source_name"),
       },
 
       // Hidden groupable source name column
@@ -830,7 +830,7 @@ export class KNXGroupMonitor extends LitElement {
         sortable: false,
         groupable: true,
         filterable: false,
-        title: this.hass.localize("component.knx.config_panel.group_monitor.columns.source"),
+        title: this.knx.localize("component.knx.config_panel.group_monitor.columns.source"),
       },
 
       // Main destination address column with filterable cell
@@ -838,7 +838,7 @@ export class KNXGroupMonitor extends LitElement {
         showNarrow: true,
         sortable: true,
         filterable: true,
-        title: this.hass.localize("component.knx.config_panel.group_monitor.columns.destination"),
+        title: this.knx.localize("component.knx.config_panel.group_monitor.columns.destination"),
         flex: 2,
         minWidth: "0",
         template: (row) => html`
@@ -872,7 +872,7 @@ export class KNXGroupMonitor extends LitElement {
         hidden: true,
         sortable: true,
         filterable: true,
-        title: this.hass.localize(
+        title: this.knx.localize(
           "component.knx.config_panel.group_monitor.columns.destination_name",
         ),
       },
@@ -884,14 +884,14 @@ export class KNXGroupMonitor extends LitElement {
         sortable: false,
         groupable: true,
         filterable: false,
-        title: this.hass.localize("component.knx.config_panel.group_monitor.columns.destination"),
+        title: this.knx.localize("component.knx.config_panel.group_monitor.columns.destination"),
       },
 
       // Telegram type column with direction indicator and filterable cell
       type: {
         showNarrow: true,
         defaultHidden: narrow,
-        title: this.hass.localize("component.knx.config_panel.group_monitor.columns.type"),
+        title: this.knx.localize("component.knx.config_panel.group_monitor.columns.type"),
         filterable: true,
         sortable: true,
         groupable: true,
@@ -926,7 +926,7 @@ export class KNXGroupMonitor extends LitElement {
       // Hidden direction column for separate filtering
       direction: {
         hidden: true,
-        title: this.hass.localize("component.knx.config_panel.group_monitor.columns.direction"),
+        title: this.knx.localize("component.knx.config_panel.group_monitor.columns.direction"),
         filterable: true,
         groupable: true,
       },
@@ -935,7 +935,7 @@ export class KNXGroupMonitor extends LitElement {
       payload: {
         showNarrow: false,
         hidden: narrow && projectLoaded,
-        title: this.hass.localize("component.knx.config_panel.group_monitor.columns.payload"),
+        title: this.knx.localize("component.knx.config_panel.group_monitor.columns.payload"),
         filterable: true,
         sortable: true,
         type: "numeric",
@@ -969,7 +969,7 @@ export class KNXGroupMonitor extends LitElement {
       value: {
         showNarrow: true,
         hidden: !projectLoaded,
-        title: this.hass.localize("component.knx.config_panel.group_monitor.columns.value"),
+        title: this.knx.localize("component.knx.config_panel.group_monitor.columns.value"),
         filterable: true,
         sortable: true,
         flex: 1,
@@ -1032,7 +1032,7 @@ export class KNXGroupMonitor extends LitElement {
     if (dpt.main === 1) {
       items.push({
         path: mdiPlus,
-        label: this.hass.localize("component.knx.config_panel.common.create_binary_sensor"),
+        label: this.knx.localize("component.knx.config_panel.common.create_binary_sensor"),
         action: () =>
           navigate(
             `/knx/entities/create/binary_sensor?knx.ga_sensor.state=${row.destinationAddress}`,
@@ -1041,7 +1041,7 @@ export class KNXGroupMonitor extends LitElement {
     } else if (dptInClasses(dpt, ["numeric", "string"], this.knx.dptMetadata)) {
       items.push({
         path: mdiPlus,
-        label: this.hass.localize("component.knx.config_panel.common.create_sensor"),
+        label: this.knx.localize("component.knx.config_panel.common.create_sensor"),
         action: () =>
           navigate(
             `/knx/entities/create/sensor?knx.ga_sensor.state=${row.destinationAddress}&knx.ga_sensor.dpt=${row.dptId}`,
@@ -1098,25 +1098,25 @@ export class KNXGroupMonitor extends LitElement {
       {
         path: this.controller.isPaused ? mdiFastForward : mdiPause,
         label: this.controller.isPaused
-          ? this.hass.localize("component.knx.config_panel.group_monitor.resume")
-          : this.hass.localize("component.knx.config_panel.group_monitor.pause"),
+          ? this.knx.localize("component.knx.config_panel.group_monitor.resume")
+          : this.knx.localize("component.knx.config_panel.group_monitor.pause"),
         action: () => this._handlePauseToggle(),
       },
       {
         path: mdiDeleteSweep,
-        label: this.hass.localize("ui.common.clear"),
+        label: this.knx.localize("ui.common.clear"),
         disabled: this.controller.telegrams.length === 0,
         action: () => this._handleClearRows(),
       },
       {
         path: mdiRefresh,
-        label: this.hass.localize("component.knx.config_panel.group_monitor.reload"),
+        label: this.knx.localize("component.knx.config_panel.group_monitor.reload"),
         disabled: !this.controller.isReloadEnabled,
         action: () => this._handleReload(),
       },
       {
         path: mdiDatabaseRemove,
-        label: this.hass.localize("component.knx.config_panel.group_monitor.clear_cache"),
+        label: this.knx.localize("component.knx.config_panel.group_monitor.clear_cache"),
         action: () => this._handleClearCache(),
       },
     ];
@@ -1157,7 +1157,7 @@ export class KNXGroupMonitor extends LitElement {
         .tabs=${[groupMonitorTab]}
         .route=${this.route!}
         .columns=${this._columns(this.narrow, this.knx.projectInfo !== null, this.hass.language)}
-        .noDataText=${this.hass.localize("component.knx.config_panel.group_monitor.waiting_message")}
+        .noDataText=${this.knx.localize("component.knx.config_panel.group_monitor.waiting_message")}
         .data=${filteredTelegrams as any}
         .hasFab=${false}
         .searchLabel=${this.searchLabel}
@@ -1192,11 +1192,11 @@ export class KNXGroupMonitor extends LitElement {
                 <ha-alert
                   slot="top-header"
                   .alertType=${"error"}
-                  .title=${this.hass.localize("component.knx.config_panel.group_monitor.connection_error.title")}
+                  .title=${this.knx.localize("component.knx.config_panel.group_monitor.connection_error.title")}
                 >
                   ${this.controller.connectionError}
                   <ha-button slot="action" @click=${this._retryConnection}>
-                    ${this.hass.localize("component.knx.config_panel.group_monitor.connection_error.retry")}
+                    ${this.knx.localize("component.knx.config_panel.group_monitor.connection_error.retry")}
                   </ha-button>
                 </ha-alert>
               `
@@ -1209,11 +1209,11 @@ export class KNXGroupMonitor extends LitElement {
                   slot="top-header"
                   .alertType=${"info"}
                   .dismissable=${false}
-                  .title=${this.hass.localize("component.knx.config_panel.group_monitor.paused.title")}
+                  .title=${this.knx.localize("component.knx.config_panel.group_monitor.paused.title")}
                 >
-                  ${this.hass.localize("component.knx.config_panel.group_monitor.paused.description")}
+                  ${this.knx.localize("component.knx.config_panel.group_monitor.paused.description")}
                   <ha-button slot="action" @click=${this._handlePauseToggle}>
-                    ${this.hass.localize("component.knx.config_panel.group_monitor.resume")}
+                    ${this.knx.localize("component.knx.config_panel.group_monitor.resume")}
                   </ha-button>
                 </ha-alert>
               `
@@ -1226,12 +1226,12 @@ export class KNXGroupMonitor extends LitElement {
                   slot="top-header"
                   .alertType=${"info"}
                   .narrow=${this.narrow}
-                  .title=${this.hass.localize("component.knx.config_panel.group_monitor.project_not_loaded.title")}
+                  .title=${this.knx.localize("component.knx.config_panel.group_monitor.project_not_loaded.title")}
                 >
-                  ${this.hass.localize("component.knx.config_panel.group_monitor.project_not_loaded.description")}
+                  ${this.knx.localize("component.knx.config_panel.group_monitor.project_not_loaded.description")}
                   <div class="project-alert-actions" slot="action">
                     <ha-button appearance="plain" @click=${this._openProjectUploadDialog}>
-                      ${this.hass.localize(
+                      ${this.knx.localize(
                         "component.knx.config_panel.dialogs.project_upload.title",
                       )}
                     </ha-button>
@@ -1266,7 +1266,7 @@ export class KNXGroupMonitor extends LitElement {
           .expanded=${this.controller.expandedFilter === "source"}
           .narrow=${this.narrow}
           .isMobileDevice=${this.isMobileTouchDevice}
-          .filterTitle=${this.hass.localize("component.knx.config_panel.group_monitor.columns.source")}
+          .filterTitle=${this.knx.localize("component.knx.config_panel.group_monitor.columns.source")}
           @selection-changed=${this._handleSourceFilterChange}
           @expanded-changed=${this._handleSourceFilterExpanded}
         ></knx-list-filter>
@@ -1283,7 +1283,7 @@ export class KNXGroupMonitor extends LitElement {
           .expanded=${this.controller.expandedFilter === "destination"}
           .narrow=${this.narrow}
           .isMobileDevice=${this.isMobileTouchDevice}
-          .filterTitle=${this.hass.localize("component.knx.config_panel.group_monitor.columns.destination")}
+          .filterTitle=${this.knx.localize("component.knx.config_panel.group_monitor.columns.destination")}
           @selection-changed=${this._handleDestinationFilterChange}
           @expanded-changed=${this._handleDestinationFilterExpanded}
         ></knx-list-filter>
@@ -1300,7 +1300,7 @@ export class KNXGroupMonitor extends LitElement {
           .expanded=${this.controller.expandedFilter === "direction"}
           .narrow=${this.narrow}
           .isMobileDevice=${this.isMobileTouchDevice}
-          .filterTitle=${this.hass.localize("component.knx.config_panel.group_monitor.columns.direction")}
+          .filterTitle=${this.knx.localize("component.knx.config_panel.group_monitor.columns.direction")}
           @selection-changed=${this._handleDirectionFilterChange}
           @expanded-changed=${this._handleDirectionFilterExpanded}
         ></knx-list-filter>
@@ -1317,7 +1317,7 @@ export class KNXGroupMonitor extends LitElement {
           .expanded=${this.controller.expandedFilter === "telegramtype"}
           .narrow=${this.narrow}
           .isMobileDevice=${this.isMobileTouchDevice}
-          .filterTitle=${this.hass.localize("component.knx.config_panel.group_monitor.columns.type")}
+          .filterTitle=${this.knx.localize("component.knx.config_panel.group_monitor.columns.type")}
           @selection-changed=${this._handleTelegramTypeFilterChange}
           @expanded-changed=${this._handleTelegramTypeFilterExpanded}
         ></knx-list-filter>
@@ -1334,7 +1334,7 @@ export class KNXGroupMonitor extends LitElement {
           .expanded=${this.controller.expandedFilter === "dpt"}
           .narrow=${this.narrow}
           .isMobileDevice=${this.isMobileTouchDevice}
-          .filterTitle=${this.hass.localize("component.knx.config_panel.common.filter.dpt.title")}
+          .filterTitle=${this.knx.localize("component.knx.config_panel.common.filter.dpt.title")}
           @selection-changed=${this._handleDptFilterChange}
           @expanded-changed=${this._handleDptFilterExpanded}
         ></knx-list-filter>

@@ -185,7 +185,7 @@ export class GroupMonitorTelegramInfoDialog
     return html`
       <ha-dialog .open=${this._open} @closed=${this.closeDialog}>
         <span slot="headerTitle">
-          ${this.hass.localize("component.knx.config_panel.dialogs.telegram_info.title")}
+          ${this.knx.localize("component.knx.config_panel.dialogs.telegram_info.title")}
         </span>
         <div slot="headerSubtitle">
           <span title=${formatIsoTimestampWithMicroseconds(telegram.timestampIso)}>
@@ -220,7 +220,7 @@ export class GroupMonitorTelegramInfoDialog
             <div class="addresses-row">
               <div class="address-item">
                 <div class="item-label">
-                  ${this.hass.localize("component.knx.config_panel.dialogs.telegram_info.source")}
+                  ${this.knx.localize("component.knx.config_panel.dialogs.telegram_info.source")}
                 </div>
                 <div class="address-chip">${telegram.sourceAddress}</div>
                 ${
@@ -231,7 +231,7 @@ export class GroupMonitorTelegramInfoDialog
               </div>
               <div class="address-item">
                 <div class="item-label">
-                  ${this.hass.localize("component.knx.config_panel.dialogs.telegram_info.destination")}
+                  ${this.knx.localize("component.knx.config_panel.dialogs.telegram_info.destination")}
                 </div>
                 <div class="address-chip">${telegram.destinationAddress}</div>
                 ${
@@ -247,7 +247,7 @@ export class GroupMonitorTelegramInfoDialog
                 ? html`
                     <div class="value-section">
                       <div class="value-label">
-                        ${this.hass.localize("component.knx.config_panel.dialogs.telegram_info.value")}
+                        ${this.knx.localize("component.knx.config_panel.dialogs.telegram_info.value")}
                       </div>
                       <div class="value-content">${telegram.value}</div>
                     </div>
@@ -259,7 +259,7 @@ export class GroupMonitorTelegramInfoDialog
               <div class="detail-grid">
                 <div class="detail-item">
                   <div class="detail-label">
-                    ${this.hass.localize("component.knx.config_panel.dialogs.telegram_info.type")}
+                    ${this.knx.localize("component.knx.config_panel.dialogs.telegram_info.type")}
                   </div>
                   <div class="detail-value">${telegram.type}</div>
                 </div>
@@ -272,7 +272,7 @@ export class GroupMonitorTelegramInfoDialog
                     ? html`
                         <div class="detail-item payload">
                           <div class="detail-label">
-                            ${this.hass.localize("component.knx.config_panel.dialogs.telegram_info.payload")}
+                            ${this.knx.localize("component.knx.config_panel.dialogs.telegram_info.payload")}
                           </div>
                           <code>${telegram.payload}</code>
                         </div>

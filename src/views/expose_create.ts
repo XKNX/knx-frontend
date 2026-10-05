@@ -248,7 +248,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
       error: (err) => {
         logger.error("Error loading expose config", err);
         return html`<ha-alert alert-type="error"
-          >${this.hass.localize("component.knx.config_panel.expose.create.load_error")}</ha-alert
+          >${this.knx.localize("component.knx.config_panel.expose.create.load_error")}</ha-alert
         >`;
       },
       complete: () => {
@@ -486,9 +486,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
       <ha-alert alert-type="error">
         <details>
           <summary>
-            <b
-              >${this.hass.localize("component.knx.config_panel.expose.create.validation_error")}</b
-            >
+            <b>${this.knx.localize("component.knx.config_panel.expose.create.validation_error")}</b>
           </summary>
           <p>${this._validationBaseError}</p>
           ${

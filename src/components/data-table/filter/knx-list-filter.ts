@@ -930,17 +930,17 @@ export class KnxListFilter<T = any> extends LitElement {
                       .path=${this._getSortIcon()}
                       title=${
                         this.sortDirection === SORT_ASC
-                          ? this.hass.localize(
+                          ? this.knx.localize(
                               "component.knx.config_panel.common.sort.ascending_tooltip",
                             )
-                          : this.hass.localize(
+                          : this.knx.localize(
                               "component.knx.config_panel.common.sort.descending_tooltip",
                             )
                       }
                     ></ha-icon-button>
 
                     <div slot="title">
-                      ${this.hass.localize("component.knx.config_panel.common.sort.sort_by")}
+                      ${this.knx.localize("component.knx.config_panel.common.sort.sort_by")}
                     </div>
 
                     <!-- Toolbar with additional controls like pin button -->
@@ -950,7 +950,7 @@ export class KnxListFilter<T = any> extends LitElement {
                         .path=${mdiPin}
                         .selected=${this.pinSelectedItems}
                         @click=${this._handlePinButtonClick}
-                        title=${this.hass.localize("component.knx.config_panel.common.filter.pin_selected")}
+                        title=${this.knx.localize("component.knx.config_panel.common.filter.pin_selected")}
                       >
                       </ha-icon-button-toggle>
                     </div>
@@ -976,13 +976,11 @@ export class KnxListFilter<T = any> extends LitElement {
                             default-direction=${config.sortDefaultDirection ?? "asc"}
                             ascending-text=${
                               config.sortAscendingText ??
-                              this.hass.localize("component.knx.config_panel.common.sort.ascending")
+                              this.knx.localize("component.knx.config_panel.common.sort.ascending")
                             }
                             descending-text=${
                               config.sortDescendingText ??
-                              this.hass.localize(
-                                "component.knx.config_panel.common.sort.descending",
-                              )
+                              this.knx.localize("component.knx.config_panel.common.sort.descending")
                             }
                             .disabled=${config.sortDisabled || false}
                           ></knx-sort-menu-item>
@@ -1032,7 +1030,7 @@ export class KnxListFilter<T = any> extends LitElement {
    * @returns Template result for pinned options layout
    */
   private _renderPinnedOptionsList(): TemplateResult {
-    const emptyMsg = this.hass.localize("component.knx.config_panel.common.filter.no_results");
+    const emptyMsg = this.knx.localize("component.knx.config_panel.common.filter.no_results");
     const { selected, unselected } = this._computeFilterSortedOptionsWithSeparator();
 
     if (selected.length === 0 && unselected.length === 0) {
@@ -1069,7 +1067,7 @@ export class KnxListFilter<T = any> extends LitElement {
                     <div class="separator-content" @click=${this._handleSeparatorClick}>
                       <ha-svg-icon .path=${mdiChevronUp}></ha-svg-icon>
                       <span class="separator-text">
-                        ${this.hass.localize("component.knx.config_panel.common.filter.scroll_to_selection")}
+                        ${this.knx.localize("component.knx.config_panel.common.filter.scroll_to_selection")}
                       </span>
                     </div>
                   </knx-separator>
@@ -1100,7 +1098,7 @@ export class KnxListFilter<T = any> extends LitElement {
    * @returns Template result for regular options layout
    */
   private _renderRegularOptionsList(): TemplateResult {
-    const emptyMsg = this.hass.localize("component.knx.config_panel.common.filter.no_results");
+    const emptyMsg = this.knx.localize("component.knx.config_panel.common.filter.no_results");
     const options = this._computeFilterSortedOptions();
 
     if (options.length === 0) {
@@ -1189,8 +1187,8 @@ export class KnxListFilter<T = any> extends LitElement {
   protected render() {
     const selectedCount = this.selectedOptions?.length ?? 0;
     const headerText =
-      this.filterTitle || this.hass.localize("component.knx.config_panel.common.filter.title");
-    const clearText = this.hass.localize("ui.components.subpage-data-table.clear_filter");
+      this.filterTitle || this.knx.localize("component.knx.config_panel.common.filter.title");
+    const clearText = this.knx.localize("ui.components.subpage-data-table.clear_filter");
 
     return html`
       <flex-content-expansion-panel
