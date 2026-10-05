@@ -19,7 +19,27 @@ const warnings: { language: string[]; sting: Record<string, string[]> } = {
 
 const _localizationCache = {};
 
+// Keys provided by Core (backend translations) or the HA frontend; never defined locally.
+const HASS_KEY_PREFIXES = ["component.", "ui."];
+
+const localizeWithHass = (
+  hass: HomeAssistant,
+  key: string,
+  replace?: Record<string, any>,
+): string => {
+  const hassTranslation = hass.localize(key as LocalizeKeys, replace);
+  if (hassTranslation) {
+    return hassTranslation;
+  }
+  logger.error(`Translation problem with '${key}' for '${hass.language}'`);
+  return key;
+};
+
 export function localize(hass: HomeAssistant, key: string, replace?: Record<string, any>): string {
+  if (HASS_KEY_PREFIXES.some((prefix) => key.startsWith(prefix))) {
+    return localizeWithHass(hass, key, replace);
+  }
+
   let lang = (hass.language || localStorage.getItem("selectedLanguage") || DEFAULT_LANGUAGE)
     .replace(/['"]+/g, "")
     .replace("-", "_");
@@ -34,12 +54,7 @@ export function localize(hass: HomeAssistant, key: string, replace?: Record<stri
   const translatedValue = languages[lang]?.[key] || languages[DEFAULT_LANGUAGE][key];
 
   if (!translatedValue) {
-    const hassTranslation = hass.localize(key as LocalizeKeys, replace);
-    if (hassTranslation) {
-      return hassTranslation;
-    }
-    logger.error(`Translation problem with '${key}' for '${lang}'`);
-    return key;
+    return localizeWithHass(hass, key, replace);
   }
 
   const messageKey = key + translatedValue;
