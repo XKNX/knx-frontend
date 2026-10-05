@@ -1,4 +1,5 @@
 import type { ConfigEntry } from "@ha/data/config_entries";
+import type { KnxLocalizeKey } from "../localize/localize";
 import type { SupportedPlatform } from "./entity_data";
 import type { SelectorSchema } from "./schema";
 import type { DPTMetadata, KNXInfoData, KNXProjectInfo } from "./websocket";
@@ -6,7 +7,7 @@ import type { DPTMetadata, KNXInfoData, KNXProjectInfo } from "./websocket";
 export interface KNX {
   language: string;
   config_entry: ConfigEntry;
-  localize(string: string, replace?: Record<string, any>): string;
+  localize(key: KnxLocalizeKey, replace?: Record<string, any>): string;
   log: any;
   connectionInfo: KNXInfoData;
   dptMetadata: Record<string, DPTMetadata>;

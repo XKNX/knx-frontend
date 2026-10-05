@@ -11,14 +11,14 @@ import "@ha/components/ha-md-list";
 import "@ha/components/ha-md-list-item";
 import "@ha/components/input/ha-input-search";
 
-import { consumeLocalize } from "@ha/common/decorators/consume-context-entry";
-import type { LocalizeFunc } from "@ha/common/translations/localize";
 import { DialogMixin } from "@ha/dialogs/dialog-mixin";
 import { haStyleDialog } from "@ha/resources/styles";
 import type { HaInputSearch } from "@ha/components/input/ha-input-search";
 
 import type { GroupAddress, GroupRange, KNXProject } from "../types/websocket";
 import { knxProjectContext } from "../data/knx-project-context";
+import { consumeKnxLocalize } from "../localize/consume-knx-localize";
+import type { KnxLocalizeFunc } from "../localize/localize";
 
 interface GroupNode {
   title: string;
@@ -49,8 +49,8 @@ export class KnxGaSelectDialog extends DialogMixin<KnxGaSelectDialogParams>(LitE
   @state() private _filter = "";
 
   @state()
-  @consumeLocalize()
-  private localize!: LocalizeFunc;
+  @consumeKnxLocalize()
+  private localize!: KnxLocalizeFunc;
 
   public connectedCallback() {
     super.connectedCallback();

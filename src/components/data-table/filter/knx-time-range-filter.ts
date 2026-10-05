@@ -26,13 +26,14 @@ import type {
 } from "@ha/components/date-picker/ha-date-range-picker";
 import { formatShortDateTime } from "@ha/common/datetime/format_date_time";
 import { fireEvent } from "@ha/common/dom/fire_event";
+import type { LocalizeKeys } from "@ha/common/translations/localize";
 import type { HomeAssistant } from "@ha/types";
 
 import "../../flex-content-expansion-panel";
 import type { KNX } from "../../../types/knx";
 
 /** Localize key -> range length in seconds for the preset sidebar. */
-const PRESET_RANGES: { labelKey: string; seconds: number }[] = [
+const PRESET_RANGES: { labelKey: LocalizeKeys; seconds: number }[] = [
   {
     labelKey: "component.knx.config_panel.group_monitor.time_range.options.5_minutes",
     seconds: 5 * 60,

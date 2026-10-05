@@ -8,12 +8,12 @@ import { customElement, property, state } from "lit/decorators";
 import "@ha/components/ha-icon-button";
 import "@ha/components/input/ha-input";
 import { fireEvent } from "@ha/common/dom/fire_event";
-import { consumeLocalize } from "@ha/common/decorators/consume-context-entry";
-import type { LocalizeFunc } from "@ha/common/translations/localize";
 import type { HaInput } from "@ha/components/input/ha-input";
 
 import type { GroupAddress, KNXProject } from "../types/websocket";
 import { knxProjectContext } from "../data/knx-project-context";
+import { consumeKnxLocalize } from "../localize/consume-knx-localize";
+import type { KnxLocalizeFunc } from "../localize/localize";
 
 @customElement("knx-single-address-selector")
 export class KnxSingleAddressSelector extends LitElement {
@@ -47,8 +47,8 @@ export class KnxSingleAddressSelector extends LitElement {
   @state() private _currentName?: string;
 
   @state()
-  @consumeLocalize()
-  private localize!: LocalizeFunc;
+  @consumeKnxLocalize()
+  private localize!: KnxLocalizeFunc;
 
   private _baseTranslation = (
     key: string,

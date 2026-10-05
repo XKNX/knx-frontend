@@ -5,6 +5,7 @@ import type { HaExpansionPanel } from "@ha/components/ha-expansion-panel";
 import { uploadFile } from "@ha/data/file_upload";
 import { showAlertDialog } from "@ha/dialogs/generic/show-dialog-box";
 import { createMockHass } from "../../test/helpers/mock-hass";
+import type { KnxLocalizeKey } from "../localize/localize";
 import { localize } from "../localize/localize";
 import { processProjectFile } from "../services/websocket.service";
 import type { KNX } from "../types/knx";
@@ -48,7 +49,7 @@ const createDialog = (
 ) => {
   const hass = createHass({ ...CURRENT_PROJECT_TRANSLATIONS, ...backendTranslations });
   const knx = {
-    localize: (key: string, replace?: Record<string, any>) => localize(hass, key, replace),
+    localize: (key: KnxLocalizeKey, replace?: Record<string, any>) => localize(hass, key, replace),
     projectInfo,
   } as unknown as KNX;
   const dialog = new KnxProjectUploadDialog();

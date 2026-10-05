@@ -10,8 +10,6 @@ import "@ha/components/ha-md-list-item";
 import "@ha/components/ha-section-title";
 import "@ha/components/input/ha-input-search";
 
-import { consumeLocalize } from "@ha/common/decorators/consume-context-entry";
-import type { LocalizeFunc } from "@ha/common/translations/localize";
 import { DialogMixin } from "@ha/dialogs/dialog-mixin";
 import { haStyleDialog } from "@ha/resources/styles";
 import type { HaInputSearch } from "@ha/components/input/ha-input-search";
@@ -19,6 +17,8 @@ import type { HaInputSearch } from "@ha/components/input/ha-input-search";
 import { stringToDpt, compareDpt } from "../utils/dpt";
 import { snakeToTitleCase } from "../utils/format";
 import type { DPTMetadata } from "../types/websocket";
+import { consumeKnxLocalize } from "../localize/consume-knx-localize";
+import type { KnxLocalizeFunc } from "../localize/localize";
 
 export interface KnxDptSelectDialogParams {
   dpts: Record<string, DPTMetadata>;
@@ -43,8 +43,8 @@ export class KnxDptSelectDialog extends DialogMixin<KnxDptSelectDialogParams>(Li
   @state() private _filter = "";
 
   @state()
-  @consumeLocalize()
-  private localize!: LocalizeFunc;
+  @consumeKnxLocalize()
+  private localize!: KnxLocalizeFunc;
 
   public connectedCallback() {
     super.connectedCallback();
@@ -164,7 +164,7 @@ export class KnxDptSelectDialog extends DialogMixin<KnxDptSelectDialogParams>(Li
     const meta = this.dpts[dpt];
     return {
       label:
-        this.localize(`component.knx.config_panel.dpt.options.${dpt.replace(".", "_")}`) ||
+        this.localize.optional(`component.knx.config_panel.dpt.options.${dpt.replace(".", "_")}`) ||
         (meta?.name ? snakeToTitleCase(meta.name) : this.localize("state.default.unknown")),
       unit: meta?.unit ?? "",
     };

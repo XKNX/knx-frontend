@@ -2,15 +2,15 @@ import { mdiFilterVariant, mdiFilterVariantRemove } from "@mdi/js";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { ifDefined } from "lit/directives/if-defined";
-import { consumeLocalize } from "@ha/common/decorators/consume-context-entry";
 import { fireEvent } from "@ha/common/dom/fire_event";
-import type { LocalizeFunc } from "@ha/common/translations/localize";
 import { haStyleScrollbar } from "@ha/resources/styles";
 import "@ha/components/ha-adaptive-dialog";
 import "@ha/components/ha-button";
 import "@ha/components/ha-dialog-footer";
 import "@ha/components/ha-filter-pane-chip";
 import "@ha/components/ha-icon-button";
+import { consumeKnxLocalize } from "../localize/consume-knx-localize";
+import type { KnxLocalizeFunc } from "../localize/localize";
 
 /**
  * Filter pane of `knx-tabs-subpage-data`: filter controls inline on the start side or in
@@ -48,8 +48,8 @@ export class KnxTabsSubpageDataFilterPane extends LitElement {
   @property({ type: Boolean }) public disabled = false;
 
   @state()
-  @consumeLocalize()
-  private _localize!: LocalizeFunc;
+  @consumeKnxLocalize()
+  private _localize!: KnxLocalizeFunc;
 
   /** Renders the same filter/action slots inline or in a dialog with a result-count footer. */
   protected render() {

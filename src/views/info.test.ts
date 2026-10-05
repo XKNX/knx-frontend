@@ -5,6 +5,7 @@ import type { TemplateResult } from "lit";
 import { showAlertDialog, showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 
 import { createMockHass } from "../../test/helpers/mock-hass";
+import type { KnxLocalizeKey } from "../localize/localize";
 import { localize } from "../localize/localize";
 import { removeProjectFile } from "../services/websocket.service";
 import type { KNX } from "../types/knx";
@@ -47,7 +48,8 @@ const renderInfo = (projectInfo: KNXProjectInfo | null) => {
       telegram_max_count: null,
     },
     projectInfo,
-    localize: (key: string, replace?: Record<string, string>) => localize(view.hass, key, replace),
+    localize: (key: KnxLocalizeKey, replace?: Record<string, string>) =>
+      localize(view.hass, key, replace),
   } as unknown as KNX;
   const host = document.createElement("div");
   render((view as unknown as { render: () => TemplateResult }).render(), host, { host: view });

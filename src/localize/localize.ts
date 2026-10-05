@@ -1,5 +1,5 @@
 import { IntlMessageFormat } from "intl-messageformat";
-import type { LocalizeKeys } from "@ha/common/translations/localize";
+import type { LocalizeFunc, LocalizeKeys } from "@ha/common/translations/localize";
 import type { HomeAssistant } from "@ha/types";
 import * as de from "./languages/de.json";
 import * as en from "./languages/en.json";
@@ -19,25 +19,43 @@ const warnings: { language: string[]; sting: Record<string, string[]> } = {
 
 const _localizationCache = {};
 
+/** Keys defined in the panel's own translation files. */
+export type LocalKnxKey = keyof typeof en;
+
+/** Keys accepted by `knx.localize`: Core and HA frontend keys, or local panel keys. */
+export type KnxLocalizeKey = LocalizeKeys | LocalKnxKey;
+
+/** HA `localize` that reports missing keys, with `optional` for lookups that may miss. */
+export type KnxLocalizeFunc = LocalizeFunc & {
+  /** Plain HA lookup: returns an empty string for missing keys, without logging. */
+  optional: LocalizeFunc;
+};
+
 // Keys provided by Core (backend translations) or the HA frontend; never defined locally.
 const HASS_KEY_PREFIXES = ["component.", "ui."];
 
-const localizeWithHass = (
-  hass: HomeAssistant,
-  key: string,
-  replace?: Record<string, any>,
-): string => {
-  const hassTranslation = hass.localize(key as LocalizeKeys, replace);
-  if (hassTranslation) {
-    return hassTranslation;
-  }
-  logger.error(`Translation problem with '${key}' for '${hass.language}'`);
+const reportMissingKey = (key: string, language?: string): string => {
+  logger.error(`Translation problem with '${key}'${language ? ` for '${language}'` : ""}`);
   return key;
 };
 
-export function localize(hass: HomeAssistant, key: string, replace?: Record<string, any>): string {
+/**
+ * Wraps HA's `localize` so that missing keys are logged and rendered as the key
+ * instead of silently returning an empty string.
+ */
+export const withMissingKeyReporting = (haLocalize: LocalizeFunc): KnxLocalizeFunc =>
+  Object.assign(
+    ((key, values) => haLocalize(key, values) || reportMissingKey(key)) as LocalizeFunc,
+    { optional: haLocalize },
+  );
+
+export function localize(
+  hass: HomeAssistant,
+  key: KnxLocalizeKey,
+  replace?: Record<string, any>,
+): string {
   if (HASS_KEY_PREFIXES.some((prefix) => key.startsWith(prefix))) {
-    return localizeWithHass(hass, key, replace);
+    return hass.localize(key as LocalizeKeys, replace) || reportMissingKey(key, hass.language);
   }
 
   let lang = (hass.language || localStorage.getItem("selectedLanguage") || DEFAULT_LANGUAGE)
@@ -54,7 +72,7 @@ export function localize(hass: HomeAssistant, key: string, replace?: Record<stri
   const translatedValue = languages[lang]?.[key] || languages[DEFAULT_LANGUAGE][key];
 
   if (!translatedValue) {
-    return localizeWithHass(hass, key, replace);
+    return hass.localize(key as LocalizeKeys, replace) || reportMissingKey(key, lang);
   }
 
   const messageKey = key + translatedValue;

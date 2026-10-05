@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createMockHass } from "../../test/helpers/mock-hass";
 import { KNXLogger } from "../tools/knx-logger";
 
+import type { KnxLocalizeKey } from "./localize";
 import { localize } from "./localize";
 
 describe("localize", () => {
@@ -22,7 +23,7 @@ describe("localize", () => {
     (key) => {
       const hass = createMockHass({ translations: { [key]: "Translated {value}" } });
 
-      expect(localize(hass, key, { value: "1" })).toBe("Translated 1");
+      expect(localize(hass, key as KnxLocalizeKey, { value: "1" })).toBe("Translated 1");
       expect(hass.localize).toHaveBeenCalledWith(key, { value: "1" });
     },
   );
@@ -33,7 +34,8 @@ describe("localize", () => {
       const error = vi.spyOn(KNXLogger.prototype, "error").mockImplementation(() => undefined);
       const hass = createMockHass();
 
-      expect(localize(hass, key)).toBe(key);
+      // Cast: missing keys are deliberately not valid keys.
+      expect(localize(hass, key as KnxLocalizeKey)).toBe(key);
       expect(error).toHaveBeenCalledWith(expect.stringContaining(key));
     },
   );

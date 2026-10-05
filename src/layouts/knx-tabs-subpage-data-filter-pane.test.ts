@@ -5,7 +5,7 @@ import { KnxTabsSubpageDataFilterPane } from "./knx-tabs-subpage-data-filter-pan
 
 /** Injects identity localization and renders a disconnected pane directly into its shadow root. */
 const draw = (pane: KnxTabsSubpageDataFilterPane, localize = (key: string) => key) => {
-  // consumeLocalize takes the context value and keeps its `localize`.
+  // consumeKnxLocalize takes the context value and wraps its `localize`.
   Reflect.set(pane, "_localize", { localize });
   const host = pane.attachShadow({ mode: "open" });
   render(pane["render"](), host, { host: pane });

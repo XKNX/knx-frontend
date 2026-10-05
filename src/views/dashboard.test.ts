@@ -5,6 +5,7 @@ import type { TemplateResult } from "lit";
 import type { HomeAssistant } from "@ha/types";
 
 import type { KNX } from "../types/knx";
+import type { KnxLocalizeKey } from "../localize/localize";
 import { localize } from "../localize/localize";
 
 import { getConnectionStatus, KnxDashboard } from "./dashboard";
@@ -76,7 +77,8 @@ const createDashboard = (language = "de", nameByUser = "My KNX gateway") => {
     config_entry: { entry_id: "entry", state: "loaded" },
     connectionInfo: { connected: true, current_address: "1.1.250" },
     projectInfo: null,
-    localize: (key: string, replace?: Record<string, string>) => localize(view.hass, key, replace),
+    localize: (key: KnxLocalizeKey, replace?: Record<string, string>) =>
+      localize(view.hass, key, replace),
   } as unknown as KNX;
   return view;
 };
