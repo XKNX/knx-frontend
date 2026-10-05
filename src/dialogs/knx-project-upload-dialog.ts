@@ -93,7 +93,7 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
       >
         <ha-icon-button
           slot="headerNavigationIcon"
-          .label=${this.hass.localize("ui.common.close")}
+          .label=${this.params!.knx.localize("ui.common.close")}
           .path=${mdiClose}
           .disabled=${this._uploading}
           @click=${this.closeDialog}
@@ -117,7 +117,7 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
           ></ha-file-upload>
           <ha-selector-text
             .value=${this._projectPassword || ""}
-            .label=${this.hass.localize("ui.login-form.password")}
+            .label=${this.params!.knx.localize("ui.login-form.password")}
             .selector=${PASSWORD_SELECTOR}
             .required=${false}
             .disabled=${this._uploading}
@@ -131,10 +131,10 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
             @click=${this._uploadFile}
             .disabled=${this._uploading || !this._projectFile}
           >
-            ${this.hass.localize("ui.common.submit")}
+            ${this.params!.knx.localize("ui.common.submit")}
           </ha-button>
           <ha-button slot="secondaryAction" @click=${this.closeDialog} .disabled=${this._uploading}>
-            ${this.hass.localize("ui.common.cancel")}
+            ${this.params!.knx.localize("ui.common.cancel")}
           </ha-button></ha-dialog-footer
         >
       </ha-dialog>
@@ -249,8 +249,8 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
     } catch (err: unknown) {
       this._uploading = false;
       showAlertDialog(this, {
-        title: this.hass.localize("ui.components.selectors.file.upload_failed"),
-        text: errorMessage(err) ?? this.hass.localize("ui.common.unknown_error"),
+        title: this.params!.knx.localize("ui.components.selectors.file.upload_failed"),
+        text: errorMessage(err) ?? this.params!.knx.localize("ui.common.unknown_error"),
       });
       return;
     }

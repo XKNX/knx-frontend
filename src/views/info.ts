@@ -67,7 +67,7 @@ export class KNXInfo extends LitElement {
         <div class="knx-content-row">
           <div>${this.knx.localize("component.knx.config_panel.info.connected_to_bus.label")}</div>
           <div>
-            ${this.hass.localize(
+            ${this.knx.localize(
               this.knx.connectionInfo.connected ? "ui.common.yes" : "ui.common.no",
             )}
           </div>
@@ -197,8 +197,8 @@ export class KNXInfo extends LitElement {
       await removeProjectFile(this.hass);
     } catch (err: unknown) {
       showAlertDialog(this, {
-        title: this.hass.localize("ui.common.deleting_failed"),
-        text: errorMessage(err) ?? this.hass.localize("ui.common.unknown_error"),
+        title: this.knx.localize("ui.common.deleting_failed"),
+        text: errorMessage(err) ?? this.knx.localize("ui.common.unknown_error"),
       });
     } finally {
       fireEvent(this, "knx-reload");

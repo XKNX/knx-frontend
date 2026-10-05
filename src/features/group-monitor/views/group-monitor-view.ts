@@ -464,7 +464,7 @@ export class KNXGroupMonitor extends LitElement {
       sortDescendingText: this.knx.localize("component.knx.config_panel.common.sort.descending"),
       sortDefaultDirection: "asc",
       mapper: (item: DistinctValueInfo) =>
-        item.id === UNKNOWN_DPT_ID ? this.hass.localize("state.default.unknown") : item.id,
+        item.id === UNKNOWN_DPT_ID ? this.knx.localize("state.default.unknown") : item.id,
     },
     secondaryField: {
       fieldName: this.knx.localize("ui.common.name"),
@@ -997,7 +997,7 @@ export class KNXGroupMonitor extends LitElement {
         lastFixed: true,
         showNarrow: true,
         title: "",
-        label: this.hass.localize("ui.panel.config.generic.headers.actions"),
+        label: this.knx.localize("ui.panel.config.generic.headers.actions"),
         type: "overflow-menu",
         template: (row) => this._telegramRowMenu(row),
       },
@@ -1021,7 +1021,7 @@ export class KNXGroupMonitor extends LitElement {
     const items: IconOverflowMenuItem[] = [
       {
         path: mdiRobot,
-        label: this.hass.localize("ui.panel.config.automation.picker.add_automation"),
+        label: this.knx.localize("ui.panel.config.automation.picker.add_automation"),
         action: () => this._createAutomationFromTelegram(row),
       },
     ];
@@ -1236,7 +1236,7 @@ export class KNXGroupMonitor extends LitElement {
                       )}
                     </ha-button>
                     <ha-icon-button
-                      .label=${this.hass.localize("ui.common.dismiss_alert")}
+                      .label=${this.knx.localize("ui.common.dismiss_alert")}
                       .path=${mdiClose}
                       @click=${this._dismissProjectAlert}
                     ></ha-icon-button>

@@ -287,7 +287,7 @@ export class GroupMonitorTelegramInfoDialog
                 ? html`
                     <div class="item-related">
                       <div class="related-label">
-                        ${this.hass.localize("ui.dialogs.entity_registry.related")}
+                        ${this.knx.localize("ui.dialogs.entity_registry.related")}
                       </div>
                       <knx-data-table-related-label
                         .hass=${this.hass}
@@ -311,16 +311,16 @@ export class GroupMonitorTelegramInfoDialog
               .disabled=${disablePrevious}
             >
               <ha-svg-icon .path=${mdiArrowLeft} slot="start"></ha-svg-icon>
-              ${this.hass.localize("ui.common.previous")}
+              ${this.knx.localize("ui.common.previous")}
             </ha-button>
             <ha-button appearance="plain" @click=${this._nextTelegram} .disabled=${disableNext}>
-              ${this.hass.localize("ui.common.next")}
+              ${this.knx.localize("ui.common.next")}
               <ha-svg-icon .path=${mdiArrowRight} slot="end"></ha-svg-icon>
             </ha-button>
           </div>
           <ha-button appearance="filled" @click=${this._createAutomation}>
             <ha-svg-icon .path=${mdiRobot} slot="start"></ha-svg-icon>
-            ${this.hass.localize("ui.panel.config.automation.picker.add_automation")}
+            ${this.knx.localize("ui.panel.config.automation.picker.add_automation")}
           </ha-button>
         </div>
       </ha-dialog>

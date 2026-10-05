@@ -70,7 +70,7 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
         ></ha-markdown>
         <knx-group-address-selector
           .knx=${this.knx}
-          .label=${this.hass.localize("component.knx.config_panel.common.group_address")}
+          .label=${this.knx.localize("component.knx.config_panel.common.group_address")}
           .key=${"ga"}
           .options=${{
             write: { required: true },
@@ -109,7 +109,7 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
         ></knx-selector-row>
         <ha-dialog-footer slot="footer">
           <ha-button slot="secondaryAction" appearance="plain" @click=${this.closeDialog}>
-            ${this.hass.localize("ui.common.cancel")}
+            ${this.knx.localize("ui.common.cancel")}
           </ha-button>
           <ha-button
             slot="primaryAction"

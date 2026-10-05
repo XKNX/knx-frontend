@@ -249,9 +249,7 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
         <ha-icon-button
           slot="toolbar-icon"
           .path=${mdiHelpCircleOutline}
-          .label=${this.hass.localize(
-            "ui.panel.config.integrations.config_flow.open_documentation",
-          )}
+          .label=${this.knx.localize("ui.panel.config.integrations.config_flow.open_documentation")}
           .href=${documentationUrl(this.hass, "/integrations/knx")}
           target="_blank"
           rel="noopener noreferrer"
@@ -267,7 +265,7 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
                   <span class="status-heading" role="status"
                     >${
                       status === "unavailable"
-                        ? this.hass.localize("state.default.unavailable")
+                        ? this.knx.localize("state.default.unavailable")
                         : this._localizeStatus(status)
                     }</span
                   >

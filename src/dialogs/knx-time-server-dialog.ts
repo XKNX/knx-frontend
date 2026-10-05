@@ -181,10 +181,10 @@ export class KnxTimeServerDialog extends DialogMixin<KnxTimeServerDialogParams>(
 
       <ha-dialog-footer slot="footer">
         <ha-button slot="secondaryAction" @click=${this.closeDialog}>
-          ${this.hass.localize("ui.common.cancel")}
+          ${this.knx.localize("ui.common.cancel")}
         </ha-button>
         <ha-button slot="primaryAction" @click=${this._save}>
-          ${this.hass.localize("ui.common.save")}
+          ${this.knx.localize("ui.common.save")}
         </ha-button>
       </ha-dialog-footer>
     `;

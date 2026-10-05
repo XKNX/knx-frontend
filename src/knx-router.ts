@@ -203,7 +203,7 @@ export class KnxRouter extends HassRouterPage {
   private _statusPageTitle(tag: string): string | undefined {
     switch (tag) {
       case "knx-not-found":
-        return this.hass.localize("panel.notfound");
+        return this.knx.localize("panel.notfound");
       case "knx-error":
         return "";
       default:

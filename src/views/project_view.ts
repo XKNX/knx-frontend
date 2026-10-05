@@ -278,7 +278,7 @@ export class KNXProjectView extends LitElement {
           defaultHidden: narrow,
           filterable: false, // template result value isn't filterable or sortable
           sortable: false,
-          title: this.hass.localize("ui.dialogs.entity_registry.related"),
+          title: this.knx.localize("ui.dialogs.entity_registry.related"),
           flex: 2,
           template: (ga) =>
             ga.related_entities.length ||
@@ -315,7 +315,7 @@ export class KNXProjectView extends LitElement {
           showNarrow: true,
           defaultHidden: narrow,
           title: "",
-          label: this.hass.localize("ui.panel.config.generic.headers.actions"),
+          label: this.knx.localize("ui.panel.config.generic.headers.actions"),
           type: "overflow-menu",
           template: (ga: GroupAddress) => this._groupAddressMenu(ga),
         },
@@ -337,7 +337,7 @@ export class KNXProjectView extends LitElement {
 
     items.push({
       path: mdiRobot,
-      label: this.hass.localize("ui.panel.config.automation.picker.add_automation"),
+      label: this.knx.localize("ui.panel.config.automation.picker.add_automation"),
       action: () => {
         openAutomationEditor(
           buildAutomationFromKnx({
@@ -436,12 +436,12 @@ export class KNXProjectView extends LitElement {
       value: "group_addresses",
       // ha-button-toggle-group renders either the icon or the label text
       ...(narrow ? { iconPath: mdiTableLarge } : {}),
-      label: this.hass.localize("component.knx.config_panel.common.group_addresses"),
+      label: this.knx.localize("component.knx.config_panel.common.group_addresses"),
     },
     {
       value: "devices",
       ...(narrow ? { iconPath: mdiNetworkOutline } : {}),
-      label: this.hass.localize("component.knx.config_panel.project.devices.title"),
+      label: this.knx.localize("component.knx.config_panel.project.devices.title"),
     },
   ]);
 
@@ -486,7 +486,7 @@ export class KNXProjectView extends LitElement {
       .columns=${this._columns(this.narrow, this.hass.language)}
       .data=${filtered as DataTableRowData[]}
       .hasFab=${false}
-      .searchLabel=${this.hass.localize("ui.components.data-table.search")}
+      .searchLabel=${this.knx.localize("ui.components.data-table.search")}
       .clickable=${false}
       .hasFilters=${this._groupRangeAvailable}
       .filters=${this._visibleGroupAddresses.length}
@@ -650,7 +650,7 @@ export class KNXProjectView extends LitElement {
               .selectedOptions=${this._devicesFilterLocation}
               .expanded=${this._devicesExpandedFilter === "location"}
               .narrow=${this.narrow}
-              .filterTitle=${this.hass.localize(
+              .filterTitle=${this.knx.localize(
                 "component.knx.config_panel.project.devices.locations",
               )}
               @selection-changed=${this._devicesLocationSelectionChanged}
@@ -667,7 +667,7 @@ export class KNXProjectView extends LitElement {
         .selectedOptions=${this._devicesFilterLine}
         .expanded=${this._devicesExpandedFilter === "line"}
         .narrow=${this.narrow}
-        .filterTitle=${this.hass.localize("component.knx.config_panel.project.devices.lines")}
+        .filterTitle=${this.knx.localize("component.knx.config_panel.project.devices.lines")}
         @selection-changed=${this._devicesLineSelectionChanged}
         @expanded-changed=${this._devicesFilterExpandedChanged}
       ></knx-list-filter>
@@ -708,7 +708,7 @@ export class KNXProjectView extends LitElement {
     return html`<ha-input-search
       slot="toolbar-search"
       appearance="outlined"
-      .placeholder=${this.hass.localize("ui.components.data-table.search")}
+      .placeholder=${this.knx.localize("ui.components.data-table.search")}
       .value=${this._devicesSearchText}
       @input=${this._devicesSearchChanged}
     ></ha-input-search>`;
@@ -726,7 +726,7 @@ export class KNXProjectView extends LitElement {
       ${
         filterActive
           ? html`<span class="result-count">
-              ${this.hass.localize("ui.components.data-table.hidden", {
+              ${this.knx.localize("ui.components.data-table.hidden", {
                 number:
                   this._devicesTree(projectData).length -
                   this._devicesMatchingCount(
@@ -742,12 +742,12 @@ export class KNXProjectView extends LitElement {
       }
       <ha-icon-button
         .path=${mdiUnfoldMoreHorizontal}
-        .label=${this.hass.localize("ui.components.subpage-data-table.expand_all_groups")}
+        .label=${this.knx.localize("ui.components.subpage-data-table.expand_all_groups")}
         @click=${this._devicesExpandAll}
       ></ha-icon-button>
       <ha-icon-button
         .path=${mdiUnfoldLessHorizontal}
-        .label=${this.hass.localize("ui.components.subpage-data-table.collapse_all_groups")}
+        .label=${this.knx.localize("ui.components.subpage-data-table.collapse_all_groups")}
         @click=${this._devicesCollapseAll}
       ></ha-icon-button>
     </div>`;

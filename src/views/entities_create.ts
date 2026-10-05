@@ -202,14 +202,14 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
       `,
       error: (err) =>
         this._renderError(
-          html`${this.hass.localize("ui.card.common.entity_not_found")}:
+          html`${this.knx.localize("ui.card.common.entity_not_found")}:
             <code>${this.entityId}</code>`,
           err,
         ),
       complete: () => {
         if (!this.entityPlatform) {
           return this._renderError(
-            html`${this.hass.localize("ui.card.common.entity_not_found")}:
+            html`${this.knx.localize("ui.card.common.entity_not_found")}:
               <code>${this.entityId}</code>`,
             new Error("Entity platform unknown"),
           );
@@ -245,7 +245,7 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
         .hass=${this.hass}
         .narrow=${this.narrow!}
         .backPath=${this.backPath}
-        .header=${this.hass.localize("ui.panel.config.integrations.config_flow.error")}
+        .header=${this.knx.localize("ui.panel.config.integrations.config_flow.error")}
       >
         <div class="content">
           <ha-alert alert-type="error"> ${errorContent} </ha-alert>
@@ -261,12 +261,12 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
         .narrow=${this.narrow!}
         .backPath=${this.backPath}
         .backCallback=${this._exitEntitiesFlow}
-        .header=${this.hass.localize("component.knx.config_panel.entities.create.title")}
+        .header=${this.knx.localize("component.knx.config_panel.entities.create.title")}
       >
         <div class="type-selection" @click=${this._typeSelected}>
           <ha-card
             outlined
-            .header=${this.hass.localize(
+            .header=${this.knx.localize(
               "component.knx.config_panel.entities.create.type_selection.header",
             )}
           >
@@ -287,7 +287,7 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
                 };
               })}
               has-secondary
-              .label=${this.hass.localize(
+              .label=${this.knx.localize(
                 "component.knx.config_panel.entities.create.type_selection.header",
               )}
             ></ha-config-navigation-list>
@@ -324,9 +324,9 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
   protected override async promptDiscardChanges(): Promise<boolean> {
     if (!this.hasUnsavedChanges()) return true;
     return showConfirmationDialog(this, {
-      text: this.hass.localize("ui.panel.config.common.editor.confirm_unsaved"),
-      confirmText: this.hass.localize("ui.common.leave"),
-      dismissText: this.hass.localize("ui.common.stay"),
+      text: this.knx.localize("ui.panel.config.common.editor.confirm_unsaved"),
+      confirmText: this.knx.localize("ui.common.leave"),
+      dismissText: this.knx.localize("ui.common.stay"),
       destructive: true,
     });
   }
@@ -343,13 +343,13 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
       .scrollable=${this._mode === "gui"}
       .header=${
         create
-          ? this.hass.localize("component.knx.config_panel.entities.create.title")
-          : `${this.hass.localize("ui.common.edit")}: ${this.entityId}`
+          ? this.knx.localize("component.knx.config_panel.entities.create.title")
+          : `${this.knx.localize("ui.common.edit")}: ${this.entityId}`
       }
     >
       <ha-icon-button
         slot="toolbar-icon"
-        .label=${this.hass.localize(
+        .label=${this.knx.localize(
           this._mode === "gui"
             ? "ui.panel.config.automation.editor.edit_yaml"
             : "ui.panel.config.automation.editor.edit_ui",
@@ -383,7 +383,7 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
                     @drop=${this._yamlDrop}
                   ></ha-yaml-editor>
                   <p class="yaml-hint">
-                    ${this.hass.localize("component.knx.config_panel.entities.create.yaml.mode_hint")}
+                    ${this.knx.localize("component.knx.config_panel.entities.create.yaml.mode_hint")}
                   </p>
                 `
           }
@@ -394,9 +394,7 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
             ?disabled=${this._config === undefined || !!this._yamlErrors}
           >
             <ha-svg-icon slot="start" .path=${create ? mdiPlus : mdiFloppy}></ha-svg-icon>
-            ${
-              create ? this.hass.localize("ui.common.create") : this.hass.localize("ui.common.save")
-            }
+            ${create ? this.knx.localize("ui.common.create") : this.knx.localize("ui.common.save")}
           </ha-button>
         </div>
         ${
@@ -446,10 +444,10 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
     if (this._mode === "yaml") {
       if (this._yamlErrors) {
         const confirmed = await showConfirmationDialog(this, {
-          text: `${this.hass.localize("component.knx.config_panel.entities.create.yaml.yaml_error")} ${this._yamlErrors}`,
-          confirmText: this.hass.localize("ui.common.continue"),
+          text: `${this.knx.localize("component.knx.config_panel.entities.create.yaml.yaml_error")} ${this._yamlErrors}`,
+          confirmText: this.knx.localize("ui.common.continue"),
           destructive: true,
-          dismissText: this.hass.localize("ui.common.cancel"),
+          dismissText: this.knx.localize("ui.common.cancel"),
         });
         if (!confirmed) return;
       }

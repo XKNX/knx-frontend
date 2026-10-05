@@ -170,7 +170,7 @@ export class KnxSelectOptionsList extends LitElement {
         <ha-icon-button
           class="remove"
           .path=${mdiDelete}
-          .label=${this.hass.localize("ui.common.remove")}
+          .label=${this.knx.localize("ui.common.remove")}
           .disabled=${!canDelete}
           data-index=${index}
           @click=${this._removeOption}

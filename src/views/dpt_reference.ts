@@ -45,7 +45,7 @@ export class KnxDptReference extends LitElement {
       this.hass.localize(`component.knx.config_panel.dpt.options.${entry.dpt.replace(".", "_")}`) ||
       (metadata.name
         ? snakeToTitleCase(metadata.name)
-        : this.hass.localize("state.default.unknown"));
+        : this.knx.localize("state.default.unknown"));
     const detailRows: TemplateResult[] = [];
 
     if (metadata.unit) {

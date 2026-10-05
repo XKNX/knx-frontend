@@ -25,14 +25,14 @@ export class KnxNotFound extends KnxStatusView {
         header="KNX"
         headline="4/0/4"
         variant="not-found"
-        .eyebrow=${this.hass.localize("panel.notfound")}
+        .eyebrow=${this.knx.localize("panel.notfound")}
         .description=${this.knx.localize("not_found_description")}
         .rateUnit=${this.knx.localize("status_rate_unit")}
         .detailLabel=${this.knx.localize("not_found_requested_path")}
         .detail=${this.requestedPath}
       >
         <ha-button appearance="filled" size="s" @click=${this._goBack}>
-          ${this.hass.localize("ui.common.back")}
+          ${this.knx.localize("ui.common.back")}
         </ha-button>
         <ha-button appearance="plain" size="s" @click=${this._goToDashboard}>
           ${this.knx.localize("status_go_to_dashboard")}

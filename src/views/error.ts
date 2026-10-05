@@ -23,7 +23,7 @@ const ISSUES_URL = "https://github.com/XKNX/knx-integration/issues";
 export class KNXError extends KnxStatusView {
   protected render(): TemplateResult {
     const message =
-      mainWindow.history.state?.message ?? this.hass.localize("ui.common.unknown_error");
+      mainWindow.history.state?.message ?? this.knx.localize("ui.common.unknown_error");
     return html`
       <knx-status-page
         .hass=${this.hass}
