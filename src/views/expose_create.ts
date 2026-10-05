@@ -63,6 +63,7 @@ import { knxProjectContext } from "../data/knx-project-context";
 import { KNXLogger } from "../tools/knx-logger";
 import type { KNX } from "../types/knx";
 import type { KNXProject } from "../types/websocket";
+import { localizeFormKey } from "../localize/localize";
 
 const logger = new KNXLogger("knx-create-expose");
 
@@ -203,7 +204,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
   });
 
   private _backendLocalize = (key: string) =>
-    this.knx.localize(`component.knx.config_panel.expose.create.${key}`);
+    localizeFormKey(this.hass, `component.knx.config_panel.expose.create.${key}`);
 
   protected willUpdate(changedProperties: PropertyValues<this>) {
     super.willUpdate(changedProperties); // unsaved changes listeners are handled by the mixin

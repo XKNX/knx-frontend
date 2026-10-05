@@ -19,6 +19,7 @@ import type { GASchema } from "../types/entity_data";
 import type { KNX } from "../types/knx";
 import { KNXLogger } from "../tools/knx-logger";
 import { setNestedValue } from "../utils/config-helper";
+import { localizeFormKey } from "../localize/localize";
 
 const logger = new KNXLogger("knx-send-dialog");
 
@@ -41,7 +42,7 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
   public hass!: HomeAssistant; // no need for @property here - save rendering cycles
 
   private _backendLocalize = (key: string) =>
-    this.knx.localize(`component.knx.config_panel.dialogs.send.${key}`);
+    localizeFormKey(this.hass, `component.knx.config_panel.dialogs.send.${key}`);
 
   public connectedCallback() {
     super.connectedCallback();

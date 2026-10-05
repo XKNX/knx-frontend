@@ -4,7 +4,7 @@ import { createMockHass } from "../../test/helpers/mock-hass";
 import { KNXLogger } from "../tools/knx-logger";
 
 import type { KnxLocalizeKey } from "./localize";
-import { localize } from "./localize";
+import { localize, localizeFormKey } from "./localize";
 
 describe("localize", () => {
   afterEach(() => {
@@ -41,4 +41,28 @@ describe("localize", () => {
       expect(error).toHaveBeenCalledWith(expect.stringContaining(key));
     },
   );
+
+  describe("localizeFormKey", () => {
+    const FIELD = "component.knx.config_panel.entities.create._.knx.color_temp_min";
+
+    it("returns an empty string without logging for a missing description", () => {
+      const error = vi.spyOn(KNXLogger.prototype, "error").mockImplementation(() => undefined);
+
+      expect(localizeFormKey(createMockHass(), `${FIELD}.description`)).toBe("");
+      expect(error).not.toHaveBeenCalled();
+    });
+
+    it("resolves an existing description", () => {
+      const hass = createMockHass({ translations: { [`${FIELD}.description`]: "Minimum" } });
+
+      expect(localizeFormKey(hass, `${FIELD}.description`)).toBe("Minimum");
+    });
+
+    it("logs and returns the key for other missing form keys", () => {
+      const error = vi.spyOn(KNXLogger.prototype, "error").mockImplementation(() => undefined);
+
+      expect(localizeFormKey(createMockHass(), `${FIELD}.label`)).toBe(`${FIELD}.label`);
+      expect(error).toHaveBeenCalledWith(expect.stringContaining(`${FIELD}.label`));
+    });
+  });
 });

@@ -28,6 +28,7 @@ import type { KNX } from "../types/knx";
 import { getPlatformStyle } from "../utils/common";
 import type { PlatformStyle } from "../utils/common";
 import type { SelectorSchema } from "../types/schema";
+import { localizeFormKey } from "../localize/localize";
 
 const logger = new KNXLogger("knx-configure-entity");
 
@@ -53,7 +54,7 @@ export class KNXConfigureEntity extends LitElement {
 
   private _backendLocalizeKnx = (path: string) =>
     this.hass.localize(`component.knx.config_panel.entities.create.${this.platform}.knx.${path}`) ||
-    this.knx.localize(`component.knx.config_panel.entities.create._.knx.${path}`);
+    localizeFormKey(this.hass, `component.knx.config_panel.entities.create._.knx.${path}`);
 
   connectedCallback(): void {
     super.connectedCallback();

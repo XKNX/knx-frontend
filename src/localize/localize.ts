@@ -59,6 +59,14 @@ export const withMissingKeyReporting = (haLocalize: LocalizeFunc): KnxLocalizeFu
     { optional: haLocalize },
   );
 
+/**
+ * Localize a key for KNX forms (fields, sections, selector rows). Descriptions are
+ * optional there - some fields have none on purpose because their label says it
+ * all - so a missing `.description` renders empty instead of being reported.
+ */
+export const localizeFormKey = (hass: HomeAssistant, key: KnxLocalizeKey): string =>
+  key.endsWith(".description") ? hass.localize(key as LocalizeKeys) : localize(hass, key);
+
 export function localize(
   hass: HomeAssistant,
   key: KnxLocalizeKey,
