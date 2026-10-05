@@ -7,10 +7,13 @@ on:
 env:
   PYTHON_VERSION: "3.x"
 
+permissions:
+  contents: read
+
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    name: Deploy to PyPi
+    name: Build distribution
     steps:
       - uses: actions/checkout@v7
         with:
@@ -33,7 +36,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install build twine
+          python -m pip install build
           corepack enable pnpm
           ./script/bootstrap
 
@@ -44,10 +47,32 @@ jobs:
           # release output independent of any cache state.
           BABEL_CACHE_DIR: "false"
 
-      - name: Publish to PyPi
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-        run: |
-          python -m build
-          twine upload dist/*
+      - name: Build Python package
+        run: python -m build
+
+      - name: Upload distribution
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    runs-on: ubuntu-latest
+    name: Publish to PyPI
+    needs: build
+    environment:
+      name: pypi
+      url: https://pypi.org/project/knx-frontend/${{ github.ref_name }}/
+    permissions:
+      # Required for PyPI trusted publishing (OIDC)
+      id-token: write
+    steps:
+      - name: Download distribution
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
