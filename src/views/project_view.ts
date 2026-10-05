@@ -207,7 +207,7 @@ export class KNXProjectView extends LitElement {
           showNarrow: true,
           filterable: true,
           sortable: true,
-          title: this.knx.localize(
+          title: this.hass.localize(
             "component.knx.config_panel.project.group_addresses.columns.address",
           ),
           flex: 1,
@@ -218,7 +218,7 @@ export class KNXProjectView extends LitElement {
           showNarrow: true,
           filterable: true,
           sortable: true,
-          title: this.knx.localize("ui.common.name"),
+          title: this.hass.localize("ui.common.name"),
           flex: 3,
         },
         dpt_raw: {
@@ -227,7 +227,7 @@ export class KNXProjectView extends LitElement {
           sortable: true,
           filterable: true,
           groupable: true,
-          title: this.knx.localize("component.knx.config_panel.common.dpt"),
+          title: this.hass.localize("component.knx.config_panel.common.dpt"),
           flex: 1,
           minWidth: dptWidth,
           template: (ga: GroupAddress) =>
@@ -241,7 +241,7 @@ export class KNXProjectView extends LitElement {
           showNarrow: true,
           filterable: false, // template result value isn't filterable or sortable
           sortable: false,
-          title: this.knx.localize(
+          title: this.hass.localize(
             "component.knx.config_panel.project.group_addresses.columns.last_value",
           ),
           flex: 2,
@@ -260,7 +260,7 @@ export class KNXProjectView extends LitElement {
           defaultHidden: narrow,
           filterable: false, // template result value isn't filterable or sortable
           sortable: false,
-          title: this.knx.localize(
+          title: this.hass.localize(
             "component.knx.config_panel.project.group_addresses.columns.updated",
           ),
           flex: 1,
@@ -329,7 +329,9 @@ export class KNXProjectView extends LitElement {
     // Add menu item to view telegrams for this group address
     items.push({
       path: mdiMathLog,
-      label: this.knx.localize("component.knx.config_panel.project.group_addresses.view_telegrams"),
+      label: this.hass.localize(
+        "component.knx.config_panel.project.group_addresses.view_telegrams",
+      ),
       action: () => {
         navigate(`/knx/group_monitor?destination=${groupAddress.address}`);
       },
@@ -352,7 +354,7 @@ export class KNXProjectView extends LitElement {
       if (groupAddress.dpt.main === 1) {
         items.push({
           path: mdiPlus,
-          label: this.knx.localize("component.knx.config_panel.common.create_binary_sensor"),
+          label: this.hass.localize("component.knx.config_panel.common.create_binary_sensor"),
           action: () => {
             navigate(
               "/knx/entities/create/binary_sensor?knx.ga_sensor.state=" + groupAddress.address,
@@ -363,7 +365,8 @@ export class KNXProjectView extends LitElement {
         items.push({
           path: mdiPlus,
           label:
-            this.knx.localize("component.knx.config_panel.common.create_sensor") ?? "Create Sensor",
+            this.hass.localize("component.knx.config_panel.common.create_sensor") ??
+            "Create Sensor",
           action: () => {
             const dptString = groupAddress.dpt
               ? `${groupAddress.dpt.main}${groupAddress.dpt.sub !== null ? "." + groupAddress.dpt.sub.toString().padStart(3, "0") : ""}`
@@ -418,7 +421,7 @@ export class KNXProjectView extends LitElement {
     if (!this.knx.projectInfo) {
       return this._renderError(
         "info",
-        this.knx.localize("component.knx.config_panel.project.upload_description"),
+        this.hass.localize("component.knx.config_panel.project.upload_description"),
       );
     }
     if (!this._projectData) {
@@ -555,11 +558,11 @@ export class KNXProjectView extends LitElement {
         mapper: (item: DeviceFilterOption) => item.id,
       },
       primaryField: {
-        fieldName: this.knx.localize("ui.common.name"),
+        fieldName: this.hass.localize("ui.common.name"),
         filterable: true,
         sortable: true,
-        sortAscendingText: this.knx.localize("component.knx.config_panel.common.sort.ascending"),
-        sortDescendingText: this.knx.localize("component.knx.config_panel.common.sort.descending"),
+        sortAscendingText: this.hass.localize("component.knx.config_panel.common.sort.ascending"),
+        sortDescendingText: this.hass.localize("component.knx.config_panel.common.sort.descending"),
         sortDefaultDirection: "asc",
         mapper: (item: DeviceFilterOption) => item.name,
       },
@@ -633,7 +636,7 @@ export class KNXProjectView extends LitElement {
         .selectedOptions=${this._devicesFilterDpt}
         .expanded=${this._devicesExpandedFilter === "dpt"}
         .narrow=${this.narrow}
-        .filterTitle=${this.knx.localize("component.knx.config_panel.common.filter.dpt.title")}
+        .filterTitle=${this.hass.localize("component.knx.config_panel.common.filter.dpt.title")}
         @selection-changed=${this._devicesDptSelectionChanged}
         @expanded-changed=${this._devicesFilterExpandedChanged}
       ></knx-list-filter>

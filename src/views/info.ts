@@ -37,7 +37,7 @@ export class KNXInfo extends LitElement {
       <hass-subpage
         .hass=${this.hass}
         .narrow=${this.narrow!}
-        .header=${this.knx.localize(infoTab.translationKey)}
+        .header=${this.hass.localize(infoTab.translationKey)}
       >
         <div class="columns">
           ${this._renderInfoCard()}
@@ -51,7 +51,7 @@ export class KNXInfo extends LitElement {
     return html` <ha-card class="knx-info">
       <div class="card-content knx-info-section">
         <div class="knx-content-row header">
-          ${this.knx.localize("component.knx.config_panel.info.title")}
+          ${this.hass.localize("component.knx.config_panel.info.title")}
         </div>
 
         <div class="knx-content-row">
@@ -65,7 +65,7 @@ export class KNXInfo extends LitElement {
         </div>
 
         <div class="knx-content-row">
-          <div>${this.knx.localize("component.knx.config_panel.info.connected_to_bus.label")}</div>
+          <div>${this.hass.localize("component.knx.config_panel.info.connected_to_bus.label")}</div>
           <div>
             ${this.hass.localize(
               this.knx.connectionInfo.connected ? "ui.common.yes" : "ui.common.no",
@@ -75,15 +75,15 @@ export class KNXInfo extends LitElement {
 
         <div class="knx-content-row">
           <div>
-            ${this.knx.localize("component.knx.config_panel.info.individual_address.label")}
+            ${this.hass.localize("component.knx.config_panel.info.individual_address.label")}
           </div>
           <div>${this.knx.connectionInfo.current_address}</div>
         </div>
 
         <div class="knx-content-row">
-          <div>${this.knx.localize("component.knx.config_panel.info.telegram_storage.label")}</div>
+          <div>${this.hass.localize("component.knx.config_panel.info.telegram_storage.label")}</div>
           <div>
-            ${this.knx.localize(
+            ${this.hass.localize(
               `component.knx.config_panel.info.telegram_storage.backend.options.${this.knx.connectionInfo.telegram_backend.toLowerCase()}`,
             )}
           </div>
@@ -94,15 +94,15 @@ export class KNXInfo extends LitElement {
             ? html`
                 <div class="knx-content-row">
                   <div>
-                    ${this.knx.localize("component.knx.config_panel.info.telegram_storage.retention.label")}
+                    ${this.hass.localize("component.knx.config_panel.info.telegram_storage.retention.label")}
                   </div>
                   <div>
                     ${
                       this.knx.connectionInfo.telegram_retention === 1
-                        ? this.knx.localize(
+                        ? this.hass.localize(
                             "component.knx.config_panel.info.telegram_storage.retention.day",
                           )
-                        : this.knx.localize(
+                        : this.hass.localize(
                             "component.knx.config_panel.info.telegram_storage.retention.days",
                             {
                               retention: String(this.knx.connectionInfo.telegram_retention),
@@ -119,7 +119,7 @@ export class KNXInfo extends LitElement {
             ? html`
                 <div class="knx-content-row">
                   <div>
-                    ${this.knx.localize("component.knx.config_panel.info.telegram_storage.limit.label")}
+                    ${this.hass.localize("component.knx.config_panel.info.telegram_storage.limit.label")}
                   </div>
                   <div>${this.knx.connectionInfo.telegram_max_count}</div>
                 </div>
@@ -128,12 +128,12 @@ export class KNXInfo extends LitElement {
         }
 
         <div class="knx-bug-report">
-          ${this.knx.localize("component.knx.config_panel.info.issue_tracker.description")}
+          ${this.hass.localize("component.knx.config_panel.info.issue_tracker.description")}
           <a href="https://github.com/XKNX/knx-integration" target="_blank">xknx/knx-integration</a>
         </div>
 
         <div class="knx-bug-report">
-          ${this.knx.localize("component.knx.config_panel.info.my_knx.description")}
+          ${this.hass.localize("component.knx.config_panel.info.my_knx.description")}
           <a href="https://my.knx.org" target="_blank">my.knx.org</a>
         </div>
       </div>
@@ -146,28 +146,28 @@ export class KNXInfo extends LitElement {
       <ha-card class="knx-info">
           <div class="card-content knx-content">
             <div class="header knx-content-row">
-              ${this.knx.localize("component.knx.config_panel.info.project_data.title")}
+              ${this.hass.localize("component.knx.config_panel.info.project_data.title")}
             </div>
             <div class="knx-content-row">
-              <div>${this.knx.localize("component.knx.config_panel.info.project_data.name.label")}</div>
+              <div>${this.hass.localize("component.knx.config_panel.info.project_data.name.label")}</div>
               <div>${projectInfo.name}</div>
             </div>
             ${
               lastModified
                 ? html`<div class="knx-content-row">
                     <div>
-                      ${this.knx.localize("component.knx.config_panel.info.project_data.last_modified.label")}
+                      ${this.hass.localize("component.knx.config_panel.info.project_data.last_modified.label")}
                     </div>
                     <div>${formatDateTime(lastModified, this.hass.locale, this.hass.config)}</div>
                   </div>`
                 : nothing
             }
             <div class="knx-content-row">
-              <div>${this.knx.localize("component.knx.config_panel.info.project_data.tool_version.label")}</div>
+              <div>${this.hass.localize("component.knx.config_panel.info.project_data.tool_version.label")}</div>
               <div>${projectInfo.tool_version}</div>
             </div>
             <div class="knx-content-row">
-              <div>${this.knx.localize("component.knx.config_panel.info.project_data.xknxproject_version.label")}</div>
+              <div>${this.hass.localize("component.knx.config_panel.info.project_data.xknxproject_version.label")}</div>
               <div>${projectInfo.xknxproject_version}</div>
             </div>
             <div class="knx-button-row">
@@ -175,7 +175,7 @@ export class KNXInfo extends LitElement {
                 class="knx-warning push-right"
                 @click=${this._removeProject}
                 >
-                ${this.knx.localize("component.knx.config_panel.info.project_data.delete")}
+                ${this.hass.localize("component.knx.config_panel.info.project_data.delete")}
               </ha-button>
             </div>
           </div>
@@ -186,7 +186,7 @@ export class KNXInfo extends LitElement {
 
   private async _removeProject(_ev) {
     const confirmed = await showConfirmationDialog(this, {
-      text: this.knx.localize("component.knx.config_panel.info.project_data.delete"),
+      text: this.hass.localize("component.knx.config_panel.info.project_data.delete"),
     });
     if (!confirmed) {
       logger.debug("User cancelled deletion");

@@ -26,13 +26,14 @@ import type {
 } from "@ha/components/date-picker/ha-date-range-picker";
 import { formatShortDateTime } from "@ha/common/datetime/format_date_time";
 import { fireEvent } from "@ha/common/dom/fire_event";
+import type { LocalizeKeys } from "@ha/common/translations/localize";
 import type { HomeAssistant } from "@ha/types";
 
 import "../../flex-content-expansion-panel";
 import type { KNX } from "../../../types/knx";
 
 /** Localize key -> range length in seconds for the preset sidebar. */
-const PRESET_RANGES: { labelKey: string; seconds: number }[] = [
+const PRESET_RANGES: { labelKey: LocalizeKeys; seconds: number }[] = [
   {
     labelKey: "component.knx.config_panel.group_monitor.time_range.options.5_minutes",
     seconds: 5 * 60,
@@ -120,19 +121,19 @@ export class KnxTimeRangeFilter extends LitElement {
     const now = new Date();
     const ranges: DateRangePickerRanges = {};
     for (const { labelKey, seconds } of PRESET_RANGES) {
-      ranges[this.knx.localize(labelKey)] = [new Date(now.getTime() - seconds * 1000), now];
+      ranges[this.hass.localize(labelKey)] = [new Date(now.getTime() - seconds * 1000), now];
     }
     return ranges;
   }
 
   private get _summary(): string {
     if (this.startMs === undefined) {
-      return this.knx.localize("component.knx.config_panel.group_monitor.time_range.select");
+      return this.hass.localize("component.knx.config_panel.group_monitor.time_range.select");
     }
     const start = formatShortDateTime(new Date(this.startMs), this.hass.locale, this.hass.config);
     const end =
       this.endMs === undefined
-        ? this.knx.localize("component.knx.config_panel.group_monitor.time_range.now")
+        ? this.hass.localize("component.knx.config_panel.group_monitor.time_range.now")
         : formatShortDateTime(new Date(this.endMs), this.hass.locale, this.hass.config);
     return `${start} – ${end}`;
   }
@@ -153,7 +154,7 @@ export class KnxTimeRangeFilter extends LitElement {
       >
         <div slot="header" class="header">
           <span class="title">
-            ${this.knx.localize("component.knx.config_panel.group_monitor.time_range.title")}
+            ${this.hass.localize("component.knx.config_panel.group_monitor.time_range.title")}
             ${hasValue ? html`<div class="badge">1</div>` : nothing}
           </span>
           <div class="controls">
@@ -163,7 +164,7 @@ export class KnxTimeRangeFilter extends LitElement {
                     <ha-icon-button
                       .path=${mdiFilterVariantRemove}
                       @click=${this._clear}
-                      .title=${this.knx.localize("ui.components.subpage-data-table.clear_filter")}
+                      .title=${this.hass.localize("ui.components.subpage-data-table.clear_filter")}
                     ></ha-icon-button>
                   `
                 : nothing
@@ -176,7 +177,7 @@ export class KnxTimeRangeFilter extends LitElement {
             ? html`
                 <div class="filter-content">
                   <p class="description">
-                    ${this.knx.localize("component.knx.config_panel.group_monitor.time_range.description")}
+                    ${this.hass.localize("component.knx.config_panel.group_monitor.time_range.description")}
                   </p>
                   ${
                     this.warning
@@ -202,7 +203,7 @@ export class KnxTimeRangeFilter extends LitElement {
                               ${
                                 hasValue
                                   ? this._summary
-                                  : this.knx.localize(
+                                  : this.hass.localize(
                                       "component.knx.config_panel.group_monitor.time_range.select",
                                     )
                               }
