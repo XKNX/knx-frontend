@@ -78,7 +78,7 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
   }
 
   private _backendLocalize = (key: string, replace?: Record<string, string>) =>
-    this.hass.localize(`component.knx.config_panel.dialogs.project_upload.${key}`, replace);
+    this.params!.knx.localize(`component.knx.config_panel.dialogs.project_upload.${key}`, replace);
 
   protected render() {
     if (!this.params) {

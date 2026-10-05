@@ -38,7 +38,7 @@ export class KnxTimeServerDialog extends DialogMixin<KnxTimeServerDialogParams>(
   public hass!: HomeAssistant; // no need for @property here - save rendering cycles
 
   private _backendLocalize = (key: string) =>
-    this.hass.localize(`component.knx.config_panel.dialogs.time_server.${key}`);
+    this.knx.localize(`component.knx.config_panel.dialogs.time_server.${key}`);
 
   private _loadConfigTask = new Task(this, {
     args: () => [],

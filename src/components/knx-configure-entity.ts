@@ -49,11 +49,11 @@ export class KNXConfigureEntity extends LitElement {
 
   private _backendLocalize = (path: string) =>
     this.hass.localize(`component.knx.config_panel.entities.create.${this.platform}.${path}`) ||
-    this.hass.localize(`component.knx.config_panel.entities.create._.${path}`);
+    this.knx.localize(`component.knx.config_panel.entities.create._.${path}`);
 
   private _backendLocalizeKnx = (path: string) =>
     this.hass.localize(`component.knx.config_panel.entities.create.${this.platform}.knx.${path}`) ||
-    this.hass.localize(`component.knx.config_panel.entities.create._.knx.${path}`);
+    this.knx.localize(`component.knx.config_panel.entities.create._.knx.${path}`);
 
   connectedCallback(): void {
     super.connectedCallback();

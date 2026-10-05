@@ -41,7 +41,7 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
   public hass!: HomeAssistant; // no need for @property here - save rendering cycles
 
   private _backendLocalize = (key: string) =>
-    this.hass.localize(`component.knx.config_panel.dialogs.send.${key}`);
+    this.knx.localize(`component.knx.config_panel.dialogs.send.${key}`);
 
   public connectedCallback() {
     super.connectedCallback();

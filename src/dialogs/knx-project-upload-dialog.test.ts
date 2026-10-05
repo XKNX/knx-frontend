@@ -48,11 +48,13 @@ const createDialog = (
   backendTranslations: Record<string, string> = {},
 ) => {
   const hass = createHass({ ...CURRENT_PROJECT_TRANSLATIONS, ...backendTranslations });
+  const dialog = new KnxProjectUploadDialog();
+  // Like the panel's `knx.localize`, resolve against the current hass.
   const knx = {
-    localize: (key: KnxLocalizeKey, replace?: Record<string, any>) => localize(hass, key, replace),
+    localize: (key: KnxLocalizeKey, replace?: Record<string, any>) =>
+      localize(dialog.hass, key, replace),
     projectInfo,
   } as unknown as KNX;
-  const dialog = new KnxProjectUploadDialog();
   dialog.params = { hass, knx };
   dialog.hass = hass;
   const container = document.createElement("div");

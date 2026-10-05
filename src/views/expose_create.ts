@@ -203,7 +203,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
   });
 
   private _backendLocalize = (key: string) =>
-    this.hass.localize(`component.knx.config_panel.expose.create.${key}`);
+    this.knx.localize(`component.knx.config_panel.expose.create.${key}`);
 
   protected willUpdate(changedProperties: PropertyValues<this>) {
     super.willUpdate(changedProperties); // unsaved changes listeners are handled by the mixin

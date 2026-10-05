@@ -105,7 +105,7 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
     key: "connected" | "disconnected" | "address",
     replace?: Record<string, string>,
   ): string {
-    return this.hass.localize(`component.knx.config_panel.dashboard.status.${key}`, replace);
+    return this.knx.localize(`component.knx.config_panel.dashboard.status.${key}`, replace);
   }
 
   private _buttonItems: DashboardButton[] = [
@@ -340,10 +340,10 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
                         <ha-svg-icon .path=${item.iconPath}></ha-svg-icon>
                       </div>
                       <span slot="headline"
-                        >${this.hass.localize(`${item.translationKey}.title`)}</span
+                        >${this.knx.localize(`${item.translationKey}.title`)}</span
                       >
                       <span slot="supporting-text"
-                        >${this.hass.localize(`${item.translationKey}.description`)}</span
+                        >${this.knx.localize(`${item.translationKey}.description`)}</span
                       >
                     </ha-md-list-item>`,
                 )}

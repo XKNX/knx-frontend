@@ -277,8 +277,10 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
               .pages=${this.knx.supportedPlatforms.map((platform) => {
                 const platformStyle = getPlatformStyle(platform);
                 return {
-                  name: `${this.hass.localize(`component.${platform}.title`)}`,
-                  description: `${this.hass.localize(`component.knx.config_panel.entities.create.${platform}.description`)}`,
+                  name: this.knx.localize(`component.${platform}.title`),
+                  description: this.knx.localize(
+                    `component.knx.config_panel.entities.create.${platform}.description`,
+                  ),
                   iconPath: platformStyle.iconPath,
                   iconColor: platformStyle.color,
                   path: `/knx/entities/create/${platform}`,
