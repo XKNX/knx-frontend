@@ -124,7 +124,11 @@ export class KnxSortMenuItem extends LitElement {
    * @returns Localized or custom ascending sort label
    */
   private get _ascendingText(): string {
-    return this.ascendingText ?? this.knx?.localize("knx_sort_menu_item_ascending") ?? "";
+    return (
+      this.ascendingText ??
+      this.knx?.localize("component.knx.config_panel.common.sort.ascending") ??
+      ""
+    );
   }
 
   /**
@@ -134,7 +138,11 @@ export class KnxSortMenuItem extends LitElement {
    * @returns Localized or custom descending sort label
    */
   private get _descendingText(): string {
-    return this.descendingText ?? this.knx?.localize("knx_sort_menu_item_descending") ?? "";
+    return (
+      this.descendingText ??
+      this.knx?.localize("component.knx.config_panel.common.sort.descending") ??
+      ""
+    );
   }
 
   // ============================================================================

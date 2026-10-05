@@ -210,7 +210,7 @@ export class KnxDptReference extends LitElement {
   }
 
   private _searchLabel(count: number): string {
-    return this.knx.localize("dpt_reference_search_label", { count });
+    return this.knx.localize("component.knx.config_panel.dpt_reference.search_label", { count });
   }
 
   protected render() {

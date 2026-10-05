@@ -111,10 +111,10 @@ describe("KNXGroupMonitor", () => {
 
   it("maps history warning codes to localized text", () => {
     expect((element as any)._historyWarningText("retention_clamped")).toBe(
-      "group_monitor_time_range_retention_clamped",
+      "component.knx.config_panel.group_monitor.time_range.retention_clamped",
     );
     expect((element as any)._historyWarningText("partial_load")).toBe(
-      "group_monitor_time_range_partial",
+      "component.knx.config_panel.group_monitor.time_range.partial",
     );
     expect((element as any)._historyWarningText(null)).toBeUndefined();
   });
@@ -312,7 +312,7 @@ describe("KNXGroupMonitor", () => {
 
       expect(items.map((item) => item.label)).toEqual([
         "ui.panel.config.automation.picker.add_automation",
-        "project_view_menu_create_binary_sensor",
+        "component.knx.config_panel.common.create_binary_sensor",
       ]);
       items[1].action();
       expect(navigateMock).toHaveBeenCalledWith(
@@ -344,7 +344,7 @@ describe("KNXGroupMonitor", () => {
 
       expect(items.map((item) => item.label)).toEqual([
         "ui.panel.config.automation.picker.add_automation",
-        "project_view_menu_create_sensor",
+        "component.knx.config_panel.common.create_sensor",
       ]);
       items[1].action();
       expect(navigateMock).toHaveBeenCalledWith(

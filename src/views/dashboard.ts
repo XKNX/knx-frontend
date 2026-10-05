@@ -105,10 +105,7 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
     key: "connected" | "disconnected" | "address",
     replace?: Record<string, string>,
   ): string {
-    return (
-      this.hass.localize(`component.knx.config_panel.dashboard.status.${key}`, replace) ||
-      this.knx.localize(`dashboard_status_${key}`, replace)
-    );
+    return this.hass.localize(`component.knx.config_panel.dashboard.status.${key}`, replace);
   }
 
   private _buttonItems: DashboardButton[] = [

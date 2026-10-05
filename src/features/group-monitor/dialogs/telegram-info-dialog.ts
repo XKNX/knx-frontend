@@ -184,7 +184,9 @@ export class GroupMonitorTelegramInfoDialog
 
     return html`
       <ha-dialog .open=${this._open} @closed=${this.closeDialog}>
-        <span slot="headerTitle"> ${this.knx.localize("knx_telegram_info_dialog_telegram")} </span>
+        <span slot="headerTitle">
+          ${this.knx.localize("component.knx.config_panel.dialogs.telegram_info.title")}
+        </span>
         <div slot="headerSubtitle">
           <span title=${formatIsoTimestampWithMicroseconds(telegram.timestampIso)}>
             ${formatDateTimeWithMilliseconds(telegram.timestamp) + " "}
@@ -206,10 +208,10 @@ export class GroupMonitorTelegramInfoDialog
           slot="headerActionItems"
           class="direction-badge ${directionClass}"
           title=${
-            this.knx.localize(telegram.direction) + (telegram.dataSecure ? " DataSecure" : "")
+            this._localizeDirection(telegram.direction) + (telegram.dataSecure ? " DataSecure" : "")
           }
         >
-          ${this.knx.localize(telegram.direction) + (telegram.dataSecure ? " 🔒" : "")}
+          ${this._localizeDirection(telegram.direction) + (telegram.dataSecure ? " 🔒" : "")}
         </div>
 
         <div class="content">
@@ -218,7 +220,7 @@ export class GroupMonitorTelegramInfoDialog
             <div class="addresses-row">
               <div class="address-item">
                 <div class="item-label">
-                  ${this.knx.localize("knx_telegram_info_dialog_source")}
+                  ${this.knx.localize("component.knx.config_panel.dialogs.telegram_info.source")}
                 </div>
                 <div class="address-chip">${telegram.sourceAddress}</div>
                 ${
@@ -229,7 +231,7 @@ export class GroupMonitorTelegramInfoDialog
               </div>
               <div class="address-item">
                 <div class="item-label">
-                  ${this.knx.localize("knx_telegram_info_dialog_destination")}
+                  ${this.knx.localize("component.knx.config_panel.dialogs.telegram_info.destination")}
                 </div>
                 <div class="address-chip">${telegram.destinationAddress}</div>
                 ${
@@ -245,7 +247,7 @@ export class GroupMonitorTelegramInfoDialog
                 ? html`
                     <div class="value-section">
                       <div class="value-label">
-                        ${this.knx.localize("knx_telegram_info_dialog_value")}
+                        ${this.knx.localize("component.knx.config_panel.dialogs.telegram_info.value")}
                       </div>
                       <div class="value-content">${telegram.value}</div>
                     </div>
@@ -257,7 +259,7 @@ export class GroupMonitorTelegramInfoDialog
               <div class="detail-grid">
                 <div class="detail-item">
                   <div class="detail-label">
-                    ${this.knx.localize("knx_telegram_info_dialog_type")}
+                    ${this.knx.localize("component.knx.config_panel.dialogs.telegram_info.type")}
                   </div>
                   <div class="detail-value">${telegram.type}</div>
                 </div>
@@ -270,7 +272,7 @@ export class GroupMonitorTelegramInfoDialog
                     ? html`
                         <div class="detail-item payload">
                           <div class="detail-label">
-                            ${this.knx.localize("knx_telegram_info_dialog_payload")}
+                            ${this.knx.localize("component.knx.config_panel.dialogs.telegram_info.payload")}
                           </div>
                           <code>${telegram.payload}</code>
                         </div>
@@ -328,6 +330,14 @@ export class GroupMonitorTelegramInfoDialog
   /**
    * Opens the Home Assistant automation editor prefilled with this telegram
    */
+  private _localizeDirection(direction: string): string {
+    return (
+      this.hass.localize(
+        `component.knx.config_panel.group_monitor.direction.options.${direction.toLowerCase()}`,
+      ) || direction
+    );
+  }
+
   private _createAutomation(): void {
     if (!this._params) return;
     const config = buildAutomationFromTelegram(this._params.telegram);

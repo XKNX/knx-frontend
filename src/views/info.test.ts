@@ -21,6 +21,10 @@ vi.mock("../services/websocket.service", () => ({ removeProjectFile: vi.fn() }))
 const HASS_TRANSLATIONS: Record<string, string> = {
   "ui.common.deleting_failed": "Löschen fehlgeschlagen",
   "ui.common.unknown_error": "Unbekannter Fehler",
+  "component.knx.config_panel.info.project_data.name.label": "Project name",
+  "component.knx.config_panel.info.project_data.last_modified.label": "Last modified",
+  "component.knx.config_panel.info.project_data.tool_version.label": "Tool version",
+  "component.knx.config_panel.info.project_data.xknxproject_version.label": "XKNXProject version",
 };
 
 const PROJECT_INFO: KNXProjectInfo = {

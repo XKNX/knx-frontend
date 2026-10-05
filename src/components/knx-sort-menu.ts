@@ -108,7 +108,9 @@ export class KnxSortMenu extends LitElement {
           <div class="header">
             <div class="title">
               <!-- Slot for custom title -->
-              <slot name="title">${this.knx?.localize("knx_sort_menu_sort_by") ?? ""}</slot>
+              <slot name="title"
+                >${this.knx?.localize("component.knx.config_panel.common.sort.sort_by") ?? ""}</slot
+              >
             </div>
             <div class="toolbar">
               <!-- Slot for adding custom buttons to the header -->

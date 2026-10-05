@@ -33,12 +33,21 @@ import type { KNX } from "../../../types/knx";
 
 /** Localize key -> range length in seconds for the preset sidebar. */
 const PRESET_RANGES: { labelKey: string; seconds: number }[] = [
-  { labelKey: "group_monitor_range_5min", seconds: 5 * 60 },
-  { labelKey: "group_monitor_range_30min", seconds: 30 * 60 },
-  { labelKey: "group_monitor_range_1h", seconds: 3600 },
-  { labelKey: "group_monitor_range_6h", seconds: 6 * 3600 },
-  { labelKey: "group_monitor_range_1d", seconds: 86400 },
-  { labelKey: "group_monitor_range_1w", seconds: 7 * 86400 },
+  {
+    labelKey: "component.knx.config_panel.group_monitor.time_range.options.5_minutes",
+    seconds: 5 * 60,
+  },
+  {
+    labelKey: "component.knx.config_panel.group_monitor.time_range.options.30_minutes",
+    seconds: 30 * 60,
+  },
+  { labelKey: "ui.components.date-range-picker.ranges.now-1h", seconds: 3600 },
+  {
+    labelKey: "component.knx.config_panel.group_monitor.time_range.options.6_hours",
+    seconds: 6 * 3600,
+  },
+  { labelKey: "ui.components.date-range-picker.ranges.now-24h", seconds: 86400 },
+  { labelKey: "ui.components.date-range-picker.ranges.now-7d", seconds: 7 * 86400 },
 ];
 
 /** Event payload for a selected time range (epoch milliseconds). */
@@ -118,12 +127,12 @@ export class KnxTimeRangeFilter extends LitElement {
 
   private get _summary(): string {
     if (this.startMs === undefined) {
-      return this.knx.localize("group_monitor_time_range_select");
+      return this.knx.localize("component.knx.config_panel.group_monitor.time_range.select");
     }
     const start = formatShortDateTime(new Date(this.startMs), this.hass.locale, this.hass.config);
     const end =
       this.endMs === undefined
-        ? this.knx.localize("group_monitor_time_range_now")
+        ? this.knx.localize("component.knx.config_panel.group_monitor.time_range.now")
         : formatShortDateTime(new Date(this.endMs), this.hass.locale, this.hass.config);
     return `${start} – ${end}`;
   }
@@ -144,7 +153,7 @@ export class KnxTimeRangeFilter extends LitElement {
       >
         <div slot="header" class="header">
           <span class="title">
-            ${this.knx.localize("group_monitor_time_range_title")}
+            ${this.knx.localize("component.knx.config_panel.group_monitor.time_range.title")}
             ${hasValue ? html`<div class="badge">1</div>` : nothing}
           </span>
           <div class="controls">
@@ -154,7 +163,7 @@ export class KnxTimeRangeFilter extends LitElement {
                     <ha-icon-button
                       .path=${mdiFilterVariantRemove}
                       @click=${this._clear}
-                      .title=${this.knx.localize("knx_list_filter_clear")}
+                      .title=${this.knx.localize("ui.components.subpage-data-table.clear_filter")}
                     ></ha-icon-button>
                   `
                 : nothing
@@ -166,7 +175,9 @@ export class KnxTimeRangeFilter extends LitElement {
           this.expanded
             ? html`
                 <div class="filter-content">
-                  <p class="description">${this.knx.localize("group_monitor_time_range_hint")}</p>
+                  <p class="description">
+                    ${this.knx.localize("component.knx.config_panel.group_monitor.time_range.description")}
+                  </p>
                   ${
                     this.warning
                       ? html`<ha-alert alert-type="warning">${this.warning}</ha-alert>`
@@ -191,7 +202,9 @@ export class KnxTimeRangeFilter extends LitElement {
                               ${
                                 hasValue
                                   ? this._summary
-                                  : this.knx.localize("group_monitor_time_range_select")
+                                  : this.knx.localize(
+                                      "component.knx.config_panel.group_monitor.time_range.select",
+                                    )
                               }
                             </span>
                           `
