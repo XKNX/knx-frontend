@@ -18,15 +18,17 @@ describe("localize", () => {
     expect(hass.localize).not.toHaveBeenCalled();
   });
 
-  it.each(["component.knx.config_panel.info.title", "ui.common.name"])(
-    "passes %s directly to hass.localize",
-    (key) => {
-      const hass = createMockHass({ translations: { [key]: "Translated {value}" } });
+  it.each([
+    "component.knx.config_panel.info.title",
+    "ui.common.name",
+    "panel.notfound",
+    "state.default.unknown",
+  ])("passes %s directly to hass.localize", (key) => {
+    const hass = createMockHass({ translations: { [key]: "Translated {value}" } });
 
-      expect(localize(hass, key as KnxLocalizeKey, { value: "1" })).toBe("Translated 1");
-      expect(hass.localize).toHaveBeenCalledWith(key, { value: "1" });
-    },
-  );
+    expect(localize(hass, key as KnxLocalizeKey, { value: "1" })).toBe("Translated 1");
+    expect(hass.localize).toHaveBeenCalledWith(key, { value: "1" });
+  });
 
   it.each(["component.knx.config_panel.missing", "ui.common.missing", "missing_local_key"])(
     "logs and returns the key %s when no translation exists",

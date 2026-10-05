@@ -32,7 +32,17 @@ export type KnxLocalizeFunc = LocalizeFunc & {
 };
 
 // Keys provided by Core (backend translations) or the HA frontend; never defined locally.
-const HASS_KEY_PREFIXES = ["component.", "ui."];
+// The HA frontend prefixes are the root keys of its `src/translations/en.json`.
+const HASS_KEY_PREFIXES = [
+  "component.",
+  "config_entry.",
+  "groups.",
+  "landing-page.",
+  "panel.",
+  "state.",
+  "state_badge.",
+  "ui.",
+];
 
 const reportMissingKey = (key: string, language?: string): string => {
   logger.error(`Translation problem with '${key}'${language ? ` for '${language}'` : ""}`);
