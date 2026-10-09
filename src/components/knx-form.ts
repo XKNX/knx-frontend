@@ -11,6 +11,7 @@ import "@ha/components/ha-selector/ha-selector";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import type { HomeAssistant, ValueChangedEvent } from "@ha/types";
 import type { ControlSelectOption } from "@ha/components/ha-control-select";
+import { resolveSelectorContext } from "@ha/data/selector";
 
 import "./knx-group-address-selector";
 import "./knx-select-options-list";
@@ -249,6 +250,11 @@ export class KnxForm extends LitElement {
             .key=${selectorPath}
             .selector=${selector}
             .value=${getNestedValue(this.config!, selectorPath)}
+            .context=${resolveSelectorContext(
+              selector.selector,
+              // context refers to sibling fields
+              path === ROOT_PATH ? this.config : getNestedValue(this.config!, path),
+            )}
             .validationErrors=${selectorErrors}
             .localizeFunction=${this.backendLocalize}
             @value-changed=${this._updateConfig}
