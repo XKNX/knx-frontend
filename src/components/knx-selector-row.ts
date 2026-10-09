@@ -24,6 +24,8 @@ export class KnxSelectorRow extends LitElement {
 
   @property() public value?: any;
 
+  @property({ attribute: false }) public context?: Record<string, unknown>;
+
   @property({ attribute: false }) public validationErrors?: ErrorDescription[];
 
   @property({ attribute: false }) public localizeFunction: (key: string) => string = (
@@ -88,6 +90,7 @@ export class KnxSelectorRow extends LitElement {
           .disabled=${!this._enabled}
           .placeholder=${this.selector.placeholder}
           .value=${this._haSelectorValue}
+          .context=${this.context}
           .localizeValue=${this.hass.localize}
           .helper=${this._selectorHelper}
           @value-changed=${this._valueChange}
