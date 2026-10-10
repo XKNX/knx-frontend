@@ -78,6 +78,8 @@ export interface ExposeOption {
   send_on_init?: boolean;
   periodic_send?: number;
   respond_to_read?: boolean;
+  write_back?: boolean;
+  source_whitelist?: string[]; // KNX individual addresses, e.g. "1.1.5"
 }
 
 export interface ExposeConfigData {
