@@ -27,6 +27,15 @@ jobs:
       - name: Run prettier
         run: pnpm run lint:prettier
 
+      - name: Generate Lit check inputs
+        run: pnpm exec gulp gen-icons-json build-translations build-locale-data
+
+      - name: Check Lit templates
+        run: pnpm run lint:lit
+
+      - name: Check Gallery tool syntax
+        run: pnpm run gallery:lint:tools
+
       - name: Check for duplicate dependencies
         run: pnpm dedupe --check
 
@@ -42,11 +51,9 @@ jobs:
       - name: Setup Node and Dependencies
         uses: ./.github/actions/setup
 
-      # tsc resolves imports of build/mdi/iconList.json and build/translations/
-      # translationMetadata.json, which do not exist until these have run. Every other job
-      # that needs them gets them from `pnpm build`; this one has no reason to build.
+      # tsc resolves generated HA icon and translation imports without a full build.
       - name: Generate build inputs
-        run: pnpm exec gulp gen-icons-json build-translations
+        run: pnpm exec gulp gen-icons-json build-translations build-locale-data
 
       - name: Run tsc
         run: pnpm run lint:types
@@ -63,8 +70,11 @@ jobs:
       - name: Setup Node and Dependencies
         uses: ./.github/actions/setup
 
+      - name: Generate build inputs
+        run: SKIP_FETCH_NIGHTLY_TRANSLATIONS=1 pnpm exec gulp gen-icons-json build-translations build-locale-data
+
       - name: Run tests
-        run: pnpm test
+        run: pnpm test --exclude '**/.worktrees/**'
 
   coverage:
     name: Coverage
@@ -80,6 +90,9 @@ jobs:
 
       - name: Setup Node and Dependencies
         uses: ./.github/actions/setup
+
+      - name: Generate build inputs
+        run: SKIP_FETCH_NIGHTLY_TRANSLATIONS=1 pnpm exec gulp gen-icons-json build-translations build-locale-data
 
       - name: Run tests with coverage
         run: pnpm run test:coverage
@@ -122,6 +135,28 @@ jobs:
         run: pnpm build
         env:
           BABEL_CACHE_DIR: ${{ runner.temp }}/babel-loader
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.x"
+
+      - name: Build wheel
+        run: |
+          python -m pip install build
+          python - <<'PYTHON'
+          from pathlib import Path
+          import subprocess
+          version = Path("VERSION")
+          original = version.read_bytes()
+          try:
+              version.write_text("0.0.0.dev0")
+              subprocess.run(["python", "-m", "build"], check=True)
+          finally:
+              version.write_bytes(original)
+          wheels = list(Path("dist").glob("*.whl"))
+          assert len(wheels) == 1, wheels
+          PYTHON
 
       # babel-loader writes an entry only on a cache miss, so a file's age is the time since it was
       # created. Entries older than 30 days are dropped and transpiled again on their next use.

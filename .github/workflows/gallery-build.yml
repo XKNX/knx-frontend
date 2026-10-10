@@ -1,0 +1,282 @@
+name: Gallery build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+      pages: read
+    outputs:
+      build: ${{ steps.gate.outputs.build }}
+      sha: ${{ steps.gate.outputs.sha }}
+      base_path: ${{ steps.gate.outputs.base_path }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - id: gate
+        run: |
+          if [ -f gallery/script/gallery_pages.py ]; then
+            python3 gallery/script/gallery_pages.py gate
+          elif [ -f build-scripts/gallery_pages.py ]; then
+            python3 build-scripts/gallery_pages.py gate
+          else
+            # Bootstrap: main has no trusted gate yet, so the PR introducing it builds like
+            # ordinary PR CI. Nothing can publish it: the Pages workflow only runs from main.
+            {
+              echo "build=true"
+              echo "sha=$HEAD_SHA"
+              echo "base_path=/"
+            } >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GALLERY_PAGES_ENABLED: ${{ vars.GALLERY_PAGES_ENABLED }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+  # Every PR validates its exact head, including forks without an approved preview.
+  # Focused aliases share default check configuration without rerunning all product checks.
+  checks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          submodules: recursive
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Generate Gallery check inputs
+        run: SKIP_FETCH_NIGHTLY_TRANSLATIONS=1 pnpm exec gulp gen-icons-json build-translations build-locale-data
+      - run: pnpm gallery:policy
+      - run: pnpm gallery:lint
+      - run: pnpm gallery:types
+      - run: pnpm gallery:unit
+
+  build:
+    needs: [gate, checks]
+    if: needs.gate.outputs.build == 'true'
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --user 1001 --ipc=host
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      GALLERY_BASE_PATH: ${{ needs.gate.outputs.base_path }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.gate.outputs.sha }}
+          submodules: recursive
+          persist-credentials: false
+      # This entire job is untrusted, including PR changes to setup/build scripts.
+      # Fork/PR caches are scoped to the PR ref; the publisher never restores caches.
+      - uses: ./.github/actions/setup
+        with:
+          dependency-cache-prefix: knx-frontend-deps-playwright-v1.63.0-noble
+      - name: Restore Babel cache
+        id: babel-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/babel-loader
+          key: gallery-babel-loader-${{ runner.os }}-${{ github.job }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'pnpm-workspace.yaml') }}-${{ needs.gate.outputs.sha }}
+          restore-keys: |
+            gallery-babel-loader-${{ runner.os }}-${{ github.job }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'pnpm-workspace.yaml') }}-
+            babel-loader-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+      - name: Build gallery and thumbnails
+        run: pnpm gallery:build
+        env:
+          BABEL_CACHE_DIR: ${{ runner.temp }}/babel-loader
+      - name: Prune old Babel cache entries
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: find "$BABEL_CACHE_DIR" -type f -mtime +30 -delete
+        env:
+          BABEL_CACHE_DIR: ${{ runner.temp }}/babel-loader
+      - name: Save Babel cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/babel-loader
+          key: ${{ steps.babel-cache.outputs.cache-primary-key }}
+      - name: Test production Pages paths
+        run: pnpm exec playwright test --config gallery/test/playwright.gallery-pages.config.ts
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: gallery-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/gallery/
+          retention-days: 7
+          if-no-files-found: error
+
+  # These jobs execute PR code with the same read-only permissions as the build.
+  # The publisher adopts the artifact only after the entire workflow succeeds.
+  browser-tests:
+    needs: [gate, build]
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --user 1001 --ipc=host
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    env:
+      GALLERY_BASE_PATH: ${{ needs.gate.outputs.base_path }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.gate.outputs.sha }}
+          submodules: recursive
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          dependency-cache-prefix: knx-frontend-deps-playwright-v1.63.0-noble
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: gallery-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/gallery/
+      - name: Test interactive gallery
+        run: pnpm gallery:test --workers=2 --shard=${{ matrix.shard }}/2
+        env:
+          GALLERY_E2E_PRODUCTION: "1"
+      - name: Upload shard blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: gallery-test-report-${{ github.run_attempt }}-${{ matrix.shard }}
+          path: blob-report/gallery/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Upload shard failure attachments
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: gallery-test-results-${{ github.run_attempt }}-${{ matrix.shard }}
+          path: test-results/gallery/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # Native blobs include attachments; report merging needs no browsers or write token.
+  # Failure still fails the shard/workflow, while diagnostics remain available for review.
+  merge-reports:
+    needs: [gate, browser-tests]
+    if: ${{ !cancelled() && needs.browser-tests.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      PLAYWRIGHT_HTML_OPEN: never
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.gate.outputs.sha }}
+          submodules: recursive
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Download current-attempt shard reports
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: gallery-test-report-${{ github.run_attempt }}-*
+          path: all-blob-reports/
+          merge-multiple: true
+      - name: Merge Playwright reports
+        run: pnpm exec playwright merge-reports --reporter html all-blob-reports
+      - name: Upload merged HTML report and attachments
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: gallery-test-report-html-${{ github.run_attempt }}
+          path: playwright-report/
+          retention-days: 14
+          if-no-files-found: error
+
+  release-check:
+    needs: [gate, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.gate.outputs.sha }}
+          submodules: recursive
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Restore Babel cache
+        id: babel-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/babel-loader
+          key: gallery-babel-loader-${{ runner.os }}-${{ github.job }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'pnpm-workspace.yaml') }}-${{ needs.gate.outputs.sha }}
+          restore-keys: |
+            gallery-babel-loader-${{ runner.os }}-${{ github.job }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'pnpm-workspace.yaml') }}-
+            babel-loader-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: gallery-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/gallery/
+      - name: Build release with gallery output present
+        run: KNX_BUILD_STATS=1 pnpm build
+        env:
+          BABEL_CACHE_DIR: ${{ runner.temp }}/babel-loader
+      - name: Prune old Babel cache entries
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: find "$BABEL_CACHE_DIR" -type f -mtime +30 -delete
+        env:
+          BABEL_CACHE_DIR: ${{ runner.temp }}/babel-loader
+      - name: Save Babel cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/babel-loader
+          key: ${{ steps.babel-cache.outputs.cache-primary-key }}
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.x"
+      - name: Check gallery exclusion from wheel
+        run: |
+          python -m pip install build
+          python - <<'PYTHON'
+          from pathlib import Path
+          from tempfile import TemporaryDirectory
+          from zipfile import ZipFile
+          import subprocess
+          version = Path("VERSION")
+          original = version.read_bytes()
+          try:
+              version.write_text("0.0.0.dev0")
+              subprocess.run(["python", "-m", "build"], check=True)
+          finally:
+              version.write_bytes(original)
+          wheels = list(Path("dist").glob("*.whl"))
+          assert len(wheels) == 1, wheels
+          with TemporaryDirectory() as unpacked:
+              with ZipFile(wheels[0]) as wheel:
+                  wheel.extractall(unpacked)
+              subprocess.run(["node", "gallery/script/check-gallery-exclusion.mjs",
+                              "build/checks/production.json", unpacked], check=True)
+          PYTHON
