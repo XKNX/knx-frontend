@@ -88,6 +88,7 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
             write: { required: true },
             passive: false,
             dptClasses: ["numeric", "enum", "string", "complex"],
+            dptFollowsGroupAddress: true,
           }}
           .config=${this._data.ga ?? {}}
           .localizeFunction=${this._backendLocalize}

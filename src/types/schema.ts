@@ -97,6 +97,13 @@ export interface GASelectorOptions {
   validDPTs?: DPT[]; // one of validDPTs, dptSelect or dptClasses shall be set
   dptSelect?: DPTOption[];
   dptClasses?: string[];
+  /**
+   * Frontend only. A DPT derived from the selected group addresses does not narrow the
+   * group address search and is derived again when another address is picked, so one
+   * address can be swapped for one of a different DPT without clearing it first. A DPT
+   * the user chose keeps narrowing the search. Meant for selectors of a single address.
+   */
+  dptFollowsGroupAddress?: boolean;
 }
 
 export interface DPTOption {
