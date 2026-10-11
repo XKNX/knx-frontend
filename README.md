@@ -27,6 +27,12 @@ $ script/build
 ...
 ```
 
+### Gallery
+
+The [component gallery](gallery/README.md) shows KNX components,
+dialogs and views with example data. Run `pnpm gallery` locally; see
+[Gallery development](gallery/README.md) for details.
+
 ### Update the home assistant frontend
 
 Get the latest release tag.

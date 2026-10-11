@@ -165,6 +165,18 @@ Form fields and sections (`knx-form`, `knx-selector-row`, …) always request `<
 - `/homeassistant-frontend`: Submodule (AI agents should not modify directly)
 - `/test`: Test files that AI agents should maintain and extend
 
+## Gallery examples
+
+Before implementing a new or changed component, dialog or view, read the repository
+[knx-frontend-gallery skill](../.agents/skills/knx-frontend-gallery/SKILL.md).
+Its repository-root path is `.agents/skills/knx-frontend-gallery/SKILL.md`, including
+when reading these instructions through the root `AGENTS.md` symlink.
+Consider its affected gallery examples every time. Create an example for a new
+production custom element, and update affected examples as part of implementation
+when public interfaces, supported states or interaction behavior change. Use the
+skill's maintained references and the [Gallery README](../gallery/README.md) for
+authoring and focused Gallery verification aliases; default checks include Gallery.
+
 ## Testing
 
 - **Framework**: Vitest with jsdom
@@ -196,7 +208,7 @@ Form fields and sections (`knx-form`, `knx-selector-row`, …) always request `<
 
 ### Code Quality & Linting
 
-- `pnpm lint`: Run all linting (ESLint + Prettier + TypeScript + Lit analyzer)
+- `pnpm lint`: Run all product and Gallery linting (ESLint + Prettier + TypeScript + Lit analyzer + Gallery tool syntax)
 - `pnpm lint:eslint`: ESLint only
 - `pnpm lint:prettier`: Prettier formatting check
 - `pnpm lint:types`: TypeScript compiler check
@@ -207,7 +219,7 @@ Form fields and sections (`knx-form`, `knx-selector-row`, …) always request `<
 
 ### Testing
 
-- `pnpm test`: Run Vitest tests once
+- `pnpm test`: Run product and Gallery Vitest tests once
 - `pnpm test:watch`: Run Vitest in watch mode
 - `pnpm test:coverage`: Run tests with coverage report
 
