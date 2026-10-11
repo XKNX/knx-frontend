@@ -58,6 +58,39 @@ class ControlFlowTests(unittest.TestCase):
         self.assertEqual(self.store.published()[1]['previews'], {})
         self.assertTrue((self.store.root / 'pr/12/gallery/index.html').exists())
 
+    def test_missing_branch_ownership_marker_fails_with_an_actionable_error(self):
+        def git(*args, **kwargs):
+            if args[0] == "ls-remote":
+                return "existing branch"
+            if args[0] == "show":
+                raise pages.subprocess.CalledProcessError(128, ["git", "show"])
+            if args[0] == "checkout":
+                self.fail("An unowned branch must not be checked out")
+            return ""
+        with patch.object(pages, "git", side_effect=git):
+            with self.assertRaisesRegex(ValueError, "ownership marker"):
+                type(self.store)()
+
+    def test_prepare_and_finish_reject_non_main_publishers(self):
+        with patch.dict(os.environ, {"GITHUB_REF": "refs/pull/12/merge"}):
+            with self.assertRaisesRegex(ValueError, "main"):
+                pages.prepare({})
+            with self.assertRaisesRegex(ValueError, "main"):
+                pages.finish("success", self.candidate, "55")
+
+    def test_successful_cleanup_stops_refreshing_closed_comments(self):
+        self.store.state["previews"] = {}
+        self.store.state["comments"]["12"] = 7
+        self.candidate = self.store.save("Prepare cleanup")
+        closed = pull(); closed["state"] = "closed"
+        with patch.object(pages, "github_request", return_value=closed), patch.object(pages, "update_status") as status:
+            pages.finish("success", self.candidate, "55")
+            status.assert_called_once()
+            status.reset_mock()
+            pages.finish("success", self.candidate, "55")
+            status.assert_not_called()
+        self.assertEqual(self.store.state["comments"], {})
+
     def test_failed_comment_update_preserves_deploy_success_and_can_retry(self):
         with patch.object(pages, 'github_request', return_value=pull()), patch.object(pages, 'update_status', side_effect=TimeoutError):
             with self.assertRaises(TimeoutError):
@@ -178,7 +211,7 @@ class ControlFlowTests(unittest.TestCase):
         (self.store.root / "unrelated.txt").write_text("private root")
         self.store.save("Save namespaced main candidate")
         run = dict(self.entry, target="main", pr_number=None, conclusion="success", status="completed")
-        with patch.object(pages, "resolve_build_run", return_value=run):
+        with patch.object(pages, "resolve_build_run", return_value=run), patch.object(pages, "github_request", return_value={"object": {"sha": SHA}}):
             pages.prepare({})
         public = self.root / "gallery-pages-public"
         self.assertEqual((public / "gallery/index.html").read_text(), "main candidate")
@@ -301,6 +334,16 @@ class ControlFlowTests(unittest.TestCase):
                            "comment": {"body": "/preview " + SHA}})
         self.assertEqual(pages.git("rev-parse", "HEAD", cwd=self.store.root), before)
         self.assertEqual((self.root / "outputs").read_text(), "deploy=false\n")
+
+    def test_artifact_redirect_rejects_plaintext_and_embedded_credentials(self):
+        for location in ["http://storage.example/file", "https://user:secret@storage.example/file", "file:///tmp/file"]:
+            class Opener:
+                def open(inner, request, timeout):
+                    raise urllib.error.HTTPError(request.full_url, 302, "", {"Location": location}, None)
+            with self.subTest(location=location), patch.object(pages.urllib.request, "build_opener", return_value=Opener()), patch.object(pages.urllib.request, "urlopen") as download:
+                with self.assertRaisesRegex(ValueError, "Unsafe"):
+                    pages.download_artifact({"id": 20}, self.root / "artifact.zip")
+                download.assert_not_called()
 
     def test_download_redirect_drops_authorization(self):
         data = b'archive'

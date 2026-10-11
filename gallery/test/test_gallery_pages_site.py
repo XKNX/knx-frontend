@@ -11,6 +11,13 @@ import gallery_pages_site as site
 
 
 class SiteTests(unittest.TestCase):
+    def test_site_rejects_a_symlink_outside_its_tree(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "link").symlink_to(root.parent)
+            with self.assertRaisesRegex(ValueError, "non-regular"):
+                site.validate_site_size(root)
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)

@@ -1,10 +1,11 @@
 import { resolve } from "node:path";
 import { defineConfig, devices } from "@playwright/test";
+import { normalizeGalleryBasePath } from "../script/gallery.mjs";
 
 // CI tests the built gallery at its Pages base path; locally the dev server needs no build.
 const ci = Boolean(process.env.CI);
 const production = process.env.GALLERY_E2E_PRODUCTION === "1";
-const baseURL = `http://127.0.0.1:8092${production ? (process.env.GALLERY_BASE_PATH ?? "/") : "/"}`;
+const baseURL = `http://127.0.0.1:8092${normalizeGalleryBasePath(process.env.GALLERY_BASE_PATH ?? "/")}`;
 
 export default defineConfig({
   testDir: ".",

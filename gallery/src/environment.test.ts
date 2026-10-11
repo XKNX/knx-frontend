@@ -52,6 +52,15 @@ afterEach(async () => {
 });
 
 describe("offline environment", () => {
+  it("keeps product logging usable for cyclic arguments", async () => {
+    const { env, events } = await setup();
+    const cyclic: Record<string, unknown> = {};
+    cyclic.self = cyclic;
+    expect(() => env.knx.log.debug(cyclic)).not.toThrow();
+    expect(events[events.length - 1]).toMatchObject({ kind: "event", name: "knx.debug" });
+    expect(() => JSON.stringify(events[events.length - 1]?.args)).not.toThrow();
+  });
+
   it("serves fixture readers while translations are still initializing", async () => {
     const host = new EnvironmentHost();
     document.body.append(host);

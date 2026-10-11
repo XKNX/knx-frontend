@@ -35,8 +35,6 @@ jobs:
         run: |
           if [ -f gallery/script/gallery_pages.py ]; then
             python3 gallery/script/gallery_pages.py gate
-          elif [ -f build-scripts/gallery_pages.py ]; then
-            python3 build-scripts/gallery_pages.py gate
           else
             # Bootstrap: main has no trusted gate yet, so the PR introducing it builds like
             # ordinary PR CI. Nothing can publish it: the Pages workflow only runs from main.
@@ -66,10 +64,15 @@ jobs:
       - uses: ./.github/actions/setup
       - name: Generate Gallery check inputs
         run: SKIP_FETCH_NIGHTLY_TRANSLATIONS=1 pnpm exec gulp gen-icons-json build-translations build-locale-data
+      - name: Lint trusted publisher Python
+        run: |
+          python3 -m pip install ruff==0.16.8
+          ruff check --isolated --select E9,F63,F7,F82 gallery/script/gallery_pages*.py
       - run: pnpm gallery:policy
       - run: pnpm gallery:lint
       - run: pnpm gallery:types
       - run: pnpm gallery:unit
+      - run: pnpm gallery:integration
 
   build:
     needs: [gate, checks]
@@ -260,23 +263,4 @@ jobs:
       - name: Check gallery exclusion from wheel
         run: |
           python -m pip install build
-          python - <<'PYTHON'
-          from pathlib import Path
-          from tempfile import TemporaryDirectory
-          from zipfile import ZipFile
-          import subprocess
-          version = Path("VERSION")
-          original = version.read_bytes()
-          try:
-              version.write_text("0.0.0.dev0")
-              subprocess.run(["python", "-m", "build"], check=True)
-          finally:
-              version.write_bytes(original)
-          wheels = list(Path("dist").glob("*.whl"))
-          assert len(wheels) == 1, wheels
-          with TemporaryDirectory() as unpacked:
-              with ZipFile(wheels[0]) as wheel:
-                  wheel.extractall(unpacked)
-              subprocess.run(["node", "gallery/script/check-gallery-exclusion.mjs",
-                              "build/checks/production.json", unpacked], check=True)
-          PYTHON
+          python build-scripts/build-wheel.py --check-gallery

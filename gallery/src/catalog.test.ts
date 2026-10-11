@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { catalog } from "./catalog";
+import { componentRelationships, catalog } from "./catalog";
 import { parseOverride, resolveValues } from "./state";
 import { observe } from "./examples/helpers";
 import type { GalleryEvent } from "./types";
@@ -149,4 +149,17 @@ it("preserves the separator's documented methods, supplied ratio and height deta
     ["default", "Default"],
     ["expanded", "Expanded"],
   ]);
+});
+
+it("keeps composition links referentially valid and unique", () => {
+  const identifiers = new Set(catalog.map(({ meta }) => meta.id));
+  const links = new Set<string>();
+  for (const { from, to, kind, role } of componentRelationships) {
+    expect(identifiers.has(from)).toBe(true);
+    expect(identifiers.has(to)).toBe(true);
+    expect(from).not.toBe(to);
+    const key = JSON.stringify([from, to, kind, role]);
+    expect(links.has(key)).toBe(false);
+    links.add(key);
+  }
 });

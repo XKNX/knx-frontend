@@ -80,7 +80,7 @@ interface PreviewPane {
   frame?: HTMLIFrameElement;
   bootstrapTimer?: number;
   ready: boolean;
-  status: string;
+  status: "loading" | "ready" | "failed";
   error: string;
   height?: number;
   code: string;
@@ -402,7 +402,11 @@ export class KnxComponentGallery extends LitElement {
     this._code = "";
     for (const pane of this._panes.values()) this._stopBootstrapTimer(pane);
     this._panes.clear();
-    this._sessionId = crypto.randomUUID();
+    this._sessionId =
+      crypto.randomUUID?.() ??
+      Array.from(crypto.getRandomValues(new Uint8Array(16)), (value) =>
+        value.toString(16).padStart(2, "0"),
+      ).join("");
     this._writer = undefined;
     this._revisions.clear();
     this._overrides = {};
@@ -422,7 +426,7 @@ export class KnxComponentGallery extends LitElement {
   private _pane(key: string): PreviewPane {
     let pane = this._panes.get(key);
     if (!pane) {
-      pane = { ready: false, status: en.ui.loading, error: "", code: "" };
+      pane = { ready: false, status: "loading", error: "", code: "" };
       this._panes.set(key, pane);
     }
     return pane;
@@ -456,7 +460,7 @@ export class KnxComponentGallery extends LitElement {
           return;
         }
         pane.error = en.failed;
-        pane.status = en.ui.failed;
+        pane.status = "failed";
         this._events = appendEvent(this._events, {
           kind: "error",
           name: frame.title,
@@ -466,7 +470,6 @@ export class KnxComponentGallery extends LitElement {
         this.requestUpdate();
       }, 30_000);
     }
-    this._code = this._panes.get(this._paneKey(this._selectedDevices[0].id, false))?.code ?? "";
     if (!this._writer) this._assignWriter();
   }
   private _stopBootstrapTimer(pane: PreviewPane) {
@@ -476,7 +479,7 @@ export class KnxComponentGallery extends LitElement {
   private _assignWriter() {
     if (!this._writer) {
       const next = Array.from(this._iframes).find(
-        (frame) => this._panes.get(frame.dataset.previewKey!)?.status === en.ui.ready,
+        (frame) => this._panes.get(frame.dataset.previewKey!)?.status === "ready",
       );
       if (!next) return;
       this._writer = next;
@@ -513,7 +516,7 @@ export class KnxComponentGallery extends LitElement {
     for (const frame of this._iframes) {
       const pane = this._panes.get(frame.dataset.previewKey!);
       if ((only && only !== frame) || !pane?.ready) continue;
-      pane.status = en.ui.loading;
+      pane.status = "loading";
       const comparison = frame.dataset.pane === "comparison";
       const message: GalleryConfigureMessage = {
         channel: "knx-gallery",
@@ -607,7 +610,7 @@ export class KnxComponentGallery extends LitElement {
     } else if (message.type === "rendered" || message.type === "error") {
       this._stopBootstrapTimer(pane);
       pane.error = message.type === "error" ? message.error || en.failed : "";
-      pane.status = pane.error ? en.ui.failed : en.ui.ready;
+      pane.status = pane.error ? "failed" : "ready";
       this._applyBounds();
       if (!pane.error && this._previewState) {
         frame.contentWindow?.postMessage(
@@ -858,7 +861,8 @@ export class KnxComponentGallery extends LitElement {
     const key = this._paneKey(device.id, comparison);
     const pane = this._pane(key);
     const size = pane.frame ? this._viewportSizes.get(pane.frame) : undefined;
-    const { status, error } = pane;
+    const { error } = pane;
+    const status = en.ui[pane.status];
     const height = this._autoHeight ? pane.height : undefined;
     return html`<section
       class="preview-card"
@@ -984,6 +988,7 @@ export class KnxComponentGallery extends LitElement {
     if (!this._widthError) {
       this._width = width;
       this._selectedDevices = [{ id: "custom", width }];
+      this._code = this._panes.get(this._paneKey("custom", false))?.code ?? "";
     }
   }
   private _setTheme(ev: HaSelectSelectEvent<GalleryTheme["theme"]>) {
@@ -1146,6 +1151,7 @@ export class KnxComponentGallery extends LitElement {
           item.id === device.id ? !removing : selected.some((value) => value.id === item.id),
         )
       : [device];
+    this._code = this._panes.get(this._paneKey(this._selectedDevices[0].id, false))?.code ?? "";
     this._width = this._selectedDevices[0].width;
     this._widthDraft = String(this._width);
     this._widthError = false;
@@ -1166,13 +1172,17 @@ export class KnxComponentGallery extends LitElement {
       );
     }
   }
+  private _clearPreviewElements() {
+    const fixtures = this._previewState?.fixtures;
+    this._previewState = fixtures ? { elements: [], dialogs: [], route: "", fixtures } : undefined;
+  }
   private _overridesChanged(ev: CustomEvent<GalleryValues>) {
-    this._previewState = undefined;
+    this._clearPreviewElements();
     this._overrides = ev.detail;
     this._configure();
   }
   private _slotsChanged(ev: CustomEvent<string[]>) {
-    this._previewState = undefined;
+    this._clearPreviewElements();
     this._enabledSlots = ev.detail;
     this._configure();
   }

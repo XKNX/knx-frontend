@@ -142,6 +142,29 @@ class PreviewChangesTests(unittest.TestCase):
 
 
 class StickyCommentTests(unittest.TestCase):
+    def test_recorded_comment_with_changed_ownership_is_not_adopted(self):
+        store = SimpleNamespace(state={"comments": {"12": 7}})
+        comment = dict(id=7, body="<!-- knx-gallery-preview -->", user=dict(id=123, type="User"))
+        with patch.dict(os.environ, {"GITHUB_REPOSITORY": "owner/repo"}), patch.object(
+                pages, "github_pages", return_value=[comment]), patch.object(pages, "github_request") as api:
+            with self.assertRaisesRegex(ValueError, "owned"):
+                pages.update_status(store, {"number": 12}, None)
+            api.assert_not_called()
+
+    def test_deleted_recorded_comment_is_recreated(self):
+        store = SimpleNamespace(state={"comments": {"12": 7}})
+        pr = {"number": 12, "state": "closed", "head": {"sha": "a" * 40}}
+        def api(method, path, body=None):
+            if path.endswith("/pages"):
+                return {"html_url": "https://example.test/demo/"}
+            if method == "POST" and path.endswith("/issues/12/comments"):
+                return {"id": 8}
+            raise AssertionError((method, path))
+        with patch.dict(os.environ, {"GITHUB_REPOSITORY": "owner/repo"}), patch.object(
+                pages, "github_pages", return_value=[]), patch.object(pages, "github_request", side_effect=api):
+            pages.update_status(store, pr, None)
+        self.assertEqual(store.state["comments"]["12"], 8)
+
     def test_many_updates_reuse_one_comment_even_on_later_pages(self):
         comments = [dict(id=i, body="Human comment", user=dict(id=i, type="User"))
                     for i in range(1, 302)]

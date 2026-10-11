@@ -137,26 +137,14 @@ jobs:
           BABEL_CACHE_DIR: ${{ runner.temp }}/babel-loader
 
       - name: Set up Python
-        uses: actions/setup-python@v7.0.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: "3.x"
 
       - name: Build wheel
         run: |
           python -m pip install build
-          python - <<'PYTHON'
-          from pathlib import Path
-          import subprocess
-          version = Path("VERSION")
-          original = version.read_bytes()
-          try:
-              version.write_text("0.0.0.dev0")
-              subprocess.run(["python", "-m", "build"], check=True)
-          finally:
-              version.write_bytes(original)
-          wheels = list(Path("dist").glob("*.whl"))
-          assert len(wheels) == 1, wheels
-          PYTHON
+          python build-scripts/build-wheel.py
 
       # babel-loader writes an entry only on a cache miss, so a file's age is the time since it was
       # created. Entries older than 30 days are dropped and transpiled again on their next use.

@@ -75,7 +75,7 @@ export function createGalleryConfig({
   return config;
 }
 
-async function prepareGallery() {
+export async function prepareGallery() {
   await promisify(execFile)(
     process.execPath,
     ["node_modules/gulp/bin/gulp.js", "gen-icons-json", "build-translations", "build-locale-data"],

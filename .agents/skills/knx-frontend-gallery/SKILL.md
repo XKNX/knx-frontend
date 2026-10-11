@@ -21,6 +21,8 @@ smallest matching example:
 - [Project view](../../../gallery/src/examples/knx-project-view.ts):
   view host with explicit missing/empty project and endpoint failures.
 
+Use descriptive catalog import names. After editing an example, verify that every
+property, callback, slot and supported failure state still matches its product source.
 Use `defineExample`, register coverage in the catalog and preserve IDs/scenario URLs.
 Product code must never import Gallery code. Reuse existing fixtures/hosts and
 accepted outcomes; synchronize state without replaying services or callbacks.
@@ -30,5 +32,6 @@ include Gallery; coverage remains product-only. For focused checks, run
 `pnpm gallery:unit`, `pnpm gallery:lint` and `pnpm gallery:types` using the same
 shared configuration. Keep exact-head publication checks unconditional.
 Focus `pnpm gallery:test --workers=2 --grep ...` on affected examples and interactions. Inspect actual rendering and usage, including Compare
-when applicable. `pnpm gallery:build` verifies standalone output and thumbnails.
+when applicable. `pnpm gallery:integration` prepares inputs and checks the complete bundle separately
+from unit tests. `pnpm gallery:build` verifies standalone output and thumbnails.
 Report checks not completed or still failing; retain the full suite for publication.

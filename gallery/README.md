@@ -67,6 +67,7 @@ Read product sources and callers; demonstrate a realistic KNX task.
 ```sh
 pnpm test                    # product + Gallery units; product-only coverage
 pnpm lint                    # shared ESLint, formatting, types and Lit checks
+pnpm gallery:integration     # full isolated bundle build, prepares generated inputs
 pnpm gallery:unit            # shared Vitest config, Gallery scope; file/name filters
 pnpm gallery:policy          # standard-library Python publishing/security tests
 pnpm gallery:lint            # TS/config/tool formatting, syntax and Lit templates
@@ -129,5 +130,22 @@ Closing a PR removes its preview on the next successful deployment; **Gallery Pa
 
 PR checks use read-only permissions without secrets; publishing executes Main code
 and validates artifacts as data. Publication waits for all required checks and official
-deployment. Main and previews share an origin; approval reviews the hosted code.
-The publisher keeps its serialized queue and append-only state.
+deployment. Main and previews share an origin, including other repositories hosted on
+`xknx.github.io`. Maintainer approval trusts the hosted PR code with that origin;
+message source/session checks isolate Gallery panes but do not sandbox hosted code.
+The publisher keeps its serialized queue and append-only state. The shallow
+checkout bounds runner fetches, but historical bundles still occupy the data
+branch. History retention needs a separate policy that preserves the confirmed
+deployment and pending recovery snapshots; no automatic history rewrite occurs.
+
+## Backend translations
+
+Backend translation fixtures are generated with `pnpm gallery:translations` from
+the public Core revision pinned in `gallery/script/gallery_translations.py`,
+including all KNX config-panel keys and resolved references. Use
+`pnpm gallery:translations:check` to verify the committed copy; fetching is an
+explicit maintenance step, never part of preview runtime or normal unit tests.
+
+The extra `raw_payload_base_label` fixture is a temporary compatibility value for
+a missing Core key, tracked by the separate Core payload-label correction. It must
+be removed when that correction is available in the pinned public Core snapshot.

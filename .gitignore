@@ -68,3 +68,4 @@ pip-delete-this-directory.txt
 # Virtual Envs
 .venv
 venv
+.worktrees/

@@ -141,6 +141,32 @@ it("carries plain fixture outcomes through the same snapshot without echoing or 
   }
 });
 
+it("recaptures unchanged accepted state after a configure without authorizing peer defaults", async () => {
+  const host = new SyncHost();
+  document.body.append(host);
+  await host.updateComplete;
+  const emitted: boolean[] = [];
+  const sync = new PreviewSync(
+    host,
+    (_state, interaction) => emitted.push(interaction),
+    () => undefined,
+  );
+  try {
+    sync.capture();
+    sync.setWriter(true, 0);
+    sync.invalidate();
+    sync.capture();
+    expect(emitted).toEqual([false, true]);
+    sync.setWriter(false, 0);
+    sync.invalidate();
+    sync.capture();
+    expect(emitted).toEqual([false, true, false]);
+  } finally {
+    sync.dispose();
+    host.remove();
+  }
+});
+
 it("authorizes background outcomes only for the current producer without publishing initial defaults", async () => {
   const host = new SyncHost();
   document.body.append(host);

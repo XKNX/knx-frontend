@@ -176,7 +176,7 @@ def compose_site(published: Path, output: Path, candidate: Path | None,
 
 def empty_state(repository: str) -> dict:
     return dict(schema=1, repository=repository, published_commit=None, deployment_run=None,
-                deployment_pending=False, main=None, previews={}, comments={}, requests={})
+                deployment_pending=False, main=None, previews={}, comments={})
 
 
 def read_state(root: Path, repository: str) -> dict:
@@ -201,15 +201,19 @@ def read_state(root: Path, repository: str) -> dict:
         for field in ["run_id", "run_attempt", "artifact_id", "actor_id"]:
             if type(entry[field]) is not int or entry[field] <= 0:
                 raise ValueError("Invalid gallery provenance")
-        if entry["comment_id"] is not None and (type(entry["comment_id"]) is not int or entry["comment_id"] <= 0):
-            raise ValueError("Invalid approval comment")
+        entry.pop("comment_id", None)  # Legacy approval field; no longer used.
         if entry.get("changes") is not None:
             validate_preview_changes(entry["changes"])
-    for field in ["comments", "requests"]:
+    data.pop("requests", None)  # Legacy requests were never persisted by the native rerun flow.
+    for field in ["comments"]:
         if not isinstance(data[field], dict):
             raise ValueError("Invalid control state")
     return data
 
 
 def write_state(root: Path, state: dict) -> None:
+    state.pop("requests", None)
+    for entry in [state["main"], *state["previews"].values()]:
+        if entry is not None:
+            entry.pop("comment_id", None)
     (root / STATE).write_text(json.dumps(state, indent=2, sort_keys=True) + "\n")

@@ -24,11 +24,7 @@ export const entry = defineExample({
     return {
       render: (env, values, _slots, emit) => {
         const changed = valueChanged(emit);
-        const localize = localizeCallback(
-          env,
-          emit,
-          "component.knx.config_panel.entities.create.light.knx",
-        );
+        const localize = localizeCallback(env, emit);
         return html`<knx-sync-state-selector-row
           .key=${values.key}
           .value=${values.value as string | boolean}

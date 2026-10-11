@@ -300,6 +300,10 @@ export class PreviewSync {
     if (this.canProduce) this._author = true;
     this.schedule();
   }
+  public invalidate() {
+    this._signature = "";
+    if (this.canProduce) this._author = true;
+  }
   public get applying() {
     return this._applying;
   }
@@ -372,7 +376,6 @@ export class PreviewSync {
       subtree: true,
       childList: true,
       attributes: true,
-      characterData: true,
     });
     for (const { element } of stateElements(root)) {
       if (element.shadowRoot) {
@@ -380,7 +383,6 @@ export class PreviewSync {
           subtree: true,
           childList: true,
           attributes: true,
-          characterData: true,
         });
       }
     }

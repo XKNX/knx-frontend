@@ -79,7 +79,6 @@ export async function prepareViews(
     error_base: en.views.validationError,
     errors: [
       {
-        path: ["knx", "ga_switch", "write"],
         code: "invalid_address",
         message: en.views.validationError,
       },

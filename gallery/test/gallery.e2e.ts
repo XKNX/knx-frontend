@@ -55,6 +55,11 @@ const test = base.extend<{ checkedPage: undefined; expectedRequestFailures: Set<
   ],
 });
 
+async function openExample(page: Page, component: string, scenario = "default") {
+  await page.goto(`./?${new URLSearchParams({ component, scenario })}`);
+  await expect(page.getByRole("status")).toHaveText("Preview ready");
+}
+
 for (const [source, path] of [
   ["document", /\/preview\.html(?:\?|$)/],
   ["script", /\/preview\.[^/]+\.js(?:\?|$)/],
@@ -90,8 +95,7 @@ test("preview bootstrap timeout allows a late ready without resetting healthy Co
   page,
 }) => {
   await page.clock.install();
-  await page.goto("./?component=knx-single-address-selector&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-single-address-selector", "default");
   let release!: () => void;
   const held = new Promise<void>((resolve) => {
     release = resolve;
@@ -170,8 +174,7 @@ test("preview bootstrap timers cannot fail a replacement session", async ({ page
 
 test("preview bootstrap timers stop when a loading Compare pane is removed", async ({ page }) => {
   await page.clock.install();
-  await page.goto("./?component=knx-single-address-selector&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-single-address-selector", "default");
   await page.route(/\/preview\.html\?.*pane=comparison/, (route) =>
     route.fulfill({
       contentType: "text/html",
@@ -221,8 +224,7 @@ test("preview bootstrap timers stop on disconnect and reconnected Gallery can lo
 });
 
 test("dashboard loads light and dark brands from the placeholder-enabled CDN", async ({ page }) => {
-  await page.goto("./?component=knx-dashboard&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-dashboard", "default");
   await page.getByRole("button", { name: /^Compare/ }).click();
   const light = page.frameLocator('iframe[data-pane="primary"]').locator("img.logo");
   const dark = page.frameLocator('iframe[data-pane="comparison"]').locator("img.logo");
@@ -794,8 +796,7 @@ test("canvas panning preserves focused controls and alignment actions", async ({
 });
 
 test("canvas panning preserves Space selection in HA radio controls", async ({ page }) => {
-  await page.goto("./?component=knx-dpt-option-selector&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-dpt-option-selector", "default");
   await page.getByRole("textbox", { name: "Value", exact: true }).fill("");
   const radio = page.frameLocator("iframe").getByRole("radio", { name: /DPT 1\.001/ });
   await expect(radio).not.toBeChecked();
@@ -813,8 +814,7 @@ test("canvas panning preserves Space selection in HA radio controls", async ({ p
 });
 
 test("canvas panning leaves preview and background wheel scrolling native", async ({ page }) => {
-  await page.goto("./?component=knx-separator&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-separator", "default");
   await page.getByRole("spinbutton", { name: "Height (px)", exact: true }).fill("2000");
   await page.getByRole("button", { name: /^Compare/ }).click();
   await page.getByRole("button", { name: "100%", exact: true }).click();
@@ -946,8 +946,7 @@ test("project links open separately and Escape keeps the mobile catalog open", a
   page,
   context,
 }) => {
-  await page.goto("./?component=knx-tabs-subpage-data&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-tabs-subpage-data", "default");
   const frame = page.locator("iframe");
   const session = await frame.getAttribute("src");
   const trigger = page.getByRole("button", { name: "Project links", exact: true });
@@ -995,8 +994,7 @@ test("catalog shows both names and relationship links navigate in both direction
   page,
 }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-tabs-subpage-data&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-tabs-subpage-data", "default");
   const catalogLink = page
     .getByRole("navigation", { name: "Catalog" })
     .getByRole("link", { name: "Tabs subpage data knx-tabs-subpage-data", exact: true });
@@ -1048,8 +1046,7 @@ test(
 );
 
 test("scenario tabs navigate directly without moving the canvas", async ({ page }) => {
-  await page.goto("./?component=knx-tabs-subpage-data&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-tabs-subpage-data", "default");
   const tabs = page.locator("#scenario-tabs");
   await expect(tabs.getByRole("tab")).toHaveText(["Default", "Filters", "Minimal"]);
   await expect(page.locator("#gallery-scenario")).toBeHidden();
@@ -1096,8 +1093,7 @@ test("scenario tabs scroll, retain the route on resize and use a mobile picker",
   page,
 }) => {
   await page.setViewportSize({ width: 800, height: 900 });
-  await page.goto("./?component=knx-frontend&scenario=route-expose-create");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-frontend", "route-expose-create");
   const tabs = page.locator("#scenario-tabs");
   const last = tabs.getByRole("tab", { name: "Create exposure", exact: true });
   await expect(last).toHaveAttribute("aria-selected", "true");
@@ -1129,8 +1125,7 @@ test("scenario tabs scroll, retain the route on resize and use a mobile picker",
     "aria-selected",
     "true",
   );
-  await page.goto("./?component=knx-tabs-subpage-data-toolbar&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-tabs-subpage-data-toolbar", "default");
   await expect(page.locator(".single-scenario")).toHaveText("Scenario: Default");
   await expect(page.locator("#scenario-tabs")).toHaveCount(0);
   await expect(page.locator("#gallery-scenario")).toHaveCount(0);
@@ -1140,8 +1135,7 @@ test("canvas Light, Dark and Compare share one selection without changing the ap
   page,
 }) => {
   await page.emulateMedia({ colorScheme: "light" });
-  await page.goto("./?component=knx-separator&scenario=expanded");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-separator", "expanded");
   const modes = page.getByRole("group", { name: /^Preview mode/ });
   await expect(modes.getByRole("button")).toHaveCount(3);
   const preview = page.frameLocator('iframe[data-pane="primary"]').locator("knx-gallery-preview");
@@ -1181,8 +1175,7 @@ test("auto height follows content in both previews without changing width or ses
   page,
 }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-separator&scenario=expanded");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-separator", "expanded");
   const auto = page.getByRole("button", { name: /^Auto height/ });
   await expect(auto).toBeVisible();
   const frame = page.locator('iframe[data-pane="primary"]');
@@ -1209,8 +1202,7 @@ test("auto height follows content in both previews without changing width or ses
 
 test("auto height preserves values edited inside the preview", async ({ page }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-group-address-selector&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-group-address-selector", "default");
   const address = page.frameLocator("iframe").locator("knx-single-address-selector input").first();
   await address.fill("2/0/3");
   await address.press("Tab");
@@ -1233,8 +1225,7 @@ test("auto height fits tabs subpage data content and gives its filter dialog roo
   page,
 }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-tabs-subpage-data&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-tabs-subpage-data", "default");
   await page.getByRole("button", { name: /^Auto height/ }).click();
   const frame = page.locator("iframe");
   const preview = page.frameLocator("iframe");
@@ -1256,8 +1247,7 @@ test("auto height fits tabs subpage data content and gives its filter dialog roo
 
 test("auto height stays available across components, full views and dialogs", async ({ page }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=flex-content-expansion-panel&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "flex-content-expansion-panel", "default");
   const auto = page.getByRole("button", { name: /^Auto height/ });
   await auto.click();
   const frame = page.locator("iframe");
@@ -1273,8 +1263,7 @@ test("auto height stays available across components, full views and dialogs", as
     "",
   );
   await expect.poll(async () => (await frame.boundingBox())!.height).toBeGreaterThan(240);
-  await page.goto("./?component=knx-send-dialog&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-send-dialog", "default");
   await expect(auto).toBeEnabled();
   await auto.click();
   await expect.poll(async () => (await frame.boundingBox())!.height).toBeLessThan(100);
@@ -1289,8 +1278,7 @@ test("auto height stays available across components, full views and dialogs", as
 });
 
 test("event log retains its height when events and expanded payloads arrive", async ({ page }) => {
-  await page.goto("./?component=knx-separator&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-separator", "default");
   const dock = page.locator("knx-gallery-event-log");
   await dock.locator(".console-heading").click();
   const before = await dock.boundingBox();
@@ -1350,8 +1338,7 @@ test("event log retains its height when events and expanded payloads arrive", as
 });
 
 test("workspace keeps scenarios, controls, API and live events within reach", async ({ page }) => {
-  await page.goto("./?component=knx-separator&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-separator", "default");
   const session = await page.locator("iframe").getAttribute("src");
   const field = page.getByRole("spinbutton", { name: "Height (px)", exact: true });
   await field.fill("35");
@@ -1394,8 +1381,7 @@ test("workspace keeps scenarios, controls, API and live events within reach", as
 test("unified inspector keeps API context through invalid drafts and scenario resets", async ({
   page,
 }) => {
-  await page.goto("./?component=knx-separator&scenario=expanded");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-separator", "expanded");
   const editor = page.locator("knx-gallery-controls");
   const field = editor.getByRole("spinbutton", { name: "Height (px)", exact: true });
   const property = editor
@@ -1442,8 +1428,7 @@ test("unified inspector keeps API context through invalid drafts and scenario re
 test("inspector keeps callback switches documented separately from supplied callbacks", async ({
   page,
 }) => {
-  await page.goto("./?component=knx-tabs-subpage-data&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-tabs-subpage-data", "default");
   const editor = page.locator("knx-gallery-controls");
   const control = editor.getByRole("group", { name: "Custom localize", exact: true });
   await expect(control.locator(".control-description")).toHaveText(
@@ -1461,8 +1446,7 @@ test("inspector keeps callback switches documented separately from supplied call
 test("inspector search reveals matching details and filters interfaces without losing drafts", async ({
   page,
 }) => {
-  await page.goto("./?component=knx-separator&scenario=expanded");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-separator", "expanded");
   const editor = page.locator("knx-gallery-controls");
   const search = editor.getByRole("searchbox", { name: "Search properties or functions" });
   const height = editor.getByRole("spinbutton", { name: "Height (px)", exact: true });
@@ -1528,8 +1512,7 @@ for (const viewport of [
 
 test("mobile inspector opens on demand and retains editor drafts", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("./?component=knx-separator&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-separator", "default");
   const field = page.getByRole("spinbutton", { name: "Height (px)", exact: true });
   await expect(field).toBeHidden();
   await page.getByRole("button", { name: "Open inspector", exact: true }).press("Enter");
@@ -1615,8 +1598,7 @@ test("playground lifecycle keeps property updates local and replaces resets", as
 
 test("viewport, theme and dialog history belong to the preview", async ({ page }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-separator&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-separator", "default");
   const frame = page.frameLocator("iframe").locator("html");
   const readViewport = () =>
     page
@@ -1724,8 +1706,7 @@ test("viewport, theme and dialog history belong to the preview", async ({ page }
 test("late messages cannot change a reset session; the log is bounded and clearable", async ({
   page,
 }) => {
-  await page.goto("./?component=knx-separator&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-separator", "default");
   const previous = await page.locator("iframe").getAttribute("src");
   await page.getByRole("button", { name: "Reset scenario", exact: true }).click();
   await expect(page.locator("iframe")).not.toHaveAttribute("src", previous!);
@@ -1838,8 +1819,7 @@ base(
 );
 
 test("a failing product update is visible and reset recovers", async ({ page }) => {
-  await page.goto("./?component=knx-separator&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-separator", "default");
   const frame = page.frames().find((item) => item.url().includes("preview.html"))!;
   await frame.evaluate(() => {
     // Fault injection into the actual product component; no permanent fake examples.
@@ -1881,8 +1861,7 @@ test("catalog routing and controls remain keyboard accessible", async ({ page })
 });
 
 test("catalog categories combine with search without resetting the preview", async ({ page }) => {
-  await page.goto("./?component=knx-separator&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-separator", "default");
   const nav = page.getByRole("navigation", { name: "Catalog" });
   const links = nav.locator(".catalog-list").getByRole("link");
   const search = nav.getByRole("searchbox", { name: "Search title or tag" });
@@ -1943,8 +1922,7 @@ test("device presets and color buttons switch quickly without resetting the prev
   page,
 }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-separator&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-separator", "default");
   const session = await page.locator("iframe").getAttribute("src");
   for (const [name, width] of [
     ["Phone", 390],
@@ -2024,8 +2002,7 @@ test("canvas comparison shares controls, preserves sessions and keeps real viewp
   page,
 }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-separator&scenario=expanded");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-separator", "expanded");
   const original = await page.locator("iframe").getAttribute("src");
   await page.getByRole("button", { name: /^Compare/ }).click();
   await expect(page.locator("iframe")).toHaveCount(2);
@@ -2074,8 +2051,7 @@ test("canvas comparison shares controls, preserves sessions and keeps real viewp
   await expect(page.locator("iframe")).toHaveAttribute("src", original!);
   await expect(light.locator("knx-separator")).toHaveAttribute("height", "35");
   await page.setViewportSize({ width: 1600, height: 1000 });
-  await page.goto("./?component=knx-dashboard&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-dashboard", "default");
   await page.getByRole("button", { name: /^Compare/ }).click();
   await expect(page.getByRole("status").nth(1)).toHaveText("Preview ready");
   await page.screenshot({
@@ -2091,8 +2067,7 @@ test("canvas comparison shares controls, preserves sessions and keeps real viewp
 });
 
 test("comparison reports an empty error only on the failing side", async ({ page }) => {
-  await page.goto("./?component=knx-separator&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-separator", "default");
   await page.getByRole("button", { name: /^Compare/ }).click();
   await expect(page.getByRole("status").nth(1)).toHaveText("Preview ready");
   await page
@@ -2121,8 +2096,7 @@ test("comparison mirrors dialogs but records automation only in its originating 
   page,
 }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-group-monitor-telegram-info-dialog&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-group-monitor-telegram-info-dialog", "default");
   await page.getByRole("button", { name: /^Compare/ }).click();
   const light = page.frameLocator('iframe[data-pane="primary"]');
   const dark = page.frameLocator('iframe[data-pane="comparison"]');
@@ -2333,8 +2307,7 @@ test("inspector edits the real payload raw option, usage code and scenario reset
   page,
 }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-payload-selector&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-payload-selector", "default");
   const editor = page.locator("knx-gallery-controls");
   const option = editor.getByRole("group", { name: "Raw", exact: true });
   const raw = option.getByRole("switch", { name: "Raw", exact: true });
@@ -2397,8 +2370,7 @@ test("payload fixture edits converge in compare while unrelated controls preserv
   page,
 }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-payload-selector&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-payload-selector", "default");
   await page.getByRole("button", { name: /^Compare/ }).click();
   const light = page.frameLocator('iframe[data-pane="primary"]').locator("knx-payload-selector");
   const dark = page.frameLocator('iframe[data-pane="comparison"]').locator("knx-payload-selector");
@@ -2445,8 +2417,7 @@ test("payload fixture edits converge in compare while unrelated controls preserv
 test("payload external length updates reactively without remounting the raw editor", async ({
   page,
 }) => {
-  await page.goto("./?component=knx-payload-selector&scenario=no-dpt");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-payload-selector", "no-dpt");
   const payload = page.frameLocator("iframe").locator("knx-payload-selector");
   const editor = page.locator("knx-gallery-controls");
   await payload.evaluate((element) => element.setAttribute("data-instance", "preserved"));
@@ -2464,8 +2435,7 @@ test("inspector rejects malformed form config and preserves subsequent address e
   page,
 }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-form&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-form", "default");
   const editor = page.locator("knx-gallery-controls");
   const config = editor.getByRole("textbox", { name: "Config", exact: true });
   const form = page.frameLocator("iframe").locator("knx-form");
@@ -2587,13 +2557,11 @@ for (const { meta } of catalog.filter((entry) => entry.meta.category === "compon
 }
 
 test("components public actions and controlled selections work", async ({ page }) => {
-  await page.goto("./?component=knx-device-picker&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-device-picker", "default");
   const preview = page.frameLocator("iframe");
   await preview.getByRole("button", { name: "Open picker", exact: true }).click();
   await expect(preview.locator("ha-generic-picker input")).toBeVisible();
-  await page.goto("./?component=knx-project-devices-view&scenario=unfiltered");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-project-devices-view", "unfiltered");
   await preview.getByRole("button", { name: "Expand all", exact: true }).click();
   await expect(preview.locator("knx-sticky-expansion-panel").first()).toHaveAttribute(
     "expanded",
@@ -2604,8 +2572,7 @@ test("components public actions and controlled selections work", async ({ page }
     "expanded",
     "",
   );
-  await page.goto("./?component=knx-select-options-list&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-select-options-list", "default");
   const options = preview.locator("knx-select-options-list .option-header");
   await expect(options).toHaveCount(1);
   await preview.getByRole("button", { name: "Add option", exact: true }).click();
@@ -2616,8 +2583,7 @@ test("components public actions and controlled selections work", async ({ page }
 });
 
 test("components template subscription produces a local result", async ({ page }) => {
-  await page.goto("./?component=knx-expose-template-preview&scenario=template");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-expose-template-preview", "template");
   await expect(page.frameLocator("iframe").locator("knx-expose-template-preview")).toContainText(
     "21.5",
   );
@@ -2625,8 +2591,7 @@ test("components template subscription produces a local result", async ({ page }
 });
 
 test("components slot examples start with useful content and can disable it", async ({ page }) => {
-  await page.goto("./?component=knx-tabs-subpage-data&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-tabs-subpage-data", "default");
   const content = page.frameLocator("iframe").locator("knx-tabs-subpage-data > div:not([slot])");
   await expect(content).toBeVisible();
   await setChecked(page.getByRole("checkbox", { name: "Default", exact: true }), false);
@@ -2636,8 +2601,7 @@ test("components slot examples start with useful content and can disable it", as
 test("components tabs subpage data clear action updates its public filter state", async ({
   page,
 }) => {
-  await page.goto("./?component=knx-tabs-subpage-data&scenario=filters");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-tabs-subpage-data", "filters");
   const preview = page.frameLocator("iframe");
   await preview.getByRole("button", { name: "Clear filter", exact: true }).click();
   await expect
@@ -2652,8 +2616,7 @@ test("components tabs subpage data clear action updates its public filter state"
 test("components review tabs subpage data localizes its title and observes sample actions", async ({
   page,
 }) => {
-  await page.goto("./?component=knx-tabs-subpage-data&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-tabs-subpage-data", "default");
   await page.getByRole("button", { name: /^Desktop · 1280/ }).click();
   await setChecked(page.getByRole("switch", { name: "Custom localize", exact: true }), true);
   const preview = page.frameLocator("iframe");
@@ -2672,8 +2635,7 @@ test("components review tabs subpage data localizes its title and observes sampl
 test("components review time range selection and clear update the public range", async ({
   page,
 }) => {
-  await page.goto("./?component=knx-time-range-filter&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-time-range-filter", "default");
   await page.getByRole("button", { name: /^Desktop · 1280/ }).click();
   const preview = page.frameLocator("iframe");
   const filter = preview.locator("knx-time-range-filter");
@@ -2710,8 +2672,7 @@ test("components review time range selection and clear update the public range",
 });
 
 test("components review standalone sort item toggles twice", async ({ page }) => {
-  await page.goto("./?component=knx-sort-menu-item&scenario=mobile");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-sort-menu-item", "mobile");
   const preview = page.frameLocator("iframe");
   const item = preview.locator("knx-sort-menu-item");
   await setChecked(page.getByRole("switch", { name: "Active", exact: true }), false);
@@ -2786,8 +2747,7 @@ for (const tag of dialogTags) {
 }
 
 test("dialogs send real address and payload exactly once", async ({ page }) => {
-  await page.goto("./?component=knx-send-dialog&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-send-dialog", "default");
   const preview = page.frameLocator("iframe");
   await openAnimatedDialog(preview);
   const dialog = preview.locator("knx-send-dialog");
@@ -2861,8 +2821,7 @@ for (const [tag, value] of [
 }
 
 test("dialogs callback rejection remains rejected and observable", async ({ page }) => {
-  await page.goto("./?component=knx-dpt-select-dialog&scenario=callback-reject");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-dpt-select-dialog", "callback-reject");
   const preview = page.frameLocator("iframe");
   await preview.getByRole("button", { name: "Open dialog", exact: true }).click();
   const dialog = preview.locator("knx-dpt-select-dialog");
@@ -2896,8 +2855,7 @@ test("dialogs callback rejection remains rejected and observable", async ({ page
 test("dialogs non-bubbling selection Event keeps detail and normal send behavior", async ({
   page,
 }) => {
-  await page.goto("./?component=knx-send-dialog&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-send-dialog", "default");
   const preview = page.frameLocator("iframe");
   await openAnimatedDialog(preview);
   const dialog = preview.locator("knx-send-dialog");
@@ -2935,8 +2893,7 @@ test("dialogs non-bubbling selection Event keeps detail and normal send behavior
 });
 
 test("dialogs device validates empty name and returns created device", async ({ page }) => {
-  await page.goto("./?component=knx-device-create-dialog&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-device-create-dialog", "default");
   const preview = page.frameLocator("iframe");
   const open = preview.getByRole("button", { name: "Open dialog", exact: true });
   await open.click();
@@ -3035,8 +2992,7 @@ for (const scenario of ["default", "validation-error"]) {
 }
 
 test("dialogs telegram navigation uses deterministic rows", async ({ page }) => {
-  await page.goto("./?component=knx-group-monitor-telegram-info-dialog&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-group-monitor-telegram-info-dialog", "default");
   const preview = page.frameLocator("iframe");
   await preview.getByRole("button", { name: "Open dialog", exact: true }).click();
   const dialog = preview.locator("knx-group-monitor-telegram-info-dialog");
@@ -3066,8 +3022,7 @@ for (const tag of ["knx-dpt-select-dialog", "knx-ga-select-dialog"]) {
 test("dialogs automation action records real config without parent navigation", async ({
   page,
 }) => {
-  await page.goto("./?component=knx-group-monitor-telegram-info-dialog&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-group-monitor-telegram-info-dialog", "default");
   const url = page.url();
   const preview = page.frameLocator("iframe");
   await preview.getByRole("button", { name: "Open dialog", exact: true }).click();
@@ -3086,8 +3041,7 @@ test("dialogs automation action records real config without parent navigation", 
 });
 
 test("dialogs host bridge rejects events from replaced iframe realms", async ({ page }) => {
-  await page.goto("./?component=knx-group-monitor-telegram-info-dialog&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-group-monitor-telegram-info-dialog", "default");
   const frame = page.frames().find((item) => item.url().includes("preview.html"))!;
   await frame.evaluate(() => {
     Object.assign(window.parent, {
@@ -3132,16 +3086,14 @@ test("dialogs host bridge restores only the descriptor it owns", async ({ page }
       Object.defineProperty(window, "customPanel", { configurable: true, value: "previous owner" });
     }
   });
-  await page.goto("./?component=knx-send-dialog&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-send-dialog", "default");
   expect(
     await page.evaluate(() => {
       document.querySelector("knx-component-gallery")!.remove();
       return (window as Window & { customPanel?: unknown }).customPanel;
     }),
   ).toBe("previous owner");
-  await page.goto("./?component=knx-send-dialog&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-send-dialog", "default");
   expect(
     await page.evaluate(() => {
       Object.defineProperty(window, "customPanel", { configurable: true, value: "next owner" });
@@ -3240,8 +3192,7 @@ for (const { meta } of catalog.filter((entry) => entry.meta.category === "views"
 }
 
 test("views monitor streams, pauses and resumes real rows", async ({ page }) => {
-  await page.goto("./?component=knx-group-monitor&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-group-monitor", "default");
   await page.getByRole("button", { name: /^Desktop · 1280/ }).click();
   const preview = page.frameLocator("iframe");
   const rows = preview.getByRole("row");
@@ -3315,8 +3266,7 @@ for (const tag of ["knx-create-entity", "knx-create-expose"]) {
 test("views default editor resolves the KNX device identifier to its selection", async ({
   page,
 }) => {
-  await page.goto("./?component=knx-create-entity&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-create-entity", "default");
   const picker = page.frameLocator("iframe").locator("knx-device-picker");
   await expect(picker).toHaveJSProperty("value", "1.1.1");
   await expect(picker.locator("ha-generic-picker")).toHaveJSProperty("value", "gallery-actuator");
@@ -3368,8 +3318,7 @@ for (const platform of ["light", "sensor"]) {
 }
 
 test("views integration navigates real routers without changing catalog URL", async ({ page }) => {
-  await page.goto("./?component=knx-frontend&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-frontend", "default");
   const outerUrl = page.url();
   const preview = page.frameLocator("iframe");
   await preview.locator('a[href="/knx/entities"]').click();
@@ -3396,8 +3345,7 @@ test.describe("with a German browser locale", () => {
 });
 
 test("views project automation and device view use real actions", async ({ page }) => {
-  await page.goto("./?component=knx-project-view&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-project-view", "default");
   const outerUrl = page.url();
   const preview = page.frameLocator("iframe");
   await page.getByRole("button", { name: /^Desktop · 1280/ }).click();
@@ -3426,8 +3374,7 @@ test("views project automation and device view use real actions", async ({ page 
 });
 
 test("views info removes the local project after confirmation", async ({ page }) => {
-  await page.goto("./?component=knx-info&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-info", "default");
   const preview = page.frameLocator("iframe");
   await preview.getByRole("button", { name: "Delete project data", exact: true }).click();
   await preview.getByRole("button", { name: "OK", exact: true }).click();
@@ -3436,8 +3383,7 @@ test("views info removes the local project after confirmation", async ({ page })
 });
 
 test("views entity creation and project drag context reach the real form", async ({ page }) => {
-  await page.goto("./?component=knx-create-entity&scenario=create");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-create-entity", "create");
   const url = page.url();
   await page.getByRole("button", { name: /^Desktop · 1280/ }).click();
   const preview = page.frameLocator("iframe");
@@ -3460,8 +3406,7 @@ test("views entity creation and project drag context reach the real form", async
 });
 
 test("views replacement playground preserves tabs subpage data slots", async ({ page }) => {
-  await page.goto("./?component=knx-tabs-subpage-data&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-tabs-subpage-data", "default");
   await page.getByRole("button", { name: /^Desktop · 1280/ }).click();
   const preview = page.frameLocator("iframe");
   const view = preview.locator("knx-tabs-subpage-data");
@@ -3522,8 +3467,7 @@ test("views router aliases are searchable in the catalog", async ({ page }) => {
 test("components expansion icon samples leave room for a long heading at 390 pixels", async ({
   page,
 }) => {
-  await page.goto("./?component=flex-content-expansion-panel&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "flex-content-expansion-panel", "default");
   await page
     .getByRole("textbox", { name: "Header", exact: true })
     .fill(
@@ -3537,8 +3481,7 @@ test("components expansion icon samples leave room for a long heading at 390 pix
 test("compare mirrors tabs subpage data filters and local input in both directions", async ({
   page,
 }) => {
-  await page.goto("./?component=knx-tabs-subpage-data&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-tabs-subpage-data", "default");
   await page.getByRole("button", { name: /^Desktop · 1280/ }).click();
   const light = page.frameLocator('iframe[data-pane="primary"]');
   await light.locator("ha-input-search input").fill("before compare");
@@ -3562,8 +3505,7 @@ test("compare mirrors tabs subpage data filters and local input in both directio
 });
 
 test("compare derives active filter chips from accepted filter state", async ({ page }) => {
-  await page.goto("./?component=knx-tabs-subpage-data&scenario=filters");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-tabs-subpage-data", "filters");
   await page.getByRole("button", { name: /^Desktop · 1280/ }).click();
   await page.getByRole("button", { name: /^Compare/ }).click();
   const light = page.frameLocator('iframe[data-pane="primary"]');
@@ -3610,8 +3552,7 @@ test("compare derives active filter chips from accepted filter state", async ({ 
 test("compare mirrors list search, selection and expansion without echo events", async ({
   page,
 }) => {
-  await page.goto("./?component=knx-list-filter&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-list-filter", "default");
   await page.getByRole("button", { name: /^Compare/ }).click();
   const light = page.frameLocator('iframe[data-pane="primary"]');
   const dark = page.frameLocator('iframe[data-pane="comparison"]');
@@ -3637,8 +3578,7 @@ test("compare mirrors list search, selection and expansion without echo events",
 
 test("compare mirrors dialog opening, edits and closing", async ({ page }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-send-dialog&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-send-dialog", "default");
   await page.getByRole("button", { name: /^Compare/ }).click();
   const light = page.frameLocator('iframe[data-pane="primary"]');
   const dark = page.frameLocator('iframe[data-pane="comparison"]');
@@ -3706,8 +3646,7 @@ for (const width of [1800, 390]) {
 }
 
 test("compare mirrors nested selector dialogs with local callbacks", async ({ page }) => {
-  await page.goto("./?component=knx-dpt-dialog-selector&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-dpt-dialog-selector", "default");
   await page.getByRole("button", { name: /^Compare/ }).click();
   const light = page.frameLocator('iframe[data-pane="primary"]');
   const dark = page.frameLocator('iframe[data-pane="comparison"]');
@@ -3723,8 +3662,7 @@ test("multi-device compare converges nested dialog selection with callback local
   page,
 }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-dpt-select-dialog&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-dpt-select-dialog", "default");
   await page.getByRole("button", { name: /^Desktop · 1280/ }).click({ modifiers: ["Meta"] });
   await page.getByRole("button", { name: /^Compare/ }).click();
   await expect(page.locator("iframe")).toHaveCount(4);
@@ -3758,8 +3696,7 @@ test("multi-device compare mirrors router-mounted editor state and keeps save AP
   page,
 }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-frontend&scenario=route-entities");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-frontend", "route-entities");
   await page.getByRole("button", { name: /^Desktop · 1280/ }).click({ modifiers: ["Meta"] });
   await page.getByRole("button", { name: /^Compare/ }).click();
   const source = page.frameLocator('iframe[data-device="desktop"][data-pane="comparison"]');
@@ -3827,8 +3764,7 @@ test("multi-device compare mirrors router-mounted editor state and keeps save AP
 });
 
 test("compare rejected entity save preserves drafts and reset defaults", async ({ page }) => {
-  await page.goto("./?component=knx-create-entity&scenario=validation-error");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-create-entity", "validation-error");
   await page.getByRole("button", { name: /^Desktop · 1280/ }).click();
   await page.getByRole("button", { name: /^Compare/ }).click();
   const source = page.frameLocator('iframe[data-pane="primary"]');
@@ -3857,8 +3793,7 @@ test("compare rejected entity save preserves drafts and reset defaults", async (
 
 test("multi-device compare reset discards a pending editor save", async ({ page }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-create-entity&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-create-entity", "default");
   await page.getByRole("button", { name: /^Desktop · 1280/ }).click({ modifiers: ["Meta"] });
   await page.getByRole("button", { name: /^Compare/ }).click();
   const source = page.frameLocator('iframe[data-device="desktop"][data-pane="comparison"]');
@@ -3899,8 +3834,7 @@ test("multi-device compare reset discards a pending editor save", async ({ page 
 });
 
 test("compare mirrors sort menus and direction", async ({ page }) => {
-  await page.goto("./?component=knx-sort-menu&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-sort-menu", "default");
   await page.getByRole("button", { name: /^Compare/ }).click();
   const light = page.frameLocator('iframe[data-pane="primary"]');
   const dark = page.frameLocator('iframe[data-pane="comparison"]');
@@ -3915,8 +3849,7 @@ test("compare mirrors sort menus and direction", async ({ page }) => {
 });
 
 test("compare mirrors telegram navigation while retaining local row objects", async ({ page }) => {
-  await page.goto("./?component=knx-group-monitor-telegram-info-dialog&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-group-monitor-telegram-info-dialog", "default");
   await page.getByRole("button", { name: /^Compare/ }).click();
   const light = page.frameLocator('iframe[data-pane="primary"]');
   const dark = page.frameLocator('iframe[data-pane="comparison"]');
@@ -3928,8 +3861,7 @@ test("compare mirrors telegram navigation while retaining local row objects", as
 });
 
 test("compare converges after simultaneous edits from both panes", async ({ page }) => {
-  await page.goto("./?component=knx-list-filter&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-list-filter", "default");
   await page.getByRole("button", { name: /^Compare/ }).click();
   const light = page.frameLocator('iframe[data-pane="primary"]').locator("ha-input-search input");
   const dark = page.frameLocator('iframe[data-pane="comparison"]').locator("ha-input-search input");
@@ -3942,8 +3874,7 @@ test("compare converges after simultaneous edits from both panes", async ({ page
 });
 
 test("compare mirrors table settings and theme preserves edited input", async ({ page }) => {
-  await page.goto("./?component=knx-entities-view&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-entities-view", "default");
   await page.getByRole("button", { name: /^Compare/ }).click();
   const light = page.frameLocator('iframe[data-pane="primary"]');
   const dark = page.frameLocator('iframe[data-pane="comparison"]');
@@ -3954,8 +3885,7 @@ test("compare mirrors table settings and theme preserves edited input", async ({
     .getByRole("button", { name: "Close", exact: true })
     .click();
   await expect(light.locator("dialog-data-table-settings").getByRole("dialog")).toBeHidden();
-  await page.goto("./?component=knx-single-address-selector&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-single-address-selector", "default");
   const input = page.frameLocator("iframe").locator("knx-single-address-selector input");
   await input.fill("1/2/30");
   await page.getByRole("button", { name: "Preview options", exact: true }).click();
@@ -3966,8 +3896,7 @@ test("compare mirrors table settings and theme preserves edited input", async ({
 
 test("usage code follows properties and slots and highlights HTML", async ({ page }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-tabs-subpage-data&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-tabs-subpage-data", "default");
   await page.locator('[data-view="split"]').click();
   const code = page.locator(".code-panel code");
   await expect(code.locator(".syntax-tag").first()).toBeVisible();
@@ -3987,8 +3916,7 @@ test("usage code follows properties and slots and highlights HTML", async ({ pag
 });
 
 test("rapid typing remains intact in preview and compare", async ({ page }) => {
-  await page.goto("./?component=knx-list-filter&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-list-filter", "default");
   const light = page.frameLocator('iframe[data-pane="primary"]').locator("ha-input-search input");
   const text = "abcdefghijklmnopqrstuvwxyz0123456789";
   await light.pressSequentially(text, { delay: 3 });
@@ -4004,8 +3932,7 @@ test("rapid typing remains intact in preview and compare", async ({ page }) => {
 
 test("inspector toggle frees the canvas and preserves drafts and preview", async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
-  await page.goto("./?component=knx-separator&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-separator", "default");
   const toggle = page.locator("#inspector-toggle");
   const inspector = page.locator(".inspector");
   const field = inspector.getByRole("spinbutton", { name: "Height (px)", exact: true });
@@ -4146,50 +4073,6 @@ test("overview loads every generated thumbnail in both themes", async ({ page })
   await expect(page.locator("iframe")).toHaveCount(0);
 });
 
-test("static overview benchmark reports initial load and nearby return", async ({ page }) => {
-  test.setTimeout(120_000);
-  const samples: { initialMs: number; returnMs: number; reused: boolean; frames: number }[] = [];
-  for (let run = 0; run < 3; run++) {
-    const start = performance.now();
-    await page.goto("./");
-    const cards = page.locator(".overview-card");
-    await expect(cards).toHaveCount(catalog.length);
-    const visible = await cards.evaluateAll((elements) =>
-      elements.flatMap((element, index) => {
-        const rect = element.getBoundingClientRect();
-        return rect.top < innerHeight && rect.bottom > 0 ? [index] : [];
-      }),
-    );
-    await Promise.all(
-      visible.map((index) =>
-        expect(cards.nth(index).locator('[data-state="ready"]')).toBeVisible({ timeout: 30_000 }),
-      ),
-    );
-    const initialMs = Math.round(performance.now() - start);
-    const first = cards.first();
-    const source = await first.locator("img").getAttribute("src");
-    await page.locator(".overview").evaluate((element) => {
-      element.scrollTop = 480;
-    });
-    await expect(cards.nth(9).locator('[data-state="ready"]')).toBeVisible({ timeout: 30_000 });
-    const back = performance.now();
-    await page.locator(".overview").evaluate((element) => {
-      element.scrollTop = 0;
-    });
-    await expect(first.locator('[data-state="ready"]')).toBeVisible({ timeout: 30_000 });
-    samples.push({
-      initialMs,
-      returnMs: Math.round(performance.now() - back),
-      reused: source === (await first.locator("img").getAttribute("src")),
-      frames: await page.locator("iframe").count(),
-    });
-  }
-  await test.info().attach("static-preview-benchmark", {
-    body: JSON.stringify(samples, null, 2),
-    contentType: "application/json",
-  });
-});
-
 test("overview navigation reveals the active catalog entry below its sticky heading", async ({
   page,
 }) => {
@@ -4327,8 +4210,7 @@ test("toolbar stays on one line across available widths without replacing the pr
   page,
 }) => {
   await page.setViewportSize({ width: 2560, height: 1100 });
-  await page.goto("./?component=knx-tabs-subpage-data&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-tabs-subpage-data", "default");
   const toolbar = page.locator(".canvas-toolbar");
   const frame = page.locator('iframe[data-pane="primary"]');
   const session = await frame.getAttribute("src");
@@ -4363,8 +4245,7 @@ test("compact toolbar options and dropdowns share their state with the full tool
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto("./?component=knx-tabs-subpage-data&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-tabs-subpage-data", "default");
   const toolbar = page.locator(".canvas-toolbar");
   const session = await page.locator('iframe[data-pane="primary"]').getAttribute("src");
   await expect(toolbar.locator("#preview-width")).toBeHidden();
@@ -4441,8 +4322,7 @@ test("canvas captions report actual viewport dimensions through resize, auto hei
   page,
 }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-separator&scenario=expanded");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-separator", "expanded");
   const checkDimensions = async () => {
     for (const card of await page.locator(".preview-card").all()) {
       await expect
@@ -4544,8 +4424,7 @@ test("alignment inspection pins arbitrary elements, blocks actions and clears on
   page,
 }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-tabs-subpage-data&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-tabs-subpage-data", "default");
   await page.getByRole("button", { name: "Desktop · 1280 px", exact: true }).click();
   await page.getByRole("button", { name: "Split", exact: true }).click();
   const inspect = page
@@ -4602,8 +4481,7 @@ test("alignment inspection pins arbitrary elements, blocks actions and clears on
 });
 
 test("alignment mode is shared across compare and exits from either document", async ({ page }) => {
-  await page.goto("./?component=knx-tabs-subpage-data&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-tabs-subpage-data", "default");
   await page.getByRole("button", { name: "Compare", exact: true }).click();
   await expect(page.getByRole("status").nth(1)).toHaveText("Preview ready");
   await page.getByRole("button", { name: "Preview options", exact: true }).click();
@@ -4647,8 +4525,7 @@ test("alignment mode is shared across compare and exits from either document", a
 test("alignment guides work above an open dialog without activating its buttons", async ({
   page,
 }) => {
-  await page.goto("./?component=knx-send-dialog&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-send-dialog", "default");
   const frame = page.frameLocator('iframe[data-pane="primary"]');
   await openAnimatedDialog(frame);
   await expect(frame.getByRole("dialog", { includeHidden: true })).toBeVisible();
@@ -4673,8 +4550,7 @@ test("alignment guides work above an open dialog without activating its buttons"
 });
 
 test("outcome migration persists time config when a peer reopens the dialog", async ({ page }) => {
-  await page.goto("./?component=knx-time-server-dialog&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-time-server-dialog", "default");
   await page.getByRole("button", { name: /^Compare/ }).click();
   const source = page.frameLocator('iframe[data-pane="comparison"]');
   const peer = page.frameLocator('iframe[data-pane="primary"]');
@@ -4732,8 +4608,7 @@ for (const component of ["knx-device-picker", "knx-configure-entity"]) {
 
 test("outcome migration creates and deletes an entity across Compare readers", async ({ page }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-entities-view&scenario=empty");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-entities-view", "empty");
   await page.getByRole("button", { name: /^Desktop · 1280/ }).click();
   await page.getByRole("button", { name: /^Compare/ }).click();
   const source = page.frameLocator('iframe[data-device="desktop"][data-pane="comparison"]');
@@ -4783,8 +4658,7 @@ test("outcome migration restores expose notes and deletion in peer and late read
   page,
 }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-create-expose&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-create-expose", "default");
   await page.getByRole("button", { name: /^Desktop · 1280/ }).click();
   await page.getByRole("button", { name: /^Compare/ }).click();
   const source = page.frameLocator('iframe[data-device="desktop"][data-pane="comparison"]');
@@ -4842,8 +4716,7 @@ test("outcome migration removes and imports the project with one local native up
   page,
 }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-info&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-info", "default");
   await page.getByRole("button", { name: /^Desktop · 1280/ }).click();
   await page.getByRole("button", { name: /^Compare/ }).click();
   const source = page.frameLocator('iframe[data-device="desktop"][data-pane="comparison"]');
@@ -4882,8 +4755,7 @@ test("outcome migration publishes a delayed telegram after the send dialog close
   page,
 }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-send-dialog&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-send-dialog", "default");
   await page.getByRole("button", { name: /^Desktop · 1280/ }).click();
   await page.getByRole("button", { name: /^Compare/ }).click();
   const source = page.frameLocator('iframe[data-device="desktop"][data-pane="comparison"]');
@@ -4918,8 +4790,7 @@ test("outcome migration gives the monitor one producer across writer and device 
   page,
 }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-group-monitor&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-group-monitor", "default");
   await page.getByRole("button", { name: /^Desktop · 1280/ }).click({ modifiers: ["Meta"] });
   await page.getByRole("button", { name: /^Compare/ }).click();
   const desktop = page.frameLocator('iframe[data-device="desktop"][data-pane="comparison"]');
@@ -4978,8 +4849,7 @@ test("outcome migration keeps a delayed user telegram after writer handoff witho
   page,
 }) => {
   await page.setViewportSize({ width: 2160, height: 1000 });
-  await page.goto("./?component=knx-send-dialog&scenario=default");
-  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await openExample(page, "knx-send-dialog", "default");
   await page.getByRole("button", { name: /^Desktop · 1280/ }).click();
   await page.getByRole("button", { name: /^Compare/ }).click();
   const source = page.frameLocator('iframe[data-device="desktop"][data-pane="comparison"]');
@@ -5198,4 +5068,67 @@ test.describe("Pixel 7 touch", { tag: ["@mobile", "@mobile-touch"] }, () => {
     ).toHaveAccessibleName("Auto height · Selected");
     await expect(frame).toHaveAttribute("src", session!);
   });
+});
+
+test("accepted fixtures survive unchanged inspector configuration and late Compare panes", async ({
+  page,
+}) => {
+  await openExample(page, "knx-project-devices-view", "unfiltered");
+  const source = page.frameLocator('iframe[data-pane="primary"]');
+  await source.getByRole("button", { name: "Expand all", exact: true }).click();
+  await source.locator("knx-gallery-preview").evaluate((element) => {
+    Reflect.get(element, "_environment").fixtures.commit(
+      (data: { project: { info: { name: string } } }) => {
+        data.project.info.name = "Accepted fixture change";
+      },
+    );
+  });
+  const accepted = () =>
+    page
+      .locator("knx-component-gallery")
+      .evaluate((element) => Reflect.get(element, "_previewState")?.fixtures?.project?.info?.name);
+  await expect.poll(accepted).toBe("Accepted fixture change");
+  await page.locator("knx-component-gallery").evaluate((element) => {
+    Reflect.get(element, "_overridesChanged").call(
+      element,
+      new CustomEvent("overrides-changed", { detail: { showRelated: true } }),
+    );
+  });
+  await expect(page.getByRole("status")).toHaveText("Preview ready");
+  await page.getByRole("button", { name: /^Compare/ }).click();
+  const peer = page.frameLocator('iframe[data-pane="comparison"]');
+  await expect
+    .poll(() =>
+      peer
+        .locator("knx-gallery-preview")
+        .evaluate(
+          (element) => Reflect.get(element, "_environment")?.fixtures?.data.project.info.name,
+        ),
+    )
+    .toBe("Accepted fixture change");
+  await expect.poll(accepted).toBe("Accepted fixture change");
+});
+
+test("Gallery initializes without secure-context randomUUID", async ({ page }) => {
+  await page.addInitScript(() => Object.defineProperty(crypto, "randomUUID", { value: undefined }));
+  await openExample(page, "knx-separator");
+  await expect(page.frameLocator("iframe").locator("knx-separator")).toBeVisible();
+});
+
+test("persistent dialogs receive replaced hass after Gallery theme changes", async ({ page }) => {
+  await openExample(page, "knx-device-create-dialog");
+  const preview = page.frameLocator("iframe");
+  await preview.getByRole("button", { name: "Open dialog", exact: true }).click();
+  await expect(preview.getByRole("dialog")).toBeVisible();
+  await page.getByRole("button", { name: /^Dark/, exact: false }).click();
+  await expect
+    .poll(() =>
+      preview.locator("knx-gallery-preview").evaluate((element) => {
+        const dialog = element.shadowRoot!.querySelector("knx-device-create-dialog");
+        const hass = Reflect.get(element, "hass");
+        return Boolean(hass.themes.darkMode && dialog && Reflect.get(dialog, "hass") === hass);
+      }),
+    )
+    .toBe(true);
+  await expect(preview.getByRole("dialog")).toBeVisible();
 });

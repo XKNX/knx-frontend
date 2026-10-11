@@ -67,6 +67,29 @@ describe("gallery protocol", () => {
     expect(readMessage(message(data), window, origin, sessionId)).toEqual(data);
   });
 
+  it("validates configure fixture JSON and writer handoffs", () => {
+    const fixtures = { project: { info: { name: "Accepted project" } } };
+    expect(readMessage(message({ ...configure, fixtures }), window, origin, sessionId)).toEqual({
+      ...configure,
+      fixtures,
+    });
+    for (const value of [null, [], { value: () => undefined }]) {
+      expect(
+        readMessage(message({ ...configure, fixtures: value }), window, origin, sessionId),
+      ).toBeUndefined();
+    }
+    const writer = { ...base, type: "writer", active: true, revision: 2 };
+    expect(readMessage(message(writer), window, origin, sessionId)).toEqual(writer);
+    for (const invalid of [
+      { ...writer, active: 1 },
+      { ...writer, revision: -1 },
+      { ...writer, revision: 0.5 },
+      { ...writer, sessionId: "old" },
+    ]) {
+      expect(readMessage(message(invalid), window, origin, sessionId)).toBeUndefined();
+    }
+  });
+
   it("rejects sparse slot arrays instead of returning null slot names", () => {
     expect(
       readMessage(message({ ...configure, slots: new Array(1) }), window, origin, sessionId),

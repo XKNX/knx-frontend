@@ -20,7 +20,6 @@ export const entry = defineExample({
     ]);
     const { createSchemas } = await import("../fixtures/schemas");
     const schemas = createSchemas();
-    schemas.light = schemas.light.map((item) => ({ ...item, name: "ga_switch" }));
     const config = {
       entity: { name: en.sample.content, device_info: "1.1.1", entity_category: null },
       knx: { ga_switch: { write: "1/0/1" } },

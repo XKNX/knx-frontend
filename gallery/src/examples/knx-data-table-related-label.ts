@@ -1,5 +1,5 @@
 import en from "../localize/en.json" with { type: "json" };
-import { defineExample } from "./helpers";
+import { defineExample, stringArrayControl } from "./helpers";
 
 const copy = en.components["knx-data-table-related-label"];
 export const entry = defineExample({
@@ -20,24 +20,9 @@ export const entry = defineExample({
     },
   ],
   controls: {
-    entities: {
-      validate: (value) =>
-        Array.isArray(value) && value.every((item) => typeof item === "string")
-          ? undefined
-          : en.validation.invalidValue,
-    },
-    entitiesYaml: {
-      validate: (value) =>
-        Array.isArray(value) && value.every((item) => typeof item === "string")
-          ? undefined
-          : en.validation.invalidValue,
-    },
-    exposes: {
-      validate: (value) =>
-        Array.isArray(value) && value.every((item) => typeof item === "string")
-          ? undefined
-          : en.validation.invalidValue,
-    },
+    entities: stringArrayControl,
+    entitiesYaml: stringArrayControl,
+    exposes: stringArrayControl,
   },
   async load() {
     const [{ html }] = await Promise.all([

@@ -1,4 +1,5 @@
 import { deepEqual } from "@ha/common/util/deep-equal";
+import { eventArgs } from "../event-args";
 import { isJsonValue, isRecord, resolveValues } from "../state";
 import en from "../localize/en.json" with { type: "json" };
 import type {
@@ -187,14 +188,7 @@ export function observe(emit: (event: GalleryEvent) => void) {
       kind: "event",
       name: event.type,
       timestamp: Date.now(),
-      args:
-        "detail" in event
-          ? JSON.parse(
-              JSON.stringify(event.detail ?? null, (_key, value) =>
-                typeof value === "function" ? "[callback]" : value,
-              ),
-            )
-          : null,
+      args: "detail" in event ? eventArgs(event.detail) : null,
     });
 }
 
@@ -207,14 +201,10 @@ export function valueChanged(emit: (event: GalleryEvent) => void) {
   };
 }
 
-export function localizeCallback(
-  env: GalleryEnvironment,
-  emit: (event: GalleryEvent) => void,
-  prefix: "component.knx.config_panel.entities.create.light.knx",
-) {
+export function localizeCallback(env: GalleryEnvironment, emit: (event: GalleryEvent) => void) {
   return (key: string) => {
     const result =
-      env.hass.localize(`${prefix}.${key}`) ||
+      env.hass.localize(`component.knx.config_panel.entities.create.light.knx.${key}`) ||
       env.hass.localize(`component.knx.config_panel.entities.create._.knx.${key}`) ||
       (key.endsWith("description") ? en.sample.helper : en.sample.header);
     emit({ kind: "callback", name: "localize", timestamp: Date.now(), args: { key, result } });
@@ -234,3 +224,10 @@ export function validateGroupAddressConfig(value: unknown): string | undefined {
     ? undefined
     : en.validation.invalidValue;
 }
+
+export const stringArrayControl = {
+  validate: (value: unknown) =>
+    Array.isArray(value) && value.every((item) => typeof item === "string")
+      ? undefined
+      : en.validation.invalidValue,
+};

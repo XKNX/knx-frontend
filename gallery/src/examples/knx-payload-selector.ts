@@ -45,11 +45,7 @@ export const entry = defineExample({
     return {
       render: (env, values, _slots, emit) => {
         const changed = valueChanged(emit);
-        const localize = localizeCallback(
-          env,
-          emit,
-          "component.knx.config_panel.entities.create.light.knx",
-        );
+        const localize = localizeCallback(env, emit);
         // The product seeds its editor only on initialization; unrelated controls retain it.
         return html`${keyed(
           JSON.stringify([values.raw, values.numberValue]),

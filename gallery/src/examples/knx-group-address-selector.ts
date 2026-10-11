@@ -43,11 +43,7 @@ export const entry = defineExample({
     return {
       render: (env, values, _slots, emit) => {
         const on = observe(emit);
-        const localize = localizeCallback(
-          env,
-          emit,
-          "component.knx.config_panel.entities.create.light.knx",
-        );
+        const localize = localizeCallback(env, emit);
         const configChanged = (event: CustomEvent<{ value: unknown }>) => {
           on(event);
           Object.assign(event.currentTarget!, { config: event.detail.value });

@@ -38,20 +38,20 @@ def authorize_preview(pr: dict, author_permission: str, run: dict | None = None,
     if (run and run["run_attempt"] > 1 and run["event"] == "pull_request"
             and run["head_sha"] == sha and run["head_repository"]["id"] == pr["head"]["repo"]["id"]
             and run.get("triggering_actor") and is_maintainer(triggering_permission)):
-        return dict(kind="rerun", sha=sha, comment_id=None, actor_id=run["triggering_actor"]["id"])
+        return dict(kind="rerun", sha=sha, actor_id=run["triggering_actor"]["id"])
     if is_maintainer(author_permission):
-        return dict(kind="maintainer", sha=sha, comment_id=None, actor_id=pr["user"]["id"])
+        return dict(kind="maintainer", sha=sha, actor_id=pr["user"]["id"])
     return None
 
 
 def has_gallery_changes(paths: list[str]) -> bool:
-    prefixes = ("src/", "gallery/", "build-scripts/", "script/", ".yarn/",
+    prefixes = ("src/", "gallery/", "build-scripts/", "script/",
                 ".github/actions/setup/", ".github/workflows/gallery-")
-    files = {"homeassistant-frontend", ".gitmodules", "package.json", "yarn.lock", ".yarnrc.yml",
+    files = {"homeassistant-frontend", ".gitmodules", "package.json",
              "pnpm-lock.yaml", "pnpm-workspace.yaml",
+             "MANIFEST.in", "pyproject.toml", "setup.cfg", "Makefile",
              ".nvmrc", "tsconfig.json", ".browserslistrc", "rspack.config.cjs", "gulpfile.js",
-             "config.js", "VERSION", "test/gallery-thumbnails.ts", "test/gallery.e2e.ts",
-             "test/gallery-pages.e2e.ts"}
+             "config.js", "VERSION"}
     docs = {"gallery/README.md"}
     return any(path not in docs and (path in files or path.startswith(prefixes)
                or re.fullmatch(r"test/playwright\.gallery[^/]*\.config\.ts", path)) for path in paths)
@@ -138,7 +138,10 @@ class Store:
         if git("ls-remote", "--heads", "origin", "gh-pages", cwd=self.root):
             git("fetch", "--depth=1", "--no-tags", "origin", "gh-pages", cwd=self.root)
             # Do not check out an unrelated branch before checking its ownership marker.
-            raw = json.loads(git("show", f"FETCH_HEAD:{site.STATE}", cwd=self.root))
+            try:
+                raw = json.loads(git("show", f"FETCH_HEAD:{site.STATE}", cwd=self.root))
+            except subprocess.CalledProcessError:
+                raise ValueError("Existing gh-pages branch has no gallery ownership marker") from None
             if raw.get("repository") != repository() or raw.get("schema") != 1:
                 raise ValueError("Existing gh-pages branch is not managed by gallery Pages")
             git("checkout", "-B", "gh-pages", "FETCH_HEAD", cwd=self.root)
@@ -250,10 +253,11 @@ def resolve_build_run(event: dict, *, status_only=False) -> dict | None:
             or not re.fullmatch("[a-f0-9]{40}", run["head_sha"])):
         return None
     result = dict(sha=run["head_sha"], run_id=run["id"], run_attempt=run["run_attempt"],
-                  artifact_id=0, comment_id=None, actor_id=run["actor"]["id"],
+                  artifact_id=0, actor_id=run["actor"]["id"],
                   conclusion=run["conclusion"], status=run["status"], run_started_at=run["run_started_at"])
     if run["event"] == "push":
-        if (run["head_branch"] != "main" or run["head_repository"]["id"] != run["repository"]["id"]):
+        if (run["head_branch"] != "main" or run["head_repository"]["id"] != run["repository"]["id"]
+                or not main_is_newer(result, None)):
             return None
         return dict(result, target="main", pr_number=None)
     related = run["pull_requests"] or github_pages(repo_path("/pulls?state=open&base=main"))
@@ -267,7 +271,7 @@ def resolve_build_run(event: dict, *, status_only=False) -> dict | None:
             auth = authorization(pr, run) if not status_only else None
             if auth or status_only:
                 matches.append(dict(result, target="pr", pr_number=pr["number"],
-                                    comment_id=None, actor_id=auth["actor_id"] if auth else run["actor"]["id"],
+                                    actor_id=auth["actor_id"] if auth else run["actor"]["id"],
                                     authorization_kind=auth["kind"] if auth else None))
     return matches[0] if len(matches) == 1 else None
 
@@ -448,7 +452,7 @@ def status_body(pr: dict, published: dict | None, url: str, phase: str = "", *,
                 title = re.sub(r"([\\`*_{}\[\]()<>#!|~])", r"\\\1", entry["title"]).replace("@", "@\u200b")
                 query = urllib.parse.urlencode({"component": entry["id"], "scenario": "default"})
                 link = f"- [{title}]({preview_url}?{query})\n"
-                # ponytail: cap link text at 20,000 characters; large PRs use the overview.
+                # Cap link text at 20,000 characters; large PRs use the overview.
                 if link_length + len(link) > 20_000:
                     remaining = len(changes["components"]) - index
                     body += f"\n{remaining} more components. [Browse all examples]({preview_url}).\n"
@@ -482,9 +486,11 @@ def update_status(store: Store, pr: dict, published: dict | None, phase="", *, p
            and c["body"].startswith("<!-- knx-gallery-preview -->")]
     identifier = store.state["comments"].get(number)
     if identifier:
-        own = [c for c in own if c["id"] == identifier]
-        if not own:
-            raise ValueError("Recorded preview comment is missing or no longer owned by the bot")
+        recorded = next((c for c in comments if c["id"] == identifier), None)
+        if recorded is not None and recorded not in own:
+            raise ValueError("Recorded preview comment is no longer owned by the bot")
+        if recorded is not None:
+            own = [recorded]
     if len(own) > 1:
         raise ValueError("Ambiguous preview status comments")
     url = github_request("GET", repo_path("/pages"))["html_url"]
@@ -526,14 +532,14 @@ def published_remote_state() -> dict:
 
 
 def main_is_newer(candidate: dict, published: dict | None) -> bool:
-    if published is None:
-        return True
-    comparison = github_request("GET", repo_path(f"/compare/{published['sha']}...{candidate['sha']}"))
-    return comparison["status"] == "ahead"
+    # The live ref is authoritative even after a force push or history removal.
+    # Ancestry alone would either freeze publication or admit a delayed old build.
+    current = github_request("GET", repo_path("/git/ref/heads/main"))["object"]["sha"]
+    return candidate["sha"] == current and (published is None or published["sha"] != current)
 
 
 def entry_for(run: dict) -> dict:
-    return dict({key: run[key] for key in ["sha", "run_id", "run_attempt", "artifact_id", "comment_id", "actor_id"]},
+    return dict({key: run[key] for key in ["sha", "run_id", "run_attempt", "artifact_id", "actor_id"]},
                 layout="gallery")
 
 
@@ -612,7 +618,6 @@ def prepare(event: dict):
     removed = reconcile_previews(state)
     for number in removed:
         state["previews"].pop(str(number), None)
-        state["requests"].pop(str(number), None)
     changed = pending or bool(removed)
     output_root = Path(os.environ["RUNNER_TEMP"]) / "gallery-pages-public"
     site.compose_site(public, output_root, None, None, removed)
@@ -645,7 +650,6 @@ def prepare(event: dict):
             if changes is not None:
                 entry["changes"] = changes
             state["previews"][str(number)] = entry
-            state["requests"].pop(str(number), None)
         adopted.append(run)
         changed = True
     # Closing during download/extraction must also win.
@@ -711,6 +715,8 @@ def finish(result: str, state_commit: str, deployment_run: str):
         phase = "" if result == "success" else "Deployment failed"
         update_status(store, pr, confirmed["previews"].get(number), phase,
                       phase_run=store.state["previews"].get(number) if phase else None)
+        if result == "success" and pr["state"] == "closed" and number not in confirmed["previews"]:
+            store.state["comments"].pop(number, None)
     store.save("Update deployed gallery preview links")
 
 
@@ -731,7 +737,7 @@ def gate(event: dict):
             if (isinstance(old_sha, str) and previous.get("layout") == "gallery"
                     and not relevant_main(sha, old_sha)):
                 return
-        output(build=True, sha=sha, pr_number="", base_path=base + "gallery/" if enabled else "/")
+        output(build=True, sha=sha, base_path=base + "gallery/" if enabled else "/")
         return
     original = event["pull_request"]
     pr = github_request("GET", repo_path(f"/pulls/{int(original['number'])}"))
@@ -741,13 +747,17 @@ def gate(event: dict):
                                               "run_attempt": int(os.environ["GITHUB_RUN_ATTEMPT"])}})
     if run is None or run["target"] != "pr" or run["pr_number"] != pr["number"] or run["sha"] != original["head"]["sha"]:
         return
-    previous = published_remote_state()["previews"].get(str(pr["number"])) if enabled else None
+    try:
+        previous = published_remote_state()["previews"].get(str(pr["number"])) if enabled else None
+    except (OSError, http.client.HTTPException, ValueError, KeyError, TypeError):
+        # State only avoids redundant builds; it never grants authorization.
+        previous = None
     if previous and previous["sha"] == run["sha"] and previous.get("layout") == "gallery":
         return
     if (run["authorization_kind"] != "rerun" and not (previous and previous.get("layout") != "gallery")
             and not relevant(pr, previous["sha"] if previous else None)):
         return
-    output(build=True, sha=run["sha"], pr_number=pr["number"], base_path=f"{base}pr/{pr['number']}/gallery/" if enabled else "/")
+    output(build=True, sha=run["sha"], base_path=f"{base}pr/{pr['number']}/gallery/" if enabled else "/")
 
 
 def main():

@@ -63,6 +63,21 @@ class NativeRerunTests(unittest.TestCase):
         self.assertEqual(self.writes, [])
         self.assertIn("base_path=/repo/pr/12/gallery/\n", self.output.read_text())
 
+    def test_state_read_failure_builds_an_authorized_pr(self):
+        with patch.object(pages, "published_remote_state", side_effect=TimeoutError), patch.object(
+                pages, "relevant", return_value=True):
+            pages.gate({"pull_request": pull()})
+        self.assertIn("build=true", self.output.read_text())
+        self.assertEqual(self.writes, [])
+
+    def test_state_read_failure_does_not_authorize_an_external_initial_run(self):
+        self.run["run_attempt"] = 1
+        with patch.dict(os.environ, {"GITHUB_RUN_ATTEMPT": "1"}), patch.object(
+                pages, "published_remote_state", side_effect=TimeoutError):
+            pages.gate({"pull_request": pull()})
+        self.assertEqual(self.output.read_text(), "build=false\n")
+
+
     def test_same_head_legacy_preview_builds_again_at_new_path(self):
         state = pages.site.empty_state("owner/repo")
         state["previews"]["12"] = {"sha": SHA}

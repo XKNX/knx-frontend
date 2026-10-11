@@ -47,9 +47,14 @@ class PolicyTests(unittest.TestCase):
             pages.authorize_preview({}, "admin")
 
     def test_indirect_build_inputs_are_relevant(self):
-        for path in ["src/styles.ts", "gallery/src/catalog.ts", "homeassistant-frontend", "yarn.lock", "pnpm-lock.yaml", "pnpm-workspace.yaml", ".nvmrc", "script/bootstrap", ".yarn/patches/x.patch", "test/gallery-thumbnails.ts"]:
+        for path in ["src/styles.ts", "gallery/src/catalog.ts", "homeassistant-frontend", "pnpm-lock.yaml", "pnpm-workspace.yaml", ".nvmrc", "script/bootstrap", "gallery/test/gallery-thumbnails.ts"]:
             self.assertTrue(pages.has_gallery_changes([path]), path)
         self.assertFalse(pages.has_gallery_changes(["README.md", "docs/example.md", "test/unrelated.test.ts"]))
+
+    def test_packaging_changes_cannot_skip_wheel_isolation(self):
+        for path in ["MANIFEST.in", "pyproject.toml", "setup.cfg", "Makefile"]:
+            with self.subTest(path=path):
+                self.assertTrue(pages.has_gallery_changes([path]))
 
     def test_rerun_cannot_change_build_sha(self):
         self.assertFalse(pages.same_head(SHA, {**pull(), "head": {"sha": "b" * 40}}))
@@ -106,11 +111,33 @@ class ControlTests(unittest.TestCase):
             auth.assert_not_called()
 
     def test_main_cannot_roll_back_newer_publication(self):
-        for status in ["behind", "diverged", "identical"]:
-            with patch.object(pages, "github_request", return_value={"status":status}):
-                self.assertFalse(pages.main_is_newer({"sha":SHA}, {"sha":"b" * 40}))
-        with patch.object(pages, "github_request", return_value={"status":"ahead"}):
-            self.assertTrue(pages.main_is_newer({"sha":SHA}, {"sha":"b" * 40}))
+        for current in ["b" * 40, SHA]:
+            with patch.object(pages, "github_request", return_value={"object": {"sha": current}}):
+                self.assertEqual(pages.main_is_newer({"sha": SHA}, {"sha": "b" * 40}), current == SHA)
+        with patch.object(pages, "github_request", return_value={"object": {"sha": SHA}}):
+            self.assertFalse(pages.main_is_newer({"sha": SHA}, {"sha": SHA}))
+
+    def test_current_main_recovers_from_rewritten_or_missing_history(self):
+        import urllib.error
+        for comparison in ["diverged", "behind", "missing"]:
+            def api(method, path, body=None):
+                if path.endswith("/git/ref/heads/main"):
+                    return {"object": {"sha": SHA}}
+                if "/compare/" in path:
+                    if comparison == "missing":
+                        raise urllib.error.HTTPError("https://api.github.com/compare", 404, "", {}, None)
+                    return {"status": comparison}
+                raise AssertionError(path)
+            with self.subTest(comparison=comparison), patch.object(pages, "github_request", side_effect=api):
+                self.assertTrue(pages.main_is_newer({"sha": SHA}, {"sha": "b" * 40}))
+
+    def test_stale_main_build_cannot_replace_a_rewritten_tip(self):
+        def api(method, path, body=None):
+            if path.endswith("/git/ref/heads/main"):
+                return {"object": {"sha": "c" * 40}}
+            return {"status": "ahead"}
+        with patch.object(pages, "github_request", side_effect=api):
+            self.assertFalse(pages.main_is_newer({"sha": SHA}, {"sha": "b" * 40}))
 
     def test_artifact_must_match_attempt_and_run(self):
         run = dict(run_id=10, run_attempt=2, sha=SHA, run_started_at="2026-10-08T12:01:00Z")
@@ -123,6 +150,25 @@ class ControlTests(unittest.TestCase):
         artifact["workflow_run"]["head_sha"] = "b" * 40
         with patch.object(pages, "github_request", return_value={"artifacts":[artifact]}):
             with self.assertRaises(ValueError): pages.run_artifact(run)
+
+    def test_expired_artifact_is_not_a_deployment_candidate(self):
+        artifact = dict(name="gallery-10-2", expired=True)
+        with patch.object(pages, "github_request", return_value={"artifacts": [artifact]}):
+            self.assertIsNone(pages.run_artifact(dict(run_id=10, run_attempt=2)))
+
+    def test_stale_push_run_is_rejected_at_resolution(self):
+        run = self.run_data()
+        run.update(event="push", head_branch="main", head_repository={"id": 1}, repository={"id": 1, "full_name": "owner/repo"})
+        def api(method, path, body=None):
+            if path.endswith("/actions/runs/10"):
+                return run
+            if path.endswith("/actions/workflows/gallery-build.yml"):
+                return {"id": 4}
+            if path.endswith("/git/ref/heads/main"):
+                return {"object": {"sha": "b" * 40}}
+            raise AssertionError(path)
+        with patch.object(pages, "github_request", side_effect=api):
+            self.assertIsNone(pages.resolve_build_run({"workflow_run": run}))
 
     def test_closed_pr_cannot_be_resurrected(self):
         state = {"previews": {"12": {"sha": SHA}}}

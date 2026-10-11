@@ -28,15 +28,10 @@ export const entry = defineExample({
     ]);
     const { createSchemas } = await import("../fixtures/schemas");
     const schemas = createSchemas();
-    schemas.light = schemas.light.map((item) => ({ ...item, name: "ga_switch" }));
     return {
       render: (env, values, _slots, emit) => {
         const on = observe(emit);
-        const localize = localizeCallback(
-          env,
-          emit,
-          "component.knx.config_panel.entities.create.light.knx",
-        );
+        const localize = localizeCallback(env, emit);
         return html`<knx-form
           .config=${values.config as Record<string, unknown>}
           .hass=${env.hass}

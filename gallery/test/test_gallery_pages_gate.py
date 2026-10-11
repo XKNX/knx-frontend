@@ -81,7 +81,7 @@ class MainGateTests(unittest.TestCase):
 
     def assert_build(self, sha):
         self.assertEqual(self.gate(sha),
-            f"build=false\nbuild=true\nsha={sha}\npr_number=\nbase_path=/demo/gallery/\n")
+            f"build=false\nbuild=true\nsha={sha}\nbase_path=/demo/gallery/\n")
 
     def test_legacy_main_rebuilds_even_when_same_head_is_already_published(self):
         self.confirmed["main"].pop("layout")
@@ -140,9 +140,9 @@ class MainGateTests(unittest.TestCase):
         self.assertIn("build=true\n", self.gate(sha, before=unpublished))
 
     def test_browser_test_only_change_builds(self):
-        for path in ["test/gallery.e2e.ts", "test/gallery-pages.e2e.ts",
-                     "test/playwright.gallery.config.ts", "test/playwright.gallery-pages.config.ts",
-                     "test/playwright.gallery-thumbnails.config.ts"]:
+        for path in ["gallery/test/gallery.e2e.ts", "gallery/test/gallery-pages.e2e.ts",
+                     "gallery/test/playwright.gallery.config.ts", "gallery/test/playwright.gallery-pages.config.ts",
+                     "gallery/test/playwright.gallery-thumbnails.config.ts"]:
             with self.subTest(path=path):
                 # Compare each browser input independently to its confirmed baseline.
                 self.confirmed["main"] = self.entry(pages.git("rev-parse", "HEAD"))
@@ -211,7 +211,7 @@ class MainGateTests(unittest.TestCase):
         with patch.dict(os.environ, {"GALLERY_PAGES_ENABLED": "false"}), patch.object(
                 pages, "github_request", side_effect=AssertionError("No remote state needed")):
             self.assertEqual(self.gate(sha),
-                f"build=false\nbuild=true\nsha={sha}\npr_number=\nbase_path=/\n")
+                f"build=false\nbuild=true\nsha={sha}\nbase_path=/\n")
 
     def test_invalid_and_non_main_pushes_skip(self):
         for sha, ref in [("invalid", "refs/heads/main"), (self.base, "refs/heads/other")]:
@@ -221,9 +221,9 @@ class MainGateTests(unittest.TestCase):
 
 class BrowserInputPolicyTests(unittest.TestCase):
     def test_gallery_browser_inputs_are_relevant(self):
-        for path in ["test/gallery.e2e.ts", "test/gallery-pages.e2e.ts",
-                     "test/playwright.gallery.config.ts", "test/playwright.gallery-pages.config.ts",
-                     "test/playwright.gallery-thumbnails.config.ts", "test/playwright.gallery-extra.config.ts"]:
+        for path in ["gallery/test/gallery.e2e.ts", "gallery/test/gallery-pages.e2e.ts",
+                     "gallery/test/playwright.gallery.config.ts", "gallery/test/playwright.gallery-pages.config.ts",
+                     "gallery/test/playwright.gallery-thumbnails.config.ts", "gallery/test/playwright.gallery-extra.config.ts"]:
             with self.subTest(path=path):
                 self.assertTrue(pages.has_gallery_changes([path]))
 

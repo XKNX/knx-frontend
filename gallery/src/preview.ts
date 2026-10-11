@@ -1,4 +1,12 @@
-import { LitElement, html, css, nothing, render } from "lit";
+import {
+  LitElement,
+  html,
+  css,
+  nothing,
+  render,
+  type TemplateResult,
+  type PropertyValues,
+} from "lit";
 import { customElement, property, query, queryAll, state } from "lit/decorators";
 import { ContextProvider } from "@lit/context";
 import { haStyle } from "@ha/resources/styles";
@@ -36,6 +44,9 @@ export class KnxGalleryPreview extends ProvideHassLitMixin(LitElement) {
   private _componentId = "";
   private _scenarioId = "";
   private _queue = Promise.resolve();
+  private _template?: TemplateResult;
+  private _code = "";
+  private _sentCode = "";
   private _sync?: PreviewSync;
   private _sessionId = new URLSearchParams(location.search).get("session") ?? "";
   private _thumbnail = new URLSearchParams(location.search).has("thumbnail");
@@ -149,6 +160,18 @@ export class KnxGalleryPreview extends ProvideHassLitMixin(LitElement) {
       );
     }
     this._post({ channel: "knx-gallery", sessionId: this._sessionId, type: "ready" });
+  }
+  protected updated(changed: PropertyValues) {
+    super.updated(changed);
+    if (this._code !== this._sentCode) {
+      this._sentCode = this._code;
+      this._post({
+        channel: "knx-gallery",
+        sessionId: this._sessionId,
+        type: "code",
+        code: this._code,
+      });
+    }
   }
   private _post(message: GalleryMessage) {
     if (this.isConnected) window.parent.postMessage(message, location.origin);
@@ -332,34 +355,35 @@ export class KnxGalleryPreview extends ProvideHassLitMixin(LitElement) {
     }
     if (!this._error) {
       this._reportHeight();
+      this._sync?.invalidate();
       this._sync?.capture();
       this._post({ channel: "knx-gallery", sessionId: this._sessionId, type: "rendered" });
     }
   }
-  protected render() {
-    if (this._error) return html`<p role="alert">${this._error}</p>`;
-    if (!this._example || !this._environment) return nothing;
+  protected willUpdate() {
+    this._template = undefined;
+    if (this._error || !this._example || !this._environment) return;
     try {
-      const example = this._example.render(
+      this._template = this._example.render(
         this._environment,
         this._values,
         this._slots,
         this._emit,
       );
-      if (this._thumbnail) return example;
-      let code: string;
-      try {
-        code = templateToCode(example);
-      } catch (error) {
-        code = `// ${error instanceof Error ? error.message : String(error)}`;
+      if (!this._thumbnail) {
+        try {
+          this._code = templateToCode(this._template);
+        } catch (error) {
+          this._code = `// ${error instanceof Error ? error.message : String(error)}`;
+        }
       }
-      this._post({ channel: "knx-gallery", sessionId: this._sessionId, type: "code", code });
-      return example;
     } catch (error) {
-      // Render errors remain visible and the next configure/reset can recover.
       queueMicrotask(() => this._fail(error));
-      return nothing;
     }
+  }
+  protected render() {
+    if (this._error) return html`<p role="alert">${this._error}</p>`;
+    return this._template ?? nothing;
   }
   static styles = [
     haStyle,

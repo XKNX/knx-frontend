@@ -14,12 +14,10 @@ import { FixtureOutcomes } from "./fixtures/outcomes";
 import en from "./localize/en.json";
 import backendEn from "./localize/backend-en.json";
 import { applyGalleryTheme, knxTheme } from "./theme";
-import type { GalleryEnvironment, GalleryEvent, GalleryTheme, JsonValue } from "./types";
+import type { GalleryEnvironment, GalleryEvent, GalleryTheme } from "./types";
+import { eventArgs } from "./event-args";
 
-/** Backend text: config_panel subset of KNX strings.json and light/sensor titles from
- * Home Assistant Core (2026-10-07, d8668bb). Committed locally;
- * References resolved from public Core strings.json resources; unused DPTs
- * and platform schemas omitted. No sibling checkout is required at runtime. */
+/** Backend fixtures are generated from the public Core revision pinned in gallery_translations.py. */
 export async function createEnvironment(
   host: LitElement & { hass: HomeAssistant },
   emit: (event: GalleryEvent) => void,
@@ -41,7 +39,7 @@ export async function createEnvironment(
         kind,
         name,
         timestamp: Date.now(),
-        args: JSON.parse(JSON.stringify(args ?? null)) as JsonValue,
+        args: eventArgs(args),
       });
     }
   };

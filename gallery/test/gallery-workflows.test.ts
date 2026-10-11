@@ -251,10 +251,12 @@ it("runs read-only exact-head Gallery checks without a preview gate dependency",
   const runs = checks.steps.map(({ run }: { run?: string }) => run).filter(Boolean);
   expect(runs).toEqual([
     "SKIP_FETCH_NIGHTLY_TRANSLATIONS=1 pnpm exec gulp gen-icons-json build-translations build-locale-data",
+    "python3 -m pip install ruff==0.16.8\nruff check --isolated --select E9,F63,F7,F82 gallery/script/gallery_pages*.py\n",
     "pnpm gallery:policy",
     "pnpm gallery:lint",
     "pnpm gallery:types",
     "pnpm gallery:unit",
+    "pnpm gallery:integration",
   ]);
   expect(JSON.stringify(checks)).not.toMatch(/secrets\.|needs\.gate/);
 });
@@ -267,7 +269,11 @@ it("requires successful checks as well as preview approval before building", () 
 
 it.each([
   ["new", ["gallery/script/gallery_pages.py"], "new\n"],
-  ["legacy", ["build-scripts/gallery_pages.py"], "legacy\n"],
+  [
+    "obsolete path",
+    ["build-scripts/gallery_pages.py"],
+    "build=true\nsha=fixture-head\nbase_path=/\n",
+  ],
   ["both", ["gallery/script/gallery_pages.py", "build-scripts/gallery_pages.py"], "new\n"],
   ["bootstrap", [], "build=true\nsha=fixture-head\nbase_path=/\n"],
 ])("selects the %s trusted Main gate", (_name, paths, expected) => {
