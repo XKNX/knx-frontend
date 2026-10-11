@@ -113,7 +113,10 @@ describe("knx-group-address-selector", () => {
         await pickAddress(selector, DIMMER.address);
 
         expect(selector.element.config).toEqual({ write: DIMMER.address, dpt: "5.001" });
-        expect(selector.emitted.at(-1)).toEqual({ write: DIMMER.address, dpt: "5.001" });
+        expect(selector.emitted[selector.emitted.length - 1]).toEqual({
+          write: DIMMER.address,
+          dpt: "5.001",
+        });
       });
 
       it("treats a prefilled DPT matching the address as derived", async () => {
