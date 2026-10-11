@@ -32,11 +32,19 @@ export interface KnxSendData {
   response?: boolean;
 }
 
+/**
+ * Values of the last read or write, so the dialog reopens prefilled and sending to the
+ * same address a few times in a row needs no repeated search. Kept in memory only:
+ * it lives as long as the panel is loaded and starts empty after a page reload.
+ */
+let lastUsedData: KnxSendData | undefined;
+
 @customElement("knx-send-dialog")
 export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) {
   @property({ attribute: false }) public knx!: KNX;
 
-  @state() private _data: KnxSendData = {};
+  // A copy, so edits in this dialog do not change what the next one starts with.
+  @state() private _data: KnxSendData = structuredClone(lastUsedData) ?? {};
 
   public hass!: HomeAssistant; // no need for @property here - save rendering cycles
 
@@ -159,6 +167,7 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
     }
     const serviceData = {};
     serviceData["address"] = this._data.ga.write;
+    lastUsedData = structuredClone(this._data);
     this.hass.callService("knx", "read", serviceData, undefined, true, false);
     this.closeDialog();
   }
@@ -186,6 +195,7 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
       return;
     }
     serviceData["response"] = !!this._data.response;
+    lastUsedData = structuredClone(this._data);
     this.hass.callService("knx", "send", serviceData, undefined, true, false);
     this.closeDialog();
   }
