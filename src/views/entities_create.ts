@@ -47,6 +47,7 @@ import { getPlatformStyle } from "../utils/common";
 import { setNestedValue } from "../utils/config-helper";
 import { validDPTsForSchema } from "../utils/dpt";
 import { exitFlow, navigateInFlow, navigateToError } from "../utils/navigation";
+import { localizeValidationErrors } from "../utils/validation";
 import { PreventUnsavedMixin } from "../mixins/prevent-unsaved-mixin";
 import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
 import { KNXLogger } from "../tools/knx-logger";
@@ -563,7 +564,7 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
     // return true if validation error; scroll to alert if final
     if (result.success === false) {
       logger.warn("Validation error", result);
-      this._validationErrors = result.errors;
+      this._validationErrors = localizeValidationErrors(this.hass.localize, result.errors);
       this._validationBaseError = result.error_base;
       if (final) {
         setTimeout(() => this._alertElement.scrollIntoView({ behavior: "smooth" }));
