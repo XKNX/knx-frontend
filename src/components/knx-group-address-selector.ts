@@ -143,6 +143,10 @@ export class GroupAddressSelector extends LitElement {
       this.validGroupAddresses = this.getValidGroupAddresses(this._getAcceptedDPTs());
     }
 
+    if (changedProps.has("config") || changedProps.has("_projectData")) {
+      this.dptSelectorDisabled = this._dptDictatedByGroupAddresses(this.config, selectedDPT);
+    }
+
     if (
       changedProps.has("config") ||
       changedProps.has("options") ||
@@ -150,28 +154,10 @@ export class GroupAddressSelector extends LitElement {
     ) {
       // recompute for both, options (initialize) and config changes
       this.filteredGroupAddresses = this.getFilteredGroupAddresses(
-        selectedDPT,
+        this._dptFollowsGroupAddress() ? undefined : selectedDPT,
         this.validGroupAddresses,
         this._projectData,
       );
-    }
-
-    if (changedProps.has("config") || changedProps.has("_projectData")) {
-      if (selectedDPT && this._projectData) {
-        const allDpts = [
-          this.config.write,
-          this.config.state,
-          ...(this.config.passive ?? []),
-        ].filter((ga) => !!ga);
-        this.dptSelectorDisabled =
-          allDpts.length > 0 &&
-          allDpts.every((ga) => {
-            const _dpt = this._projectData!.group_addresses[ga!]?.dpt;
-            return _dpt ? isValidDPT(_dpt, [selectedDPT]) : false;
-          });
-      } else {
-        this.dptSelectorDisabled = false;
-      }
     }
 
     this._validGADropTarget = this._dragDropContext?.groupAddress
@@ -399,7 +385,9 @@ export class GroupAddressSelector extends LitElement {
     if (!this._projectData) return;
 
     const newGa = this._getAddedGroupAddress(targetKey, newConfig);
-    if (!newGa || this._selectedDPTValue !== undefined) return;
+    if (!newGa) return;
+    // `dptSelectorDisabled` still describes the config before this change.
+    if (this._selectedDPTValue !== undefined && !this._dptFollowsGroupAddress()) return;
 
     const newDpt = this.validGroupAddresses.find((ga) => ga.address === newGa)?.dpt;
     if (!newDpt) return;
@@ -417,6 +405,35 @@ export class GroupAddressSelector extends LitElement {
       const validDPTsFromClasses = this._getDptStringsFromClasses(this.options.dptClasses);
       newConfig.dpt = validDPTsFromClasses.includes(stringDpt) ? stringDpt : undefined;
     }
+  }
+
+  /**
+   * Whether every configured group address has `selectedDPT` in the project, so the DPT
+   * is dictated by the addresses rather than chosen: the DPT selector is then disabled.
+   */
+  private _dptDictatedByGroupAddresses(config: GASchema, selectedDPT?: DPT): boolean {
+    if (!selectedDPT || !this._projectData) {
+      return false;
+    }
+    const groupAddresses = [config.write, config.state, ...(config.passive ?? [])].filter(
+      (ga) => !!ga,
+    );
+    return (
+      groupAddresses.length > 0 &&
+      groupAddresses.every((ga) => {
+        const dpt = this._projectData!.group_addresses[ga!]?.dpt;
+        return dpt ? isValidDPT(dpt, [selectedDPT]) : false;
+      })
+    );
+  }
+
+  /**
+   * Whether the current DPT follows the group address: it is dictated by the addresses
+   * and `options.dptFollowsGroupAddress` is set. Then the search is not narrowed to it
+   * and picking another address derives it again. See the option for details.
+   */
+  private _dptFollowsGroupAddress(): boolean {
+    return !!this.options.dptFollowsGroupAddress && this.dptSelectorDisabled;
   }
 
   private _getAddedGroupAddress(targetKey: string, newConfig: GASchema): string | null | undefined {
