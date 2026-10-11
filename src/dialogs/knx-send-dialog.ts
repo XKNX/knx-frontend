@@ -10,15 +10,18 @@ import "@ha/layouts/hass-loading-screen";
 
 import { DialogMixin } from "@ha/dialogs/dialog-mixin";
 import type { HomeAssistant } from "@ha/types";
+import { showToast } from "@ha/util/toast";
 
 import "../components/knx-group-address-selector";
 import "../components/knx-payload-selector";
 import "../components/knx-selector-row";
 import type { PayloadConfigValue } from "../components/knx-payload-selector";
 import type { GASchema } from "../types/entity_data";
+import type { KnxReadResponse } from "../types/websocket";
 import type { KNX } from "../types/knx";
 import { KNXLogger } from "../tools/knx-logger";
 import { setNestedValue } from "../utils/config-helper";
+import { TelegramDictFormatter } from "../utils/format";
 
 const logger = new KNXLogger("knx-send-dialog");
 
@@ -40,11 +43,13 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
 
   public hass!: HomeAssistant; // no need for @property here - save rendering cycles
 
-  private _backendLocalize = (key: string) => {
+  private _backendLocalize = (key: string, replace?: Record<string, string>) => {
     const fullKey = `component.knx.config_panel.dialogs.send.${key}` as const;
     // Form descriptions are optional (some fields have none on purpose), so look them up
     // via hass.localize: a missing one renders empty instead of being reported.
-    return key.endsWith(".description") ? this.hass.localize(fullKey) : this.knx.localize(fullKey);
+    return key.endsWith(".description")
+      ? this.hass.localize(fullKey, replace)
+      : this.knx.localize(fullKey, replace);
   };
 
   public connectedCallback() {
@@ -151,16 +156,39 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
     this.requestUpdate();
   }
 
-  private _read(_ev: CustomEvent) {
+  private async _read(_ev: CustomEvent) {
     logger.debug("Reading value", this._data);
     if (!this._data.ga?.write) {
       logger.warn("No group address to read from", this._data);
       return;
     }
-    const serviceData = {};
-    serviceData["address"] = this._data.ga.write;
-    this.hass.callService("knx", "read", serviceData, undefined, true, false);
+    const address = this._data.ga.write;
+    // The dialog is removed from the DOM once closed, so the toast needs a host that stays attached.
+    const toastHost = this._attachedHost();
     this.closeDialog();
+    let result: { response?: KnxReadResponse };
+    try {
+      result = await this.hass.callService("knx", "read", { address }, undefined, true, true);
+    } catch {
+      // callService already shows the error (e.g. no response received) in a toast.
+      return;
+    }
+    const response = result.response!;
+    showToast(toastHost, {
+      message: this._backendLocalize("read_response", {
+        address,
+        source: response.source_name
+          ? `${response.source} (${response.source_name})`
+          : response.source,
+        value:
+          TelegramDictFormatter.valueWithUnit(response) || TelegramDictFormatter.payload(response),
+      }),
+    });
+  }
+
+  private _attachedHost(): HTMLElement {
+    const root = this.getRootNode();
+    return root instanceof ShadowRoot ? (root.host as HTMLElement) : this;
   }
 
   private _send(_ev: CustomEvent) {
