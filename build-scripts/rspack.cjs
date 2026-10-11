@@ -16,6 +16,31 @@ const paths = require("./paths.cjs");
 const bundle = require("./bundle.cjs");
 const stubs = require("./stubs.cjs");
 
+const productionStatsOptions = {
+  all: false,
+  errorsCount: true,
+  outputPath: true,
+  children: true,
+  modules: true,
+  nestedModules: true,
+  orphanModules: true,
+  dependentModules: true,
+  runtimeModules: true,
+  chunks: true,
+  chunkModules: true,
+  assets: true,
+  assetsSpace: Infinity,
+  modulesSpace: Infinity,
+  nestedModulesSpace: Infinity,
+  chunkModulesSpace: Infinity,
+  groupModulesByPath: false,
+  groupModulesByType: false,
+  groupModulesByAttributes: false,
+  groupModulesByCacheStatus: false,
+  groupAssetsByPath: false,
+  groupAssetsByChunk: false,
+};
+
 class LogStartCompilePlugin {
   ignoredFirst = false;
 
@@ -341,6 +366,7 @@ const createKNXConfig = ({ isProdBuild, latestBuild }) =>
   createRspackConfig(bundle.config.knx({ isProdBuild, latestBuild }));
 
 module.exports = {
+  productionStatsOptions,
   createKNXConfig,
   createRspackConfig,
 };

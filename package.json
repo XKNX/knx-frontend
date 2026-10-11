@@ -28,13 +28,15 @@
     "gallery": "node gallery/script/gallery.mjs develop",
     "gallery:build": "node gallery/script/gallery.mjs build && pnpm gallery:thumbnails",
     "gallery:thumbnails": "playwright test --config gallery/test/playwright.gallery-thumbnails.config.ts",
+    "gallery:test": "playwright test --config gallery/test/playwright.gallery.config.ts",
     "gallery:lint": "eslint \"gallery/**/*.ts\" --max-warnings=0 && prettier \"gallery/**/*.{ts,json,html,css,mjs,cjs,md}\" --check && pnpm gallery:lint:tools && lit-analyzer \"gallery/src/**/*.ts\"",
     "gallery:unit": "vitest run --config vitest.config.ts --dir gallery && python3 -m unittest discover -s gallery/test -p 'test_gallery_translations.py'",
     "gallery:types": "tsc --project gallery/tsconfig.json",
-    "gallery:lint:tools": "node --check gallery/script/gallery.mjs && node --check gallery/script/gallery-brands-url-loader.cjs",
+    "gallery:lint:tools": "node --check gallery/script/gallery.mjs && node --check gallery/script/gallery-brands-url-loader.cjs && node --check gallery/script/check-gallery-exclusion.mjs",
     "gallery:integration": "vitest run --config gallery/test/vitest.integration.config.ts",
     "gallery:translations": "python3 gallery/script/gallery_translations.py",
-    "gallery:translations:check": "python3 gallery/script/gallery_translations.py --check"
+    "gallery:translations:check": "python3 gallery/script/gallery_translations.py --check",
+    "gallery:benchmark": "playwright test --config gallery/test/playwright.gallery-benchmark.config.ts"
   },
   "repository": "https://github.com/XKNX/knx-frontend.git",
   "author": "Marvin Wichmann <me@marvin-wichmann.de>",
