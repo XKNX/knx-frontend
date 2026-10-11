@@ -428,9 +428,9 @@ export class GroupAddressSelector extends LitElement {
   }
 
   /**
-   * With `options.dptFollowsGroupAddress`, a DPT that is dictated by the group addresses
-   * neither narrows the search nor survives picking another address. A DPT the user
-   * chose does both, as always.
+   * Whether the current DPT follows the group address: it is dictated by the addresses
+   * and `options.dptFollowsGroupAddress` is set. Then the search is not narrowed to it
+   * and picking another address derives it again. See the option for details.
    */
   private _dptFollowsGroupAddress(): boolean {
     return !!this.options.dptFollowsGroupAddress && this.dptSelectorDisabled;

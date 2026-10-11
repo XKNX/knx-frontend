@@ -98,10 +98,19 @@ export interface GASelectorOptions {
   dptSelect?: DPTOption[];
   dptClasses?: string[];
   /**
-   * Frontend only. A DPT derived from the selected group addresses does not narrow the
-   * group address search and is derived again when another address is picked, so one
-   * address can be swapped for one of a different DPT without clearing it first. A DPT
-   * the user chose keeps narrowing the search. Meant for selectors of a single address.
+   * Frontend only. Controls what a DPT that the project derives from the selected group
+   * addresses (the DPT selector is disabled then) does to the address search.
+   *
+   * `false` / `undefined`: the search lists only addresses of that DPT, and the DPT is
+   * kept when another address is picked. To pick an address of a different DPT, the
+   * address has to be cleared first (which resets the DPT).
+   *
+   * `true`: the search lists all valid addresses, and picking one derives the DPT again
+   * from it. Meant for selectors of a single address, like the send dialog.
+   *
+   * A DPT the user chose (possible only when an address is unknown to the project or has
+   * another DPT) always narrows the search to it and is kept when another address is
+   * picked, regardless of this option.
    */
   dptFollowsGroupAddress?: boolean;
 }
