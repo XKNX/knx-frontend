@@ -1,15 +1,18 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { html, render } from "lit";
 
+import type { IconOverflowMenuItem } from "@ha/components/ha-icon-overflow-menu";
+import { navigate } from "@ha/common/navigate";
 import type { KNX } from "../types/knx";
 import type { KNXProject } from "../types/websocket";
 import type * as RestartDevice from "../utils/restart-device";
 import "./knx-project-devices-view";
 import type { KNXProjectDevicesView } from "./knx-project-devices-view";
 
-// HA's icon button and alert need browser APIs jsdom lacks; keep them plain elements.
-vi.mock("@ha/components/ha-icon-button", () => ({}));
+// HA's overflow menu and alert need browser APIs jsdom lacks; keep them plain elements.
+vi.mock("@ha/components/ha-icon-overflow-menu", () => ({}));
 vi.mock("@ha/components/ha-alert", () => ({}));
+vi.mock("@ha/common/navigate", () => ({ navigate: vi.fn() }));
 
 const flow = vi.hoisted(() => ({ confirmAndRestartDevice: vi.fn() }));
 vi.mock("../utils/restart-device", async (importOriginal) => ({
@@ -68,7 +71,7 @@ const project = {
 
 const knx = { localize: (key: string) => key } as unknown as KNX;
 
-describe("KNXProjectDevicesView restart button", () => {
+describe("KNXProjectDevicesView device menu", () => {
   let container: HTMLElement;
 
   beforeAll(() => {
@@ -82,6 +85,7 @@ describe("KNXProjectDevicesView restart button", () => {
   });
 
   beforeEach(() => {
+    vi.mocked(navigate).mockReset();
     flow.confirmAndRestartDevice.mockReset();
     flow.confirmAndRestartDevice.mockResolvedValue(undefined);
   });
@@ -111,19 +115,32 @@ describe("KNXProjectDevicesView restart button", () => {
       `knx-sticky-expansion-panel[data-panel-key="${ia}"]`,
     ) as HTMLElement & { expanded: boolean; updateComplete: Promise<boolean> };
 
-  const button = (element: KNXProjectDevicesView, ia: string) =>
-    panel(element, ia)?.querySelector("[data-header-action] ha-icon-button") as
-      (HTMLElement & { disabled: boolean; label: string }) | null;
+  type Menu = HTMLElement & { items: IconOverflowMenuItem[] };
 
-  it("shows the restart button only for valid individual addresses", async () => {
+  const menu = (element: KNXProjectDevicesView, ia: string) =>
+    panel(element, ia)?.querySelector("[data-header-action] ha-icon-overflow-menu") as Menu | null;
+
+  const item = (element: KNXProjectDevicesView, ia: string, index: number) =>
+    menu(element, ia)!.items[index];
+
+  it("shows the device menu only for valid individual addresses", async () => {
     const element = await mount();
-    expect(button(element, "1.1.5")?.label).toBe("component.knx.services.restart_device.name");
-    expect(button(element, "1.1.-")).toBeNull();
+    expect(menu(element, "1.1.5")?.items.map((entry) => entry.label)).toEqual([
+      "component.knx.config_panel.project.devices.view_telegrams",
+      "component.knx.services.restart_device.name",
+    ]);
+    expect(menu(element, "1.1.-")).toBeNull();
+  });
+
+  it("opens the group monitor filtered by the device", async () => {
+    const element = await mount();
+    item(element, "1.1.5", 0).action!();
+    expect(navigate).toHaveBeenCalledWith("/knx/group_monitor?source=1.1.5");
   });
 
   it("starts the restart flow without toggling the panel", async () => {
     const element = await mount();
-    button(element, "1.1.5")!.click();
+    item(element, "1.1.5", 1).action!();
     await element.updateComplete;
 
     expect(flow.confirmAndRestartDevice).toHaveBeenCalledWith(element, element.hass, knx, {
@@ -133,7 +150,14 @@ describe("KNXProjectDevicesView restart button", () => {
     expect(panel(element, "1.1.5").expanded).toBe(false);
   });
 
-  it("does not toggle the panel on Enter or Space on the button", async () => {
+  it("does not toggle the panel when the menu is clicked", async () => {
+    const element = await mount();
+    menu(element, "1.1.5")!.click();
+    await element.updateComplete;
+    expect(panel(element, "1.1.5").expanded).toBe(false);
+  });
+
+  it("does not toggle the panel on Enter or Space on the menu", async () => {
     const element = await mount();
     for (const key of ["Enter", " "]) {
       const event = new KeyboardEvent("keydown", {
@@ -142,8 +166,8 @@ describe("KNXProjectDevicesView restart button", () => {
         composed: true,
         cancelable: true,
       });
-      button(element, "1.1.5")!.dispatchEvent(event);
-      // the button must still be able to turn the key press into a click
+      menu(element, "1.1.5")!.dispatchEvent(event);
+      // the menu must still be able to turn the key press into a click
       expect(event.defaultPrevented).toBe(false);
     }
     await element.updateComplete;
@@ -152,11 +176,11 @@ describe("KNXProjectDevicesView restart button", () => {
 
   it("lets other keys bubble out of the header action", async () => {
     const element = await mount();
-    const header = button(element, "1.1.5")!.closest(".device-header")!;
+    const header = menu(element, "1.1.5")!.closest(".device-header")!;
     const listener = vi.fn();
     header.addEventListener("keydown", listener);
     for (const key of ["Escape", "Tab"]) {
-      button(element, "1.1.5")!.dispatchEvent(
+      menu(element, "1.1.5")!.dispatchEvent(
         new KeyboardEvent("keydown", { key, bubbles: true, composed: true, cancelable: true }),
       );
     }
@@ -170,7 +194,7 @@ describe("KNXProjectDevicesView restart button", () => {
     expect(panel(element, "1.1.5").expanded).toBe(true);
   });
 
-  it("disables the button while the restart flow runs", async () => {
+  it("disables the restart item while the restart flow runs", async () => {
     let finish!: () => void;
     flow.confirmAndRestartDevice.mockReturnValue(
       new Promise<void>((resolve) => {
@@ -178,14 +202,15 @@ describe("KNXProjectDevicesView restart button", () => {
       }),
     );
     const element = await mount();
-    button(element, "1.1.5")!.click();
+    expect(item(element, "1.1.5", 1).disabled).toBeFalsy();
+    item(element, "1.1.5", 1).action!();
     await element.updateComplete;
-    expect(button(element, "1.1.5")!.disabled).toBe(true);
+    expect(item(element, "1.1.5", 1).disabled).toBe(true);
 
-    button(element, "1.1.5")!.click();
+    item(element, "1.1.5", 1).action!();
     expect(flow.confirmAndRestartDevice).toHaveBeenCalledTimes(1);
 
     finish();
-    await vi.waitFor(() => expect(button(element, "1.1.5")!.disabled).toBe(false));
+    await vi.waitFor(() => expect(item(element, "1.1.5", 1).disabled).toBe(false));
   });
 });

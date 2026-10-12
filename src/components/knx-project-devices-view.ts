@@ -1,5 +1,6 @@
 import {
   mdiMapMarkerOutline,
+  mdiMathLog,
   mdiNetworkOutline,
   mdiRestart,
   mdiSwapHorizontalCircle,
@@ -13,10 +14,12 @@ import memoize from "memoize-one";
 
 import "@ha/components/ha-alert";
 import "@ha/components/ha-expansion-panel";
-import "@ha/components/ha-icon-button";
+import "@ha/components/ha-icon-overflow-menu";
 import "@ha/components/ha-svg-icon";
 import { relativeTime } from "@ha/common/datetime/relative_time";
 import { stopPropagation } from "@ha/common/dom/stop_propagation";
+import { navigate } from "@ha/common/navigate";
+import type { IconOverflowMenuItem } from "@ha/components/ha-icon-overflow-menu";
 import type { HomeAssistant } from "@ha/types";
 
 import "./data-table/knx-data-table-related-label";
@@ -396,10 +399,24 @@ export class KNXProjectDevicesView extends LitElement {
     }
   };
 
-  private async _onRestartClick(ev: Event): Promise<void> {
-    const ia = (ev.currentTarget as HTMLElement).dataset.ia;
-    const device = this._deviceItems(this.data).find((item) => item.ia === ia);
-    if (!device || this._restarting.has(device.ia)) {
+  private _deviceMenuItems(device: DeviceTreeItem): IconOverflowMenuItem[] {
+    return [
+      {
+        path: mdiMathLog,
+        label: this.knx.localize("component.knx.config_panel.project.devices.view_telegrams"),
+        action: () => navigate(`/knx/group_monitor?source=${device.ia}`),
+      },
+      {
+        path: mdiRestart,
+        label: this.knx.localize("component.knx.services.restart_device.name"),
+        disabled: this._restarting.has(device.ia),
+        action: () => this._restartDevice(device),
+      },
+    ];
+  }
+
+  private async _restartDevice(device: DeviceTreeItem): Promise<void> {
+    if (this._restarting.has(device.ia)) {
       return;
     }
     this._restarting = new Set(this._restarting).add(device.ia);
@@ -463,13 +480,11 @@ export class KNXProjectDevicesView extends LitElement {
                 @click=${stopPropagation}
                 @keydown=${this._onHeaderActionKeydown}
               >
-                <ha-icon-button
-                  .path=${mdiRestart}
-                  .label=${this.knx.localize("component.knx.services.restart_device.name")}
-                  .disabled=${this._restarting.has(device.ia)}
-                  data-ia=${device.ia}
-                  @click=${this._onRestartClick}
-                ></ha-icon-button>
+                <ha-icon-overflow-menu
+                  .hass=${this.hass}
+                  narrow
+                  .items=${this._deviceMenuItems(device)}
+                ></ha-icon-overflow-menu>
               </span>`
             : nothing
         }
