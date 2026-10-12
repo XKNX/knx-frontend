@@ -150,6 +150,19 @@ describe("KNXProjectDevicesView restart button", () => {
     expect(panel(element, "1.1.5").expanded).toBe(false);
   });
 
+  it("lets other keys bubble out of the header action", async () => {
+    const element = await mount();
+    const header = button(element, "1.1.5")!.closest(".device-header")!;
+    const listener = vi.fn();
+    header.addEventListener("keydown", listener);
+    for (const key of ["Escape", "Tab"]) {
+      button(element, "1.1.5")!.dispatchEvent(
+        new KeyboardEvent("keydown", { key, bubbles: true, composed: true, cancelable: true }),
+      );
+    }
+    expect(listener).toHaveBeenCalledTimes(2);
+  });
+
   it("still toggles the panel from the rest of the header", async () => {
     const element = await mount();
     (panel(element, "1.1.5").querySelector(".description") as HTMLElement).click();

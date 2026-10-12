@@ -17,17 +17,11 @@ const INDIVIDUAL_ADDRESS =
 /** Whether `ia` is an individual address a restart can be sent to. */
 export const isRestartableAddress = (ia: string): boolean => INDIVIDUAL_ADDRESS.test(ia);
 
-const errorMessage = (err: unknown): string => {
-  // HA rejects service calls with `{ code, message }`, not with an Error
-  const message = (err as { message?: unknown } | null)?.message;
-  return typeof message === "string" && message ? message : String(err);
-};
-
 /**
  * Asks for confirmation, then sends a basic restart to the device through the
- * `knx.restart_device` action and reports the result in a toast. A basic
- * restart is not confirmed by the device, so success means "sent".
- * Never rejects; failures are shown in the toast.
+ * `knx.restart_device` action. A basic restart is not confirmed by the
+ * device, so success shows a "sent" toast. Failures are reported by Home
+ * Assistant's own error toast. Never rejects.
  */
 export const confirmAndRestartDevice = async (
   element: HTMLElement,
@@ -50,8 +44,8 @@ export const confirmAndRestartDevice = async (
   }
   try {
     await restartDevice(hass, device.ia);
-  } catch (err) {
-    showToast(element, { message: errorMessage(err) });
+  } catch {
+    // Home Assistant already showed the localized error toast
     return;
   }
   showToast(element, {

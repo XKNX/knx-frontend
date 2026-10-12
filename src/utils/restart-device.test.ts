@@ -70,9 +70,13 @@ describe("confirmAndRestartDevice", () => {
       dismissText: "ui.common.cancel",
       destructive: true,
     });
-    expect(callService).toHaveBeenCalledWith("knx", "restart_device", {
-      individual_address: "1.1.5",
-    });
+    expect(callService).toHaveBeenCalledWith(
+      "knx",
+      "restart_device",
+      { individual_address: "1.1.5" },
+      undefined,
+      true,
+    );
     expect(mocks.showToast).toHaveBeenCalledWith(element, {
       message: 'component.knx.config_panel.project.devices.restart.sent {"address":"1.1.5"}',
     });
@@ -88,7 +92,7 @@ describe("confirmAndRestartDevice", () => {
     );
   });
 
-  it("shows the message of a failed action call", async () => {
+  it("leaves reporting a failed action call to Home Assistant", async () => {
     mocks.showConfirmationDialog.mockResolvedValue(true);
     // HA rejects service calls with a plain object, not an Error
     callService.mockRejectedValue({
@@ -100,17 +104,6 @@ describe("confirmAndRestartDevice", () => {
       confirmAndRestartDevice(element, hass, knx, { ia: "1.1.5", name: "Switch" }),
     ).resolves.toBeUndefined();
 
-    expect(mocks.showToast).toHaveBeenCalledWith(element, {
-      message: "KNX device 1.1.5 did not respond.",
-    });
-  });
-
-  it("shows an Error's message", async () => {
-    mocks.showConfirmationDialog.mockResolvedValue(true);
-    callService.mockRejectedValue(new Error("Connection lost"));
-
-    await confirmAndRestartDevice(element, hass, knx, { ia: "1.1.5", name: "Switch" });
-
-    expect(mocks.showToast).toHaveBeenCalledWith(element, { message: "Connection lost" });
+    expect(mocks.showToast).not.toHaveBeenCalled();
   });
 });

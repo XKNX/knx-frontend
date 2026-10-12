@@ -389,6 +389,13 @@ export class KNXProjectDevicesView extends LitElement {
     return parts.join(" · ");
   }
 
+  /** Only Enter and Space toggle the panel; Tab, Escape etc. must still bubble. */
+  private _onHeaderActionKeydown = (ev: KeyboardEvent): void => {
+    if (ev.key === "Enter" || ev.key === " ") {
+      ev.stopPropagation();
+    }
+  };
+
   private async _onRestartClick(ev: Event): Promise<void> {
     const ia = (ev.currentTarget as HTMLElement).dataset.ia;
     const device = this._deviceItems(this.data).find((item) => item.ia === ia);
@@ -454,7 +461,7 @@ export class KNXProjectDevicesView extends LitElement {
                 class="header-actions"
                 data-header-action
                 @click=${stopPropagation}
-                @keydown=${stopPropagation}
+                @keydown=${this._onHeaderActionKeydown}
               >
                 <ha-icon-button
                   .path=${mdiRestart}

@@ -54,7 +54,14 @@ export const restartDevice = async (
   hass: HomeAssistant,
   individualAddress: string,
 ): Promise<void> => {
-  await hass.callService("knx", "restart_device", { individual_address: individualAddress });
+  // notifyOnError: Home Assistant shows the localized error toast and rethrows
+  await hass.callService(
+    "knx",
+    "restart_device",
+    { individual_address: individualAddress },
+    undefined,
+    true,
+  );
 };
 
 export const getGroupMonitorInfo = (hass: HomeAssistant): Promise<GroupMonitorInfoData> =>
