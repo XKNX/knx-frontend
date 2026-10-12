@@ -1,4 +1,9 @@
-import { mdiMapMarkerOutline, mdiNetworkOutline, mdiSwapHorizontalCircle } from "@mdi/js";
+import {
+  mdiMapMarkerOutline,
+  mdiNetworkOutline,
+  mdiRestart,
+  mdiSwapHorizontalCircle,
+} from "@mdi/js";
 import type { PropertyValues, TemplateResult } from "lit";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
@@ -8,8 +13,10 @@ import memoize from "memoize-one";
 
 import "@ha/components/ha-alert";
 import "@ha/components/ha-expansion-panel";
+import "@ha/components/ha-icon-button";
 import "@ha/components/ha-svg-icon";
 import { relativeTime } from "@ha/common/datetime/relative_time";
+import { stopPropagation } from "@ha/common/dom/stop_propagation";
 import type { HomeAssistant } from "@ha/types";
 
 import "./data-table/knx-data-table-related-label";
@@ -26,6 +33,7 @@ import type {
 import { buildDeviceTree, filterDeviceTree } from "../utils/project-structure";
 import { dptToString } from "../utils/dpt";
 import { TelegramDictFormatter } from "../utils/format";
+import { confirmAndRestartDevice, isRestartableAddress } from "../utils/restart-device";
 
 interface RelatedRefs {
   entities: string[];
@@ -96,6 +104,9 @@ export class KNXProjectDevicesView extends LitElement {
 
   // panels manually collapsed while a deep filter force-expands matches
   @state() private _manuallyCollapsed = new Set<string>();
+
+  // devices with a running restart flow; their button is disabled meanwhile
+  @state() private _restarting = new Set<string>();
 
   private _deviceItems = memoize((data: KNXProject): DeviceTreeItem[] => buildDeviceTree(data));
 
@@ -290,6 +301,8 @@ export class KNXProjectDevicesView extends LitElement {
    * For ha-expansion-panel that also avoids its height animation, which
    * leaves stale inline heights when nested panels or dynamic content
    * change the content size afterwards.
+   *
+   * Events from header actions (`data-header-action`) are left to the action.
    */
   private _summaryInterceptor = (ev: Event): void => {
     if (ev.type === "keydown") {
@@ -298,11 +311,22 @@ export class KNXProjectDevicesView extends LitElement {
         return;
       }
     }
-    const summary = ev.composedPath().find((target) => (target as HTMLElement).id === "summary") as
-      HTMLElement | undefined;
-    if (!summary) {
+    const path = ev.composedPath();
+    const summaryIndex = path.findIndex((target) => (target as HTMLElement).id === "summary");
+    if (summaryIndex === -1) {
       return;
     }
+    // header actions handle their own events and must not toggle the panel
+    if (
+      path
+        .slice(0, summaryIndex)
+        .some(
+          (target) => target instanceof HTMLElement && target.hasAttribute("data-header-action"),
+        )
+    ) {
+      return;
+    }
+    const summary = path[summaryIndex] as HTMLElement;
     const panel = (summary.getRootNode() as ShadowRoot).host as HTMLElement & {
       noCollapse: boolean;
       expanded: boolean;
@@ -365,6 +389,25 @@ export class KNXProjectDevicesView extends LitElement {
     return parts.join(" · ");
   }
 
+  private async _onRestartClick(ev: Event): Promise<void> {
+    const ia = (ev.currentTarget as HTMLElement).dataset.ia;
+    const device = this._deviceItems(this.data).find((item) => item.ia === ia);
+    if (!device || this._restarting.has(device.ia)) {
+      return;
+    }
+    this._restarting = new Set(this._restarting).add(device.ia);
+    try {
+      await confirmAndRestartDevice(this, this.hass, this.knx, {
+        ia: device.ia,
+        name: device.name,
+      });
+    } finally {
+      const restarting = new Set(this._restarting);
+      restarting.delete(device.ia);
+      this._restarting = restarting;
+    }
+  }
+
   private _renderDevice(
     device: DeviceTreeItem,
     relatedByScope: Record<string, ScopeRelated>,
@@ -405,6 +448,24 @@ export class KNXProjectDevicesView extends LitElement {
           }
           ${line ? html`<span class="pill" title=${line.mediumType}>${line.label}</span>` : nothing}
         </div>
+        ${
+          isRestartableAddress(device.ia)
+            ? html`<span
+                class="header-actions"
+                data-header-action
+                @click=${stopPropagation}
+                @keydown=${stopPropagation}
+              >
+                <ha-icon-button
+                  .path=${mdiRestart}
+                  .label=${this.knx.localize("component.knx.services.restart_device.name")}
+                  .disabled=${this._restarting.has(device.ia)}
+                  data-ia=${device.ia}
+                  @click=${this._onRestartClick}
+                ></ha-icon-button>
+              </span>`
+            : nothing
+        }
       </div>
       ${
         expanded
@@ -588,6 +649,14 @@ export class KNXProjectDevicesView extends LitElement {
 
     :host([narrow]) .device-pills {
       display: none;
+    }
+
+    .header-actions {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      margin-left: 4px;
+      color: var(--secondary-text-color);
     }
 
     .pill {
