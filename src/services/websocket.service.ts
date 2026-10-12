@@ -50,6 +50,13 @@ export const removeProjectFile = (hass: HomeAssistant): Promise<void> =>
     type: "knx/project_file_remove",
   });
 
+export const restartDevice = async (
+  hass: HomeAssistant,
+  individualAddress: string,
+): Promise<void> => {
+  await hass.callService("knx", "restart_device", { individual_address: individualAddress });
+};
+
 export const getGroupMonitorInfo = (hass: HomeAssistant): Promise<GroupMonitorInfoData> =>
   hass.callWS({
     type: "knx/group_monitor_info",
