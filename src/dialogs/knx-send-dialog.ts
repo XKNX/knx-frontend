@@ -10,7 +10,6 @@ import "@ha/layouts/hass-loading-screen";
 
 import { DialogMixin } from "@ha/dialogs/dialog-mixin";
 import type { HomeAssistant } from "@ha/types";
-import { showToast } from "@ha/util/toast";
 
 import "../components/knx-group-address-selector";
 import "../components/knx-payload-selector";
@@ -22,6 +21,7 @@ import type { KNX } from "../types/knx";
 import { KNXLogger } from "../tools/knx-logger";
 import { setNestedValue } from "../utils/config-helper";
 import { TelegramDictFormatter } from "../utils/format";
+import { showToast } from "../utils/toast";
 
 const logger = new KNXLogger("knx-send-dialog");
 
@@ -173,8 +173,6 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
     }
     const address = this._data.ga.write;
     lastUsedData = structuredClone(this._data);
-    // The dialog is removed from the DOM once closed, so the toast needs a host that stays attached.
-    const toastHost = this._attachedHost();
     this.closeDialog();
     let result: { response?: KnxReadResponse };
     try {
@@ -186,7 +184,7 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
     }
     const response = result.response!;
     logger.debug("Read response", response);
-    showToast(toastHost, {
+    showToast(this, {
       message: this._backendLocalize("read_response", {
         address,
         source: response.source_name
@@ -196,11 +194,6 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
           TelegramDictFormatter.valueWithUnit(response) || TelegramDictFormatter.payload(response),
       }),
     });
-  }
-
-  private _attachedHost(): HTMLElement {
-    const root = this.getRootNode();
-    return root instanceof ShadowRoot ? (root.host as HTMLElement) : this;
   }
 
   private _send(_ev: CustomEvent) {

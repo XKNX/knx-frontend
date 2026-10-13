@@ -233,24 +233,4 @@ describe("knx-send-dialog read", () => {
 
     expect(rendered.toasts).toEqual([]);
   });
-
-  it("fires the toast on the element hosting the dialog, which outlives it", async () => {
-    const rendered = createDialog();
-    rendered.callService.mockResolvedValue({
-      context: { id: "" },
-      response: readResponse({ value: true }),
-    });
-    fillIn(rendered, { ga: { write: "1/2/3" } });
-    const host = document.createElement("div");
-    const toasts: ShowToastParams[] = [];
-    host.addEventListener("hass-notification", (ev) => {
-      toasts.push((ev as CustomEvent<ShowToastParams>).detail);
-    });
-    // Dialogs are appended to the panel's shadow root; attaching for real would render HA components.
-    vi.spyOn(rendered.dialog, "getRootNode").mockReturnValue(host.attachShadow({ mode: "open" }));
-
-    await read(rendered);
-
-    expect(toasts).toEqual([{ message: "Response from 1.1.5 for 1/2/3: true" }]);
-  });
 });
