@@ -79,6 +79,12 @@ export interface TelegramDict {
   value: string | number | boolean | unknown[] | Record<string, unknown> | null;
 }
 
+/** Response data of the `knx.read` action. Decoded with the DPT the loaded project assigns. */
+export interface KnxReadResponse extends Pick<
+  TelegramDict,
+  "dpt_main" | "dpt_sub" | "dpt_name" | "payload" | "source" | "source_name" | "unit" | "value"
+> {}
+
 export interface TelegramQueryParameters {
   sources?: string[];
   destinations?: string[];

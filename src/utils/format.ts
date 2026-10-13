@@ -6,14 +6,14 @@ import type { TelegramDict } from "../types/websocket";
 import type { TimePrecision } from "../features/group-monitor";
 
 export const TelegramDictFormatter = {
-  payload: (telegram: TelegramDict): string => {
+  payload: (telegram: Pick<TelegramDict, "payload">): string => {
     if (telegram.payload == null) return "";
     return Array.isArray(telegram.payload)
       ? telegram.payload.reduce((res, curr) => res + curr.toString(16).padStart(2, "0"), "0x")
       : telegram.payload.toString();
   },
 
-  valueWithUnit: (telegram: TelegramDict): string => {
+  valueWithUnit: (telegram: Pick<TelegramDict, "value" | "unit">): string => {
     if (telegram.value == null) return "";
     if (
       typeof telegram.value === "number" ||

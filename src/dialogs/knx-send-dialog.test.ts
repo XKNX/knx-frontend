@@ -1,28 +1,58 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render } from "lit";
 
+import type { ShowToastParams } from "@ha/managers/notification-manager";
+
 import { createMockHass } from "../../test/helpers/mock-hass";
 import type { GASchema } from "../types/entity_data";
 import type { KNX } from "../types/knx";
+import type { KnxReadResponse } from "../types/websocket";
 import type { PayloadConfigValue } from "../components/knx-payload-selector";
 
 import { KnxSendDialog } from "./knx-send-dialog";
 
+const translations: Record<string, string> = {
+  "component.knx.config_panel.dialogs.send.read_response":
+    "Response from {source} for {address}: {value}",
+};
+
+const localize = (key: string, replace?: Record<string, string>) =>
+  (translations[key] ?? key).replace(/\{(\w+)\}/g, (_, name) => replace?.[name] ?? "");
+
+const readResponse = (overrides: Partial<KnxReadResponse>): KnxReadResponse => ({
+  dpt_main: null,
+  dpt_sub: null,
+  dpt_name: null,
+  payload: 1,
+  source: "1.1.5",
+  source_name: "",
+  unit: null,
+  value: null,
+  ...overrides,
+});
+
 const createDialog = () => {
   const hass = createMockHass();
-  (hass as any).callService = vi.fn();
-  const knx = { localize: (key: string) => key } as unknown as KNX;
+  const callService = vi.fn<
+    (...args: unknown[]) => Promise<{ context: { id: string }; response?: KnxReadResponse }>
+  >(() => Promise.resolve({ context: { id: "" } }));
+  (hass as any).callService = callService;
+  const knx = { localize } as unknown as KNX;
   const dialog = new KnxSendDialog();
   dialog.params = { hass, knx };
   dialog.hass = hass;
   dialog.knx = knx;
+  const toasts: ShowToastParams[] = [];
+  dialog.addEventListener("hass-notification", (ev) => {
+    toasts.push((ev as CustomEvent<ShowToastParams>).detail);
+  });
   const container = document.createElement("div");
   const rerender = () => {
     render((dialog as any).render(), container, { host: dialog });
     return container;
   };
   rerender();
-  return { dialog, hass, container, rerender };
+  return { dialog, hass, callService, toasts, container, rerender };
 };
 
 type Rendered = ReturnType<typeof createDialog>;
@@ -49,6 +79,15 @@ const writeButton = (container: HTMLElement) => buttons(container)[2];
 // ha-button.click() forwards to an inner button that is not rendered while detached.
 const click = (element: HTMLElement) =>
   element.dispatchEvent(new MouseEvent("click", { bubbles: true, composed: true }));
+
+// Lets the awaited read service call settle before inspecting the toasts.
+const read = async (rendered: Rendered) => {
+  click(readButton(rendered.container));
+  await vi.waitFor(() => expect(rendered.callService).toHaveBeenCalled());
+  await new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
+};
 
 const change = ({ rerender }: Rendered, element: HTMLElement, value: unknown) => {
   element.dispatchEvent(new CustomEvent("value-changed", { detail: { value } }));
@@ -119,17 +158,21 @@ describe("knx-send-dialog", () => {
     );
   });
 
-  it("remembers the address of the last read", () => {
+  it("remembers the address of the last read", async () => {
     const reading = createDialog();
+    reading.callService.mockResolvedValue({
+      context: { id: "" },
+      response: readResponse({ value: 42, unit: "%" }),
+    });
     fillIn(reading, { ga: DIMMER.ga });
-    click(readButton(reading.container));
+    await read(reading);
     expect(reading.hass.callService).toHaveBeenCalledWith(
       "knx",
       "read",
       { address: "4/5/6" },
       undefined,
       true,
-      false,
+      true,
     );
 
     expect(prefilled(createDialog()).ga).toEqual(DIMMER.ga);
@@ -149,5 +192,45 @@ describe("knx-send-dialog", () => {
     fillIn(edited, { ga: DIMMER.ga });
 
     expect(prefilled(createDialog()).ga).toEqual(LIGHT.ga);
+  });
+});
+
+describe("knx-send-dialog read", () => {
+  it("shows the received response in a toast", async () => {
+    const rendered = createDialog();
+    rendered.callService.mockResolvedValue({
+      context: { id: "" },
+      response: readResponse({ value: 21.5, unit: "°C", source_name: "Thermostat" }),
+    });
+    fillIn(rendered, { ga: { write: "1/2/3", dpt: "9.001" } });
+
+    await read(rendered);
+
+    expect(rendered.toasts).toEqual([
+      { message: "Response from 1.1.5 (Thermostat) for 1/2/3: 21.5 °C" },
+    ]);
+  });
+
+  it("falls back to the raw payload when the response can't be decoded", async () => {
+    const rendered = createDialog();
+    rendered.callService.mockResolvedValue({
+      context: { id: "" },
+      response: readResponse({ payload: [0x0c, 0x1a] }),
+    });
+    fillIn(rendered, { ga: { write: "1/2/3" } });
+
+    await read(rendered);
+
+    expect(rendered.toasts).toEqual([{ message: "Response from 1.1.5 for 1/2/3: 0x0c1a" }]);
+  });
+
+  it("shows nothing itself when the call fails, since HA already shows the error", async () => {
+    const rendered = createDialog();
+    rendered.callService.mockRejectedValue(new Error("No response received"));
+    fillIn(rendered, { ga: { write: "1/2/3" } });
+
+    await read(rendered);
+
+    expect(rendered.toasts).toEqual([]);
   });
 });

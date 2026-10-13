@@ -7,10 +7,10 @@ import "@ha/components/ha-icon-button";
 import "@ha/layouts/hass-subpage";
 import { copyToClipboard } from "@ha/common/util/copy-clipboard";
 import type { HomeAssistant } from "@ha/types";
-import { showToast } from "@ha/util/toast";
 
 import "./knx-bus-scene";
 import type { KnxBusScene, KnxBusSceneVariant } from "./knx-bus-scene";
+import { showToast } from "../utils/toast";
 
 /** Taps on these keep their own meaning instead of sending a telegram. */
 const CONTROLS = new Set([
