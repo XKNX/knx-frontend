@@ -1,4 +1,36 @@
+import type { LocalizeFunc } from "@ha/common/translations/localize";
 import type { ErrorDescription } from "../types/entity_data";
+
+const VALIDATION_ERROR_KEY_PREFIX = "component.knx.config_panel.validation_error.";
+
+const formatPlaceholder = (value: unknown): string =>
+  Array.isArray(value) ? value.map(String).join(", ") : String(value);
+
+/**
+ * Replaces backend validation messages with their translation.
+ *
+ * Errors without a translation keep the English message from the backend.
+ */
+export const localizeValidationErrors = (
+  localize: LocalizeFunc,
+  errors: ErrorDescription[],
+): ErrorDescription[] =>
+  errors.map((error) => {
+    if (!error.translation_key) {
+      return error;
+    }
+    const placeholders = Object.fromEntries(
+      Object.entries(error.placeholders ?? {}).map(([key, value]) => [
+        key,
+        formatPlaceholder(value),
+      ]),
+    );
+    const message = localize(
+      `${VALIDATION_ERROR_KEY_PREFIX}${error.translation_key}`,
+      placeholders,
+    );
+    return message ? { ...error, message } : error;
+  });
 
 export const extractValidationErrors = (
   errors: ErrorDescription[] | undefined,
