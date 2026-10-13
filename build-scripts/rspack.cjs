@@ -187,7 +187,7 @@ const createRspackConfig = ({
           try {
             fullPath = resource.startsWith(".")
               ? path.resolve(context, resource)
-              : require.resolve(resource);
+              : require.resolve(resource, { paths: [context] });
           } catch (err) {
             console.error("Error in Home Assistant ignore plugin", resource, context);
             throw err;

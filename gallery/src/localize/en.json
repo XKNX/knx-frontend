@@ -1,0 +1,1325 @@
+{
+  "title": "KNX Frontend Gallery",
+  "subtitle": "For the Home Assistant KNX integration",
+  "preview": "Component preview",
+  "separator": "Separator",
+  "failed": "The component preview could not be loaded.",
+  "backendFixtures": {
+    "component.knx.config_panel.selectors.knx-payload-selector.raw_payload_base_label": "Base"
+  },
+  "validation": {
+    "invalidJson": "Enter a valid JSON value without prototype keys.",
+    "invalidValue": "Choose a value of the declared type.",
+    "unknownScenario": "Unknown scenario.",
+    "unknownControl": "Unknown control.",
+    "unknownSlot": "Unknown slot.",
+    "nonNegative": "Enter a number greater than or equal to zero."
+  },
+  "examples": {
+    "separator": {
+      "description": "A horizontal separator with adjustable height and optional content.",
+      "height": "Height (px)",
+      "minHeight": "Minimum height (px)",
+      "maxHeight": "Maximum height (px)",
+      "animationDuration": "Animation duration (ms)",
+      "customClass": "Custom CSS class",
+      "content": "Default content",
+      "default": "Default",
+      "expanded": "Expanded",
+      "sampleContent": "Separator content",
+      "api": {
+        "height": "Current height in pixels. Direct property assignment does not clamp the height.",
+        "heightDetails": "Defaults to 1 pixel. Use setHeight(newHeight, animate?) to clamp the value to the configured bounds and optionally animate the transition.",
+        "minHeight": "Lower bound used by setHeight() and collapse(). Defaults to 1 pixel.",
+        "maxHeight": "Upper bound used by setHeight() and expand(). Defaults to 50 pixels.",
+        "animationDuration": "Duration of transitions started by the component methods. Defaults to 150 milliseconds.",
+        "customClass": "Additional class applied to the internal separator container. Defaults to an empty string.",
+        "expansionRatio": "Read-only expansion ratio: (height - minHeight) / (maxHeight - minHeight). Equal bounds produce a non-finite result.",
+        "setHeight": "Method that clamps height to the configured bounds and optionally animates. Animation defaults to true.",
+        "expand": "Method that animates to maxHeight.",
+        "collapse": "Method that animates to minHeight.",
+        "toggle": "Method that expands or collapses based on the midpoint of the configured bounds.",
+        "content": "Default slot for content inside the separator. Content outside the current height is clipped."
+      }
+    }
+  },
+  "environment": {
+    "unhandled": "Offline gallery has no handler for",
+    "subscriptionCallback": "Telegram subscription requires a callback",
+    "groupAddress": "Choose a gallery group address",
+    "payload": "A payload is required"
+  },
+  "ui": {
+    "catalog": "Catalog",
+    "overview": "Overview",
+    "overviewDescription": "Browse KNX components and open an example to explore its scenarios and API.",
+    "openExample": "Open example:",
+    "openCatalog": "Open catalog",
+    "closeCatalog": "Close catalog",
+    "categories": "Categories",
+    "all": "All",
+    "categoryLabels": {
+      "views": "Views",
+      "layouts": "Layouts",
+      "widgets": "Widgets",
+      "inputs": "Inputs",
+      "data": "Data",
+      "dialogs": "Dialogs"
+    },
+    "categoryTitles": {
+      "views": "Views",
+      "layouts": "Layouts",
+      "widgets": "Widgets",
+      "inputs": "Inputs & forms",
+      "data": "Data & filters",
+      "dialogs": "Dialogs"
+    },
+    "search": "Search title or tag",
+    "noMatches": "No matching components.",
+    "selectComponent": "Choose a component to explore its scenarios and API.",
+    "unknownRoute": "This component or scenario does not exist.",
+    "back": "Back to catalog",
+    "scenario": "Scenario",
+    "reset": "Reset scenario",
+    "resetProperty": "Reset {label}",
+    "properties": "Properties",
+    "exampleOption": "Example option",
+    "slots": "Slots",
+    "overridden": "Overridden",
+    "overrides": "Active overrides",
+    "noControls": "This example has no editable properties.",
+    "api": "API reference",
+    "apiDetails": "API details",
+    "searchInspector": "Search properties or functions",
+    "inspectorFilters": "Filter inspector",
+    "inspectorFilter": {
+      "all": "All",
+      "editable": "Editable",
+      "api": "Interfaces"
+    },
+    "inspectorResults": "{count} / {total}",
+    "noInspectorResults": "No matching properties or interfaces.",
+    "additionalProperties": "Additional properties",
+    "relationships": "Relationships",
+    "usedInternally": "Used internally",
+    "usedBy": "Used by",
+    "canUseInSlot": "Can use in a slot",
+    "canBePlacedIn": "Can be placed in",
+    "relationshipRoles": {
+      "toolbar": "Arranges search and actions in the toolbar.",
+      "filterPane": "Contains the filters beside the content or in a dialog on narrow screens.",
+      "filterSlot": "Add a list filter to the filter-pane slot to filter the page content.",
+      "expansion": "Provides the collapsible heading and content area.",
+      "sorting": "Lets users choose the sort field and direction.",
+      "sortCriterion": "Represents a configured sort field and its direction.",
+      "separator": "Separates pinned selections from the remaining options.",
+      "sortItemSlot": "Add sort criteria to the menu through its default slot."
+    },
+    "scenarioValue": "Scenario value",
+    "controlKinds": {
+      "text": "string",
+      "number": "number",
+      "boolean": "boolean",
+      "select": "choice",
+      "json": "JSON"
+    },
+    "apiGroups": {
+      "property": "Properties",
+      "method": "Methods",
+      "slot": "Slots",
+      "event": "Events",
+      "callback": "Callbacks"
+    },
+    "loading": "Loading preview…",
+    "ready": "Preview ready",
+    "alignment": "Alignment inspection",
+    "inspectAlignment": "Inspect alignment",
+    "pinnedGuides": "{count} pinned",
+    "chooseElement": "Choose element",
+    "resetGuides": "Reset guides",
+    "exitInspection": "Exit inspection",
+    "zoom": "Preview zoom",
+    "zoomFit": "Fit all",
+    "zoomFitShort": "Fit",
+    "zoomOriginal": "Original size",
+    "width": "Preview width (px)",
+    "autoHeight": "Auto height",
+    "autoHeightHelp": "Fit the preview height to its content while keeping the selected width.",
+    "widthError": "Enter a positive width in pixels.",
+    "device": "Device preview",
+    "multiDeviceHelp": "Hold ⌘ or Ctrl to select multiple devices, or use the device menu.",
+    "selected": "Selected",
+    "devices": {
+      "phone": "Phone",
+      "largePhone": "Large phone",
+      "tablet": "Tablet",
+      "landscape": "Landscape",
+      "desktop": "Desktop"
+    },
+    "compare": "Compare",
+    "bounds": "Component boundaries",
+    "custom": "Custom",
+    "interfaceMode": "Interface color",
+    "previewMode": "Preview mode",
+    "viewMode": "Workspace view",
+    "viewModes": {
+      "preview": "Preview",
+      "split": "Split",
+      "code": "Code"
+    },
+    "usageCode": "Lit usage",
+    "codeHelp": "Usage from the current example, properties and slots. Register the components and supply the named application dependencies. Callback implementations and host setup are not included.",
+    "codeLoading": "Waiting for example code…",
+    "codeUnsupportedDirective": "Usage code does not support this Lit directive.",
+    "codeUnsupportedData": "Usage code requires plain fixture data without circular references.",
+    "codeUnsupportedValue": "Usage code does not support this value type.",
+    "copyCode": "Copy code",
+    "codeCopied": "Code copied.",
+    "codeCopyFailed": "Could not copy code. Select and copy the code below.",
+    "allComponents": "All components",
+    "galleryTools": "Gallery tools",
+    "projectLinks": "Project links",
+    "projectFrontend": "KNX Frontend",
+    "projectOrganisation": "XKNX Organisation",
+    "projectDocumentation": "KNX Documentation",
+    "projectIntegration": "KNX Integration · Issues & discussions",
+    "lightMode": "Light mode",
+    "darkMode": "Dark mode",
+    "appLight": "Switch application to light mode",
+    "appDark": "Switch application to dark mode",
+    "light": "Light",
+    "dark": "Dark",
+    "theme": "Theme",
+    "default": "Default",
+    "knx": "KNX",
+    "log": "Event log",
+    "clear": "Clear log",
+    "emptyLog": "No events recorded.",
+    "logLimit": "The latest 200 events are retained.",
+    "offline": "Offline examples · No Home Assistant connection",
+    "property": "Property",
+    "slot": "Slot",
+    "event": "Event",
+    "callback": "Callback",
+    "error": "Error",
+    "failed": "Preview failed. Reset the scenario to try again.",
+    "inspector": "Inspector",
+    "openInspector": "Open inspector",
+    "closeInspector": "Close inspector",
+    "previewOptions": "Preview options",
+    "overviewCategories": "Overview categories",
+    "canvas": "Device canvas",
+    "canvasNavigation": "Canvas navigation",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "canvasPanHelp": "Drag the canvas background to move. Hold Space and drag inside a preview. Scroll or swipe to navigate."
+  },
+  "components": {
+    "flex-content-expansion-panel": {
+      "title": "Flex expansion panel",
+      "description": "Home Assistant expansion panel with flex content.",
+      "api": {
+        "expanded": "Whether the panel content is expanded. Header interaction also updates this state.",
+        "outlined": "Draw an outline around the expansion panel.",
+        "leftChevron": "Place the expansion chevron before the heading.",
+        "noCollapse": "Keep the panel open without a collapse action.",
+        "header": "Heading text, replaced when the header slot is enabled.",
+        "secondary": "Supporting heading text, replaced by the secondary slot.",
+        "default": "Default content",
+        "leading-icon": "Leading icon",
+        "event": "Event",
+        "icons": "Icons",
+        "expanded-will-change": "Emits expanded-will-change with the public event detail.",
+        "expanded-changed": "Emits expanded-changed with the public event detail."
+      },
+      "labels": {
+        "expanded": "Expanded",
+        "outlined": "Outlined",
+        "leftChevron": "Left chevron",
+        "noCollapse": "No collapse",
+        "header": "Header",
+        "secondary": "Secondary",
+        "default": "Default",
+        "leading-icon": "Leading-icon",
+        "event": "Event",
+        "icons": "Icons",
+        "expanded-will-change": "Expanded-will-change",
+        "expanded-changed": "Expanded-changed"
+      }
+    },
+    "knx-sticky-expansion-panel": {
+      "title": "Sticky expansion panel",
+      "description": "A sticky header with expandable content in a scroll container.",
+      "api": {
+        "expanded": "Whether the panel content is expanded. Header interaction also updates this state.",
+        "noCollapse": "Keep the panel open without a collapse action.",
+        "default": "Default content",
+        "header": "Heading text, replaced when the header slot is enabled.",
+        "expanded-will-change": "Emits expanded-will-change with the public event detail.",
+        "expanded-changed": "Emits expanded-changed with the public event detail."
+      },
+      "labels": {
+        "expanded": "Expanded",
+        "noCollapse": "No collapse",
+        "default": "Default",
+        "header": "Header",
+        "expanded-will-change": "Expanded-will-change",
+        "expanded-changed": "Expanded-changed"
+      }
+    },
+    "knx-tabs-subpage-data": {
+      "title": "Tabs subpage data",
+      "description": "Tabs subpage with toolbar and filter pane for content other than a data table.",
+      "api": {
+        "hasFilters": "Expose the filter pane toggle in the toolbar.",
+        "filters": "Number of active filters shown on the filter chip and enabling the clear action.",
+        "showFilters": "Show the filter pane. The component emits show-filters-changed on its own toggle or close.",
+        "resultCount": "Result count used by the filter sheet close button.",
+        "filterLabel": "Text of the filter chip and filter pane heading.",
+        "filterPaneNarrow": "Automatic measurement, forced dialog, or forced inline filter pane.",
+        "backPath": "Local navigation destination for the page back button.",
+        "twoTabs": "Provide two preview navigation tabs instead of one.",
+        "customLocalize": "Enable an observed custom callback for the page title.",
+        "default": "Default content",
+        "header": "Heading text, replaced when the header slot is enabled.",
+        "toolbar-icon": "Toolbar icon",
+        "toolbar-leading": "Toolbar leading",
+        "toolbar-search": "Toolbar search",
+        "toolbar-trailing": "Toolbar trailing",
+        "active-filters": "Active filter chips below the toolbar; the row collapses while empty.",
+        "banner": "Full-width notice below the toolbar.",
+        "sidebar": "Supplementary content beside the content; the page owns its width and visibility.",
+        "content-footer": "Footer beneath the content, beside the sidebar.",
+        "footer": "Footer below both content and sidebar.",
+        "filter-pane": "Filter pane",
+        "filter-pane-actions": "Filter pane actions",
+        "show-filters-changed": "Emits show-filters-changed with the public event detail.",
+        "clear-filter": "Emits clear-filter with the public event detail.",
+        "remove": "Emits remove with the public event detail.",
+        "hass": "Current offline Home Assistant instance supplied by the preview environment.",
+        "knx": "Offline KNX instance and local translations supplied by the preview environment.",
+        "narrow": "Derived from the preview iframe viewport using the Home Assistant 870px breakpoint.",
+        "route": "Local preview route /knx/gallery. Navigation remains inside the preview.",
+        "tabs": "One or two tabs controlled by twoTabs.",
+        "localizeFunc": "Optional observed title callback enabled by customLocalize.",
+        "click": "Observed action from the corresponding sample slot control.",
+        "input": "Observed action from the corresponding sample slot control.",
+        "change": "Observed action from the corresponding sample slot control."
+      },
+      "labels": {
+        "hasFilters": "Has filters",
+        "filters": "Active filter count",
+        "showFilters": "Show filters",
+        "resultCount": "Result count",
+        "filterLabel": "Filter label",
+        "filterPaneNarrow": "Filter pane narrow",
+        "backPath": "Back path",
+        "twoTabs": "Two tabs",
+        "customLocalize": "Custom localize",
+        "default": "Default",
+        "header": "Header",
+        "toolbar-icon": "Toolbar-icon",
+        "toolbar-leading": "Toolbar-leading",
+        "toolbar-search": "Toolbar-search",
+        "toolbar-trailing": "Toolbar-trailing",
+        "active-filters": "Active-filters",
+        "banner": "Banner",
+        "sidebar": "Sidebar",
+        "content-footer": "Content-footer",
+        "footer": "Footer",
+        "filter-pane": "Filter-pane",
+        "filter-pane-actions": "Filter-pane-actions",
+        "show-filters-changed": "Show-filters-changed",
+        "clear-filter": "Clear-filter",
+        "sample-action": "Sample-action",
+        "search-changed": "Search-changed",
+        "remove": "Remove",
+        "hass": "Hass",
+        "knx": "Knx",
+        "narrow": "Narrow",
+        "route": "Route",
+        "tabs": "Tabs",
+        "localizeFunc": "Localize func"
+      }
+    },
+    "knx-tabs-subpage-data-filter-pane": {
+      "title": "Tabs subpage data filter pane",
+      "description": "Filter pane of the tabs subpage data layout, inline or as a narrow bottom sheet.",
+      "api": {
+        "label": "Visible field or panel label.",
+        "path": "SVG path used by the filter chip icon.",
+        "count": "Active-filter count. A nonzero count exposes the clear action.",
+        "resultCount": "Result count used by the filter sheet close button.",
+        "disabled": "Disable the component controls supported by the product.",
+        "default": "Default content",
+        "actions": "Actions",
+        "close-filter-pane": "Emits close-filter-pane with the public event detail.",
+        "clear-filter": "Emits clear-filter with the public event detail.",
+        "narrow": "Derived from the preview iframe viewport using the Home Assistant 870px breakpoint."
+      },
+      "labels": {
+        "label": "Label",
+        "path": "Path",
+        "count": "Count",
+        "resultCount": "Result count",
+        "disabled": "Disabled",
+        "default": "Default",
+        "actions": "Actions",
+        "close-filter-pane": "Close-filter-pane",
+        "clear-filter": "Clear-filter",
+        "narrow": "Narrow"
+      }
+    },
+    "knx-tabs-subpage-data-toolbar": {
+      "title": "Tabs subpage data toolbar",
+      "description": "Toolbar row of the tabs subpage data layout, with optional search and a summary row.",
+      "api": {
+        "leading": "Leading",
+        "search": "Search",
+        "trailing": "Trailing",
+        "summary": "Summary",
+        "click": "Emits click with the public event detail.",
+        "input": "Emits input with the public event detail.",
+        "search-hidden": "Read-only reflected attribute indicating an empty search slot."
+      },
+      "labels": {
+        "leading": "Leading",
+        "search": "Search",
+        "trailing": "Trailing",
+        "summary": "Summary",
+        "click": "Click",
+        "input": "Input",
+        "search-hidden": "Search-hidden"
+      }
+    },
+    "knx-table-cell": {
+      "title": "Table cell",
+      "description": "Primary and secondary content inside a table cell.",
+      "api": {
+        "primary": "Primary",
+        "secondary": "Supporting heading text, replaced by the secondary slot."
+      },
+      "labels": {
+        "primary": "Primary",
+        "secondary": "Secondary"
+      }
+    },
+    "knx-table-cell-filterable": {
+      "title": "Filterable table cell",
+      "description": "A table cell with a toggleable filter action.",
+      "api": {
+        "filterValue": "Identifier included in the toggle-filter event.",
+        "filterDisplayText": "Human-readable value used in filter tooltips.",
+        "filterActive": "Whether this cell value is an active filter.",
+        "filterDisabled": "Hide the cell filter action.",
+        "primary": "Primary",
+        "secondary": "Supporting heading text, replaced by the secondary slot.",
+        "toggle-filter": "Emits toggle-filter with the public event detail.",
+        "knx": "Offline KNX instance and local translations supplied by the preview environment."
+      },
+      "labels": {
+        "filterValue": "Filter value",
+        "filterDisplayText": "Filter display text",
+        "filterActive": "Filter active",
+        "filterDisabled": "Filter disabled",
+        "primary": "Primary",
+        "secondary": "Secondary",
+        "toggle-filter": "Toggle-filter",
+        "knx": "Knx"
+      }
+    },
+    "knx-data-table-ga-label": {
+      "title": "Group address labels",
+      "description": "Group address links with a menu for multiple addresses.",
+      "api": {
+        "groupAddresses": "Address and optional display-name pairs. Multiple entries expose a menu."
+      },
+      "labels": {
+        "groupAddresses": "Group addresses"
+      }
+    },
+    "knx-data-table-related-label": {
+      "title": "Related entity labels",
+      "description": "Links to related entities and exposed states.",
+      "api": {
+        "entities": "Related entity IDs configured through the UI.",
+        "entitiesYaml": "Related entity IDs configured through YAML.",
+        "exposes": "Entity IDs whose states are exposed to KNX.",
+        "hass": "Current offline Home Assistant instance supplied by the preview environment."
+      },
+      "labels": {
+        "entities": "Entities",
+        "entitiesYaml": "Entities yaml",
+        "exposes": "Exposes",
+        "hass": "Hass"
+      }
+    },
+    "knx-list-filter": {
+      "title": "List filter",
+      "description": "Search, sort, select, and pin project group addresses.",
+      "api": {
+        "expanded": "Whether the panel content is expanded. Header interaction also updates this state.",
+        "selectedOptions": "Selected IDs from the mapped fixture list.",
+        "pinSelectedItems": "Keep selected list entries above unselected entries.",
+        "filterTitle": "Expansion panel title for the list filter.",
+        "filterQuery": "Search text matched against the configured fields.",
+        "sortCriterion": "Field identifier used to sort the data.",
+        "sortDirection": "Ascending or descending sort order.",
+        "isMobileDevice": "Use the compact mobile sort-action presentation.",
+        "selection-changed": "Emits selection-changed with the public event detail.",
+        "sort-changed": "Emits sort-changed with the public event detail.",
+        "expanded-changed": "Emits expanded-changed with the public event detail.",
+        "hass": "Current offline Home Assistant instance supplied by the preview environment.",
+        "knx": "Offline KNX instance and local translations supplied by the preview environment.",
+        "narrow": "Derived from the preview iframe viewport at the Home Assistant 870px breakpoint.",
+        "data": "Fresh group address fixtures from the offline project.",
+        "config": "Configuration object edited by this component. Changes are reported through its public event."
+      },
+      "labels": {
+        "expanded": "Expanded",
+        "selectedOptions": "Selected options",
+        "pinSelectedItems": "Pin selected items",
+        "filterTitle": "Filter title",
+        "filterQuery": "Filter query",
+        "sortCriterion": "Sort criterion",
+        "sortDirection": "Sort direction",
+        "isMobileDevice": "Is mobile device",
+        "selection-changed": "Selection-changed",
+        "sort-changed": "Sort-changed",
+        "expanded-changed": "Expanded-changed",
+        "hass": "Hass",
+        "knx": "Knx",
+        "narrow": "Narrow",
+        "data": "Data",
+        "config": "Config"
+      }
+    },
+    "knx-time-delta-filter": {
+      "title": "Time delta filter",
+      "description": "Include telegrams before and after a match.",
+      "api": {
+        "expanded": "Whether the panel content is expanded. Header interaction also updates this state.",
+        "deltaBefore": "Milliseconds before a matching telegram to include.",
+        "deltaAfter": "Milliseconds after a matching telegram to include.",
+        "addedCount": "Number of additional telegrams shown in the summary.",
+        "disabled": "Disable the component controls supported by the product.",
+        "expanded-changed": "Emits expanded-changed with the public event detail.",
+        "time-delta-changed": "Emits time-delta-changed with the public event detail.",
+        "hass": "Current offline Home Assistant instance supplied by the preview environment.",
+        "knx": "Offline KNX instance and local translations supplied by the preview environment."
+      },
+      "labels": {
+        "expanded": "Expanded",
+        "deltaBefore": "Delta before",
+        "deltaAfter": "Delta after",
+        "addedCount": "Added count",
+        "disabled": "Disabled",
+        "expanded-changed": "Expanded-changed",
+        "time-delta-changed": "Time-delta-changed",
+        "hass": "Hass",
+        "knx": "Knx"
+      }
+    },
+    "knx-time-range-filter": {
+      "title": "Time range filter",
+      "description": "Choose a historical interval or an open-ended range.",
+      "api": {
+        "expanded": "Whether the panel content is expanded. Header interaction also updates this state.",
+        "startMs": "Selected range start as Unix epoch milliseconds.",
+        "endMs": "Selected range end as Unix epoch milliseconds; omitted when openEnded is enabled.",
+        "openEnded": "Omit endMs to keep the range open until the current time.",
+        "loading": "Indicate that a history load is in progress.",
+        "warning": "Visible history warning text; empty hides the warning.",
+        "expanded-changed": "Emits expanded-changed with the public event detail.",
+        "time-range-changed": "Emits time-range-changed with the public event detail.",
+        "time-range-cleared": "Emits time-range-cleared with the public event detail.",
+        "hass": "Current offline Home Assistant instance supplied by the preview environment.",
+        "knx": "Offline KNX instance and local translations supplied by the preview environment."
+      },
+      "labels": {
+        "expanded": "Expanded",
+        "startMs": "Start ms",
+        "endMs": "End ms",
+        "openEnded": "Open ended",
+        "loading": "Loading",
+        "warning": "Warning",
+        "expanded-changed": "Expanded-changed",
+        "time-range-changed": "Time-range-changed",
+        "time-range-cleared": "Time-range-cleared",
+        "hass": "Hass",
+        "knx": "Knx"
+      }
+    },
+    "knx-sort-menu": {
+      "title": "Sort menu",
+      "description": "Dropdown with explicit sort criteria and direction.",
+      "api": {
+        "sortCriterion": "Field identifier used to sort the data.",
+        "sortDirection": "Ascending or descending sort order.",
+        "isMobileDevice": "Use the compact mobile sort-action presentation.",
+        "trigger": "Trigger",
+        "header": "Heading text, replaced when the header slot is enabled.",
+        "title": "Title",
+        "toolbar": "Toolbar",
+        "default": "Default content",
+        "sort-changed": "Emits sort-changed with the public event detail.",
+        "click": "Emits click with the public event detail.",
+        "knx": "Offline KNX instance and local translations supplied by the preview environment."
+      },
+      "labels": {
+        "sortCriterion": "Sort criterion",
+        "sortDirection": "Sort direction",
+        "isMobileDevice": "Is mobile device",
+        "trigger": "Trigger",
+        "header": "Header",
+        "title": "Title",
+        "toolbar": "Toolbar",
+        "default": "Default",
+        "sort-changed": "Sort-changed",
+        "click": "Click",
+        "knx": "Knx"
+      }
+    },
+    "knx-sort-menu-item": {
+      "title": "Sort menu item",
+      "description": "One sort criterion with ascending and descending actions.",
+      "api": {
+        "criterion": "Identifier included in sort-option-selected events.",
+        "displayName": "Visible name of the sort criterion.",
+        "defaultDirection": "Direction selected when activating this criterion.",
+        "direction": "Current direction of the active criterion.",
+        "active": "Highlight this sort criterion as active.",
+        "ascendingText": "Accessible text of the ascending action.",
+        "descendingText": "Accessible text of the descending action.",
+        "ascendingIcon": "SVG path of the ascending action.",
+        "descendingIcon": "SVG path of the descending action.",
+        "isMobileDevice": "Use the compact mobile sort-action presentation.",
+        "disabled": "Disable the component controls supported by the product.",
+        "sort-option-selected": "Emits sort-option-selected with the public event detail.",
+        "knx": "Offline KNX instance and local translations supplied by the preview environment."
+      },
+      "labels": {
+        "criterion": "Criterion",
+        "displayName": "Display name",
+        "defaultDirection": "Default direction",
+        "direction": "Direction",
+        "active": "Active",
+        "ascendingText": "Ascending text",
+        "descendingText": "Descending text",
+        "ascendingIcon": "Ascending icon",
+        "descendingIcon": "Descending icon",
+        "isMobileDevice": "Is mobile device",
+        "disabled": "Disabled",
+        "sort-option-selected": "Sort-option-selected",
+        "knx": "Knx"
+      }
+    },
+    "knx-form": {
+      "title": "KNX form",
+      "description": "Configure KNX group addresses using a schema-driven form.",
+      "api": {
+        "config": "Configuration object edited by this component. Changes are reported through its public event.",
+        "invalid": "Show the scenario validation error, or the public invalid styling where supported.",
+        "knx-form-config-changed": "Emits knx-form-config-changed with the public event detail.",
+        "hass": "Current offline Home Assistant instance supplied by the preview environment.",
+        "knx": "Offline KNX instance and local translations supplied by the preview environment.",
+        "validationErrors": "Scenario-controlled backend validation errors, using the existing ErrorDescription contract.",
+        "schema": "Light schema from createSchemas(), freshly allocated per preview.",
+        "backendLocalize": "Observed callback resolving local backend translations."
+      },
+      "labels": {
+        "config": "Config",
+        "invalid": "Invalid",
+        "knx-form-config-changed": "Knx-form-config-changed",
+        "hass": "Hass",
+        "knx": "Knx",
+        "validationErrors": "Validation errors",
+        "schema": "Schema",
+        "backendLocalize": "Backend localize"
+      }
+    },
+    "knx-selector-row": {
+      "title": "Selector row",
+      "description": "Home Assistant number selector with optional enable switch and validation.",
+      "api": {
+        "key": "Configuration path used to identify selector changes.",
+        "value": "Current public selection or value. User changes are recorded in the event log.",
+        "required": "Require a value instead of offering optional enable/clear behavior.",
+        "invalid": "Show the scenario validation error, or the public invalid styling where supported.",
+        "default": "Default content",
+        "value-changed": "Emits value-changed with the public event detail.",
+        "validationErrors": "Scenario-controlled backend validation errors, using the existing ErrorDescription contract.",
+        "localizeFunction": "Observed callback resolves local Home Assistant KNX backend translations; missing demo field labels use gallery text.",
+        "hass": "Current offline Home Assistant instance supplied by the preview environment.",
+        "selector": "Number schema (0–100); required control switches between required and optional row behavior."
+      },
+      "labels": {
+        "key": "Key",
+        "value": "Value",
+        "required": "Required",
+        "invalid": "Invalid",
+        "default": "Default",
+        "value-changed": "Value-changed",
+        "validationErrors": "Validation errors",
+        "localizeFunction": "Localize function",
+        "hass": "Hass",
+        "selector": "Selector"
+      }
+    },
+    "knx-sync-state-selector-row": {
+      "title": "Sync state selector",
+      "description": "State polling strategy and interval.",
+      "api": {
+        "key": "Configuration path used to identify selector changes.",
+        "value": "Current public selection or value. User changes are recorded in the event log.",
+        "allowFalse": "Offer the never-poll strategy in addition to the normal polling strategies.",
+        "value-changed": "Emits value-changed with the public event detail.",
+        "localizeFunction": "Observed callback resolves local Home Assistant KNX backend translations; missing demo field labels use gallery text.",
+        "hass": "Current offline Home Assistant instance supplied by the preview environment."
+      },
+      "labels": {
+        "key": "Key",
+        "value": "Value",
+        "allowFalse": "Allow false",
+        "value-changed": "Value-changed",
+        "localizeFunction": "Localize function",
+        "hass": "Hass"
+      }
+    },
+    "knx-single-address-selector": {
+      "title": "Single address selector",
+      "description": "Address input, project name lookup, and address selection dialog.",
+      "api": {
+        "key": "Configuration path used to identify selector changes.",
+        "index": "Index identifying this field inside a repeated address list.",
+        "hintMessage": "Optional nonblocking hint shown below the address input.",
+        "value": "Current public selection or value. User changes are recorded in the event log.",
+        "label": "Visible field or panel label.",
+        "parentLabel": "Parent field name included in the selection-dialog heading.",
+        "disabled": "Disable the component controls supported by the product.",
+        "invalid": "Show the scenario validation error, or the public invalid styling where supported.",
+        "invalidMessage": "Visible validation message; empty clears the message.",
+        "required": "Require a value instead of offering optional enable/clear behavior.",
+        "value-changed": "Emits value-changed with the public event detail.",
+        "show-dialog": "Emits show-dialog with the public event detail.",
+        "groupAddresses": "Address and optional display-name pairs. Multiple entries expose a menu."
+      },
+      "labels": {
+        "key": "Key",
+        "index": "Index",
+        "hintMessage": "Hint message",
+        "value": "Value",
+        "label": "Label",
+        "parentLabel": "Parent label",
+        "disabled": "Disabled",
+        "invalid": "Invalid",
+        "invalidMessage": "Invalid message",
+        "required": "Required",
+        "value-changed": "Value-changed",
+        "show-dialog": "Show-dialog",
+        "groupAddresses": "Group addresses"
+      }
+    },
+    "knx-group-address-selector": {
+      "title": "Group address selector",
+      "description": "Write, state, passive addresses, and datapoint selection.",
+      "api": {
+        "key": "Configuration path used to identify selector changes.",
+        "label": "Visible field or panel label.",
+        "config": "Configuration object edited by this component. Changes are reported through its public event.",
+        "required": "Require a value instead of offering optional enable/clear behavior.",
+        "invalid": "Show the scenario validation error, or the public invalid styling where supported.",
+        "value-changed": "Emits value-changed with the public event detail.",
+        "knx-dpt-selector-changed": "Emits knx-dpt-selector-changed with the public event detail.",
+        "show-dialog": "Emits show-dialog with the public event detail.",
+        "validationErrors": "Scenario-controlled backend validation errors, using the existing ErrorDescription contract.",
+        "localizeFunction": "Observed callback resolves local Home Assistant KNX backend translations; missing demo field labels use gallery text.",
+        "knx": "Offline KNX instance and local translations supplied by the preview environment.",
+        "options": "Write and optional state/passive addresses, restricted to numeric datapoint metadata.",
+        "validGroupAddresses": "Derived list from the project context and accepted DPTs.",
+        "filteredGroupAddresses": "Derived list for the selected datapoint type.",
+        "dptSelectorDisabled": "Derived from the selected addresses.",
+        "getValidGroupAddresses(validDPTs)": "Returns matching project addresses.",
+        "getDptByValue(value)": "Resolves selected option or datapoint string.",
+        "getFilteredGroupAddresses(dpt, addresses, project)": "Memoized datapoint filtering of the supplied address list."
+      },
+      "labels": {
+        "key": "Key",
+        "label": "Label",
+        "config": "Config",
+        "required": "Required",
+        "invalid": "Invalid",
+        "value-changed": "Value-changed",
+        "knx-dpt-selector-changed": "Knx-dpt-selector-changed",
+        "show-dialog": "Show-dialog",
+        "validationErrors": "Validation errors",
+        "localizeFunction": "Localize function",
+        "knx": "Knx",
+        "options": "Options",
+        "validGroupAddresses": "Valid group addresses",
+        "filteredGroupAddresses": "Filtered group addresses",
+        "dptSelectorDisabled": "Dpt selector disabled",
+        "getValidGroupAddresses(validDPTs)": "Get valid group addresses(valid dpts)",
+        "getDptByValue(value)": "Get dpt by value(value)",
+        "getFilteredGroupAddresses(dpt, addresses, project)": "Get filtered group addresses(dpt, addresses, project)"
+      }
+    },
+    "knx-dpt-option-selector": {
+      "title": "Datapoint options",
+      "description": "Radio selection between switch and temperature datapoints.",
+      "api": {
+        "value": "Current public selection or value. User changes are recorded in the event log.",
+        "label": "Visible field or panel label.",
+        "disabled": "Disable the component controls supported by the product.",
+        "invalid": "Show the scenario validation error, or the public invalid styling where supported.",
+        "invalidMessage": "Visible validation message; empty clears the message.",
+        "translation_key": "Translation prefix and datapoint-change event identifier.",
+        "value-changed": "Emits value-changed with the public event detail.",
+        "knx-dpt-selector-changed": "Emits knx-dpt-selector-changed with the public event detail.",
+        "options": "Typed DPTOption fixtures for 1.001 and 9.001.",
+        "localizeValue": "Observed callback returning switch and temperature option names from the local gallery resource."
+      },
+      "labels": {
+        "value": "Value",
+        "label": "Label",
+        "disabled": "Disabled",
+        "invalid": "Invalid",
+        "invalidMessage": "Invalid message",
+        "translation_key": "Translation key",
+        "value-changed": "Value-changed",
+        "knx-dpt-selector-changed": "Knx-dpt-selector-changed",
+        "options": "Options",
+        "localizeValue": "Localize value"
+      }
+    },
+    "knx-dpt-dialog-selector": {
+      "title": "Datapoint dialog selector",
+      "description": "Current datapoint with a dialog for choosing another type.",
+      "api": {
+        "key": "Configuration path used to identify selector changes.",
+        "parentLabel": "Parent field name included in the selection-dialog heading.",
+        "validDPTs": "Allowed datapoint types used to filter the available choices.",
+        "value": "Current public selection or value. User changes are recorded in the event log.",
+        "disabled": "Public property; the current product does not bind it to its dialog and clear buttons.",
+        "invalid": "Show the scenario validation error, or the public invalid styling where supported.",
+        "invalidMessage": "Visible validation message; empty clears the message.",
+        "translation_key": "Translation prefix and datapoint-change event identifier.",
+        "value-changed": "Emits value-changed with the public event detail.",
+        "knx-dpt-selector-changed": "Emits knx-dpt-selector-changed with the public event detail.",
+        "show-dialog": "Emits show-dialog with the public event detail.",
+        "knx": "Offline KNX instance and local translations supplied by the preview environment."
+      },
+      "labels": {
+        "key": "Key",
+        "parentLabel": "Parent label",
+        "validDPTs": "Valid dpts",
+        "value": "Value",
+        "disabled": "Disabled",
+        "invalid": "Invalid",
+        "invalidMessage": "Invalid message",
+        "translation_key": "Translation key",
+        "value-changed": "Value-changed",
+        "knx-dpt-selector-changed": "Knx-dpt-selector-changed",
+        "show-dialog": "Show-dialog",
+        "knx": "Knx"
+      }
+    },
+    "knx-payload-selector": {
+      "title": "Payload selector",
+      "description": "Typed temperature payload or raw hexadecimal payload.",
+      "api": {
+        "key": "Configuration path used to identify selector changes.",
+        "gaKey": "Linked group-address selector path for datapoint-change events.",
+        "dpt": "Datapoint type for the payload editor; empty uses raw mode.",
+        "required": "Require a value instead of offering optional enable/clear behavior.",
+        "disableRaw": "Remove the raw-mode choice when a typed datapoint is available.",
+        "rawLength": "Externally supplied byte length when externalLength is enabled.",
+        "externalLength": "Bind rawLength to hide the internal payload-length selector.",
+        "raw": "Start with a raw hexadecimal payload rather than a typed number.",
+        "numberValue": "Typed numeric sample value supplied to the payload editor.",
+        "invalid": "Show the scenario validation error, or the public invalid styling where supported.",
+        "value-changed": "Emits value-changed with the public event detail.",
+        "hass": "Current offline Home Assistant instance supplied by the preview environment.",
+        "knx": "Offline KNX instance and local translations supplied by the preview environment.",
+        "validationErrors": "Scenario-controlled backend validation errors, using the existing ErrorDescription contract.",
+        "localizeFunction": "Observed callback resolves local Home Assistant KNX backend translations; missing demo field labels use gallery text.",
+        "value": "Current public selection or value. User changes are recorded in the event log."
+      },
+      "labels": {
+        "key": "Key",
+        "gaKey": "Ga key",
+        "dpt": "Dpt",
+        "required": "Required",
+        "disableRaw": "Disable raw",
+        "rawLength": "Raw length",
+        "externalLength": "External length",
+        "raw": "Raw",
+        "numberValue": "Number value",
+        "invalid": "Invalid",
+        "value-changed": "Value-changed",
+        "hass": "Hass",
+        "knx": "Knx",
+        "validationErrors": "Validation errors",
+        "localizeFunction": "Localize function",
+        "value": "Value"
+      }
+    },
+    "knx-select-options-list": {
+      "title": "Select options list",
+      "description": "Editable named payload options, including adding and removing rows.",
+      "api": {
+        "key": "Configuration path used to identify selector changes.",
+        "gaKey": "Linked group-address selector path for datapoint-change events.",
+        "dpt": "Datapoint type for the payload editor; empty uses raw mode.",
+        "required": "Require a value instead of offering optional enable/clear behavior.",
+        "invalid": "Show the scenario validation error, or the public invalid styling where supported.",
+        "value-changed": "Emits value-changed with the public event detail.",
+        "hass": "Current offline Home Assistant instance supplied by the preview environment.",
+        "knx": "Offline KNX instance and local translations supplied by the preview environment.",
+        "validationErrors": "Scenario-controlled backend validation errors, using the existing ErrorDescription contract.",
+        "localizeFunction": "Observed callback resolves local Home Assistant KNX backend translations; missing demo field labels use gallery text.",
+        "value": "Current public selection or value. User changes are recorded in the event log."
+      },
+      "labels": {
+        "key": "Key",
+        "gaKey": "Ga key",
+        "dpt": "Dpt",
+        "required": "Required",
+        "invalid": "Invalid",
+        "value-changed": "Value-changed",
+        "hass": "Hass",
+        "knx": "Knx",
+        "validationErrors": "Validation errors",
+        "localizeFunction": "Localize function",
+        "value": "Value"
+      }
+    },
+    "knx-device-picker": {
+      "title": "Device picker",
+      "description": "Find an existing KNX device or create a new one.",
+      "api": {
+        "label": "Visible field or panel label.",
+        "helper": "Supporting text below the device picker.",
+        "value": "Current public selection or value. User changes are recorded in the event log.",
+        "value-changed": "Emits value-changed with the public event detail.",
+        "show-dialog": "Emits show-dialog with the public event detail.",
+        "hass": "Current offline Home Assistant instance supplied by the preview environment.",
+        "picker": "Read-only reference to the internal generic picker; use the public open/focus methods.",
+        "open()": "Opens the picker after its update; demonstrated by Open picker.",
+        "focus()": "Focuses the picker after its update; demonstrated by Focus picker."
+      },
+      "labels": {
+        "label": "Label",
+        "helper": "Helper",
+        "value": "Value",
+        "value-changed": "Value-changed",
+        "show-dialog": "Show-dialog",
+        "hass": "Hass",
+        "picker": "Picker",
+        "open()": "Open()",
+        "focus()": "Focus()"
+      }
+    },
+    "knx-configure-entity": {
+      "title": "Configure entity",
+      "description": "Entity identity and schema-driven KNX configuration.",
+      "api": {
+        "platform": "Entity platform defining the configuration schema and icon.",
+        "invalid": "Show the scenario validation error, or the public invalid styling where supported.",
+        "knx-validation-error": "Knx validation error",
+        "knx-entity-configuration-changed": "Emits knx-entity-configuration-changed with the public event detail.",
+        "hass": "Current offline Home Assistant instance supplied by the preview environment.",
+        "knx": "Offline KNX instance and local translations supplied by the preview environment.",
+        "validationErrors": "Scenario-controlled backend validation errors, using the existing ErrorDescription contract.",
+        "config": "Configuration object edited by this component. Changes are reported through its public event.",
+        "schema": "Light schema from the shared fixture factory.",
+        "platformStyle": "Derived once when connected from platform; scenario reset recreates the component."
+      },
+      "labels": {
+        "platform": "Platform",
+        "invalid": "Invalid",
+        "knx-validation-error": "Knx-validation-error",
+        "knx-entity-configuration-changed": "Knx-entity-configuration-changed",
+        "hass": "Hass",
+        "knx": "Knx",
+        "validationErrors": "Validation errors",
+        "config": "Config",
+        "schema": "Schema",
+        "platformStyle": "Platform style"
+      }
+    },
+    "knx-expose-template-preview": {
+      "title": "Expose template preview",
+      "description": "Preview an entity state, attribute or template result.",
+      "api": {
+        "entityId": "Entity whose state or attribute is previewed.",
+        "attribute": "Attribute to preview; empty uses the entity state.",
+        "valueTemplate": "Template text submitted to the local render_template mock. The sample mock echoes its input value.",
+        "statesContext": "Current offline entity states provided by the preview.",
+        "connectionContext": "Local render_template subscription echoes the input value; this sample does not interpret arbitrary Jinja."
+      },
+      "labels": {
+        "entityId": "Entity id",
+        "attribute": "Attribute",
+        "valueTemplate": "Value template",
+        "statesContext": "States context",
+        "connectionContext": "Connection context"
+      }
+    },
+    "knx-project-device-tree": {
+      "title": "Project device tree",
+      "description": "Browse devices and their communication objects by datapoint type.",
+      "api": {
+        "validDPTs": "Allowed datapoint types used to filter the available choices.",
+        "data": "Fresh offline KNX project, or an empty project in the empty scenario.",
+        "deviceTree": "Derived on connection from project data and validDPTs; changing validDPTs recreates the example element.",
+        "dragDropContext": "Optional editor drag context is absent in this standalone browser; drag-and-drop requires an editor consumer."
+      },
+      "labels": {
+        "validDPTs": "Valid dpts",
+        "data": "Data",
+        "deviceTree": "Device tree",
+        "dragDropContext": "Drag drop context"
+      }
+    },
+    "knx-project-tree-view": {
+      "title": "Project group tree",
+      "description": "Select project group ranges and inspect their group addresses.",
+      "api": {
+        "multiselect": "Allow several group ranges to stay selected together.",
+        "knx-group-range-selection-changed": "Emits knx-group-range-selection-changed with the public event detail.",
+        "data": "Fresh offline KNX project; ranges initialize when connected."
+      },
+      "labels": {
+        "multiselect": "Multiselect",
+        "knx-group-range-selection-changed": "Knx-group-range-selection-changed",
+        "data": "Data"
+      }
+    },
+    "knx-project-devices-view": {
+      "title": "Project devices view",
+      "description": "Filter device cards and inspect communication objects, telegrams, and related entities.",
+      "api": {
+        "searchText": "Search across device, object, and group-address text.",
+        "filterDpt": "Selected datapoint-type strings; an empty array disables this filter.",
+        "filterLocation": "Selected fixture location IDs; an empty array disables this filter.",
+        "filterLine": "Selected topology line IDs; an empty array disables this filter.",
+        "showRelated": "Provide the fixture entity and expose relationships.",
+        "showTelegrams": "Provide the most recent fixture telegram per group address.",
+        "hass": "Current offline Home Assistant instance supplied by the preview environment.",
+        "knx": "Offline KNX instance and local translations supplied by the preview environment.",
+        "narrow": "Derived from the preview iframe viewport at the Home Assistant 870px breakpoint.",
+        "data": "Fresh offline KNX project.",
+        "lastTelegrams": "Fresh incoming switch telegram keyed by group address; controlled by showTelegrams.",
+        "locationByDevice": "Living room location for device 1.1.1.",
+        "lineByDevice": "TP line 1.1 for the fixture device.",
+        "entitiesByGroup": "Fixture light entity relationship, controlled by showRelated.",
+        "exposesByGA": "Fixture temperature expose relationship, controlled by showRelated.",
+        "expandAll()": "Expands all currently visible device cards; demonstrated by the Expand all action.",
+        "collapseAll()": "Collapses visible cards; demonstrated by the Collapse all action."
+      },
+      "labels": {
+        "searchText": "Search text",
+        "filterDpt": "Filter dpt",
+        "filterLocation": "Filter location",
+        "filterLine": "Filter line",
+        "showRelated": "Show related",
+        "showTelegrams": "Show telegrams",
+        "hass": "Hass",
+        "knx": "Knx",
+        "narrow": "Narrow",
+        "data": "Data",
+        "lastTelegrams": "Last telegrams",
+        "locationByDevice": "Location by device",
+        "lineByDevice": "Line by device",
+        "entitiesByGroup": "Entities by group",
+        "exposesByGA": "Exposes by ga",
+        "expandAll()": "Expand all()",
+        "collapseAll()": "Collapse all()"
+      }
+    }
+  },
+  "sample": {
+    "localizedPageTitle": "Localized page title",
+    "content": "Living room light",
+    "secondary": "Group address 1/0/1",
+    "header": "Device details",
+    "search": "Search group addresses",
+    "action": "Sample action",
+    "banner": "Offline project loaded.",
+    "footer": "2 group addresses",
+    "filter": "Main group: 1",
+    "empty": "No matching devices",
+    "default": "Default",
+    "expanded": "Expanded",
+    "disabled": "Disabled",
+    "selected": "Selected",
+    "loading": "Loading",
+    "warning": "History is limited to this offline sample.",
+    "invalid": "Choose a valid group address.",
+    "clear": "Clear filter",
+    "expand": "Expand all",
+    "collapse": "Collapse all",
+    "sort": "Sort",
+    "open": "Open picker",
+    "focus": "Focus picker",
+    "template": "{{ value }}",
+    "helper": "Choose a device from the offline project.",
+    "switch": "Switch",
+    "temperature": "Temperature",
+    "toggle": "Toggle separator",
+    "setHeight": "Set height",
+    "expandSeparator": "Expand separator",
+    "collapseSeparator": "Collapse separator"
+  },
+  "scenarios": {
+    "collapsed": "Collapsed",
+    "filters": "Filters",
+    "minimal": "Minimal",
+    "disabled": "Disabled",
+    "active": "Active",
+    "multiple": "Multiple",
+    "empty": "Empty data",
+    "loading": "Loading",
+    "warning": "Warning",
+    "open-ended": "Open-ended",
+    "descending": "Descending",
+    "mobile": "Mobile",
+    "invalid": "Invalid",
+    "optional": "Optional",
+    "periodic": "Periodic",
+    "never": "Never",
+    "raw": "Raw",
+    "no-dpt": "No-dpt",
+    "attribute": "Attribute",
+    "template": "Template",
+    "no-match": "No-match",
+    "unfiltered": "Unfiltered",
+    "1.1": "1.1",
+    "callback-reject": "Callback rejection",
+    "format-error": "Invalid project format",
+    "password-error": "Incorrect project password",
+    "validation-error": "Validation error",
+    "paused": "Paused monitor",
+    "fetch-error": "Fetch error",
+    "no-project": "No ETS project",
+    "create": "Create light",
+    "route-not-found": "knx-not-found · missing page",
+    "route-entities": "knx-entities-router · entities",
+    "route-expose": "knx-expose-router · exposed entities",
+    "route-project": "knx-router · project",
+    "route-monitor": "knx-router · group monitor",
+    "route-entity-create": "knx-entities-router · create light",
+    "route-expose-create": "knx-expose-router · create exposure",
+    "single": "Single"
+  },
+  "dialogs": {
+    "open": "Open dialog",
+    "callbackRejected": "The local selection callback rejected.",
+    "formatError": "This scenario simulates an invalid ETS project format.",
+    "passwordError": "This scenario simulates an incorrect project password.",
+    "validationError": "Enter a valid group address before saving.",
+    "offlineUpload": "Choose a synthetic .knxproj or .knxprojarchive file. Only local file acceptance and processing responses are simulated; no ETS parsing occurs.",
+    "knx-device-create-dialog": {
+      "title": "Create device dialog",
+      "description": "Create a KNX device with a name and optional area.",
+      "api": {
+        "params": "Optional deviceName and onClose callback.",
+        "onClose": "Receives the created device unchanged, or undefined on Cancel. Escape closes without calling onClose."
+      },
+      "labels": {}
+    },
+    "knx-dpt-select-dialog": {
+      "title": "Select DPT dialog",
+      "description": "Find and select a datapoint type.",
+      "api": {
+        "params": "DPT metadata, initialSelection and title.",
+        "onClose": "Receives the selected DPT or undefined on Cancel. The local callback returns that value; rejection remains a rejected promise."
+      },
+      "labels": {}
+    },
+    "knx-ga-select-dialog": {
+      "title": "Select group address dialog",
+      "description": "Browse the ETS project and select a group address.",
+      "api": {
+        "params": "Group addresses, optional initialSelection and title.",
+        "onClose": "Receives and returns the selected address unchanged, or undefined on Cancel."
+      },
+      "labels": {}
+    },
+    "knx-project-upload-dialog": {
+      "title": "Project upload dialog",
+      "description": "Import an ETS project and handle format or password errors.",
+      "api": {
+        "params": "Offline hass and knx; POST /api/file_upload and knx/project_file_process are local.",
+        "knx-reload": "Emitted after successful local processing."
+      },
+      "labels": {}
+    },
+    "knx-send-dialog": {
+      "title": "Send telegram dialog",
+      "description": "Send a raw or typed telegram, or request a group address value.",
+      "api": {
+        "params": "Offline hass and knx. Real service arguments are recorded without transport or encoding.",
+        "value-changed": "Observed directly on each selector, including non-bubbling HA Events carrying detail."
+      },
+      "labels": {}
+    },
+    "knx-time-server-dialog": {
+      "title": "Time server dialog",
+      "description": "Configure group addresses for KNX time and date broadcasts.",
+      "api": {
+        "params": "Offline hass and knx; local get and update time server handlers."
+      },
+      "labels": {}
+    },
+    "knx-group-monitor-telegram-info-dialog": {
+      "title": "Telegram information dialog",
+      "description": "Inspect telegram details, browse adjacent telegrams and create an automation.",
+      "api": {
+        "params": "KNX context, narrow viewport, current TelegramRow and filteredTelegrams.",
+        "hass-automation-editor": "Records the generated automation configuration and expanded flag without opening a Home Assistant editor.",
+        "dialog-closed": "Real non-bubbling close event is observed directly."
+      },
+      "labels": {}
+    }
+  },
+  "views": {
+    "fetchError": "The local fixture could not be loaded.",
+    "validationError": "Choose a valid group address before saving.",
+    "navigation": "Preview navigation",
+    "offline": "Changes are stored only in this preview.",
+    "paused": "Pause incoming telegrams",
+    "error": "This is an offline KNX error example.",
+    "knx-group-monitor": {
+      "title": "Group monitor",
+      "description": "Inspect live telegrams and filter bus traffic.",
+      "api": {
+        "hass": "Offline Home Assistant state, translations and explicit API handlers.",
+        "knx": "Fresh KNX connection, schema and project fixtures.",
+        "route": "Local preview route; navigation never changes the catalog URL.",
+        "narrow": "Derived from the iframe viewport at the Home Assistant breakpoint."
+      },
+      "labels": {}
+    },
+    "knx-dashboard": {
+      "title": "Dashboard",
+      "description": "Open KNX tools, configuration and project views.",
+      "api": {
+        "hass": "Offline Home Assistant state, translations and explicit API handlers.",
+        "knx": "Fresh KNX connection, schema and project fixtures.",
+        "route": "Local preview route; navigation never changes the catalog URL.",
+        "narrow": "Derived from the iframe viewport at the Home Assistant breakpoint."
+      },
+      "labels": {}
+    },
+    "knx-dpt-reference": {
+      "title": "DPT reference",
+      "description": "Look up datapoint types, values and units.",
+      "api": {
+        "hass": "Offline Home Assistant state, translations and explicit API handlers.",
+        "knx": "Fresh KNX connection, schema and project fixtures.",
+        "route": "Local preview route; navigation never changes the catalog URL.",
+        "narrow": "Derived from the iframe viewport at the Home Assistant breakpoint."
+      },
+      "labels": {}
+    },
+    "knx-create-entity": {
+      "title": "Entity editor",
+      "description": "Create or edit an entity and assign its KNX group addresses.",
+      "api": {
+        "hass": "Offline Home Assistant state, translations and explicit API handlers.",
+        "knx": "Fresh KNX connection, schema and project fixtures.",
+        "route": "Local preview route; navigation never changes the catalog URL.",
+        "narrow": "Derived from the iframe viewport at the Home Assistant breakpoint."
+      },
+      "labels": {}
+    },
+    "knx-entities-view": {
+      "title": "Entities",
+      "description": "Browse and manage KNX entities.",
+      "api": {
+        "hass": "Offline Home Assistant state, translations and explicit API handlers.",
+        "knx": "Fresh KNX connection, schema and project fixtures.",
+        "route": "Local preview route; navigation never changes the catalog URL.",
+        "narrow": "Derived from the iframe viewport at the Home Assistant breakpoint."
+      },
+      "labels": {}
+    },
+    "knx-error": {
+      "title": "Error page",
+      "description": "Show a navigation error and return to the previous view.",
+      "api": {
+        "hass": "Offline Home Assistant state, translations and explicit API handlers.",
+        "knx": "Fresh KNX connection, schema and project fixtures.",
+        "route": "Local preview route; navigation never changes the catalog URL.",
+        "narrow": "Derived from the iframe viewport at the Home Assistant breakpoint."
+      },
+      "labels": {}
+    },
+    "knx-create-expose": {
+      "title": "Expose editor",
+      "description": "Configure a Home Assistant state for exposure to the KNX bus.",
+      "api": {
+        "hass": "Offline Home Assistant state, translations and explicit API handlers.",
+        "knx": "Fresh KNX connection, schema and project fixtures.",
+        "route": "Local preview route; navigation never changes the catalog URL.",
+        "narrow": "Derived from the iframe viewport at the Home Assistant breakpoint."
+      },
+      "labels": {}
+    },
+    "knx-expose-view": {
+      "title": "Exposed entities",
+      "description": "Manage Home Assistant states exposed to KNX group addresses.",
+      "api": {
+        "hass": "Offline Home Assistant state, translations and explicit API handlers.",
+        "knx": "Fresh KNX connection, schema and project fixtures.",
+        "route": "Local preview route; navigation never changes the catalog URL.",
+        "narrow": "Derived from the iframe viewport at the Home Assistant breakpoint."
+      },
+      "labels": {}
+    },
+    "knx-info": {
+      "title": "Information",
+      "description": "Inspect the KNX connection, telegram storage and project information.",
+      "api": {
+        "hass": "Offline Home Assistant state, translations and explicit API handlers.",
+        "knx": "Fresh KNX connection, schema and project fixtures.",
+        "route": "Local preview route; navigation never changes the catalog URL.",
+        "narrow": "Derived from the iframe viewport at the Home Assistant breakpoint."
+      },
+      "labels": {}
+    },
+    "knx-project-view": {
+      "title": "ETS project",
+      "description": "Browse ETS devices, group addresses and communication objects.",
+      "api": {
+        "hass": "Offline Home Assistant state, translations and explicit API handlers.",
+        "knx": "Fresh KNX connection, schema and project fixtures.",
+        "route": "Local preview route; navigation never changes the catalog URL.",
+        "narrow": "Derived from the iframe viewport at the Home Assistant breakpoint."
+      },
+      "labels": {}
+    },
+    "knx-frontend": {
+      "title": "KNX integration",
+      "description": "Explore the complete KNX panel and navigate between its views.",
+      "api": {
+        "hass": "Offline Home Assistant state, translations and explicit API handlers.",
+        "knx": "Fresh KNX connection, schema and project fixtures.",
+        "route": "Local preview route; navigation never changes the catalog URL.",
+        "narrow": "Derived from the iframe viewport at the Home Assistant breakpoint."
+      },
+      "labels": {}
+    }
+  },
+  "scenarioShortLabels": {
+    "route-not-found": "Page not found",
+    "route-entities": "Entities",
+    "route-expose": "Exposed entities",
+    "route-project": "Project",
+    "route-monitor": "Group monitor",
+    "route-entity-create": "Create entity",
+    "route-expose-create": "Create exposure"
+  }
+}
