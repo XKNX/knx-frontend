@@ -12,7 +12,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@ha/dialogs/generic/show-dialog-box", () => ({
   showConfirmationDialog: mocks.showConfirmationDialog,
 }));
-vi.mock("@ha/util/toast", () => ({ showToast: mocks.showToast }));
+// the panel runs in an iframe, so toasts go through the panel helper
+vi.mock("./toast", () => ({ showToast: mocks.showToast }));
 
 const localize = (key: string, replace?: Record<string, unknown>) =>
   replace ? `${key} ${JSON.stringify(replace)}` : key;

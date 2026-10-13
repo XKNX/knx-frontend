@@ -1,9 +1,9 @@
 import { showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 import type { HomeAssistant } from "@ha/types";
-import { showToast } from "@ha/util/toast";
 
 import { restartDevice } from "../services/websocket.service";
 import type { KNX } from "../types/knx";
+import { showToast } from "./toast";
 
 export interface RestartableDevice {
   ia: string;
