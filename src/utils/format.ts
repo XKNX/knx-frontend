@@ -56,14 +56,14 @@ export const TelegramDictFormatter = {
     });
   },
 
-  dptNumber: (telegram: Pick<TelegramDict, "dpt_main" | "dpt_sub">): string => {
+  dptNumber: (telegram: TelegramDict): string => {
     if (telegram.dpt_main == null) return "";
     return telegram.dpt_sub == null
       ? telegram.dpt_main.toString()
       : telegram.dpt_main.toString() + "." + telegram.dpt_sub.toString().padStart(3, "0");
   },
 
-  dptNameNumber: (telegram: Pick<TelegramDict, "dpt_main" | "dpt_sub" | "dpt_name">): string => {
+  dptNameNumber: (telegram: TelegramDict): string => {
     const dptNumber = TelegramDictFormatter.dptNumber(telegram);
     if (!dptNumber && telegram.dpt_name == null) return "";
     if (telegram.dpt_name == null) return `DPT ${dptNumber}`;

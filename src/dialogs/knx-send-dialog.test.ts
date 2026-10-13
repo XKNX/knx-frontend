@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render } from "lit";
 
+import type { ShowToastParams } from "@ha/managers/notification-manager";
+
 import { createMockHass } from "../../test/helpers/mock-hass";
 import type { GASchema } from "../types/entity_data";
 import type { KNX } from "../types/knx";
@@ -9,7 +11,13 @@ import type { PayloadConfigValue } from "../components/knx-payload-selector";
 
 import { KnxSendDialog } from "./knx-send-dialog";
 
-const localize = (key: string) => key;
+const translations: Record<string, string> = {
+  "component.knx.config_panel.dialogs.send.read_response":
+    "Response from {source} for {address}: {value}",
+};
+
+const localize = (key: string, replace?: Record<string, string>) =>
+  (translations[key] ?? key).replace(/\{(\w+)\}/g, (_, name) => replace?.[name] ?? "");
 
 const readResponse = (overrides: Partial<KnxReadResponse>): KnxReadResponse => ({
   dpt_main: null,
@@ -34,10 +42,9 @@ const createDialog = () => {
   dialog.params = { hass, knx };
   dialog.hass = hass;
   dialog.knx = knx;
-  // Detached, so the dialog opens the response sheet on itself.
-  const openedDialogs: unknown[] = [];
-  dialog.addEventListener("show-dialog", (ev) => {
-    openedDialogs.push((ev as CustomEvent).detail);
+  const toasts: ShowToastParams[] = [];
+  dialog.addEventListener("hass-notification", (ev) => {
+    toasts.push((ev as CustomEvent<ShowToastParams>).detail);
   });
   const container = document.createElement("div");
   const rerender = () => {
@@ -45,7 +52,7 @@ const createDialog = () => {
     return container;
   };
   rerender();
-  return { dialog, hass, knx, callService, openedDialogs, container, rerender };
+  return { dialog, hass, callService, toasts, container, rerender };
 };
 
 type Rendered = ReturnType<typeof createDialog>;
@@ -189,30 +196,41 @@ describe("knx-send-dialog", () => {
 });
 
 describe("knx-send-dialog read", () => {
-  it("opens the response sheet with the received response", async () => {
+  it("shows the received response in a toast", async () => {
     const rendered = createDialog();
-    const response = readResponse({ value: 21.5, unit: "°C", source_name: "Thermostat" });
-    rendered.callService.mockResolvedValue({ context: { id: "" }, response });
+    rendered.callService.mockResolvedValue({
+      context: { id: "" },
+      response: readResponse({ value: 21.5, unit: "°C", source_name: "Thermostat" }),
+    });
     fillIn(rendered, { ga: { write: "1/2/3", dpt: "9.001" } });
 
     await read(rendered);
 
-    expect(rendered.openedDialogs).toEqual([
-      {
-        dialogTag: "knx-read-response-dialog",
-        dialogImport: expect.any(Function),
-        dialogParams: { hass: rendered.hass, knx: rendered.knx, address: "1/2/3", response },
-      },
+    expect(rendered.toasts).toEqual([
+      { message: "Response from 1.1.5 (Thermostat) for 1/2/3: 21.5 °C" },
     ]);
   });
 
-  it("opens nothing when the call fails, since HA already shows the error", async () => {
+  it("falls back to the raw payload when the response can't be decoded", async () => {
+    const rendered = createDialog();
+    rendered.callService.mockResolvedValue({
+      context: { id: "" },
+      response: readResponse({ payload: [0x0c, 0x1a] }),
+    });
+    fillIn(rendered, { ga: { write: "1/2/3" } });
+
+    await read(rendered);
+
+    expect(rendered.toasts).toEqual([{ message: "Response from 1.1.5 for 1/2/3: 0x0c1a" }]);
+  });
+
+  it("shows nothing itself when the call fails, since HA already shows the error", async () => {
     const rendered = createDialog();
     rendered.callService.mockRejectedValue(new Error("No response received"));
     fillIn(rendered, { ga: { write: "1/2/3" } });
 
     await read(rendered);
 
-    expect(rendered.openedDialogs).toEqual([]);
+    expect(rendered.toasts).toEqual([]);
   });
 });
