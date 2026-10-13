@@ -179,11 +179,13 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
     let result: { response?: KnxReadResponse };
     try {
       result = await this.hass.callService("knx", "read", { address }, undefined, true, true);
-    } catch {
+    } catch (err) {
       // callService already shows the error (e.g. no response received) in a toast.
+      logger.debug("Read failed", err);
       return;
     }
     const response = result.response!;
+    logger.debug("Read response", response);
     showToast(toastHost, {
       message: this._backendLocalize("read_response", {
         address,
