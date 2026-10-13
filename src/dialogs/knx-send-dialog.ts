@@ -20,8 +20,7 @@ import type { KnxReadResponse } from "../types/websocket";
 import type { KNX } from "../types/knx";
 import { KNXLogger } from "../tools/knx-logger";
 import { setNestedValue } from "../utils/config-helper";
-import { TelegramDictFormatter } from "../utils/format";
-import { showToast } from "../utils/toast";
+import { showKnxReadResponseDialog } from "./show-knx-read-response-dialog";
 
 const logger = new KNXLogger("knx-send-dialog");
 
@@ -173,6 +172,9 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
     }
     const address = this._data.ga.write;
     lastUsedData = structuredClone(this._data);
+    // This dialog is removed from the DOM once closed, so the response sheet is opened
+    // from the element that hosts the dialogs instead.
+    const dialogHost = this._dialogHost();
     this.closeDialog();
     let result: { response?: KnxReadResponse };
     try {
@@ -184,16 +186,12 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
     }
     const response = result.response!;
     logger.debug("Read response", response);
-    showToast(this, {
-      message: this._backendLocalize("read_response", {
-        address,
-        source: response.source_name
-          ? `${response.source} (${response.source_name})`
-          : response.source,
-        value:
-          TelegramDictFormatter.valueWithUnit(response) || TelegramDictFormatter.payload(response),
-      }),
-    });
+    showKnxReadResponseDialog(dialogHost, { hass: this.hass, knx: this.knx, address, response });
+  }
+
+  private _dialogHost(): HTMLElement {
+    const root = this.getRootNode();
+    return root instanceof ShadowRoot ? (root.host as HTMLElement) : this;
   }
 
   private _send(_ev: CustomEvent) {
