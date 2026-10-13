@@ -483,6 +483,8 @@ export class KNXExposeView extends LitElement {
     const computedRows = this._computeRows(this._exposes, this._projectData);
     const filteredEntities = this._filterEntities(computedRows, this._filters);
 
+    // Keyed by entity_id: rows for deleted entities have no registry `id`, and an unkeyed
+    // row gets its DOM replaced (closing an open menu) whenever the rows are rebuilt.
     return html`
       <hass-tabs-subpage-data-table
         .hass=${this.hass}
@@ -493,6 +495,7 @@ export class KNXExposeView extends LitElement {
         .localizeFunc=${this.knx.localize}
         .columns=${this._columns(this.hass.language, this.narrow)}
         .data=${filteredEntities}
+        .id=${"entity_id"}
         .hasFab=${true}
         .searchLabel=${this.knx.localize("ui.panel.config.entities.picker.search", {
           number: filteredEntities.length,

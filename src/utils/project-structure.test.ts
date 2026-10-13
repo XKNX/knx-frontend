@@ -8,6 +8,7 @@ import {
   getLocationFilterOptions,
   getLineFilterOptions,
   hasDeviceTreeFilterActive,
+  hasReadFlag,
 } from "./project-structure";
 import type { DeviceTreeFilter } from "./project-structure";
 import type {
@@ -327,5 +328,25 @@ describe("filterDeviceTree", () => {
     expect(filtered[0].noChannelComObjects[0].groupAddresses.map((ga) => ga.address)).toEqual([
       "0/0/3",
     ]);
+  });
+});
+
+describe("hasReadFlag", () => {
+  const readable = makeComObject({ flags: { ...makeComObject().flags, read: true } });
+  const writeOnly = makeComObject({ flags: { ...makeComObject().flags, read: false } });
+
+  it("is true when any linked communication object has the read flag", () => {
+    const ga = makeGroupAddress({ communication_object_ids: ["co-w", "co-r"] });
+    expect(hasReadFlag(ga, { "co-w": writeOnly, "co-r": readable })).toBe(true);
+  });
+
+  it("is false when no linked communication object has the read flag", () => {
+    const ga = makeGroupAddress({ communication_object_ids: ["co-w"] });
+    expect(hasReadFlag(ga, { "co-w": writeOnly, "co-r": readable })).toBe(false);
+  });
+
+  it("ignores links to unknown communication objects", () => {
+    const ga = makeGroupAddress({ communication_object_ids: ["missing"] });
+    expect(hasReadFlag(ga, { "co-r": readable })).toBe(false);
   });
 });
