@@ -1,6 +1,12 @@
 name: 'Setup Node.js and Install Dependencies'
 description: 'Set up Node.js environment and install project dependencies with caching'
 
+inputs:
+  dependency-cache-prefix:
+    description: 'Cache domain for dependency installations'
+    required: false
+    default: 'knx-frontend-deps'
+
 runs:
   using: 'composite'
   steps:
@@ -25,10 +31,10 @@ runs:
         path: |
           ${{ steps.pnpm-store.outputs.path }}
           node_modules
-        key: knx-frontend-deps-${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml') }}
+        key: ${{ inputs.dependency-cache-prefix }}-${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml') }}
         restore-keys: |
-          knx-frontend-deps-${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-
-          knx-frontend-deps-${{ runner.os }}-
+          ${{ inputs.dependency-cache-prefix }}-${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-
+          ${{ inputs.dependency-cache-prefix }}-${{ runner.os }}-
 
     - name: Install dependencies
       shell: bash

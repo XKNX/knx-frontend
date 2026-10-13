@@ -28,8 +28,10 @@ Product code must never import Gallery code. Reuse existing fixtures/hosts and
 accepted outcomes; synchronize state without replaying services or callbacks.
 
 Use Node from `.nvmrc`. Default `pnpm test`, `pnpm lint` and `pnpm lint:types`
-include Gallery; coverage remains product-only. Focus checks with `pnpm gallery:unit`,
-`pnpm gallery:lint` and `pnpm gallery:types`. `pnpm gallery:integration` prepares
-inputs and verifies the standalone bundle separately from unit tests;
-`pnpm gallery:build` checks optimized output and thumbnails. Inspect actual rendering,
-usage and Compare when applicable, and report incomplete or failing checks.
+include Gallery; coverage remains product-only. For focused checks, run
+`pnpm gallery:unit`, `pnpm gallery:lint` and `pnpm gallery:types` using the same
+shared configuration. Keep exact-head publication checks unconditional.
+Focus `pnpm gallery:test --workers=2 --grep ...` on affected examples and interactions. Inspect actual rendering and usage, including Compare
+when applicable. `pnpm gallery:integration` prepares inputs and checks the complete bundle separately
+from unit tests. `pnpm gallery:build` verifies standalone output and thumbnails.
+Report checks not completed or still failing; retain the full suite for publication.
