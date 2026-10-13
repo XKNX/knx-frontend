@@ -7,7 +7,7 @@ import {
 } from "@mdi/js";
 
 import { consume } from "@lit/context";
-import type { TemplateResult } from "lit";
+import type { TemplateResult, PropertyValues } from "lit";
 import { LitElement, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
@@ -63,6 +63,8 @@ import type { SupportedPlatform } from "../types/entity_data";
 import type { KNX } from "../types/knx";
 import type { KNXProject } from "../types/websocket";
 import { getPlatformStyle } from "../utils/common";
+import { selectEntityStates } from "../utils/entity-states";
+import type { EntityStates } from "../utils/entity-states";
 
 const logger = new KNXLogger("knx-entities-view");
 
@@ -185,15 +187,20 @@ export class KNXEntitiesView extends LitElement {
       createGroupAddressesByEntityMap(entitiesByGroup, { ui: true, yaml: false }),
   );
 
+  // The states of the listed entities; only replaced when one of them changes, so the rows
+  // (and with them the data table) are rebuilt on relevant state updates only.
+  private _entityStates: EntityStates = {};
+
   private _computeRows = memoize(
     (
       entries: EntityRegistryEntry[],
       labels: LabelRegistryEntry[],
       groupAddressesByEntity: Record<string, EntityGroupAddresses>,
       projectData: KNXProject | null,
+      entityStates: EntityStates,
     ): EntityRow[] =>
       entries.map((entry) => {
-        const entityState: HassEntity | undefined = this.hass.states[entry.entity_id]; // undefined for disabled entities
+        const entityState: HassEntity | undefined = entityStates[entry.entity_id]; // undefined for disabled entities
         const device = entry.device_id ? this.hass.devices[entry.device_id] : undefined;
         const areaId = entry.area_id ?? device?.area_id;
         const area = areaId ? this.hass.areas[areaId] : undefined;
@@ -548,6 +555,16 @@ export class KNXEntitiesView extends LitElement {
     ).length;
   }
 
+  protected willUpdate(changedProps: PropertyValues): void {
+    if (this.hass && (changedProps.has("hass") || changedProps.has("_knx_entities"))) {
+      this._entityStates = selectEntityStates(
+        this._knx_entities.map((entry) => entry.entity_id),
+        this.hass.states,
+        this._entityStates,
+      );
+    }
+  }
+
   protected render(): TemplateResult {
     if (!this._entitiesByGroupCtx || this._entitiesByGroupCtx.loading) {
       return html`<hass-loading-screen></hass-loading-screen>`;
@@ -561,6 +578,7 @@ export class KNXEntitiesView extends LitElement {
       this._labels,
       groupAddressesByEntity,
       this._projectData,
+      this._entityStates,
     );
     const filteredEntities = this._filterEntities(computedRows, this._filters);
 
