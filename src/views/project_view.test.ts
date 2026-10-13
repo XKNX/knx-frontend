@@ -4,7 +4,7 @@ import type { HomeAssistant } from "@ha/types";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import type { KnxTabsSubpageData } from "../layouts/knx-tabs-subpage-data";
 import type { KNX } from "../types/knx";
-import type { GroupAddress, KNXProject } from "../types/websocket";
+import type { CommunicationObject, GroupAddress, KNXProject } from "../types/websocket";
 import { KNXProjectView } from "./project_view";
 
 /** Renders a disconnected project page to exercise consumer event wiring without backend startup. */
@@ -158,6 +158,109 @@ describe("KNXProjectView", () => {
     expect(editorEvent?.detail.data).toMatchObject({
       alias: "KNX: 1/2/3 Ceiling Light",
       triggers: [{ trigger: "knx.telegram", options: { destination: ["1/2/3"] } }],
+    });
+  });
+
+  it("rebuilds the table rows when a telegram arrives, so the last value is not stale", () => {
+    const view = new KNXProjectView();
+    const groupAddress: GroupAddress = {
+      name: "Ceiling Light",
+      identifier: "ga-1",
+      raw_address: 2563,
+      address: "1/2/3",
+      project_uid: 1,
+      dpt: null,
+      communication_object_ids: [],
+      description: "",
+      comment: "",
+    };
+    const telegram = { destination: "1/2/3", value: 42, timestamp: "2026-10-13T09:00:00+02:00" };
+    const getRows = (lastTelegrams: Record<string, any>) =>
+      (view as any)._getRows([], { "ga-1": groupAddress }, null, null, lastTelegrams);
+
+    const before = getRows({});
+    expect(before[0].last_telegram).toBeUndefined();
+    // the data table only re-renders rows on a new `data` array
+    const after = getRows({ "1/2/3": telegram });
+    expect(after).not.toBe(before);
+    expect(after[0].last_telegram).toBe(telegram);
+  });
+
+  describe("read value action", () => {
+    const flags = {
+      read: false,
+      write: true,
+      communication: true,
+      transmit: false,
+      update: false,
+      readOnInit: false,
+    };
+    const comObject = (read: boolean): CommunicationObject => ({
+      name: "CO",
+      number: 1,
+      text: "Switch",
+      function_text: "",
+      description: "",
+      device_address: "1.1.1",
+      device_application: null,
+      module: null,
+      channel: null,
+      dpts: [],
+      object_size: "1 Bit",
+      group_address_links: ["ga-1"],
+      flags: { ...flags, read },
+    });
+    const groupAddress: GroupAddress = {
+      name: "Ceiling Light",
+      identifier: "ga-1",
+      raw_address: 2563,
+      address: "1/2/3",
+      project_uid: 1,
+      dpt: null,
+      communication_object_ids: ["co-1", "co-2"],
+      description: "",
+      comment: "",
+    };
+
+    const menuItems = (communicationObjects: Record<string, CommunicationObject>) => {
+      const element = new KNXProjectView();
+      const callService = vi.fn();
+      element.hass = { localize: vi.fn((key) => key), callService } as any;
+      element.knx = { localize: vi.fn((key) => key) } as any;
+      Reflect.set(element, "_projectData", {
+        info: { name: "Test", last_modified: "", tool_version: "", xknxproject_version: "3.9.0" },
+        group_addresses: { "ga-1": groupAddress },
+        group_ranges: {},
+        devices: {},
+        communication_objects: communicationObjects,
+      } satisfies KNXProject);
+      const container = document.createElement("div");
+      const columns = (element as any)._columns(false, "en");
+      render(columns.actions.template(groupAddress), container, { host: element });
+      const menu = container.querySelector("ha-icon-overflow-menu") as HTMLElement & {
+        items: { label: string; action: () => void }[];
+      };
+      return { items: menu.items, callService };
+    };
+
+    it("sends a read request when a linked object has the read flag set", () => {
+      const { items, callService } = menuItems({
+        "co-1": comObject(false),
+        "co-2": comObject(true),
+      });
+      const readItem = items.find(
+        (item) => item.label === "component.knx.config_panel.common.read_value",
+      );
+      expect(readItem).toBeDefined();
+      readItem!.action();
+      expect(callService).toHaveBeenCalledWith("knx", "read", { address: "1/2/3" });
+    });
+
+    it("is hidden when no linked object has the read flag set", () => {
+      const { items } = menuItems({ "co-1": comObject(false), "co-2": comObject(false) });
+      expect(items.map((item) => item.label)).not.toContain(
+        "component.knx.config_panel.common.read_value",
+      );
     });
   });
 });
