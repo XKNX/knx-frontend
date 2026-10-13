@@ -11,8 +11,6 @@ import "@ha/components/ha-selector/ha-selector";
 
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
-import { durationDataToSeconds } from "@ha/common/datetime/duration_to_seconds";
-import type { HaDurationData } from "@ha/components/ha-duration-input";
 import type { HomeAssistant, ValueChangedEvent } from "@ha/types";
 
 import "./knx-form";
@@ -133,19 +131,7 @@ export class KNXConfigureEntity extends LitElement {
   private _updateConfig(ev: ValueChangedEvent<any>): void {
     ev.stopPropagation();
     const key = configPathFromEvent(ev);
-    let value = ev.detail.value;
-    if (
-      this.platform === "binary_sensor" &&
-      key === "knx" &&
-      value?.reset_after &&
-      typeof value.reset_after === "object"
-    ) {
-      value = {
-        ...value,
-        reset_after: durationDataToSeconds(value.reset_after as HaDurationData),
-      };
-    }
-    setNestedValue(this.config!, key, value, logger);
+    setNestedValue(this.config!, key, ev.detail.value, logger);
     fireEvent(this, "knx-entity-configuration-changed", this.config);
     this.requestUpdate();
   }

@@ -13,17 +13,7 @@ import { getValidationError } from "../utils/validation";
 import { numberRangeHelper } from "../utils/format";
 import type { ErrorDescription } from "../types/entity_data";
 import type { KnxHaSelector } from "../types/schema";
-
-const durationFromSeconds = (seconds: number) => {
-  const totalMilliseconds = Math.round(seconds * 1000);
-  return {
-    days: Math.floor(totalMilliseconds / 86_400_000),
-    hours: Math.floor((totalMilliseconds % 86_400_000) / 3_600_000),
-    minutes: Math.floor((totalMilliseconds % 3_600_000) / 60_000),
-    seconds: Math.floor((totalMilliseconds % 60_000) / 1000),
-    milliseconds: totalMilliseconds % 1000,
-  };
-};
+import "./knx-duration-selector";
 
 @customElement("knx-selector-row")
 export class KnxSelectorRow extends LitElement {
@@ -75,10 +65,7 @@ export class KnxSelectorRow extends LitElement {
         this._enabled = isRequired || (this.value !== undefined && this.value !== null);
         // apply default value if available or no value is set yet
         // TODO: consider also using suggested_value ?
-        this._haSelectorValue =
-          "duration" in this.selector.selector && typeof this.value === "number" && this.value >= 0
-            ? durationFromSeconds(this.value)
-            : (this.value ?? this.selector.default ?? null);
+        this._haSelectorValue = this.value ?? this.selector.default ?? null;
       }
 
       // selector specific helper text
@@ -95,17 +82,29 @@ export class KnxSelectorRow extends LitElement {
     const invalid = getValidationError(this.validationErrors);
     const haSelector = this._optionalBooleanSelector
       ? nothing
-      : html`<ha-selector
-          class=${classMap({ "newline-selector": !this._inlineSelector })}
-          .hass=${this.hass}
-          .selector=${this.selector.selector}
-          .disabled=${!this._enabled}
-          .placeholder=${this.selector.placeholder}
-          .value=${this._haSelectorValue}
-          .localizeValue=${this.hass.localize}
-          .helper=${this._selectorHelper}
-          @value-changed=${this._valueChange}
-        ></ha-selector>`;
+      : "duration" in this.selector.selector
+        ? html`<knx-duration-selector
+            class="newline-selector"
+            .hass=${this.hass}
+            .selector=${this.selector.selector}
+            .disabled=${!this._enabled}
+            .placeholder=${this.selector.placeholder}
+            .value=${typeof this._haSelectorValue === "number" ? this._haSelectorValue : undefined}
+            .localizeValue=${this.hass.localize}
+            .helper=${this._selectorHelper}
+            @value-changed=${this._valueChange}
+          ></knx-duration-selector>`
+        : html`<ha-selector
+            class=${classMap({ "newline-selector": !this._inlineSelector })}
+            .hass=${this.hass}
+            .selector=${this.selector.selector}
+            .disabled=${!this._enabled}
+            .placeholder=${this.selector.placeholder}
+            .value=${this._haSelectorValue}
+            .localizeValue=${this.hass.localize}
+            .helper=${this._selectorHelper}
+            @value-changed=${this._valueChange}
+          ></ha-selector>`;
 
     return html`
       <div class="body">
