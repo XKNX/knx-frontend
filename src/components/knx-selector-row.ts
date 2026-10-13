@@ -14,6 +14,17 @@ import { numberRangeHelper } from "../utils/format";
 import type { ErrorDescription } from "../types/entity_data";
 import type { KnxHaSelector } from "../types/schema";
 
+const durationFromSeconds = (seconds: number) => {
+  const totalMilliseconds = Math.round(seconds * 1000);
+  return {
+    days: Math.floor(totalMilliseconds / 86_400_000),
+    hours: Math.floor((totalMilliseconds % 86_400_000) / 3_600_000),
+    minutes: Math.floor((totalMilliseconds % 3_600_000) / 60_000),
+    seconds: Math.floor((totalMilliseconds % 60_000) / 1000),
+    milliseconds: totalMilliseconds % 1000,
+  };
+};
+
 @customElement("knx-selector-row")
 export class KnxSelectorRow extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -61,10 +72,13 @@ export class KnxSelectorRow extends LitElement {
         this._enabled = this.value ?? defaultBool;
       } else {
         // For required or non-boolean selectors: enabled unless optional and unset
-        this._enabled = isRequired || this.value !== undefined;
+        this._enabled = isRequired || (this.value !== undefined && this.value !== null);
         // apply default value if available or no value is set yet
         // TODO: consider also using suggested_value ?
-        this._haSelectorValue = this.value ?? this.selector.default ?? null;
+        this._haSelectorValue =
+          "duration" in this.selector.selector && typeof this.value === "number" && this.value >= 0
+            ? durationFromSeconds(this.value)
+            : (this.value ?? this.selector.default ?? null);
       }
 
       // selector specific helper text

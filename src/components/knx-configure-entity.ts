@@ -2,6 +2,7 @@ import type { TemplateResult } from "lit";
 import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators";
 import { styleMap } from "lit/directives/style-map";
+import memoizeOne from "memoize-one";
 
 import "@ha/components/ha-alert";
 import "@ha/components/ha-card";
@@ -11,6 +12,8 @@ import "@ha/components/ha-selector/ha-selector";
 
 import { mainWindow } from "@ha/common/dom/get_main_window";
 import { fireEvent } from "@ha/common/dom/fire_event";
+import { durationDataToSeconds } from "@ha/common/datetime/duration_to_seconds";
+import type { HaDurationData } from "@ha/components/ha-duration-input";
 import type { HomeAssistant, ValueChangedEvent } from "@ha/types";
 
 import "./knx-form";
@@ -46,6 +49,30 @@ export class KNXConfigureEntity extends LitElement {
   @property({ attribute: false }) public validationErrors?: ErrorDescription[];
 
   platformStyle!: PlatformStyle;
+
+  private _schemaForForm = memoizeOne(
+    (schema: SelectorSchema[], platform: SupportedPlatform): SelectorSchema[] =>
+      platform === "binary_sensor"
+        ? schema.map((field) =>
+            field.type === "ha_selector" && field.name === "reset_after"
+              ? {
+                  ...field,
+                  selector: {
+                    duration: {
+                      allow_negative: false,
+                      enable_day: true,
+                      enable_millisecond: true,
+                    },
+                  },
+                }
+              : field,
+          )
+        : schema,
+  );
+
+  private get _formSchema(): SelectorSchema[] {
+    return this._schemaForForm(this.schema, this.platform);
+  }
 
   // Platform-specific strings are optional overrides of the generic `_` ones, hence hass.localize.
   private _backendLocalize = (path: string) =>
@@ -112,7 +139,7 @@ export class KNXConfigureEntity extends LitElement {
           .hass=${this.hass}
           .knx=${this.knx}
           .config=${this.config!.knx}
-          .schema=${this.schema}
+          .schema=${this._formSchema}
           .validationErrors=${knxErrors}
           .backendLocalize=${this._backendLocalizeKnx}
           @knx-form-config-changed=${this._updateConfig}
@@ -131,7 +158,18 @@ export class KNXConfigureEntity extends LitElement {
   private _updateConfig(ev: ValueChangedEvent<any>): void {
     ev.stopPropagation();
     const key = configPathFromEvent(ev);
-    const value = ev.detail.value;
+    let value = ev.detail.value;
+    if (
+      this.platform === "binary_sensor" &&
+      key === "knx" &&
+      value?.reset_after &&
+      typeof value.reset_after === "object"
+    ) {
+      value = {
+        ...value,
+        reset_after: durationDataToSeconds(value.reset_after as HaDurationData),
+      };
+    }
     setNestedValue(this.config!, key, value, logger);
     fireEvent(this, "knx-entity-configuration-changed", this.config);
     this.requestUpdate();
