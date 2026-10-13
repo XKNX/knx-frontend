@@ -14,6 +14,41 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  gate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+      pages: read
+    outputs:
+      build: ${{ steps.gate.outputs.build }}
+      sha: ${{ steps.gate.outputs.sha }}
+      base_path: ${{ steps.gate.outputs.base_path }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - id: gate
+        run: |
+          if [ -f gallery/script/gallery_pages.py ]; then
+            python3 gallery/script/gallery_pages.py gate
+          else
+            # Bootstrap: main has no trusted gate yet, so the PR introducing it builds like
+            # ordinary PR CI. Nothing can publish it: the Pages workflow only runs from main.
+            {
+              echo "build=true"
+              echo "sha=$HEAD_SHA"
+              echo "base_path=/"
+            } >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GALLERY_PAGES_ENABLED: ${{ vars.GALLERY_PAGES_ENABLED }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
   # Every PR validates its exact head, including forks without an approved preview.
   # Focused aliases share default check configuration without rerunning all product checks.
   checks:
@@ -29,13 +64,19 @@ jobs:
       - uses: ./.github/actions/setup
       - name: Generate Gallery check inputs
         run: SKIP_FETCH_NIGHTLY_TRANSLATIONS=1 pnpm exec gulp gen-icons-json build-translations build-locale-data
+      - name: Lint trusted publisher Python
+        run: |
+          python3 -m pip install ruff==0.16.8
+          ruff check --isolated --select E9,F63,F7,F82 gallery/script/gallery_pages*.py
+      - run: pnpm gallery:policy
       - run: pnpm gallery:lint
       - run: pnpm gallery:types
       - run: pnpm gallery:unit
       - run: pnpm gallery:integration
 
   build:
-    needs: [checks]
+    needs: [gate, checks]
+    if: needs.gate.outputs.build == 'true'
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
@@ -44,15 +85,15 @@ jobs:
     permissions:
       contents: read
     env:
-      GALLERY_BASE_PATH: /gallery/
+      GALLERY_BASE_PATH: ${{ needs.gate.outputs.base_path }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ needs.gate.outputs.sha }}
           submodules: recursive
           persist-credentials: false
-      # This job validates the selected head with read-only permissions.
-      # Fork/PR caches are scoped to the PR ref.
+      # This entire job is untrusted, including PR changes to setup/build scripts.
+      # Fork/PR caches are scoped to the PR ref; the publisher never restores caches.
       - uses: ./.github/actions/setup
         with:
           dependency-cache-prefix: knx-frontend-deps-playwright-v1.63.0-noble
@@ -61,7 +102,7 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/babel-loader
-          key: gallery-babel-loader-${{ runner.os }}-${{ github.job }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'pnpm-workspace.yaml') }}-${{ github.event.pull_request.head.sha || github.sha }}
+          key: gallery-babel-loader-${{ runner.os }}-${{ github.job }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'pnpm-workspace.yaml') }}-${{ needs.gate.outputs.sha }}
           restore-keys: |
             gallery-babel-loader-${{ runner.os }}-${{ github.job }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'pnpm-workspace.yaml') }}-
             babel-loader-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
@@ -90,8 +131,9 @@ jobs:
           if-no-files-found: error
 
   # These jobs execute PR code with the same read-only permissions as the build.
+  # The publisher adopts the artifact only after the entire workflow succeeds.
   browser-tests:
-    needs: [build]
+    needs: [gate, build]
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
@@ -104,11 +146,11 @@ jobs:
       matrix:
         shard: [1, 2]
     env:
-      GALLERY_BASE_PATH: /gallery/
+      GALLERY_BASE_PATH: ${{ needs.gate.outputs.base_path }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ needs.gate.outputs.sha }}
           submodules: recursive
           persist-credentials: false
       - uses: ./.github/actions/setup
@@ -142,7 +184,7 @@ jobs:
   # Native blobs include attachments; report merging needs no browsers or write token.
   # Failure still fails the shard/workflow, while diagnostics remain available for review.
   merge-reports:
-    needs: [browser-tests]
+    needs: [gate, browser-tests]
     if: ${{ !cancelled() && needs.browser-tests.result != 'skipped' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -153,7 +195,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ needs.gate.outputs.sha }}
           submodules: recursive
           persist-credentials: false
       - uses: ./.github/actions/setup
@@ -175,7 +217,7 @@ jobs:
           if-no-files-found: error
 
   release-check:
-    needs: [build]
+    needs: [gate, build]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -183,7 +225,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ needs.gate.outputs.sha }}
           submodules: recursive
           persist-credentials: false
       - uses: ./.github/actions/setup
@@ -192,7 +234,7 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/babel-loader
-          key: gallery-babel-loader-${{ runner.os }}-${{ github.job }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'pnpm-workspace.yaml') }}-${{ github.event.pull_request.head.sha || github.sha }}
+          key: gallery-babel-loader-${{ runner.os }}-${{ github.job }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'pnpm-workspace.yaml') }}-${{ needs.gate.outputs.sha }}
           restore-keys: |
             gallery-babel-loader-${{ runner.os }}-${{ github.job }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'pnpm-workspace.yaml') }}-
             babel-loader-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
