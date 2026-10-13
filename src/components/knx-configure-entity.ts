@@ -2,7 +2,6 @@ import type { TemplateResult } from "lit";
 import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators";
 import { styleMap } from "lit/directives/style-map";
-import memoizeOne from "memoize-one";
 
 import "@ha/components/ha-alert";
 import "@ha/components/ha-card";
@@ -49,30 +48,6 @@ export class KNXConfigureEntity extends LitElement {
   @property({ attribute: false }) public validationErrors?: ErrorDescription[];
 
   platformStyle!: PlatformStyle;
-
-  private _schemaForForm = memoizeOne(
-    (schema: SelectorSchema[], platform: SupportedPlatform): SelectorSchema[] =>
-      platform === "binary_sensor"
-        ? schema.map((field) =>
-            field.type === "ha_selector" && field.name === "reset_after"
-              ? {
-                  ...field,
-                  selector: {
-                    duration: {
-                      allow_negative: false,
-                      enable_day: true,
-                      enable_millisecond: true,
-                    },
-                  },
-                }
-              : field,
-          )
-        : schema,
-  );
-
-  private get _formSchema(): SelectorSchema[] {
-    return this._schemaForForm(this.schema, this.platform);
-  }
 
   // Platform-specific strings are optional overrides of the generic `_` ones, hence hass.localize.
   private _backendLocalize = (path: string) =>
@@ -139,7 +114,7 @@ export class KNXConfigureEntity extends LitElement {
           .hass=${this.hass}
           .knx=${this.knx}
           .config=${this.config!.knx}
-          .schema=${this._formSchema}
+          .schema=${this.schema}
           .validationErrors=${knxErrors}
           .backendLocalize=${this._backendLocalizeKnx}
           @knx-form-config-changed=${this._updateConfig}

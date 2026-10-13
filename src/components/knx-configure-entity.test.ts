@@ -1,34 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { KNXConfigureEntity } from "./knx-configure-entity";
-import type { SelectorSchema } from "../types/schema";
-
-const backendSchema: SelectorSchema[] = [
-  {
-    type: "ha_selector",
-    name: "reset_after",
-    selector: { number: { min: 0, step: 0.001, mode: "box", unit_of_measurement: "s" } },
-  },
-];
 
 describe("binary sensor reset after", () => {
-  it("uses the nonnegative Duration selector with days and milliseconds", () => {
-    const element = new KNXConfigureEntity();
-    element.schema = backendSchema;
-    element.platform = "binary_sensor";
-
-    expect(element["_formSchema"][0]).toMatchObject({
-      name: "reset_after",
-      selector: {
-        duration: { allow_negative: false, enable_day: true, enable_millisecond: true },
-      },
-    });
-    expect(backendSchema[0]).toHaveProperty("selector.number");
-
-    element.platform = "sensor";
-    expect(element["_formSchema"]).toBe(backendSchema);
-  });
-
   it("converts the Duration value to seconds before emitting configuration", () => {
     const element = new KNXConfigureEntity();
     element.platform = "binary_sensor";
