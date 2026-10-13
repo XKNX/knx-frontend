@@ -120,6 +120,16 @@ export const buildDeviceTree = (project: KNXProject): DeviceTreeItem[] =>
     })
     .sort((a, b) => compareIndividualAddresses(a.ia, b.ia));
 
+/**
+ * Whether a read request to this group address gets an answer: a linked communication
+ * object with the R (read) flag set lets its device respond with the current value.
+ */
+export const hasReadFlag = (
+  groupAddress: GroupAddress,
+  communicationObjects: Record<string, CommunicationObject>,
+): boolean =>
+  groupAddress.communication_object_ids.some((id) => !!communicationObjects[id]?.flags.read);
+
 export const getLocationByDevice = (
   locations: Record<string, KNXSpace> | null,
 ): Record<string, DeviceLocation> => {

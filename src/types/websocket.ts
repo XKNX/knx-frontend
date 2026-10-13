@@ -56,9 +56,16 @@ export interface KNXProjectInfo {
   xknxproject_version: string;
 }
 
+/** Lifecycle of the backend telegram store; `undefined` on backends that predate the field. */
+export type TelegramStoreStatus = "initializing" | "ready";
+
+/** Websocket error code returned while the telegram store is still initializing. */
+export const ERR_TELEGRAM_STORE_INITIALIZING = "telegram_store_initializing";
+
 export interface GroupMonitorInfoData {
   project_loaded: boolean;
   recent_telegrams: TelegramDict[];
+  telegram_store_status?: TelegramStoreStatus;
 }
 
 // this has to match `TelegramDict` in the integrations `telegram.py`
@@ -78,6 +85,12 @@ export interface TelegramDict {
   unit: string | null;
   value: string | number | boolean | unknown[] | Record<string, unknown> | null;
 }
+
+/** Response data of the `knx.read` action. Decoded with the DPT the loaded project assigns. */
+export interface KnxReadResponse extends Pick<
+  TelegramDict,
+  "dpt_main" | "dpt_sub" | "dpt_name" | "payload" | "source" | "source_name" | "unit" | "value"
+> {}
 
 export interface TelegramQueryParameters {
   sources?: string[];

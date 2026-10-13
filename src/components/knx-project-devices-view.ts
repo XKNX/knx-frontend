@@ -1,4 +1,5 @@
 import {
+  mdiDownloadNetworkOutline,
   mdiMapMarkerOutline,
   mdiMathLog,
   mdiNetworkOutline,
@@ -14,6 +15,7 @@ import memoize from "memoize-one";
 
 import "@ha/components/ha-alert";
 import "@ha/components/ha-expansion-panel";
+import "@ha/components/ha-icon-button";
 import "@ha/components/ha-icon-overflow-menu";
 import "@ha/components/ha-svg-icon";
 import { relativeTime } from "@ha/common/datetime/relative_time";
@@ -33,7 +35,7 @@ import type {
   DeviceLocation,
   DeviceTreeItem,
 } from "../utils/project-structure";
-import { buildDeviceTree, filterDeviceTree } from "../utils/project-structure";
+import { buildDeviceTree, filterDeviceTree, hasReadFlag } from "../utils/project-structure";
 import { dptToString } from "../utils/dpt";
 import { TelegramDictFormatter } from "../utils/format";
 import { confirmAndRestartDevice, isRestartableAddress } from "../utils/restart-device";
@@ -596,11 +598,34 @@ export class KNXProjectDevicesView extends LitElement {
                   ></knx-data-table-related-label>`
                 : nothing
             }
-            ${this._renderLastValue(groupAddress)}
+            ${this._renderLastValue(groupAddress)} ${this._renderReadButton(groupAddress)}
           </div>
         </li>`;
       },
     )}`;
+  }
+
+  /**
+   * Sends a read request. Shown for group addresses where any linked object (of any device)
+   * has the read flag set, as only then a device answers; the answer updates the last value.
+   * Other rows get an empty placeholder of the same width, so the values line up in a column.
+   */
+  private _renderReadButton(groupAddress: GroupAddress): TemplateResult {
+    if (!hasReadFlag(groupAddress, this.data.communication_objects)) {
+      return html`<span class="read-button placeholder" aria-hidden="true"></span>`;
+    }
+    return html`<ha-icon-button
+      class="read-button"
+      .path=${mdiDownloadNetworkOutline}
+      .label=${this.knx.localize("component.knx.config_panel.common.read_value")}
+      data-address=${groupAddress.address}
+      @click=${this._readGroupAddress}
+    ></ha-icon-button>`;
+  }
+
+  private _readGroupAddress(ev: Event): void {
+    const address = (ev.currentTarget as HTMLElement).dataset.address;
+    this.hass.callService("knx", "read", { address });
   }
 
   private _renderLastValue(groupAddress: GroupAddress): TemplateResult | typeof nothing {
@@ -827,6 +852,20 @@ export class KNXProjectDevicesView extends LitElement {
     .ga-related {
       flex: 0 1 auto;
       margin-left: 16px;
+    }
+
+    .read-button {
+      /* rightmost column; the placeholder keeps the width when there is no button */
+      flex: 0 0 auto;
+      width: 32px;
+      height: 32px;
+      margin-left: auto;
+      --ha-icon-button-size: 32px;
+      --ha-icon-button-padding-inline: 4px;
+    }
+
+    .last-value + .read-button {
+      margin-left: 8px;
     }
 
     .last-value {
