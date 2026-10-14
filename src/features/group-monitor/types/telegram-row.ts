@@ -154,6 +154,13 @@ export class TelegramRow implements DataTableRowData {
   dataSecure: boolean | null;
 
   /**
+   * True when a write or response telegram carries a payload and a known DPT but no
+   * decoded value. The payload did not match the DPT, or the telegram was a plain
+   * telegram for a secure group address and got discarded.
+   */
+  undecoded: boolean;
+
+  /**
    * Processed and formatted value for display
    * Prioritizes formatted value with units, falls back to payload or type-specific defaults
    */
@@ -239,6 +246,13 @@ export class TelegramRow implements DataTableRowData {
 
     /** Store data security flag for display */
     this.dataSecure = telegram.data_secure ?? null;
+
+    this.undecoded =
+      telegram.value == null &&
+      telegram.payload != null &&
+      telegram.dpt_main != null &&
+      (telegram.telegramtype === "GroupValueWrite" ||
+        telegram.telegramtype === "GroupValueResponse");
 
     /**
      * Determine best display value using fallback hierarchy:

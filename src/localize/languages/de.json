@@ -8,5 +8,7 @@
   "error_headline": "Bitte noch einmal versuchen",
   "error_description": "Die Anfrage ist fehlgeschlagen. Meist reicht ein zweiter Versuch. Bleibt der Fehler, kopiere die Meldung unten und melde das Problem.",
   "error_message": "Fehlermeldung",
-  "error_report": "Problem melden"
+  "error_report": "Problem melden",
+  "telegram_undecoded": "Nutzdaten nicht dekodiert",
+  "telegram_undecoded_description": "Die Nutzdaten wurden nicht als {dpt} dekodiert. Entweder passen sie nicht zu diesem DPT oder es ist ein unverschlüsseltes Telegramm für eine gesicherte Gruppenadresse. Details stehen im Home-Assistant-Protokoll."
 }

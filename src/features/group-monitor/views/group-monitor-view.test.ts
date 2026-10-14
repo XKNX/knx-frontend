@@ -352,4 +352,35 @@ describe("KNXGroupMonitor", () => {
       );
     });
   });
+
+  describe("type column", () => {
+    it.each([
+      { name: "marks an undecoded telegram", value: null, marked: true },
+      { name: "leaves a decoded telegram unmarked", value: "On", marked: false },
+    ])("$name", ({ value, marked }) => {
+      const row = new TelegramRow({
+        timestamp: "2026-09-06T12:00:00Z",
+        source: "1.1.1",
+        source_name: "",
+        destination: "1/2/3",
+        destination_name: "",
+        telegramtype: "GroupValueWrite",
+        direction: "Incoming",
+        payload: [1],
+        dpt_main: 1,
+        dpt_sub: 1,
+        dpt_name: "Switch",
+        value,
+        unit: null,
+      });
+      const container = document.createElement("div");
+      const columns = (element as any)._columns(false, true, "en");
+
+      render(columns.type.template(row), container, { host: element });
+      const direction = container.querySelector(".secondary") as HTMLElement;
+
+      expect(direction.textContent!.includes("⚠️")).toBe(marked);
+      expect(direction.title.includes("telegram_undecoded")).toBe(marked);
+    });
+  });
 });

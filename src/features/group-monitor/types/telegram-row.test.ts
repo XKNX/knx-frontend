@@ -53,4 +53,34 @@ describe("TelegramRow", () => {
     );
     expect(row.value).toBe("");
   });
+
+  it.each([
+    { name: "a write with a known DPT and no value", overrides: { value: null }, expected: true },
+    {
+      name: "a response with a known DPT and no value",
+      overrides: { value: null, telegramtype: "GroupValueResponse" },
+      expected: true,
+    },
+    { name: "a decoded telegram", overrides: {}, expected: false },
+    {
+      name: "a telegram without a known DPT",
+      overrides: { value: null, dpt_main: null, dpt_sub: null, dpt_name: null },
+      expected: false,
+    },
+    {
+      name: "a read request",
+      overrides: { value: null, payload: null, telegramtype: "GroupValueRead" },
+      expected: false,
+    },
+    {
+      name: "an undecrypted secure telegram",
+      overrides: { value: null, payload: null, telegramtype: "SecureAPDU", data_secure: true },
+      expected: false,
+    },
+  ] satisfies { name: string; overrides: Partial<TelegramDict>; expected: boolean }[])(
+    "flags $name as undecoded: $expected",
+    ({ overrides, expected }) => {
+      expect(new TelegramRow(mockTelegram(overrides)).undecoded).toBe(expected);
+    },
+  );
 });

@@ -58,4 +58,40 @@ describe("GroupMonitorTelegramInfoDialog", () => {
     automationButton.dispatchEvent(new MouseEvent("click", { bubbles: true, composed: true }));
     expect(editorEvent).toBeUndefined();
   });
+
+  it.each([
+    { name: "a warning instead of the value for an undecoded telegram", value: null, alert: true },
+    { name: "the value for a decoded telegram", value: "On", alert: false },
+  ])("shows $name", async ({ value, alert }) => {
+    const telegram = new TelegramRow({
+      timestamp: "2026-09-06T12:00:00Z",
+      source: "1.1.1",
+      source_name: "",
+      destination: "1/2/3",
+      destination_name: "",
+      telegramtype: "GroupValueWrite",
+      direction: "Incoming",
+      payload: [1],
+      dpt_main: 1,
+      dpt_sub: 1,
+      dpt_name: "Switch",
+      value,
+      unit: null,
+    });
+    const dialog = new GroupMonitorTelegramInfoDialog();
+    dialog.hass = { localize: vi.fn((key) => key) } as any;
+
+    await dialog.showDialog({
+      knx: { localize: vi.fn((key) => key) } as any,
+      telegram,
+      narrow: false,
+      filteredTelegrams: [telegram],
+    });
+    const container = document.createElement("div");
+    render((dialog as any).render(), container, { host: dialog });
+
+    expect(container.querySelector('ha-alert[alert-type="warning"]') !== null).toBe(alert);
+    expect(container.querySelector(".value-section") !== null).toBe(!alert);
+    expect(container.querySelector(".direction-badge")!.textContent!.includes("⚠️")).toBe(alert);
+  });
 });

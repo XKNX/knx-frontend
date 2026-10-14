@@ -8,5 +8,7 @@
   "error_headline": "Please try again",
   "error_description": "The request failed. A second try usually does it. If the error stays, copy the message below and report the problem.",
   "error_message": "Error message",
-  "error_report": "Report a problem"
+  "error_report": "Report a problem",
+  "telegram_undecoded": "Payload not decoded",
+  "telegram_undecoded_description": "The payload was not decoded as {dpt}. Either it does not match this DPT, or it is an unencrypted telegram for a secure group address. The Home Assistant log has the details."
 }

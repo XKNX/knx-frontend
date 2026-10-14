@@ -916,12 +916,16 @@ export class KNXGroupMonitor extends LitElement {
             <div
               class="secondary"
               slot="secondary"
-              title=${row.direction + (row.dataSecure ? " DataSecure" : "")}
+              title=${
+                row.direction +
+                (row.dataSecure ? " DataSecure" : "") +
+                (row.undecoded ? ` (${this.knx.localize("telegram_undecoded")})` : "")
+              }
               style="color: ${
                 row.direction === "Outgoing" ? "var(--knx-blue)" : "var(--knx-green)"
               }"
             >
-              ${row.direction + (row.dataSecure ? " 🔒" : "")}
+              ${row.direction + (row.dataSecure ? " 🔒" : "") + (row.undecoded ? " ⚠️" : "")}
             </div>
           </knx-table-cell-filterable>
         `,

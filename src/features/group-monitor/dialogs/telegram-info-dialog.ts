@@ -3,6 +3,7 @@ import { mdiArrowLeft, mdiArrowRight, mdiRobot } from "@mdi/js";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 
+import "@ha/components/ha-alert";
 import "@ha/components/ha-button";
 import "@ha/components/ha-dialog";
 import "@ha/components/ha-relative-time";
@@ -208,10 +209,16 @@ export class GroupMonitorTelegramInfoDialog
           slot="headerActionItems"
           class="direction-badge ${directionClass}"
           title=${
-            this._localizeDirection(telegram.direction) + (telegram.dataSecure ? " DataSecure" : "")
+            this._localizeDirection(telegram.direction) +
+            (telegram.dataSecure ? " DataSecure" : "") +
+            (telegram.undecoded ? ` (${this.knx.localize("telegram_undecoded")})` : "")
           }
         >
-          ${this._localizeDirection(telegram.direction) + (telegram.dataSecure ? " 🔒" : "")}
+          ${
+            this._localizeDirection(telegram.direction) +
+            (telegram.dataSecure ? " 🔒" : "") +
+            (telegram.undecoded ? " ⚠️" : "")
+          }
         </div>
 
         <div class="content">
@@ -243,16 +250,27 @@ export class GroupMonitorTelegramInfoDialog
             </div>
 
             ${
-              telegram.value != null
+              telegram.undecoded
                 ? html`
-                    <div class="value-section">
-                      <div class="value-label">
-                        ${this.knx.localize("component.knx.config_panel.dialogs.telegram_info.value")}
-                      </div>
-                      <div class="value-content">${telegram.value}</div>
-                    </div>
+                    <ha-alert
+                      alert-type="warning"
+                      .title=${this.knx.localize("telegram_undecoded")}
+                    >
+                      ${this.knx.localize("telegram_undecoded_description", {
+                        dpt: telegram.dpt,
+                      })}
+                    </ha-alert>
                   `
-                : nothing
+                : telegram.value != null
+                  ? html`
+                      <div class="value-section">
+                        <div class="value-label">
+                          ${this.knx.localize("component.knx.config_panel.dialogs.telegram_info.value")}
+                        </div>
+                        <div class="value-content">${telegram.value}</div>
+                      </div>
+                    `
+                  : nothing
             }
 
             <div class="telegram-details">
