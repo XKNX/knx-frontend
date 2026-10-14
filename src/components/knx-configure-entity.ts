@@ -131,7 +131,8 @@ export class KNXConfigureEntity extends LitElement {
   private _updateConfig(ev: ValueChangedEvent<any>): void {
     ev.stopPropagation();
     const key = configPathFromEvent(ev);
-    setNestedValue(this.config!, key, ev.detail.value, logger);
+    const value = ev.detail.value;
+    setNestedValue(this.config!, key, value, logger);
     fireEvent(this, "knx-entity-configuration-changed", this.config);
     this.requestUpdate();
   }

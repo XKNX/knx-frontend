@@ -12,8 +12,8 @@ import type { HomeAssistant } from "@ha/types";
 import { getValidationError } from "../utils/validation";
 import { numberRangeHelper } from "../utils/format";
 import type { ErrorDescription } from "../types/entity_data";
-import type { KnxDurationSelectorSchema, KnxHaSelector } from "../types/schema";
-import "./knx-duration-selector";
+import type { KnxHaSelector } from "../types/schema";
+import { durationDataToSeconds, secondsToDurationData } from "../utils/duration";
 
 @customElement("knx-selector-row")
 export class KnxSelectorRow extends LitElement {
@@ -21,7 +21,7 @@ export class KnxSelectorRow extends LitElement {
 
   @property() public key!: string;
 
-  @property({ attribute: false }) public selector!: KnxHaSelector | KnxDurationSelectorSchema;
+  @property({ attribute: false }) public selector!: KnxHaSelector;
 
   @property() public value?: any;
 
@@ -37,6 +37,9 @@ export class KnxSelectorRow extends LitElement {
 
   private _inlineSelector = false;
 
+  // KNX schemas carry durations as seconds; HA's duration input works on duration data.
+  private _isDuration = false;
+
   private _optionalBooleanSelector = false;
 
   private _selectorHelper?: string;
@@ -46,6 +49,7 @@ export class KnxSelectorRow extends LitElement {
       const isRequired = !!this.selector.required;
       const isBoolean = "boolean" in this.selector.selector;
       const isNumber = "number" in this.selector.selector;
+      this._isDuration = "duration" in this.selector.selector;
 
       // Inline selector only for required boolean/number
       this._inlineSelector = isRequired && (isBoolean || isNumber);
@@ -82,29 +86,17 @@ export class KnxSelectorRow extends LitElement {
     const invalid = getValidationError(this.validationErrors);
     const haSelector = this._optionalBooleanSelector
       ? nothing
-      : this.selector.type === "knx_duration"
-        ? html`<knx-duration-selector
-            class="newline-selector"
-            .hass=${this.hass}
-            .selector=${this.selector.selector}
-            .disabled=${!this._enabled}
-            .placeholder=${this.selector.placeholder}
-            .value=${typeof this._haSelectorValue === "number" ? this._haSelectorValue : undefined}
-            .localizeValue=${this.hass.localize}
-            .helper=${this._selectorHelper}
-            @value-changed=${this._valueChange}
-          ></knx-duration-selector>`
-        : html`<ha-selector
-            class=${classMap({ "newline-selector": !this._inlineSelector })}
-            .hass=${this.hass}
-            .selector=${this.selector.selector}
-            .disabled=${!this._enabled}
-            .placeholder=${this.selector.placeholder}
-            .value=${this._haSelectorValue}
-            .localizeValue=${this.hass.localize}
-            .helper=${this._selectorHelper}
-            @value-changed=${this._valueChange}
-          ></ha-selector>`;
+      : html`<ha-selector
+          class=${classMap({ "newline-selector": !this._inlineSelector })}
+          .hass=${this.hass}
+          .selector=${this.selector.selector}
+          .disabled=${!this._enabled}
+          .placeholder=${this.selector.placeholder}
+          .value=${this._selectorValue()}
+          .localizeValue=${this.hass.localize}
+          .helper=${this._selectorHelper}
+          @value-changed=${this._valueChange}
+        ></ha-selector>`;
 
     return html`
       <div class="body">
@@ -139,6 +131,20 @@ export class KnxSelectorRow extends LitElement {
     `;
   }
 
+  private _selectorValue(): any {
+    if (this._isDuration && typeof this._haSelectorValue === "number") {
+      return secondsToDurationData(this._haSelectorValue);
+    }
+    return this._haSelectorValue;
+  }
+
+  private _configValue(selectorValue: any): any {
+    if (this._isDuration) {
+      return selectorValue == null ? undefined : durationDataToSeconds(selectorValue);
+    }
+    return selectorValue;
+  }
+
   private _toggleEnabled(ev: Event) {
     ev.stopPropagation();
     this._enabled = !this._enabled;
@@ -147,7 +153,7 @@ export class KnxSelectorRow extends LitElement {
 
   private _valueChange(ev: CustomEvent<{ value: any }>) {
     ev.stopPropagation();
-    this._haSelectorValue = ev.detail.value;
+    this._haSelectorValue = this._configValue(ev.detail.value);
     this._propagateValue();
   }
 

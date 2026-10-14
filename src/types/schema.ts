@@ -1,4 +1,4 @@
-import type { DurationSelector, Selector } from "@ha/data/selector";
+import type { Selector } from "@ha/data/selector";
 import type { DPT } from "./websocket";
 
 export type SelectorSchema =
@@ -9,7 +9,6 @@ export type SelectorSchema =
   | SyncStateSelector
   | PayloadSelector
   | SelectOptionsSelector
-  | KnxDurationSelectorSchema
   | KnxHaSelector;
 
 interface BaseSection {
@@ -81,11 +80,6 @@ export interface KnxHaSelector {
   required?: boolean; // for optional boolean selectors, there shall be no default value (can't get applied)
   selector: Selector;
   placeholder?: any;
-}
-
-export interface KnxDurationSelectorSchema extends Omit<KnxHaSelector, "type" | "selector"> {
-  type: "knx_duration";
-  selector: DurationSelector;
 }
 
 export interface GASelector {

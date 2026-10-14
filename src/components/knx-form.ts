@@ -243,7 +243,6 @@ export class KnxForm extends LitElement {
           </ha-expansion-panel>
         `;
       case "ha_selector":
-      case "knx_duration":
         return html`
           <knx-selector-row
             .hass=${this.hass}
