@@ -1,6 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { KnxSelectorRow } from "./knx-selector-row";
+
+vi.mock("@ha/components/ha-selector/ha-selector", () => ({}));
 
 describe("duration selector row", () => {
   it("uses the KNX seconds adapter only for an explicit KNX duration selector", async () => {
