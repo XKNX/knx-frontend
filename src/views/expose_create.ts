@@ -53,7 +53,7 @@ import {
   exposeGroupsContext,
   type ExposeGroupsContextValue,
 } from "../data/knx-expose-groups-context";
-import type { KnxDurationSelectorSchema, KnxHaSelector, GASelectorOptions } from "../types/schema";
+import type { KnxHaSelector, GASelectorOptions } from "../types/schema";
 import { setNestedValue } from "../utils/config-helper";
 import { exitFlow, navigateInFlow, navigateToError } from "../utils/navigation";
 import { PreventUnsavedMixin } from "../mixins/prevent-unsaved-mixin";
@@ -88,8 +88,8 @@ const VALUE_TEMPLATE_SELECTOR: KnxHaSelector = {
   selector: { template: { preview: false } },
 };
 
-const COOLDOWN_SELECTOR: KnxDurationSelectorSchema = {
-  type: "knx_duration",
+const COOLDOWN_SELECTOR: KnxHaSelector = {
+  type: "ha_selector",
   name: "cooldown",
   selector: {
     duration: { allow_negative: false, enable_millisecond: true, enable_day: false },
@@ -103,8 +103,8 @@ const SEND_ON_INIT_SELECTOR: KnxHaSelector = {
   selector: { boolean: {} },
 };
 
-const PERIODIC_SEND_SELECTOR: KnxDurationSelectorSchema = {
-  type: "knx_duration",
+const PERIODIC_SEND_SELECTOR: KnxHaSelector = {
+  type: "ha_selector",
   name: "periodic_send",
   selector: {
     duration: { allow_negative: false, enable_millisecond: true, enable_day: false },
