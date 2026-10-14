@@ -816,7 +816,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
   }
 
   private _updateExposeOptionAtIndex(ev: CustomEvent<{ value: unknown }>) {
-    const target = ev.currentTarget as HTMLElement & { key?: string; selector?: KnxHaSelector };
+    const target = ev.currentTarget as HTMLElement & { key?: string };
     const idx = parseInt(target.dataset.idx ?? "0");
     const key = target.key;
     if (!key) return;
@@ -825,25 +825,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
       ...newOptions[idx],
       ga: { ...(newOptions[idx].ga ?? {}) },
     };
-    let value = ev.detail.value ?? undefined;
-    if (
-      value !== undefined &&
-      typeof target.selector?.selector === "object" &&
-      "duration" in target.selector.selector
-    ) {
-      const duration = value as {
-        hours?: number;
-        minutes?: number;
-        seconds?: number;
-        milliseconds?: number;
-      };
-      // convert duration object to seconds for storage
-      value =
-        (duration.hours ?? 0) * 3600 +
-        (duration.minutes ?? 0) * 60 +
-        (duration.seconds ?? 0) +
-        (duration.milliseconds ?? 0) / 1000;
-    }
+    const value = ev.detail.value ?? undefined;
     setNestedValue(nextItem, key, value, logger);
     newOptions[idx] = nextItem as ExposeOption;
     this._setConfig({ ...this._config, options: newOptions });
