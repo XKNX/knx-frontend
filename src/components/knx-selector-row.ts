@@ -12,7 +12,7 @@ import type { HomeAssistant } from "@ha/types";
 import { getValidationError } from "../utils/validation";
 import { numberRangeHelper } from "../utils/format";
 import type { ErrorDescription } from "../types/entity_data";
-import type { KnxHaSelector } from "../types/schema";
+import type { KnxDurationSelectorSchema, KnxHaSelector } from "../types/schema";
 import "./knx-duration-selector";
 
 @customElement("knx-selector-row")
@@ -21,7 +21,7 @@ export class KnxSelectorRow extends LitElement {
 
   @property() public key!: string;
 
-  @property({ attribute: false }) public selector!: KnxHaSelector;
+  @property({ attribute: false }) public selector!: KnxHaSelector | KnxDurationSelectorSchema;
 
   @property() public value?: any;
 
@@ -82,7 +82,7 @@ export class KnxSelectorRow extends LitElement {
     const invalid = getValidationError(this.validationErrors);
     const haSelector = this._optionalBooleanSelector
       ? nothing
-      : "duration" in this.selector.selector
+      : this.selector.type === "knx_duration"
         ? html`<knx-duration-selector
             class="newline-selector"
             .hass=${this.hass}
