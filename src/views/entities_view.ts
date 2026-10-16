@@ -391,7 +391,7 @@ export class KNXEntitiesView extends LitElement {
           entry.disabled
             ? html`<ha-svg-icon
                 slot="icon"
-                label="Disabled entity"
+                label=${this.knx.localize("ui.panel.config.entities.picker.status.disabled")}
                 .path=${mdiInformationOffOutline}
                 style="color: var(--disabled-text-color);"
               ></ha-svg-icon>`

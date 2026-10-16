@@ -40,13 +40,12 @@ export const createGroupAddressesByEntityMap = (
     byEntity[entityId] = existing;
   };
 
-  Object.entries(groups).forEach(([groupAddress, entityIdsByType]) => {
-    if (ui) {
-      entityIdsByType.ui.forEach((entityId) => addEntity(entityId, groupAddress, true));
-    }
-    if (yaml) {
-      entityIdsByType.yaml.forEach((entityId) => addEntity(entityId, groupAddress, false));
-    }
+  Object.entries(groups).forEach(([groupAddress, entities]) => {
+    entities.forEach((entity) => {
+      if (entity.ui ? ui : yaml) {
+        addEntity(entity.entity_id, groupAddress, entity.ui);
+      }
+    });
   });
   return byEntity;
 };

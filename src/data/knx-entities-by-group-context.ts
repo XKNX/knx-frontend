@@ -13,12 +13,61 @@ import type { KNXEntityIdentifier } from "../types/websocket";
 const logger = new KNXLogger("knx-entities-by-group-context");
 
 type EntitiesByGroupIdentifiers = Record<string, KNXEntityIdentifier[]>;
-export interface GroupEntityIds {
-  ui: string[];
-  yaml: string[];
+
+export interface RelatedEntity {
+  entity_id: string;
+  /** UI entity (editable in the panel) or YAML entity */
+  ui: boolean;
+  /** disabled in the entity registry - has no state object */
+  disabled: boolean;
 }
 
-export type EntitiesByGroup = Record<string, GroupEntityIds>;
+/** Entities using a group address, UI entities first. */
+export type EntitiesByGroup = Record<string, RelatedEntity[]>;
+
+const compareRelatedEntities = (a: RelatedEntity, b: RelatedEntity): number =>
+  Number(b.ui) - Number(a.ui) || a.entity_id.localeCompare(b.entity_id);
+
+/**
+ * Resolve the backend identifiers of each group address to entity ids.
+ *
+ * The backend only knows platform and unique_id; the entity registry maps these to
+ * entity ids and accounts for renames. Identifiers without a registry entry are dropped.
+ */
+export const mapEntitiesByGroup = (
+  entitiesByGroup: EntitiesByGroupIdentifiers,
+  entityRegistry: EntityRegistryEntry[],
+): EntitiesByGroup => {
+  const entityIdsByIdentifier = new Map<string, string[]>();
+  entityRegistry.forEach((entry) => {
+    if (entry.platform !== "knx") {
+      return;
+    }
+    const identifier = `${computeDomain(entry.entity_id)}:${entry.unique_id}`;
+    entityIdsByIdentifier.set(identifier, [
+      ...(entityIdsByIdentifier.get(identifier) ?? []),
+      entry.entity_id,
+    ]);
+  });
+
+  return Object.fromEntries(
+    Object.entries(entitiesByGroup).map(([groupAddress, identifiers]) => {
+      const byEntityId = new Map<string, RelatedEntity>();
+      identifiers.forEach((identifier) => {
+        entityIdsByIdentifier
+          .get(`${identifier.platform}:${identifier.unique_id}`)
+          ?.forEach((entityId) => {
+            byEntityId.set(entityId, {
+              entity_id: entityId,
+              ui: identifier.ui,
+              disabled: !!identifier.disabled,
+            });
+          });
+      });
+      return [groupAddress, [...byEntityId.values()].sort(compareRelatedEntities)];
+    }),
+  );
+};
 
 export interface EntitiesByGroupContextValue {
   groups: EntitiesByGroup;
@@ -109,49 +158,9 @@ export class KnxEntitiesByGroupContextProvider {
       }
       this._provider.setValue({
         ...this._provider.value,
-        groups: this._mapEntityIdsByGroup(this._entitiesByGroupIdentifiers, this._entityRegistry),
+        groups: mapEntitiesByGroup(this._entitiesByGroupIdentifiers, this._entityRegistry),
       });
     });
-  }
-
-  private _mapEntityIdsByGroup(
-    entitiesByGroup: EntitiesByGroupIdentifiers,
-    entityRegistry: EntityRegistryEntry[],
-  ): EntitiesByGroup {
-    // Phase 1: Build a map from KNX identifiers to resolved entity_ids
-    // (accounts for entity renames in the registry).
-    const entityIdsByIdentifier = new Map<string, string[]>();
-    entityRegistry.forEach((entry) => {
-      if (entry.platform !== "knx") {
-        return;
-      }
-      const identifier = `${computeDomain(entry.entity_id)}:${entry.unique_id}`;
-      if (!entityIdsByIdentifier.has(identifier)) {
-        entityIdsByIdentifier.set(identifier, []);
-      }
-      entityIdsByIdentifier.get(identifier)!.push(entry.entity_id);
-    });
-
-    // Phase 2: Map group addresses to entity_ids, partitioned by source (ui/yaml).
-    return Object.fromEntries(
-      Object.entries(entitiesByGroup).map(([groupAddress, identifiers]) => {
-        const ui = new Set<string>();
-        const yaml = new Set<string>();
-        identifiers.forEach((identifier) => {
-          const entityIds =
-            entityIdsByIdentifier.get(`${identifier.platform}:${identifier.unique_id}`) ?? [];
-          const target = identifier.ui ? ui : yaml;
-          entityIds.forEach((entityId) => target.add(entityId));
-        });
-        return [
-          groupAddress,
-          {
-            ui: [...ui],
-            yaml: [...yaml],
-          },
-        ];
-      }),
-    );
   }
 
   private async _load(): Promise<void> {
@@ -169,7 +178,7 @@ export class KnxEntitiesByGroupContextProvider {
       logger.debug(`Fetched entities for ${Object.keys(entitiesByGroup).length} group addresses.`);
       this._entitiesByGroupIdentifiers = entitiesByGroup;
       this._provider.setValue({
-        groups: this._mapEntityIdsByGroup(this._entitiesByGroupIdentifiers, this._entityRegistry),
+        groups: mapEntitiesByGroup(this._entitiesByGroupIdentifiers, this._entityRegistry),
         loading: false,
         error: null,
         reload: this._reload,

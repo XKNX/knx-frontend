@@ -65,7 +65,10 @@ import { createExposesByGroupAddressMap } from "../data/exposes-by-group";
 import { exposeGroupsContext } from "../data/knx-expose-groups-context";
 import type { ExposeGroupsContextValue } from "../data/knx-expose-groups-context";
 import { entitiesByGroupContext } from "../data/knx-entities-by-group-context";
-import type { EntitiesByGroupContextValue } from "../data/knx-entities-by-group-context";
+import type {
+  EntitiesByGroupContextValue,
+  RelatedEntity,
+} from "../data/knx-entities-by-group-context";
 import { knxProjectContext } from "../data/knx-project-context";
 import type { KNX } from "../types/knx";
 import { projectTab } from "../knx-router";
@@ -195,8 +198,8 @@ export class KNXProjectView extends LitElement {
       GroupAddress & {
         dpt_raw: string;
         related_exposes: string[];
-        related_entities: string[];
-        related_entities_yaml: string[];
+        related_entities: RelatedEntity[];
+        related_entity_ids: string[];
       }
     > => {
       const addressWidth = "100px";
@@ -281,24 +284,15 @@ export class KNXProjectView extends LitElement {
           title: this.knx.localize("ui.dialogs.entity_registry.related"),
           flex: 2,
           template: (ga) =>
-            ga.related_entities.length ||
-            ga.related_entities_yaml.length ||
-            ga.related_exposes.length
+            ga.related_entities.length || ga.related_exposes.length
               ? html`<knx-data-table-related-label
                   .hass=${this.hass}
                   .entities=${ga.related_entities}
-                  .entitiesYaml=${ga.related_entities_yaml}
                   .exposes=${ga.related_exposes}
                 ></knx-data-table-related-label>`
               : nothing,
         },
-        related_entities: {
-          hidden: true,
-          filterable: true,
-          sortable: false,
-          title: "Entities",
-        },
-        related_entities_yaml: {
+        related_entity_ids: {
           hidden: true,
           filterable: true,
           sortable: false,
@@ -390,8 +384,8 @@ export class KNXProjectView extends LitElement {
     ): (GroupAddress & {
       dpt_raw: string;
       related_exposes: string[];
-      related_entities: string[];
-      related_entities_yaml: string[];
+      related_entities: RelatedEntity[];
+      related_entity_ids: string[];
     })[] => {
       const exposesByGA = exposeGroups ? createExposesByGroupAddressMap(exposeGroups) : null;
       const filtered = !visibleGroupAddresses.length
@@ -400,13 +394,17 @@ export class KNXProjectView extends LitElement {
         : visibleGroupAddresses
             .map((key) => groupAddresses[key])
             .filter((ga): ga is GroupAddress => !!ga);
-      return filtered.map((ga) => ({
-        ...ga,
-        dpt_raw: dptToString(ga.dpt),
-        related_exposes: exposesByGA?.[ga.address] ?? [],
-        related_entities: entitiesByGroup?.[ga.address]?.ui ?? [],
-        related_entities_yaml: entitiesByGroup?.[ga.address]?.yaml ?? [],
-      }));
+      return filtered.map((ga) => {
+        const relatedEntities = entitiesByGroup?.[ga.address] ?? [];
+        return {
+          ...ga,
+          dpt_raw: dptToString(ga.dpt),
+          related_exposes: exposesByGA?.[ga.address] ?? [],
+          related_entities: relatedEntities,
+          // plain ids for the search filter
+          related_entity_ids: relatedEntities.map((entity) => entity.entity_id),
+        };
+      });
     },
   );
 

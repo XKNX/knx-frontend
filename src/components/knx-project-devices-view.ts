@@ -16,6 +16,7 @@ import "./data-table/knx-data-table-related-label";
 import "./knx-sticky-expansion-panel";
 
 import type { KNX } from "../types/knx";
+import type { EntitiesByGroup, RelatedEntity } from "../data/knx-entities-by-group-context";
 import type { KNXProject, COFlags, GroupAddress, TelegramDict } from "../types/websocket";
 import type {
   ComObjectItem,
@@ -28,8 +29,7 @@ import { dptToString } from "../utils/dpt";
 import { TelegramDictFormatter } from "../utils/format";
 
 interface RelatedRefs {
-  entities: string[];
-  entitiesYaml: string[];
+  entities: RelatedEntity[];
   exposes: string[];
 }
 
@@ -39,7 +39,7 @@ interface ScopeRelated {
 }
 
 const hasRelatedRefs = (refs?: RelatedRefs | null): refs is RelatedRefs =>
-  !!refs && !!(refs.entities.length || refs.entitiesYaml.length || refs.exposes.length);
+  !!refs && !!(refs.entities.length || refs.exposes.length);
 
 const gaDptString = (ga: GroupAddress) => {
   const dpt = dptToString(ga.dpt);
@@ -79,10 +79,7 @@ export class KNXProjectDevicesView extends LitElement {
 
   @property({ attribute: false }) public lineByDevice: Record<string, DeviceLine> | null = null;
 
-  @property({ attribute: false }) public entitiesByGroup: Record<
-    string,
-    { ui: string[]; yaml: string[] }
-  > | null = null;
+  @property({ attribute: false }) public entitiesByGroup: EntitiesByGroup | null = null;
 
   @property({ attribute: false }) public exposesByGA: Record<string, string[]> | null = null;
 
@@ -120,7 +117,7 @@ export class KNXProjectDevicesView extends LitElement {
   private _relatedByScope = memoize(
     (
       items: DeviceTreeItem[],
-      entitiesByGroup: Record<string, { ui: string[]; yaml: string[] }> | null,
+      entitiesByGroup: EntitiesByGroup | null,
       exposesByGA: Record<string, string[]> | null,
     ): Record<string, ScopeRelated> => {
       const result: Record<string, ScopeRelated> = {};
@@ -129,49 +126,41 @@ export class KNXProjectDevicesView extends LitElement {
       }
       const processScope = (scopeKey: string, comObjects: ComObjectItem[]) => {
         // distinct GA addresses per related item within this scope
-        const itemGas = new Map<string, Set<string>>();
+        const entityGas = new Map<string, { entity: RelatedEntity; gas: Set<string> }>();
+        const exposeGas = new Map<string, Set<string>>();
         const addressSet = new Set<string>();
         comObjects.forEach((item) =>
           item.groupAddresses.forEach((ga) => addressSet.add(ga.address)),
         );
         addressSet.forEach((address) => {
-          entitiesByGroup?.[address]?.ui.forEach((id) => {
-            (itemGas.get(`ui:${id}`) ?? itemGas.set(`ui:${id}`, new Set()).get(`ui:${id}`)!).add(
-              address,
-            );
-          });
-          entitiesByGroup?.[address]?.yaml.forEach((id) => {
-            (
-              itemGas.get(`yaml:${id}`) ?? itemGas.set(`yaml:${id}`, new Set()).get(`yaml:${id}`)!
-            ).add(address);
+          entitiesByGroup?.[address]?.forEach((entity) => {
+            const item = entityGas.get(entity.entity_id) ?? { entity, gas: new Set<string>() };
+            item.gas.add(address);
+            entityGas.set(entity.entity_id, item);
           });
           exposesByGA?.[address]?.forEach((id) => {
-            (
-              itemGas.get(`expose:${id}`) ??
-              itemGas.set(`expose:${id}`, new Set()).get(`expose:${id}`)!
-            ).add(address);
+            const gas = exposeGas.get(id) ?? new Set<string>();
+            gas.add(address);
+            exposeGas.set(id, gas);
           });
         });
-        if (!itemGas.size) {
+        if (!entityGas.size && !exposeGas.size) {
           return;
         }
-        const emptyRefs = (): RelatedRefs => ({ entities: [], entitiesYaml: [], exposes: [] });
+        const emptyRefs = (): RelatedRefs => ({ entities: [], exposes: [] });
         const aggregated = emptyRefs();
         const byGa: Record<string, RelatedRefs> = {};
-        itemGas.forEach((gas, itemKey) => {
-          const [type, id] = [
-            itemKey.slice(0, itemKey.indexOf(":")),
-            itemKey.slice(itemKey.indexOf(":") + 1),
-          ];
-          const target = gas.size >= 2 ? aggregated : (byGa[[...gas][0]] ??= emptyRefs());
-          if (type === "ui") {
-            target.entities.push(id);
-          } else if (type === "yaml") {
-            target.entitiesYaml.push(id);
-          } else {
-            target.exposes.push(id);
+        // items linked to several addresses of the scope are shown once for the scope
+        const targetFor = (gas: Set<string>): RelatedRefs => {
+          if (gas.size >= 2) {
+            return aggregated;
           }
-        });
+          const [address] = gas;
+          byGa[address] ??= emptyRefs();
+          return byGa[address];
+        };
+        entityGas.forEach(({ entity, gas }) => targetFor(gas).entities.push(entity));
+        exposeGas.forEach((gas, id) => targetFor(gas).exposes.push(id));
         result[scopeKey] = { aggregated: hasRelatedRefs(aggregated) ? aggregated : null, byGa };
       };
 
@@ -448,7 +437,6 @@ export class KNXProjectDevicesView extends LitElement {
       <knx-data-table-related-label
         .hass=${this.hass}
         .entities=${refs.entities}
-        .entitiesYaml=${refs.entitiesYaml}
         .exposes=${refs.exposes}
       ></knx-data-table-related-label>
     </div>`;
@@ -508,7 +496,6 @@ export class KNXProjectDevicesView extends LitElement {
                     class="ga-related"
                     .hass=${this.hass}
                     .entities=${related.entities}
-                    .entitiesYaml=${related.entitiesYaml}
                     .exposes=${related.exposes}
                   ></knx-data-table-related-label>`
                 : nothing
