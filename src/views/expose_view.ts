@@ -51,6 +51,8 @@ import type { KNX } from "../types/knx";
 import type { KNXProject } from "../types/websocket";
 import type { Config as ListFilterConfig } from "../components/data-table/filter/knx-list-filter";
 import { getPlatformStyle } from "../utils/common";
+import { selectEntityStates } from "../utils/entity-states";
+import type { EntityStates } from "../utils/entity-states";
 import type { SupportedPlatform } from "../types/entity_data";
 import { exposeTab } from "../knx-router";
 import { KNXLogger } from "../tools/knx-logger";
@@ -150,10 +152,18 @@ export class KNXExposeView extends LitElement {
     narrow?: { columnOrder?: string[]; hiddenColumns?: string[] };
   };
 
+  // The states of the listed entities; only replaced when one of them changes, so the rows
+  // (and with them the data table) are rebuilt on relevant state updates only.
+  private _entityStates: EntityStates = {};
+
   private _computeRows = memoize(
-    (entries: ExposedEntity[], projectData: KNXProject | null): EntityRow[] =>
+    (
+      entries: ExposedEntity[],
+      projectData: KNXProject | null,
+      entityStates: EntityStates,
+    ): EntityRow[] =>
       entries.map((entry) => {
-        const entityState: HassEntity | undefined = this.hass.states[entry.entity_id]; // undefined for disabled entities
+        const entityState: HassEntity | undefined = entityStates[entry.entity_id]; // undefined for disabled entities
         const device = entry.device_id ? this.hass.devices[entry.device_id] : undefined;
         const areaId = entry.area_id ?? device?.area_id;
         const area = areaId ? this.hass.areas[areaId] : undefined;
@@ -474,15 +484,24 @@ export class KNXExposeView extends LitElement {
     if (_changedProperties.has("_exposeGroupsCtx") && this._exposeGroupsCtx?.error) {
       navigateToError(this._exposeGroupsCtx.error);
     }
+    if (this.hass && (_changedProperties.has("hass") || _changedProperties.has("_exposes"))) {
+      this._entityStates = selectEntityStates(
+        this._exposes.map((entry) => entry.entity_id),
+        this.hass.states,
+        this._entityStates,
+      );
+    }
   }
 
   protected render(): TemplateResult | typeof nothing {
     if (!this._exposeGroupsCtx || this._exposeGroupsCtx.loading) {
       return html`<hass-loading-screen></hass-loading-screen>`;
     }
-    const computedRows = this._computeRows(this._exposes, this._projectData);
+    const computedRows = this._computeRows(this._exposes, this._projectData, this._entityStates);
     const filteredEntities = this._filterEntities(computedRows, this._filters);
 
+    // Keyed by entity_id: rows for deleted entities have no registry `id`, and an unkeyed
+    // row gets its DOM replaced (closing an open menu) whenever the rows are rebuilt.
     return html`
       <hass-tabs-subpage-data-table
         .hass=${this.hass}
@@ -493,6 +512,7 @@ export class KNXExposeView extends LitElement {
         .localizeFunc=${this.knx.localize}
         .columns=${this._columns(this.hass.language, this.narrow)}
         .data=${filteredEntities}
+        .id=${"entity_id"}
         .hasFab=${true}
         .searchLabel=${this.knx.localize("ui.panel.config.entities.picker.search", {
           number: filteredEntities.length,

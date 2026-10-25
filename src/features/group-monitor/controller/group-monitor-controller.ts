@@ -22,7 +22,7 @@ import {
 } from "../services/facet-index";
 import { KNXLogger } from "../../../tools/knx-logger";
 import { TelegramRow, type OffsetMicros } from "../types/telegram-row";
-import type { TelegramDict } from "../../../types/websocket";
+import { ERR_TELEGRAM_STORE_INITIALIZING, type TelegramDict } from "../../../types/websocket";
 import { extractMicrosecondsFromIso } from "../../../utils/format";
 
 const logger = new KNXLogger("group_monitor_controller");
@@ -46,7 +46,16 @@ export interface TimeRangeFilter {
 }
 
 /** Non-fatal outcome of a history load, surfaced to the user. */
-export type HistoryWarning = "retention_clamped" | "partial_load";
+export type HistoryWarning = "retention_clamped" | "partial_load" | "store_initializing";
+
+/** Delays between polls of the backend while its telegram store initializes (ms). */
+const STORE_INITIALIZING_RETRY_DELAYS_MS = [2_000, 5_000, 10_000];
+
+/** Whether a rejected websocket call reported the telegram store as still initializing. */
+const isStoreInitializingError = (err: unknown): boolean =>
+  typeof err === "object" &&
+  err !== null &&
+  (err as { code?: unknown }).code === ERR_TELEGRAM_STORE_INITIALIZING;
 
 /**
  * GroupMonitor ReactiveController
@@ -100,6 +109,13 @@ export class GroupMonitorController implements ReactiveController {
 
   private _connectionError: string | null = null;
 
+  // Backend telegram store still initializing; recent history is polled for until ready
+  private _storeInitializing = false;
+
+  private _storeInitializingRetryCount = 0;
+
+  private _storeInitializingTimer: ReturnType<typeof setTimeout> | null = null;
+
   // Time-delta context filter (milliseconds)
   private _timeDeltaBefore = 0;
 
@@ -149,6 +165,7 @@ export class GroupMonitorController implements ReactiveController {
   }
 
   hostDisconnected(): void {
+    this._clearStoreInitializingRetry();
     this._connectionService.disconnect();
   }
 
@@ -167,15 +184,17 @@ export class GroupMonitorController implements ReactiveController {
 
     await this._restoreFromCache(retentionDays);
 
-    if (!(await this._loadRecentTelegrams(hass))) return;
-
+    // Live telegrams never depend on the history store, so subscribe first.
     try {
       await this._connectionService.subscribe(hass);
     } catch (err) {
       logger.error("Failed to setup connection", err);
       this._connectionError = err instanceof Error ? err.message : String(err);
       this.host.requestUpdate();
+      return;
     }
+
+    await this._loadRecentTelegrams(hass);
   }
 
   /**
@@ -252,6 +271,11 @@ export class GroupMonitorController implements ReactiveController {
 
   public get connectionError(): string | null {
     return this._connectionError;
+  }
+
+  /** Whether the backend telegram store is still initializing (live telegrams still flow). */
+  public get storeInitializing(): boolean {
+    return this._storeInitializing;
   }
 
   public get timeDeltaBefore(): number {
@@ -623,7 +647,11 @@ export class GroupMonitorController implements ReactiveController {
         this._saveCoverage();
       }
     } catch (err) {
-      logger.error("applyTimeRangeFilter failed", err);
+      if (isStoreInitializingError(err)) {
+        this._historyWarning = "store_initializing";
+      } else {
+        logger.error("applyTimeRangeFilter failed", err);
+      }
     } finally {
       if (requestId === this._historyRequestId) {
         this._historyLoading = false;
@@ -819,10 +847,18 @@ export class GroupMonitorController implements ReactiveController {
   }
 
   /**
-   * Attempts to reconnect after a connection error
+   * Attempts to reconnect after a connection error and reloads the recent history
    */
   public async retryConnection(hass: HomeAssistant): Promise<void> {
-    await this._connectionService.reconnect(hass);
+    if (!this._connectionService.isConnected) {
+      try {
+        await this._connectionService.reconnect(hass);
+      } catch (err) {
+        logger.error("Failed to reconnect", err);
+        return;
+      }
+    }
+    await this._loadRecentTelegrams(hass);
   }
 
   /**
@@ -1038,6 +1074,19 @@ export class GroupMonitorController implements ReactiveController {
     try {
       const info = await getGroupMonitorInfo(hass);
 
+      if (info.telegram_store_status === "initializing") {
+        // The backend keeps the telegrams received meanwhile in its write
+        // buffer, so the history is complete once the store is ready.
+        this._storeInitializing = true;
+        this._connectionError = null;
+        this._scheduleStoreInitializingRetry(hass);
+        this.host.requestUpdate();
+        return false;
+      }
+      this._clearStoreInitializingRetry();
+      this._storeInitializingRetryCount = 0;
+      this._storeInitializing = false;
+
       // Calculate dynamic telegram storage limit
       const telegramsLength = info.recent_telegrams.length;
       const buffer = this._calculateTelegramStorageBuffer(telegramsLength);
@@ -1101,9 +1150,30 @@ export class GroupMonitorController implements ReactiveController {
       return true;
     } catch (err) {
       logger.error("getGroupMonitorInfo failed", err);
+      this._clearStoreInitializingRetry();
+      this._storeInitializing = false;
       this._connectionError = err instanceof Error ? err.message : String(err);
       this.host.requestUpdate();
       return false;
+    }
+  }
+
+  /** Polls the backend again with a growing delay while its store initializes. */
+  private _scheduleStoreInitializingRetry(hass: HomeAssistant): void {
+    this._clearStoreInitializingRetry();
+    const delays = STORE_INITIALIZING_RETRY_DELAYS_MS;
+    const delay = delays[Math.min(this._storeInitializingRetryCount, delays.length - 1)];
+    this._storeInitializingRetryCount++;
+    this._storeInitializingTimer = setTimeout(() => {
+      this._storeInitializingTimer = null;
+      this._loadRecentTelegrams(hass);
+    }, delay);
+  }
+
+  private _clearStoreInitializingRetry(): void {
+    if (this._storeInitializingTimer !== null) {
+      clearTimeout(this._storeInitializingTimer);
+      this._storeInitializingTimer = null;
     }
   }
 

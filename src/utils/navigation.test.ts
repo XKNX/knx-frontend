@@ -119,24 +119,32 @@ describe("navigateToError", () => {
 });
 
 describe("exitFlow", () => {
+  /** `history.back()` as the browser does it: moves the location and fires `popstate`. */
+  const goBackToView = () => {
+    fakeMainWindow.location.pathname = "/knx/entities/view";
+    fakeMainWindow.dispatchEvent(new Event("popstate"));
+  };
+
   beforeEach(() => {
     navigateMock.mockClear();
     fakeMainWindow.history.back.mockClear();
     fakeMainWindow.history.length = 1;
     fakeMainWindow.history.state = null;
+    fakeMainWindow.location.pathname = "/knx/entities/create/switch";
+    fakeMainWindow.location.search = "";
+    fakeMainWindow.location.hash = "";
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    fakeMainWindow.location.pathname = "/knx/entities/create/switch";
   });
 
   it("goes back to the page the flow was entered from", async () => {
     fakeMainWindow.history.length = 3;
-    fakeMainWindow.history.back.mockImplementation(() => {
-      fakeMainWindow.dispatchEvent(new Event("popstate"));
-    });
+    fakeMainWindow.history.back.mockImplementation(goBackToView);
 
-    await exitFlow("/knx/entities");
+    await exitFlow("/knx/entities/view");
 
     expect(fakeMainWindow.history.back).toHaveBeenCalledOnce();
     // no new history entry is created when leaving the flow
@@ -145,21 +153,19 @@ describe("exitFlow", () => {
 
   it("navigates to the fallback path when there is no history to go back to", async () => {
     // eg. the flow was opened directly by URL
-    await exitFlow("/knx/entities");
+    await exitFlow("/knx/entities/view");
 
     expect(fakeMainWindow.history.back).not.toHaveBeenCalled();
-    expect(navigateMock).toHaveBeenCalledWith("/knx/entities", { replace: true });
+    expect(navigateMock).toHaveBeenCalledWith("/knx/entities/view", { replace: true });
   });
 
   it("waits for an open dialog to drop its history entry before going back", async () => {
     // a dialog - eg. the unsaved changes confirmation - removes its own entry when closed
     fakeMainWindow.history.length = 3;
     fakeMainWindow.history.state = { dialog: "dialog-box" };
-    fakeMainWindow.history.back.mockImplementation(() => {
-      fakeMainWindow.dispatchEvent(new Event("popstate"));
-    });
+    fakeMainWindow.history.back.mockImplementation(goBackToView);
 
-    const exited = exitFlow("/knx/entities");
+    const exited = exitFlow("/knx/entities/view");
     await new Promise((resolve) => {
       setTimeout(resolve);
     });
@@ -172,16 +178,33 @@ describe("exitFlow", () => {
     await exited;
 
     expect(fakeMainWindow.history.back).toHaveBeenCalledOnce();
+    expect(navigateMock).not.toHaveBeenCalled();
   });
 
-  it("resolves when no popstate is fired for the traversal", async () => {
+  it("replaces the flow entry with the fallback path when going back did not happen", async () => {
+    // the browser dropped or delayed the traversal - the flow page is still shown when the
+    // safety net fires. Resolving then would let a dialog opened next land on top of the flow.
     vi.useFakeTimers();
     fakeMainWindow.history.length = 3;
     fakeMainWindow.history.back.mockImplementation(() => undefined);
 
-    const exited = exitFlow("/knx/entities");
+    const exited = exitFlow("/knx/entities/view");
     await vi.advanceTimersByTimeAsync(1000);
-
     await expect(exited).resolves.toBeUndefined();
+
+    expect(fakeMainWindow.history.back).toHaveBeenCalledOnce();
+    expect(navigateMock).toHaveBeenCalledWith("/knx/entities/view", { replace: true });
+  });
+
+  it("replaces the flow entry when a popstate did not leave the flow page", async () => {
+    // a history change that isn't the traversal - the flow is still the current entry
+    fakeMainWindow.history.length = 3;
+    fakeMainWindow.history.back.mockImplementation(() => {
+      fakeMainWindow.dispatchEvent(new Event("popstate"));
+    });
+
+    await exitFlow("/knx/entities/view");
+
+    expect(navigateMock).toHaveBeenCalledWith("/knx/entities/view", { replace: true });
   });
 });

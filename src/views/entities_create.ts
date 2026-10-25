@@ -47,6 +47,7 @@ import { getPlatformStyle } from "../utils/common";
 import { setNestedValue } from "../utils/config-helper";
 import { validDPTsForSchema } from "../utils/dpt";
 import { exitFlow, navigateInFlow, navigateToError } from "../utils/navigation";
+import { localizeValidationErrors } from "../utils/validation";
 import { PreventUnsavedMixin } from "../mixins/prevent-unsaved-mixin";
 import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
 import { KNXLogger } from "../tools/knx-logger";
@@ -313,7 +314,7 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
 
   private _exitEntitiesFlow = async () => {
     if (!(await this.promptDiscardChanges())) return;
-    exitFlow("/knx/entities");
+    exitFlow("/knx/entities/view");
   };
 
   protected override hasUnsavedChanges(): boolean {
@@ -515,7 +516,7 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
         this._markDirtyStateClean();
         this._entitiesByGroupContext?.reload();
         // await leaving the flow before opening the dialog - it pushes its own history state
-        await exitFlow("/knx/entities");
+        await exitFlow("/knx/entities/view");
         if (!createEntityResult.entity_id) {
           logger.error("entity_id not found after creation.");
           return;
@@ -548,7 +549,7 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
         logger.debug("Successfully updated entity", this.entityId);
         this._markDirtyStateClean();
         this._entitiesByGroupContext?.reload();
-        exitFlow("/knx/entities");
+        exitFlow("/knx/entities/view");
       })
       .catch((err) => {
         logger.error("Error updating entity", err);
@@ -563,7 +564,7 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
     // return true if validation error; scroll to alert if final
     if (result.success === false) {
       logger.warn("Validation error", result);
-      this._validationErrors = result.errors;
+      this._validationErrors = localizeValidationErrors(this.hass.localize, result.errors);
       this._validationBaseError = result.error_base;
       if (final) {
         setTimeout(() => this._alertElement.scrollIntoView({ behavior: "smooth" }));

@@ -1,5 +1,6 @@
 import {
   mdiPlus,
+  mdiDownloadNetworkOutline,
   mdiMathLog,
   mdiRobot,
   mdiNetworkOutline,
@@ -59,6 +60,7 @@ import {
   getLocationByDevice,
   getLocationFilterOptions,
   hasDeviceTreeFilterActive,
+  hasReadFlag,
 } from "../utils/project-structure";
 import type { DeviceFilterOption, DeviceTreeItem } from "../utils/project-structure";
 import { createExposesByGroupAddressMap } from "../data/exposes-by-group";
@@ -82,6 +84,16 @@ import { buildAutomationFromKnx, openAutomationEditor } from "../utils/automatio
 const logger = new KNXLogger("knx-project-view");
 // Minimum XKNXProject Version needed which was used for parsing the ETS Project
 const MIN_XKNXPROJECT_VERSION = "3.3.0";
+
+/** A group address as a table row, with the extra fields the columns show and filter by. */
+type GroupAddressRow = GroupAddress & {
+  dpt_raw: string;
+  related_exposes: string[];
+  related_entities: RelatedEntity[];
+  /** plain ids for the search filter */
+  related_entity_ids: string[];
+  last_telegram?: TelegramDict;
+};
 
 type ProjectViewMode = "group_addresses" | "devices";
 
@@ -190,132 +202,120 @@ export class KNXProjectView extends LitElement {
     };
   }
 
-  private _columns = memoize(
-    (
-      narrow,
-      _language,
-    ): DataTableColumnContainer<
-      GroupAddress & {
-        dpt_raw: string;
-        related_exposes: string[];
-        related_entities: RelatedEntity[];
-        related_entity_ids: string[];
-      }
-    > => {
-      const addressWidth = "100px";
-      const dptWidth = "82px";
+  private _columns = memoize((narrow, _language): DataTableColumnContainer<GroupAddressRow> => {
+    const addressWidth = "100px";
+    const dptWidth = "82px";
 
-      return {
-        address: {
-          showNarrow: true,
-          filterable: true,
-          sortable: true,
-          title: this.knx.localize(
-            "component.knx.config_panel.project.group_addresses.columns.address",
-          ),
-          flex: 1,
-          minWidth: addressWidth,
-          direction: "asc",
+    return {
+      address: {
+        showNarrow: true,
+        filterable: true,
+        sortable: true,
+        title: this.knx.localize(
+          "component.knx.config_panel.project.group_addresses.columns.address",
+        ),
+        flex: 1,
+        minWidth: addressWidth,
+        direction: "asc",
+      },
+      name: {
+        showNarrow: true,
+        filterable: true,
+        sortable: true,
+        title: this.knx.localize("ui.common.name"),
+        flex: 3,
+      },
+      dpt_raw: {
+        showNarrow: true,
+        defaultHidden: narrow,
+        sortable: true,
+        filterable: true,
+        groupable: true,
+        title: this.knx.localize("component.knx.config_panel.common.dpt"),
+        flex: 1,
+        minWidth: dptWidth,
+        template: (ga: GroupAddress) =>
+          ga.dpt
+            ? html`<span style="display:inline-block;width:24px;text-align:right;"
+                  >${ga.dpt.main}</span
+                >${ga.dpt.sub ? "." + ga.dpt.sub.toString().padStart(3, "0") : ""} `
+            : "",
+      },
+      lastValue: {
+        showNarrow: true,
+        filterable: false, // template result value isn't filterable or sortable
+        sortable: false,
+        title: this.knx.localize(
+          "component.knx.config_panel.project.group_addresses.columns.last_value",
+        ),
+        flex: 2,
+        template: (ga: GroupAddressRow) => {
+          const lastTelegram = ga.last_telegram;
+          if (!lastTelegram) return "";
+          const payload = TelegramDictFormatter.payload(lastTelegram);
+          if (lastTelegram.value == null) return html`<code>${payload}</code>`;
+          return html`<div title=${payload}>
+            ${TelegramDictFormatter.valueWithUnit(lastTelegram)}
+          </div>`;
         },
-        name: {
-          showNarrow: true,
-          filterable: true,
-          sortable: true,
-          title: this.knx.localize("ui.common.name"),
-          flex: 3,
+      },
+      updated: {
+        showNarrow: true,
+        defaultHidden: narrow,
+        filterable: false, // template result value isn't filterable or sortable
+        sortable: false,
+        title: this.knx.localize(
+          "component.knx.config_panel.project.group_addresses.columns.updated",
+        ),
+        flex: 1,
+        template: (ga: GroupAddressRow) => {
+          const lastTelegram = ga.last_telegram;
+          if (!lastTelegram) return "";
+          const tooltip = `${TelegramDictFormatter.dateWithMilliseconds(lastTelegram)}\n\n${lastTelegram.source} ${lastTelegram.source_name}`;
+          return html`<div title=${tooltip}>
+            ${relativeTime(new Date(lastTelegram.timestamp), this.hass.locale)}
+          </div>`;
         },
-        dpt_raw: {
-          showNarrow: true,
-          defaultHidden: narrow,
-          sortable: true,
-          filterable: true,
-          groupable: true,
-          title: this.knx.localize("component.knx.config_panel.common.dpt"),
-          flex: 1,
-          minWidth: dptWidth,
-          template: (ga: GroupAddress) =>
-            ga.dpt
-              ? html`<span style="display:inline-block;width:24px;text-align:right;"
-                    >${ga.dpt.main}</span
-                  >${ga.dpt.sub ? "." + ga.dpt.sub.toString().padStart(3, "0") : ""} `
-              : "",
-        },
-        lastValue: {
-          showNarrow: true,
-          filterable: false, // template result value isn't filterable or sortable
-          sortable: false,
-          title: this.knx.localize(
-            "component.knx.config_panel.project.group_addresses.columns.last_value",
-          ),
-          flex: 2,
-          template: (ga: GroupAddress) => {
-            const lastTelegram: TelegramDict | undefined = this._lastTelegrams[ga.address];
-            if (!lastTelegram) return "";
-            const payload = TelegramDictFormatter.payload(lastTelegram);
-            if (lastTelegram.value == null) return html`<code>${payload}</code>`;
-            return html`<div title=${payload}>
-              ${TelegramDictFormatter.valueWithUnit(this._lastTelegrams[ga.address])}
-            </div>`;
-          },
-        },
-        updated: {
-          showNarrow: true,
-          defaultHidden: narrow,
-          filterable: false, // template result value isn't filterable or sortable
-          sortable: false,
-          title: this.knx.localize(
-            "component.knx.config_panel.project.group_addresses.columns.updated",
-          ),
-          flex: 1,
-          template: (ga: GroupAddress) => {
-            const lastTelegram: TelegramDict | undefined = this._lastTelegrams[ga.address];
-            if (!lastTelegram) return "";
-            const tooltip = `${TelegramDictFormatter.dateWithMilliseconds(lastTelegram)}\n\n${lastTelegram.source} ${lastTelegram.source_name}`;
-            return html`<div title=${tooltip}>
-              ${relativeTime(new Date(lastTelegram.timestamp), this.hass.locale)}
-            </div>`;
-          },
-        },
-        related: {
-          showNarrow: true,
-          defaultHidden: narrow,
-          filterable: false, // template result value isn't filterable or sortable
-          sortable: false,
-          title: this.knx.localize("ui.dialogs.entity_registry.related"),
-          flex: 2,
-          template: (ga) =>
-            ga.related_entities.length || ga.related_exposes.length
-              ? html`<knx-data-table-related-label
-                  .hass=${this.hass}
-                  .entities=${ga.related_entities}
-                  .exposes=${ga.related_exposes}
-                ></knx-data-table-related-label>`
-              : nothing,
-        },
-        related_entity_ids: {
-          hidden: true,
-          filterable: true,
-          sortable: false,
-          title: "Entities",
-        },
-        related_exposes: {
-          hidden: true,
-          filterable: true,
-          sortable: false,
-          title: "Exposes",
-        },
-        actions: {
-          lastFixed: true,
-          showNarrow: true,
-          defaultHidden: narrow,
-          title: "",
-          label: this.knx.localize("ui.panel.config.generic.headers.actions"),
-          type: "overflow-menu",
-          template: (ga: GroupAddress) => this._groupAddressMenu(ga),
-        },
-      };
-    },
-  );
+      },
+      related: {
+        showNarrow: true,
+        defaultHidden: narrow,
+        filterable: false, // template result value isn't filterable or sortable
+        sortable: false,
+        title: this.knx.localize("ui.dialogs.entity_registry.related"),
+        flex: 2,
+        template: (ga) =>
+          ga.related_entities.length || ga.related_exposes.length
+            ? html`<knx-data-table-related-label
+                .hass=${this.hass}
+                .entities=${ga.related_entities}
+                .exposes=${ga.related_exposes}
+              ></knx-data-table-related-label>`
+            : nothing,
+      },
+      related_entity_ids: {
+        hidden: true,
+        filterable: true,
+        sortable: false,
+        title: "Entities",
+      },
+      related_exposes: {
+        hidden: true,
+        filterable: true,
+        sortable: false,
+        title: "Exposes",
+      },
+      actions: {
+        lastFixed: true,
+        showNarrow: true,
+        defaultHidden: narrow,
+        title: "",
+        label: this.knx.localize("ui.panel.config.generic.headers.actions"),
+        type: "overflow-menu",
+        template: (ga: GroupAddress) => this._groupAddressMenu(ga),
+      },
+    };
+  });
 
   private _groupAddressMenu(groupAddress: GroupAddress): TemplateResult {
     const items: IconOverflowMenuItem[] = [];
@@ -328,6 +328,18 @@ export class KNXProjectView extends LitElement {
         navigate(`/knx/group_monitor?destination=${groupAddress.address}`);
       },
     });
+
+    // Only a device with the read flag set on a linked object answers a read request;
+    // the answer then shows up in the "Last value" column via the telegram subscription.
+    if (this._projectData && hasReadFlag(groupAddress, this._projectData.communication_objects)) {
+      items.push({
+        path: mdiDownloadNetworkOutline,
+        label: this.knx.localize("component.knx.config_panel.common.read_value"),
+        action: () => {
+          this.hass.callService("knx", "read", { address: groupAddress.address });
+        },
+      });
+    }
 
     items.push({
       path: mdiRobot,
@@ -375,18 +387,16 @@ export class KNXProjectView extends LitElement {
     `;
   }
 
+  // The last telegrams are part of the row data on purpose: the data table only re-renders
+  // its rows when `data` changes, so templates reading view state would show stale values.
   private _getRows = memoize(
     (
       visibleGroupAddresses: string[],
       groupAddresses: Record<string, GroupAddress>,
       exposeGroups: Record<string, string[]> | null,
       entitiesByGroup: EntitiesByGroupContextValue["groups"] | null,
-    ): (GroupAddress & {
-      dpt_raw: string;
-      related_exposes: string[];
-      related_entities: RelatedEntity[];
-      related_entity_ids: string[];
-    })[] => {
+      lastTelegrams: Record<string, TelegramDict>,
+    ): GroupAddressRow[] => {
       const exposesByGA = exposeGroups ? createExposesByGroupAddressMap(exposeGroups) : null;
       const filtered = !visibleGroupAddresses.length
         ? // if none is set, default to show all
@@ -401,8 +411,8 @@ export class KNXProjectView extends LitElement {
           dpt_raw: dptToString(ga.dpt),
           related_exposes: exposesByGA?.[ga.address] ?? [],
           related_entities: relatedEntities,
-          // plain ids for the search filter
           related_entity_ids: relatedEntities.map((entity) => entity.entity_id),
+          last_telegram: lastTelegrams[ga.address],
         };
       });
     },
@@ -473,8 +483,11 @@ export class KNXProjectView extends LitElement {
       projectData.group_addresses,
       this._exposeGroupsCtx?.groups ?? null, // pass null when groups are unavailable to stabilize memoize inputs
       this._entitiesByGroupCtx?.groups ?? null,
+      this._lastTelegrams,
     );
 
+    // Rows are keyed by address so a telegram updates a row in place instead of replacing
+    // its DOM, which would close an open overflow menu.
     return html` <hass-tabs-subpage-data-table
       .hass=${this.hass}
       .narrow=${this.narrow}
@@ -483,6 +496,7 @@ export class KNXProjectView extends LitElement {
       .localizeFunc=${this.hass.localize}
       .columns=${this._columns(this.narrow, this.hass.language)}
       .data=${filtered as DataTableRowData[]}
+      .id=${"address"}
       .hasFab=${false}
       .searchLabel=${this.knx.localize("ui.components.data-table.search")}
       .clickable=${false}
