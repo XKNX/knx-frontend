@@ -2,6 +2,9 @@ import { mainWindow } from "@ha/common/dom/get_main_window";
 import { navigate, updateHistoryState } from "@ha/common/navigate";
 
 import { BASE_URL } from "../knx-router";
+import { KNXLogger } from "../tools/knx-logger";
+
+const logger = new KNXLogger("navigation");
 
 /**
  * Navigation helpers for sub-page flows - eg. creating or editing an entity.
@@ -38,6 +41,12 @@ const _dialogHistorySettled = (): Promise<void> =>
 
 const ERROR_PATH = `${BASE_URL}/error`;
 
+/** Path, query and hash of the current history entry. */
+const _currentUrl = (): string => {
+  const { pathname, search, hash } = mainWindow.location;
+  return `${pathname}${search}${hash}`;
+};
+
 /**
  * Show the error page, replacing the current history entry. The page where
  * it happened is remembered as `retryPath`, so "Try again" can return there -
@@ -58,13 +67,12 @@ const ERROR_PATH = `${BASE_URL}/error`;
  * it already reads the complete state.
  */
 export const navigateToError = async (error: unknown): Promise<boolean> => {
-  const { pathname, search, hash } = mainWindow.location;
-  if (pathname === ERROR_PATH) {
+  if (mainWindow.location.pathname === ERROR_PATH) {
     return false;
   }
   const data = {
     message: error instanceof Error ? error.message : String(error),
-    retryPath: `${pathname}${search}${hash}`,
+    retryPath: _currentUrl(),
   };
   const navigated = await navigate(ERROR_PATH, { replace: true, data });
   if (navigated) {
@@ -81,17 +89,28 @@ export const navigateInFlow = (path: string): Promise<boolean> => navigate(path,
  * history entry of the flow. When there is no history to go back to - eg. the
  * flow was opened directly by URL - `fallbackPath` is navigated to instead.
  *
+ * Going back is asynchronous and the browser gives no feedback on it: the
+ * traversal may be delayed or dropped altogether, and the safety-net timeout
+ * then fires with the flow page still shown. When that happens its history
+ * entry is replaced by `fallbackPath`, so the flow is left either way and
+ * whatever the caller does next - eg. opening a dialog, which pushes its own
+ * history entry - happens on the right page and not on top of the flow.
+ *
  * Resolves when the navigation was applied, so dialogs - which push their own
  * history state - can safely be opened afterwards.
  */
 export const exitFlow = async (fallbackPath: string): Promise<void> => {
   // eg. when leaving was confirmed in a dialog - it still has to drop its entry
   await _dialogHistorySettled();
-  if (mainWindow.history.length <= 1) {
-    await navigate(fallbackPath, { replace: true });
-    return;
+  if (mainWindow.history.length > 1) {
+    const flowUrl = _currentUrl();
+    const changed = _historyChanged();
+    mainWindow.history.back();
+    await changed;
+    if (_currentUrl() !== flowUrl) {
+      return;
+    }
+    logger.warn("Going back did not leave the flow - navigating to", fallbackPath);
   }
-  const changed = _historyChanged();
-  mainWindow.history.back();
-  await changed;
+  await navigate(fallbackPath, { replace: true });
 };

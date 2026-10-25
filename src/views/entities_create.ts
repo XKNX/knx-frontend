@@ -314,7 +314,7 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
 
   private _exitEntitiesFlow = async () => {
     if (!(await this.promptDiscardChanges())) return;
-    exitFlow("/knx/entities");
+    exitFlow("/knx/entities/view");
   };
 
   protected override hasUnsavedChanges(): boolean {
@@ -516,7 +516,7 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
         this._markDirtyStateClean();
         this._entitiesByGroupContext?.reload();
         // await leaving the flow before opening the dialog - it pushes its own history state
-        await exitFlow("/knx/entities");
+        await exitFlow("/knx/entities/view");
         if (!createEntityResult.entity_id) {
           logger.error("entity_id not found after creation.");
           return;
@@ -549,7 +549,7 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
         logger.debug("Successfully updated entity", this.entityId);
         this._markDirtyStateClean();
         this._entitiesByGroupContext?.reload();
-        exitFlow("/knx/entities");
+        exitFlow("/knx/entities/view");
       })
       .catch((err) => {
         logger.error("Error updating entity", err);
