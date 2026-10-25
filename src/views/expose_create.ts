@@ -780,7 +780,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
 
   private _exitExposeFlow = async () => {
     if (!(await this.promptDiscardChanges())) return;
-    exitFlow("/knx/expose");
+    exitFlow("/knx/expose/view");
   };
 
   private _setConfig(config: ExposeConfigData) {
@@ -871,7 +871,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
       logger.debug("Successfully saved expose", this._entityId);
       this._markDirtyStateClean();
       this._exposeGroupsCtx?.reload();
-      await exitFlow("/knx/expose");
+      await exitFlow("/knx/expose/view");
     } catch (err) {
       logger.error("Error saving expose", err);
       navigateToError(err);
