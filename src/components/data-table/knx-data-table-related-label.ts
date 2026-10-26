@@ -219,7 +219,8 @@ class KnxDataTableRelatedLabel extends LitElement {
     }
 
     .disabled {
-      --ha-label-text-color: var(--disabled-text-color);
+      /* fade the chip, not the text - the icon marks the disabled state */
+      --ha-label-background-opacity: 0.15;
       --ha-label-icon-color: var(--disabled-text-color);
     }
 
