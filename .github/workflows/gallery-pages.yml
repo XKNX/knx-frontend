@@ -1,0 +1,106 @@
+name: Gallery Pages
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, synchronize, reopened, closed, edited]
+  workflow_run:
+    workflows: [Gallery build]
+    types: [in_progress, completed]
+  workflow_dispatch:
+
+permissions: {}
+
+# ponytail: one writer for the complete site; at 100 queued runs use manual reconciliation.
+concurrency:
+  group: gallery-pages
+  queue: max
+
+jobs:
+  prepare:
+    if: >-
+      vars.GALLERY_PAGES_ENABLED == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+      pull-requests: write
+      pages: read
+    outputs:
+      deploy: ${{ steps.prepare.outputs.deploy }}
+      state_commit: ${{ steps.prepare.outputs.state_commit }}
+      artifact_name: ${{ steps.prepare.outputs.artifact_name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - id: prepare
+        run: python3 gallery/script/gallery_pages.py prepare
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GALLERY_PAGES_ENABLED: ${{ vars.GALLERY_PAGES_ENABLED }}
+      - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        if: steps.prepare.outputs.deploy == 'true'
+        with:
+          name: ${{ steps.prepare.outputs.artifact_name }}
+          path: ${{ runner.temp }}/gallery-pages-public
+
+  deploy:
+    needs: prepare
+    if: needs.prepare.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Recheck approval after any environment wait
+        run: python3 gallery/script/gallery_pages.py verify --state-commit "$STATE_COMMIT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GALLERY_PAGES_ENABLED: ${{ vars.GALLERY_PAGES_ENABLED }}
+          STATE_COMMIT: ${{ needs.prepare.outputs.state_commit }}
+      - id: deploy
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+        with:
+          artifact_name: ${{ needs.prepare.outputs.artifact_name }}
+
+  finish:
+    needs: [prepare, deploy]
+    if: always() && needs.prepare.outputs.deploy == 'true' && needs.prepare.outputs.state_commit != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+      pull-requests: write
+      pages: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Confirm deployment and update preview links
+        run: >-
+          python3 gallery/script/gallery_pages.py finish
+          --result "$DEPLOY_RESULT" --state-commit "$STATE_COMMIT"
+          --deployment-run "$DEPLOY_RUN"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GALLERY_PAGES_ENABLED: ${{ vars.GALLERY_PAGES_ENABLED }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          STATE_COMMIT: ${{ needs.prepare.outputs.state_commit }}
+          DEPLOY_RUN: ${{ github.run_id }}/${{ github.run_attempt }}

@@ -29,7 +29,7 @@ $ script/build
 
 ### Gallery
 
-The [component gallery](gallery/README.md) shows KNX components,
+The [component gallery](https://xknx.github.io/knx-frontend/gallery/) shows KNX components,
 dialogs and views with example data. Run `pnpm gallery` locally; see
 [Gallery development](gallery/README.md) for details.
 

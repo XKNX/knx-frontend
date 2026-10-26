@@ -69,6 +69,7 @@ pnpm test                    # product + Gallery units; product-only coverage
 pnpm lint                    # shared ESLint, formatting, types and Lit checks
 pnpm gallery:integration     # full isolated bundle build, prepares generated inputs
 pnpm gallery:unit            # shared Vitest config, Gallery scope; file/name filters
+pnpm gallery:policy          # standard-library Python publishing/security tests
 pnpm gallery:lint            # TS/config/tool formatting, syntax and Lit templates
 pnpm gallery:types           # shared compiler options, Gallery/HA roots and imports; separate cache
 pnpm gallery:test --project=chromium --workers=2 --grep 'components knx-dpt-option-selector'
@@ -102,11 +103,40 @@ Recover failed build, browser or report jobs with **Re-run all jobs**; selective
 merge/shard retries cannot regenerate all required current-attempt blobs and the
 site artifact.
 `pnpm test`, `pnpm lint` and `pnpm lint:types` include Gallery by default. Focused
-Gallery aliases reuse the shared configuration; the Gallery build workflow runs them
-unconditionally at the exact PR head.
+Gallery aliases reuse the shared configuration; the publication workflow runs them
+unconditionally at the exact PR head, including when preview approval is pending.
 Browser tests use the shared DOM and Node/Playwright type environment. Optional production
 statistics use `KNX_BUILD_STATS=1 pnpm build`; check a real unpacked wheel with
 `node gallery/script/check-gallery-exclusion.mjs build/checks/production.json /path/to/unpacked-wheel`.
+
+## GitHub Pages
+
+Choose **GitHub Actions** in Settings → Pages, restrict the `github-pages` deployment
+environment to `main`, allow Actions PR comments and writes to the dedicated
+`gh-pages` data branch, then set `GALLERY_PAGES_ENABLED=true` as an Actions variable.
+An unrelated existing `gh-pages` branch is not adopted. Configure custom domains
+before building; the Pages API supplies the URL prefix. Verify permissions and
+fork approvals in the first repository before enabling another.
+
+Main publishes below the Pages URL at `/gallery/`; PR previews use
+`/pr/<number>/gallery/`. Authors with
+write/maintain/admin access get previews automatically. A maintainer's **Re-run all
+jobs** in Gallery build approves the exact external PR SHA and run attempt; each
+new SHA needs approval. Edit the PR description for a fresh run if reruns expired.
+One sticky comment tracks status/links; failures retain the last published preview.
+Older previews retain their previous address until an authorized rebuild.
+Closing a PR removes its preview on the next successful deployment; **Gallery Pages
+→ Run workflow** reconciles closed previews and retries saved authorized candidates.
+
+PR checks use read-only permissions without secrets; publishing executes Main code
+and validates artifacts as data. Publication waits for all required checks and official
+deployment. Main and previews share an origin, including other repositories hosted on
+`xknx.github.io`. Maintainer approval trusts the hosted PR code with that origin;
+message source/session checks isolate Gallery panes but do not sandbox hosted code.
+The publisher keeps its serialized queue and append-only state. The shallow
+checkout bounds runner fetches, but historical bundles still occupy the data
+branch. History retention needs a separate policy that preserves the confirmed
+deployment and pending recovery snapshots; no automatic history rewrite occurs.
 
 ## Backend translations
 
