@@ -1,7 +1,10 @@
 import type { TemplateResult } from "lit";
 import { css, html, LitElement, nothing, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators";
+import { classMap } from "lit/directives/class-map";
+import { ifDefined } from "lit/directives/if-defined";
 import { repeat } from "lit/directives/repeat";
+import { mdiInformationOffOutline } from "@mdi/js";
 import type { HassEntity } from "home-assistant-js-websocket";
 
 import "@ha/components/chips/ha-chip-set";
@@ -15,6 +18,7 @@ import { navigate } from "@ha/common/navigate";
 import { stopPropagation } from "@ha/common/dom/stop_propagation";
 import type { HomeAssistant } from "@ha/types";
 
+import type { RelatedEntity } from "../../data/knx-entities-by-group-context";
 import { entitiesTab, exposeTab } from "../../knx-router";
 import { consumeKnxLocalize } from "../../localize/consume-knx-localize";
 import type { KnxLocalizeFunc } from "../../localize/localize";
@@ -23,9 +27,7 @@ import type { KnxLocalizeFunc } from "../../localize/localize";
 class KnxDataTableRelatedLabel extends LitElement {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
-  @property({ attribute: false }) public entities: string[] = [];
-
-  @property({ attribute: false }) public entitiesYaml: string[] = [];
+  @property({ attribute: false }) public entities: RelatedEntity[] = [];
 
   @property({ attribute: false }) public exposes: string[] = [];
 
@@ -34,7 +36,7 @@ class KnxDataTableRelatedLabel extends LitElement {
   private localize!: KnxLocalizeFunc;
 
   protected render(): TemplateResult | typeof nothing {
-    const totalItems = this.entities.length + this.entitiesYaml.length + this.exposes.length;
+    const totalItems = this.entities.length + this.exposes.length;
     if (!totalItems) {
       return nothing;
     }
@@ -44,13 +46,8 @@ class KnxDataTableRelatedLabel extends LitElement {
         <ha-chip-set>
           ${repeat(
             this.entities,
-            (itemId) => itemId,
-            (itemId) => this._renderEntityItem(itemId),
-          )}
-          ${repeat(
-            this.entitiesYaml,
-            (itemId) => itemId,
-            (itemId) => this._renderEntityYamlItem(itemId),
+            (entity) => entity.entity_id,
+            (entity) => this._renderEntityItem(entity),
           )}
           ${repeat(
             this.exposes,
@@ -67,15 +64,13 @@ class KnxDataTableRelatedLabel extends LitElement {
   }
 
   private _renderEntitiesSection(): TemplateResult | typeof nothing {
-    const itemCount = this.entities.length + this.entitiesYaml.length;
+    const itemCount = this.entities.length;
     if (!itemCount) {
       return nothing;
     }
 
     if (itemCount === 1) {
-      return this.entities.length === 1
-        ? this._renderEntityItem(this.entities[0])
-        : this._renderEntityYamlItem(this.entitiesYaml[0]);
+      return this._renderEntityItem(this.entities[0]);
     }
 
     const openDropdownLabel = this.localize("ui.components.target-picker.entities_count", {
@@ -87,18 +82,10 @@ class KnxDataTableRelatedLabel extends LitElement {
         <ha-label slot="trigger" class="open-menu" dense>${openDropdownLabel}</ha-label>
         ${repeat(
           this.entities,
-          (itemId) => itemId,
-          (itemId) =>
-            html`<ha-dropdown-item .value=${itemId}>
-              ${this._renderEntityItem(itemId)}
-            </ha-dropdown-item>`,
-        )}
-        ${repeat(
-          this.entitiesYaml,
-          (itemId) => itemId,
-          (itemId) =>
-            html`<ha-dropdown-item .value=${itemId}>
-              ${this._renderEntityYamlItem(itemId)}
+          (entity) => entity.entity_id,
+          (entity) =>
+            html`<ha-dropdown-item .value=${entity.entity_id}>
+              ${this._renderEntityItem(entity)}
             </ha-dropdown-item>`,
         )}
       </ha-dropdown>
@@ -134,26 +121,46 @@ class KnxDataTableRelatedLabel extends LitElement {
     `;
   }
 
-  private _renderEntityItem(itemId: string): TemplateResult {
-    const stateObj: HassEntity | undefined = this.hass?.states[itemId];
+  private _renderEntityItem(entity: RelatedEntity): TemplateResult {
+    const label = html`
+      <ha-label
+        dense
+        class=${classMap({ "entity-label": true, yaml: !entity.ui, disabled: entity.disabled })}
+        .description=${entity.ui ? undefined : "YAML"}
+        title=${ifDefined(
+          entity.disabled
+            ? this.localize("ui.panel.config.entities.picker.status.disabled")
+            : undefined,
+        )}
+      >
+        ${this._renderEntityIcon(entity)} ${entity.entity_id}
+      </ha-label>
+    `;
+    if (!entity.ui) {
+      return label;
+    }
     return html`
-      <a class="related-item link" href=${this._entityHref(itemId)} @click=${this._linkClicked}>
-        <ha-label dense class="entity-label">
-          <ha-state-icon slot="icon" .hass=${this.hass} .stateObj=${stateObj}></ha-state-icon>
-          ${itemId}
-        </ha-label>
+      <a
+        class="related-item link"
+        href=${this._entityHref(entity.entity_id)}
+        @click=${this._linkClicked}
+      >
+        ${label}
       </a>
     `;
   }
 
-  private _renderEntityYamlItem(itemId: string): TemplateResult {
-    const stateObj: HassEntity | undefined = this.hass?.states[itemId];
-    return html`
-      <ha-label dense class="entity-label yaml" .description=${"YAML"}>
-        <ha-state-icon slot="icon" .hass=${this.hass} .stateObj=${stateObj}></ha-state-icon>
-        ${itemId}
-      </ha-label>
-    `;
+  private _renderEntityIcon(entity: RelatedEntity): TemplateResult {
+    // a disabled entity has no state object to derive an icon from
+    if (entity.disabled) {
+      return html`<ha-svg-icon slot="icon" .path=${mdiInformationOffOutline}></ha-svg-icon>`;
+    }
+    const stateObj: HassEntity | undefined = this.hass?.states[entity.entity_id];
+    return html`<ha-state-icon
+      slot="icon"
+      .hass=${this.hass}
+      .stateObj=${stateObj}
+    ></ha-state-icon>`;
   }
 
   private _renderExposeItem(itemId: string): TemplateResult {
@@ -209,6 +216,13 @@ class KnxDataTableRelatedLabel extends LitElement {
     .yaml {
       --ha-label-background-color: var(--disabled-color);
       cursor: default;
+    }
+
+    .disabled {
+      /* fade background and text moderately - both at once must stay readable */
+      --ha-label-background-opacity: 0.25;
+      --ha-label-text-color: var(--secondary-text-color);
+      --ha-label-icon-color: var(--secondary-text-color);
     }
 
     .expose-label {

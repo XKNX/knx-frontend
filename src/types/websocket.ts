@@ -47,6 +47,7 @@ export interface KNXEntityIdentifier {
   platform: string;
   unique_id: string;
   ui: boolean;
+  disabled: boolean;
 }
 
 export interface KNXProjectInfo {
