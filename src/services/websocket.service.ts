@@ -50,6 +50,20 @@ export const removeProjectFile = (hass: HomeAssistant): Promise<void> =>
     type: "knx/project_file_remove",
   });
 
+export const restartDevice = async (
+  hass: HomeAssistant,
+  individualAddress: string,
+): Promise<void> => {
+  // notifyOnError: Home Assistant shows the localized error toast and rethrows
+  await hass.callService(
+    "knx",
+    "restart_device",
+    { individual_address: individualAddress },
+    undefined,
+    true,
+  );
+};
+
 export const getGroupMonitorInfo = (hass: HomeAssistant): Promise<GroupMonitorInfoData> =>
   hass.callWS({
     type: "knx/group_monitor_info",

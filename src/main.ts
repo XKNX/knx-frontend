@@ -148,6 +148,7 @@ class KnxFrontend extends contextMixin(KnxElement) {
       // BE translations
       this.hass.loadBackendTranslation("config_panel", "knx", false),
       this.hass.loadBackendTranslation("selector", "knx", false),
+      this.hass.loadBackendTranslation("services", "knx", false),
       this.hass.loadBackendTranslation("title", this.knx.supportedPlatforms, false),
       this.hass.loadBackendTranslation("selector", this.knx.supportedPlatforms, false),
     ]);
