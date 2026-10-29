@@ -149,7 +149,7 @@ describe("dashboard status details", () => {
     );
     expect(docsButton?.href).toBe("https://www.home-assistant.io/integrations/knx");
     expect(docsButton?.target).toBe("_blank");
-    expect(host.querySelector('ha-md-list-item[type="link"][href="/knx/entities"]')).not.toBeNull();
+    expect(host.querySelector('ha-list-item-button[href="/knx/entities"]')).not.toBeNull();
   });
 });
 
@@ -164,7 +164,7 @@ describe("dashboard actions", () => {
     const host = document.createElement("div");
     render((view as unknown as { render: () => TemplateResult }).render(), host, { host: view });
 
-    const uploadItem = [...host.querySelectorAll('ha-md-list-item[type="button"]')].find((item) =>
+    const uploadItem = [...host.querySelectorAll("ha-list-item-button:not([href])")].find((item) =>
       item.textContent?.includes("component.knx.config_panel.dashboard.project_upload.title"),
     );
     expect(uploadItem).toBeDefined();

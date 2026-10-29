@@ -7,8 +7,8 @@ import { classMap } from "lit/directives/class-map";
 import "@ha/components/ha-dialog";
 import "@ha/components/ha-button";
 import "@ha/components/ha-dialog-footer";
-import "@ha/components/ha-md-list";
-import "@ha/components/ha-md-list-item";
+import "@ha/components/item/ha-list-item-button";
+import "@ha/components/list/ha-list-base";
 import "@ha/components/input/ha-input-search";
 
 import { DialogMixin } from "@ha/dialogs/dialog-mixin";
@@ -157,12 +157,10 @@ export class KnxGaSelectDialog extends DialogMixin<KnxGaSelectDialogParams>(LitE
         <div class="group-title" style="--group-depth: ${group.depth}">${group.title}</div>
         ${
           group.items.length > 0
-            ? html`<ha-md-list>
+            ? html`<ha-list-base>
                 ${group.items.map((ga) => {
                   const isSelected = this._selected === ga.address;
-                  return html`<ha-md-list-item
-                    interactive
-                    type="button"
+                  return html`<ha-list-item-button
                     value=${ga.address}
                     @click=${this._onSelect}
                     @dblclick=${this._onDoubleClick}
@@ -175,9 +173,9 @@ export class KnxGaSelectDialog extends DialogMixin<KnxGaSelectDialogParams>(LitE
                       <div class="ga-address">${ga.address}</div>
                       <div class="ga-name">${ga.name ?? ""}</div>
                     </div>
-                  </ha-md-list-item>`;
+                  </ha-list-item-button>`;
                 })}
-              </ha-md-list>`
+              </ha-list-base>`
             : nothing
         }
         ${group.childGroups.map((child) => this._renderGroup(child))}
@@ -257,10 +255,6 @@ export class KnxGaSelectDialog extends DialogMixin<KnxGaSelectDialogParams>(LitE
         search-input {
           display: block;
           width: 100%;
-        }
-
-        ha-md-list {
-          padding: 0;
         }
 
         .ga-list-container {
