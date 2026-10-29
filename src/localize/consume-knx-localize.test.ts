@@ -40,8 +40,12 @@ describe("consumeKnxLocalize", () => {
   it("logs and returns the key when a translation is missing", () => {
     const error = vi.spyOn(KNXLogger.prototype, "error").mockImplementation(() => undefined);
 
-    expect(createElement().localize!("ui.common.missing")).toBe("ui.common.missing");
-    expect(error).toHaveBeenCalledWith(expect.stringContaining("ui.common.missing"));
+    expect(createElement().localize!("ui.components.selectors.file.missing")).toBe(
+      "ui.components.selectors.file.missing",
+    );
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining("ui.components.selectors.file.missing"),
+    );
   });
 
   it("returns an empty string without logging for optional lookups", () => {

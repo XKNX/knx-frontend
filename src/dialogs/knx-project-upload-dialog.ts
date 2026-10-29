@@ -244,7 +244,7 @@ export class KnxProjectUploadDialog extends DialogMixin<KnxProjectUploadDialogPa
 
     this._uploading = true;
     try {
-      const projectFileId = await uploadFile(this.hass, file);
+      const projectFileId = await uploadFile(this.hass.fetchWithAuth, this.hass.localize, file);
       await processProjectFile(this.hass, projectFileId, password);
     } catch (err: unknown) {
       this._uploading = false;

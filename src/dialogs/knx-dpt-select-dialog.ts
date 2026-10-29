@@ -5,8 +5,8 @@ import { customElement, state } from "lit/decorators";
 import "@ha/components/ha-dialog";
 import "@ha/components/ha-button";
 import "@ha/components/ha-dialog-footer";
-import "@ha/components/ha-md-list";
-import "@ha/components/ha-md-list-item";
+import "@ha/components/item/ha-list-item-button";
+import "@ha/components/list/ha-list-base";
 import "@ha/components/ha-section-title";
 import "@ha/components/input/ha-input-search";
 
@@ -195,13 +195,11 @@ export class KnxDptSelectDialog extends DialogMixin<KnxDptSelectDialogParams>(Li
                         ? html`<ha-section-title>${group.title}</ha-section-title>`
                         : nothing
                     }
-                    <ha-md-list>
+                    <ha-list-base>
                       ${group.items.map((dpt) => {
                         const info = this._getDptInfo(dpt);
                         const isSelected = this._selected === dpt;
-                        return html`<ha-md-list-item
-                          interactive
-                          type="button"
+                        return html`<ha-list-item-button
                           value=${dpt}
                           @click=${this._onSelect}
                           @dblclick=${this._onDoubleClick}
@@ -212,9 +210,9 @@ export class KnxDptSelectDialog extends DialogMixin<KnxDptSelectDialogParams>(Li
                             <div class="dpt-name">${info.label}</div>
                             <div class="dpt-unit">${info.unit}</div>
                           </div>
-                        </ha-md-list-item>`;
+                        </ha-list-item-button>`;
                       })}
-                    </ha-md-list>
+                    </ha-list-base>
                   `,
                 )}
               </div>`

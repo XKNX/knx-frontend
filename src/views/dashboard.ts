@@ -18,8 +18,9 @@ import { fireEvent } from "@ha/common/dom/fire_event";
 import "@ha/components/ha-card";
 import "@ha/components/ha-icon-button";
 import "@ha/components/ha-icon-next";
-import "@ha/components/ha-md-list";
-import "@ha/components/ha-md-list-item";
+import "@ha/components/item/ha-list-item-button";
+import "@ha/components/list/ha-list-base";
+import "@ha/components/list/ha-list-nav";
 import "@ha/components/ha-svg-icon";
 import { fetchIntegrationManifest } from "@ha/data/integration";
 import "@ha/layouts/hass-subpage";
@@ -295,11 +296,11 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
           </ha-card>
           <ha-card class="nav-card">
             <div class="card-content">
-              <ha-md-list>
+              <ha-list-nav>
                 ${map(
                   this._getPages(),
                   (page: KnxPageNavigation) => html`
-                    <ha-md-list-item type="link" href=${page.path}>
+                    <ha-list-item-button href=${page.path}>
                       <div
                         slot="start"
                         class="icon-background"
@@ -314,20 +315,19 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
                       <span slot="headline">${page.name}</span>
                       <span slot="supporting-text">${page.description}</span>
                       <ha-icon-next slot="end"></ha-icon-next>
-                    </ha-md-list-item>
+                    </ha-list-item-button>
                   `,
                 )}
-              </ha-md-list>
+              </ha-list-nav>
             </div>
           </ha-card>
           <ha-card class="nav-card">
             <div class="card-content">
-              <ha-md-list>
+              <ha-list-base>
                 ${map(
                   this._buttonItems,
                   (item: DashboardButton) =>
-                    html` <ha-md-list-item
-                      type="button"
+                    html` <ha-list-item-button
                       @click=${item.click}
                       ?disabled=${!item.validConfigEntryStates.has(this._configEntryState)}
                     >
@@ -344,9 +344,9 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
                       <span slot="supporting-text"
                         >${this.knx.localize(`${item.translationKey}.description`)}</span
                       >
-                    </ha-md-list-item>`,
+                    </ha-list-item-button>`,
                 )}
-              </ha-md-list>
+              </ha-list-base>
             </div>
           </ha-card>
         </div>
@@ -368,13 +368,6 @@ export class KnxDashboard extends SubscribeMixin(LitElement) {
     }
     .nav-card .card-content {
       padding: 0;
-    }
-    ha-md-list {
-      background: none;
-      padding: 0;
-    }
-    ha-md-list-item {
-      --md-item-overflow: visible;
     }
     .network-status div.heading {
       display: flex;

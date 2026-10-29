@@ -1,6 +1,8 @@
-const { existsSync } = require("fs");
+const fs = require("fs");
+const { existsSync } = fs;
 const path = require("path");
 const rspack = require("@rspack/core");
+const browserslist = require("browserslist");
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const { RsdoctorRspackPlugin } = require("@rsdoctor/rspack-plugin");
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -54,7 +56,8 @@ const createRspackConfig = ({
   }
   const ignorePackages = bundle.ignorePackages({ latestBuild });
   const babelCacheIdentifier = bundle.babelCacheIdentifier({ latestBuild });
-  const litHtmlRoot = path.resolve(__dirname, "../node_modules/lit-html");
+  // pnpm links node_modules/lit-html into its store; rspack compares real paths
+  const litHtmlRoot = fs.realpathSync(path.resolve(__dirname, "../node_modules/lit-html"));
   const litHtmlDevelopmentRoot = path.join(litHtmlRoot, "development");
   const litDisableDevModeLoader = path.join(__dirname, "lit-disable-dev-mode-loader.cjs");
   return {
@@ -108,6 +111,22 @@ const createRspackConfig = ({
         {
           test: /\.css$/,
           type: "asset/source",
+          // Imported stylesheets skip the minifier that compiles css``
+          // templates, so legacy builds compile logical properties and :is()
+          // here
+          use: latestBuild
+            ? []
+            : [
+                {
+                  loader: "builtin:lightningcss-loader",
+                  options: {
+                    targets: browserslist.loadConfig({
+                      path: paths.root_dir,
+                      env: "legacy",
+                    }),
+                  },
+                },
+              ],
         },
       ],
     },
@@ -228,6 +247,14 @@ const createRspackConfig = ({
     resolve: {
       extensions: [".ts", ".js", ".json"],
       alias: {
+        // @formatjs/bigdecimal uses BigInt (Safari 14, Chrome 67), which
+        // breaks the NumberFormat and PluralRules polyfills
+        ...(!latestBuild && {
+          "@formatjs/bigdecimal$": path.join(
+            paths.root_dir,
+            "homeassistant-frontend/src/resources/polyfills/bigdecimal.ts",
+          ),
+        }),
         "lit/static-html$": "lit/static-html.js",
         "lit/decorators$": "lit/decorators.js",
         "lit/directive$": "lit/directive.js",
@@ -247,8 +274,6 @@ const createRspackConfig = ({
         "lit/directives/map$": "lit/directives/map.js",
         "lit/polyfill-support$": "lit/polyfill-support.js",
         "@lit-labs/virtualizer/layouts/grid": "@lit-labs/virtualizer/layouts/grid.js",
-        "@lit-labs/virtualizer/polyfills/resize-observer-polyfill/ResizeObserver":
-          "@lit-labs/virtualizer/polyfills/resize-observer-polyfill/ResizeObserver.js",
         "@lit-labs/observers/resize-controller": "@lit-labs/observers/resize-controller.js",
         "@formatjs/intl-durationformat/should-polyfill$":
           "@formatjs/intl-durationformat/should-polyfill.js",
