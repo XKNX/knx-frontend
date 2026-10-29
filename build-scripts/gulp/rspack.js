@@ -26,7 +26,7 @@ gulp.task("ensure-knx-build-dir", (done) => {
   done();
 });
 
-const doneHandler = (done) => (err, stats) => {
+const doneHandler = () => (err, stats) => {
   if (err) {
     log.error(err.stack || err);
     if (err.details) {
@@ -40,19 +40,24 @@ const doneHandler = (done) => (err, stats) => {
   }
 
   log(`Build done @ ${new Date().toLocaleTimeString()}`);
-
-  if (done) {
-    done();
-  }
 };
 
 const prodBuild = (conf) =>
-  new Promise((resolve) => {
-    rspack(
-      conf,
-      // Resolve promise when done. Because we pass a callback, rspack closes itself
-      doneHandler(resolve),
-    );
+  new Promise((resolve, reject) => {
+    // Because we pass a callback, rspack closes the compiler when done.
+    rspack(conf, (err, stats) => {
+      if (err) {
+        reject(err);
+      } else if (stats.hasErrors()) {
+        reject(new Error(stats.toString("errors-only")));
+      } else {
+        if (stats.hasWarnings()) {
+          console.log(stats.toString("minimal"));
+        }
+        log(`Build done @ ${new Date().toLocaleTimeString()}`);
+        resolve();
+      }
+    });
   });
 
 gulp.task("rspack-watch-knx", () => {

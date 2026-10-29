@@ -605,6 +605,10 @@ export class KNXGroupMonitor extends LitElement {
         );
       case "partial_load":
         return this.knx.localize("component.knx.config_panel.group_monitor.time_range.partial");
+      case "store_initializing":
+        return this.knx.localize(
+          "component.knx.config_panel.group_monitor.time_range.store_initializing",
+        );
       default:
         return undefined;
     }
@@ -1198,6 +1202,20 @@ export class KNXGroupMonitor extends LitElement {
                   <ha-button slot="action" @click=${this._retryConnection}>
                     ${this.knx.localize("component.knx.config_panel.group_monitor.connection_error.retry")}
                   </ha-button>
+                </ha-alert>
+              `
+            : nothing
+        }
+        ${
+          this.controller.storeInitializing
+            ? html`
+                <ha-alert
+                  slot="top-header"
+                  .alertType=${"info"}
+                  .dismissable=${false}
+                  .title=${this.knx.localize("component.knx.config_panel.group_monitor.telegram_store_initializing.title")}
+                >
+                  ${this.knx.localize("component.knx.config_panel.group_monitor.telegram_store_initializing.description")}
                 </ha-alert>
               `
             : nothing

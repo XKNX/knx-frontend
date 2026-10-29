@@ -358,7 +358,11 @@ describe("KnxProjectUploadDialog", () => {
 
       await submit(rendered);
 
-      expect(uploadFile).toHaveBeenCalledWith(rendered.hass, PROJECT_FILE);
+      expect(uploadFile).toHaveBeenCalledWith(
+        rendered.hass.fetchWithAuth,
+        rendered.hass.localize,
+        PROJECT_FILE,
+      );
       expect(processProjectFile).toHaveBeenCalledWith(rendered.hass, "file-id", "secret");
       expect(showAlertDialog).not.toHaveBeenCalled();
       expect(closeDialog).toHaveBeenCalledOnce();

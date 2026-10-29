@@ -13,7 +13,7 @@ import { finished } from "node:stream/promises";
 import path from "path";
 import env from "../env.cjs";
 import paths from "../paths.cjs";
-import "./fetch-nightly-translations.js";
+import "./fetch-nightly-translations.mts";
 
 const inFrontendDir = "translations/frontend";
 const inBackendDir = "translations/backend";

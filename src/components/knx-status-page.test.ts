@@ -16,7 +16,7 @@ const clipboard = vi.hoisted(() => ({
   showToast: vi.fn(),
 }));
 vi.mock("@ha/common/util/copy-clipboard", () => ({ copyToClipboard: clipboard.copyToClipboard }));
-vi.mock("@ha/util/toast", () => ({ showToast: clipboard.showToast }));
+vi.mock("../utils/toast", () => ({ showToast: clipboard.showToast }));
 
 describe("KnxStatusPage", () => {
   let container: HTMLElement;

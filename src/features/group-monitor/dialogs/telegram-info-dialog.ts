@@ -178,8 +178,7 @@ export class GroupMonitorTelegramInfoDialog
     const directionClass = isOutgoing ? "outgoing" : "incoming";
 
     const destAddr = telegram.destinationAddress;
-    const relatedEntities = this._entitiesByGroupCtx?.groups[destAddr]?.ui ?? [];
-    const relatedEntitiesYaml = this._entitiesByGroupCtx?.groups[destAddr]?.yaml ?? [];
+    const relatedEntities = this._entitiesByGroupCtx?.groups[destAddr] ?? [];
     const relatedExposes = this._exposeGroupsCtx?.groups[destAddr] ?? [];
 
     return html`
@@ -283,7 +282,7 @@ export class GroupMonitorTelegramInfoDialog
             </div>
 
             ${
-              relatedEntities.length || relatedEntitiesYaml.length || relatedExposes.length
+              relatedEntities.length || relatedExposes.length
                 ? html`
                     <div class="item-related">
                       <div class="related-label">
@@ -292,7 +291,6 @@ export class GroupMonitorTelegramInfoDialog
                       <knx-data-table-related-label
                         .hass=${this.hass}
                         .entities=${relatedEntities}
-                        .entitiesYaml=${relatedEntitiesYaml}
                         .exposes=${relatedExposes}
                       ></knx-data-table-related-label>
                     </div>

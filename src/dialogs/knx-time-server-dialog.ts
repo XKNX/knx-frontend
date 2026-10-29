@@ -18,7 +18,11 @@ import "../components/knx-group-address-selector";
 import type { KNX } from "../types/knx";
 import type { TimeServerData, ErrorDescription, CreateEntityResult } from "../types/entity_data";
 import { KNXLogger } from "../tools/knx-logger";
-import { extractValidationErrors, getValidationError } from "../utils/validation";
+import {
+  extractValidationErrors,
+  getValidationError,
+  localizeValidationErrors,
+} from "../utils/validation";
 
 const logger = new KNXLogger("time-server-dialog");
 
@@ -71,7 +75,7 @@ export class KnxTimeServerDialog extends DialogMixin<KnxTimeServerDialogParams>(
         logger.debug("updateTimeServerConfig response", res);
         if (!res.success) {
           // backend validation errors
-          this._errors = res.errors ?? [];
+          this._errors = localizeValidationErrors(this.hass.localize, res.errors ?? []);
           return;
         }
         // success
