@@ -4,7 +4,12 @@ import type { HomeAssistant } from "@ha/types";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import type { KnxTabsSubpageData } from "../layouts/knx-tabs-subpage-data";
 import type { KNX } from "../types/knx";
-import type { CommunicationObject, GroupAddress, KNXProject } from "../types/websocket";
+import type {
+  CommunicationObject,
+  GroupAddress,
+  KNXProject,
+  TelegramDict,
+} from "../types/websocket";
 import { KNXProjectView } from "./project_view";
 
 /** Renders a disconnected project page to exercise consumer event wiring without backend startup. */
@@ -262,5 +267,48 @@ describe("KNXProjectView", () => {
         "component.knx.config_panel.common.read_value",
       );
     });
+  });
+});
+
+describe("KNXProjectView telegram tracking", () => {
+  const telegram = (overrides: Partial<TelegramDict>): TelegramDict => ({
+    destination: "1/2/3",
+    destination_name: "Test GA",
+    direction: "Incoming",
+    dpt_main: 1,
+    dpt_sub: 1,
+    dpt_name: "DPT-1.001",
+    source: "1.1.1",
+    source_name: "Sensor",
+    payload: 1,
+    telegramtype: "GroupValueWrite",
+    timestamp: "2025-01-01T10:00:00.000000+00:00",
+    unit: null,
+    value: true,
+    ...overrides,
+  });
+
+  it("stores telegrams that carry a value", () => {
+    const { view } = drawDevices();
+    const write = telegram({});
+    view["telegram_callback"](write);
+    expect(view["_lastTelegrams"]).toEqual({ "1/2/3": write });
+  });
+
+  it("ignores GroupValueRead telegrams so the last received value and time are kept", () => {
+    const { view } = drawDevices();
+    const write = telegram({});
+    view["telegram_callback"](write);
+    view["telegram_callback"](
+      telegram({
+        telegramtype: "GroupValueRead",
+        payload: null,
+        value: null,
+        source: "0.0.1",
+        source_name: "Home Assistant",
+        timestamp: "2025-01-01T12:00:00.000000+00:00",
+      }),
+    );
+    expect(view["_lastTelegrams"]).toEqual({ "1/2/3": write });
   });
 });
