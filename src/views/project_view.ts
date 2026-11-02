@@ -196,6 +196,8 @@ export class KNXProjectView extends LitElement {
   }
 
   protected telegram_callback(telegram: TelegramDict): void {
+    // GroupValueRead telegrams carry no payload and must not count as a received value
+    if (telegram.payload === null) return;
     this._lastTelegrams = {
       ...this._lastTelegrams,
       [telegram.destination]: telegram,
