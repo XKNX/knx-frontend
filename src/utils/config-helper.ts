@@ -2,6 +2,10 @@ import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("config-helper");
 
+/** A config node that can hold keys. `null` is how the backend sends an unset optional key. */
+const isObject = (value: unknown): value is Record<string, any> =>
+  typeof value === "object" && value !== null;
+
 /** `ha-selector < knx-selector-row < knx-form`, as far up as the event was composed. */
 const composedElementPath = (ev: Event): string =>
   ev
@@ -76,7 +80,8 @@ export function setNestedValue(
   }
   let current = config;
   for (const key of keys) {
-    if (!(key in current)) {
+    if (!isObject(current[key])) {
+      // missing, or `null` for an optional group left unset by the backend
       if (value === undefined) return; // don't create to remove
       current[key] = {};
     }
@@ -98,9 +103,13 @@ export function setNestedValue(
 /**
  * Retrieves a nested value from a configuration object using a dot-separated path.
  *
+ * The backend stores an optional key left unset as `null` (a dataclass field at its `None`
+ * default), so `null` reads as absent too - as does anything below it. Callers then never
+ * have to tell "not there" from "there, but empty" apart.
+ *
  * @param config - The configuration object to read from
  * @param path - Dot-separated path to the property (e.g., "knx.color.ga_color")
- * @returns The value at the specified path, or undefined if the path doesn't exist
+ * @returns The value at the specified path, or undefined if the path doesn't exist or is null
  *
  * @example
  * ```typescript
@@ -115,12 +124,12 @@ export function setNestedValue(
  */
 export function getNestedValue(config: Record<string, any>, path: string): any {
   const keys = path.split(".");
-  let current = config;
+  let current: any = config;
   for (const key of keys) {
-    if (!(key in current)) {
+    if (!isObject(current) || !(key in current)) {
       return undefined;
     }
     current = current[key];
   }
-  return current;
+  return current ?? undefined;
 }
