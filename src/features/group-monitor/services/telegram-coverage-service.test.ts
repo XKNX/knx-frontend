@@ -136,6 +136,19 @@ describe("TelegramCoverageService", () => {
       expect(coverage.covered).toEqual([[100, 200]]);
     });
 
+    it("continues from an anchor set while no interval is open", () => {
+      coverage.anchorLive(100);
+      coverage.extendLive(150);
+      expect(coverage.covered).toEqual([[100, 150]]);
+    });
+
+    it("leaves an open live interval alone when anchoring", () => {
+      coverage.extendLive(200);
+      coverage.anchorLive(100);
+      coverage.extendLive(250);
+      expect(coverage.covered).toEqual([[200, 250]]);
+    });
+
     it("creates a gap after closeLive and reopening later", () => {
       coverage.extendLive(100);
       coverage.extendLive(150);

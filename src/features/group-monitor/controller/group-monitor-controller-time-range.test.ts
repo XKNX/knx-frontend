@@ -3,6 +3,21 @@ import type { TelegramDict } from "../../../types/websocket";
 import { GroupMonitorController } from "./group-monitor-controller";
 import { getGroupMonitorInfo, queryTelegrams } from "../../../services/websocket.service";
 
+// In-memory IDB stand-in: coverage is only recorded for rows the cache holds.
+const _idbStore = new Map<string, any>();
+
+vi.mock("idb-keyval", () => ({
+  createStore: () => "mock-store",
+  setMany: async (pairs: [string, any][]) => {
+    for (const [k, v] of pairs) _idbStore.set(k, v);
+  },
+  entries: async () => Array.from(_idbStore.entries()),
+  delMany: async (keys: string[]) => {
+    for (const k of keys) _idbStore.delete(k);
+  },
+  clear: async () => _idbStore.clear(),
+}));
+
 vi.mock("../../../services/websocket.service", () => ({
   getGroupMonitorInfo: vi.fn(),
   queryTelegrams: vi.fn(),
@@ -49,6 +64,8 @@ describe("GroupMonitorController - time-range filter", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(NOW);
+    _idbStore.clear();
+    localStorage.clear();
     vi.mocked(queryTelegrams).mockReset();
     mockHost = {
       addController: vi.fn(),

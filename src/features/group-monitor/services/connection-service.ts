@@ -12,11 +12,27 @@ const logger = new KNXLogger("connection_service");
 export class ConnectionService {
   private _subscribed?: () => void;
 
+  private _connection: HomeAssistant["connection"] | null = null;
+
   private _connectionError: string | null = null;
 
   private _onTelegram: ((telegram: TelegramDict) => void) | null = null;
 
   private _onConnectionChange: ((connected: boolean, error?: string) => void) | null = null;
+
+  private _onConnectionLost: (() => void) | null = null;
+
+  private _onReconnected: (() => void) | null = null;
+
+  private readonly _handleDisconnected = (): void => {
+    logger.debug("Websocket connection lost");
+    this._onConnectionLost?.();
+  };
+
+  private readonly _handleReady = (): void => {
+    logger.debug("Websocket connection restored");
+    this._onReconnected?.();
+  };
 
   /**
    * Gets the current connection error if any
@@ -47,6 +63,22 @@ export class ConnectionService {
   }
 
   /**
+   * Sets the callback for a dropped websocket connection. Telegrams sent while
+   * it is down never arrive; the subscription itself is restored by the
+   * connection, which then calls the `onReconnected` callback.
+   */
+  onConnectionLost(callback: () => void): void {
+    this._onConnectionLost = callback;
+  }
+
+  /**
+   * Sets the callback for a restored websocket connection
+   */
+  onReconnected(callback: () => void): void {
+    this._onReconnected = callback;
+  }
+
+  /**
    * Subscribes to KNX telegrams
    */
   async subscribe(hass: HomeAssistant): Promise<void> {
@@ -62,6 +94,7 @@ export class ConnectionService {
         }
       });
 
+      this._watchConnection(hass.connection);
       this._connectionError = null;
       this._notifyConnectionChange(true);
 
@@ -78,6 +111,7 @@ export class ConnectionService {
    * Unsubscribes from KNX telegrams
    */
   unsubscribe(): void {
+    this._unwatchConnection();
     if (this._subscribed) {
       this._subscribed();
       this._subscribed = undefined;
@@ -110,6 +144,24 @@ export class ConnectionService {
     this.unsubscribe();
     this._onTelegram = null;
     this._onConnectionChange = null;
+    this._onConnectionLost = null;
+    this._onReconnected = null;
+  }
+
+  // The connection object may be missing in tests that pass a bare hass stub.
+  private _watchConnection(connection: HomeAssistant["connection"] | undefined): void {
+    this._unwatchConnection();
+    if (!connection?.addEventListener) return;
+    connection.addEventListener("disconnected", this._handleDisconnected);
+    connection.addEventListener("ready", this._handleReady);
+    this._connection = connection;
+  }
+
+  private _unwatchConnection(): void {
+    if (this._connection === null) return;
+    this._connection.removeEventListener("disconnected", this._handleDisconnected);
+    this._connection.removeEventListener("ready", this._handleReady);
+    this._connection = null;
   }
 
   /**

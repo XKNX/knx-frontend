@@ -28,8 +28,19 @@ function createMockHass(): HomeAssistant {
     callWS: vi.fn(),
     connection: {
       subscribeMessage: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
     },
   } as any;
+}
+
+/** The listener the service registered for a connection event. */
+function connectionListener(hass: HomeAssistant, eventType: string): () => void {
+  const call = vi
+    .mocked(hass.connection.addEventListener)
+    .mock.calls.find(([type]) => type === eventType);
+  if (!call) throw new Error(`No listener for ${eventType}`);
+  return call[1] as () => void;
 }
 
 /**
@@ -68,6 +79,40 @@ describe("ConnectionService", () => {
 
   afterEach(() => {
     service.disconnect();
+  });
+
+  describe("Connection events", () => {
+    it("reports a lost and a restored connection while subscribed", async () => {
+      mockSubscribeKnxTelegrams.mockResolvedValue(vi.fn());
+      const onConnectionLost = vi.fn();
+      const onReconnected = vi.fn();
+      service.onConnectionLost(onConnectionLost);
+      service.onReconnected(onReconnected);
+
+      await service.subscribe(mockHass);
+      connectionListener(mockHass, "disconnected")();
+      expect(onConnectionLost).toHaveBeenCalledTimes(1);
+      expect(onReconnected).not.toHaveBeenCalled();
+
+      connectionListener(mockHass, "ready")();
+      expect(onReconnected).toHaveBeenCalledTimes(1);
+    });
+
+    it("stops listening to the connection when unsubscribed", async () => {
+      mockSubscribeKnxTelegrams.mockResolvedValue(vi.fn());
+      await service.subscribe(mockHass);
+      service.unsubscribe();
+
+      const removed = vi.mocked(mockHass.connection.removeEventListener).mock.calls;
+      expect(removed.map(([type]) => type).sort()).toEqual(["disconnected", "ready"]);
+      expect(removed[0][1]).toBe(connectionListener(mockHass, removed[0][0]));
+    });
+
+    it("subscribes without a connection object to listen on", async () => {
+      mockSubscribeKnxTelegrams.mockResolvedValue(vi.fn());
+      await expect(service.subscribe({ callWS: vi.fn() } as any)).resolves.toBeUndefined();
+      expect(service.isConnected).toBe(true);
+    });
   });
 
   describe("Initial State", () => {
