@@ -34,6 +34,10 @@ vi.mock("../services/connection-service", () => ({
 
     onConnectionChange = vi.fn();
 
+    onConnectionLost = vi.fn();
+
+    onReconnected = vi.fn();
+
     subscribe = vi.fn();
 
     disconnect = vi.fn();
@@ -278,6 +282,48 @@ describe("GroupMonitorController - cache persistence", () => {
       await flushLive();
 
       expect(_idbStore.size).toBe(0);
+    });
+
+    it("does not bridge a websocket outage with live coverage", async () => {
+      const service = (controller as any)._connectionService;
+      const connectionLost: () => void = service.onConnectionLost.mock.calls[0][0];
+
+      (controller as any)._handleIncomingTelegram(
+        makeTelegram({ timestamp: "2024-01-01T12:00:00.000Z", source: "2.2.2" }),
+      );
+      connectionLost();
+      await flushLive();
+      expect(covered()).toEqual([[ms("2024-01-01T12:00:00.000Z"), ms("2024-01-01T12:00:00.000Z")]]);
+
+      (controller as any)._handleIncomingTelegram(
+        makeTelegram({ timestamp: "2024-01-01T12:05:00.000Z", source: "2.2.3" }),
+      );
+      await flushLive();
+
+      expect(_idbStore.size).toBe(2);
+      expect(covered()).toEqual([
+        [ms("2024-01-01T12:00:00.000Z"), ms("2024-01-01T12:00:00.000Z")],
+        [ms("2024-01-01T12:05:00.000Z"), ms("2024-01-01T12:05:00.000Z")],
+      ]);
+    });
+
+    it("reloads the recent window after the websocket reconnects", async () => {
+      vi.mocked(getGroupMonitorInfo).mockResolvedValue({
+        project_loaded: true,
+        recent_telegrams: [
+          makeTelegram({ timestamp: "2024-01-01T12:00:00.000Z", source: "2.2.2" }),
+        ],
+      } as any);
+      await controller.setup({} as any, null);
+      vi.mocked(getGroupMonitorInfo).mockClear();
+
+      const service = (controller as any)._connectionService;
+      const reconnected: () => void = service.onReconnected.mock.calls[0][0];
+      reconnected();
+      await flush();
+
+      expect(getGroupMonitorInfo).toHaveBeenCalledTimes(1);
+      expect(covered()).toEqual([[ms("2024-01-01T12:00:00.000Z"), NOW.getTime()]]);
     });
 
     it("writes the pending batch when the host disconnects", async () => {

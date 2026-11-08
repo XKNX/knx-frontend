@@ -95,6 +95,9 @@ export class GroupMonitorController implements ReactiveController {
   // Connection service for WebSocket telegram subscriptions
   private _connectionService = new ConnectionService();
 
+  // The hass of the last backend call, for loads the controller starts itself
+  private _hass: HomeAssistant | null = null;
+
   // Telegram buffer service
   private _telegramBuffer = new TelegramBufferService(2000);
 
@@ -174,6 +177,16 @@ export class GroupMonitorController implements ReactiveController {
       this._connectionError = error || null;
       this.host.requestUpdate();
     });
+    this._connectionService.onConnectionLost(() => {
+      // Telegrams sent during the outage never arrive, so the live interval
+      // must not bridge it. Telegrams received before are written and covered
+      // first; closing earlier would let their coverage reopen the interval.
+      this._flushPendingCacheWrites().then(() => this._coverage.closeLive());
+    });
+    this._connectionService.onReconnected(() => {
+      // The recent load fills the outage from the backend and reopens the live interval.
+      if (this._hass !== null) this._loadRecentTelegrams(this._hass);
+    });
   }
 
   // ============================================================================
@@ -202,6 +215,7 @@ export class GroupMonitorController implements ReactiveController {
    *   coverage cache to the available window before restoring persisted data.
    */
   public async setup(hass: HomeAssistant, retentionDays: number | null = null): Promise<void> {
+    this._hass = hass;
     if (this._connectionService.isConnected) return;
 
     await this._restoreFromCache(retentionDays);
@@ -852,7 +866,7 @@ export class GroupMonitorController implements ReactiveController {
    * once they are committed. A failed write closes the live interval instead,
    * so the window of those telegrams is queried from the backend next time.
    */
-  private _flushPendingCacheWrites(): void {
+  private async _flushPendingCacheWrites(): Promise<void> {
     if (this._pendingCacheFlushTimer !== null) {
       clearTimeout(this._pendingCacheFlushTimer);
       this._pendingCacheFlushTimer = null;
@@ -860,16 +874,14 @@ export class GroupMonitorController implements ReactiveController {
     const batch = this._pendingCacheWrites;
     if (batch.length === 0) return;
     this._pendingCacheWrites = [];
-    this._cacheStore(batch).then((cached) => {
-      if (!cached) {
-        this._coverage.closeLive();
-        return;
-      }
-      for (const { ts } of batch) {
-        this._coverage.extendLive(ts);
-      }
-      this._saveCoverage();
-    });
+    if (!(await this._cacheStore(batch))) {
+      this._coverage.closeLive();
+      return;
+    }
+    for (const { ts } of batch) {
+      this._coverage.extendLive(ts);
+    }
+    this._saveCoverage();
   }
 
   /**
@@ -1166,6 +1178,7 @@ export class GroupMonitorController implements ReactiveController {
    * Loads recent telegrams from the server
    */
   private async _loadRecentTelegrams(hass: HomeAssistant): Promise<boolean> {
+    this._hass = hass;
     // Load the previously-covered range from IDB non-blocking so cached
     // telegrams appear instantly while the server request is in flight.
     const covered = this._coverage.covered;
