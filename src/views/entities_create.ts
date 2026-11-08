@@ -22,6 +22,7 @@ import { fireEvent } from "@ha/common/dom/fire_event";
 import { throttle } from "@ha/common/util/throttle";
 import { showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 import { DirtyStateProviderMixin } from "@ha/mixins/dirty-state-provider-mixin";
+import { KeyboardShortcutMixin } from "@ha/mixins/keyboard-shortcut-mixin";
 import type { HomeAssistant, Route } from "@ha/types";
 
 import "../components/knx-configure-entity";
@@ -43,7 +44,7 @@ import type {
 import { knxProjectContext } from "../data/knx-project-context";
 import { entitiesByGroupContext } from "../data/knx-entities-by-group-context";
 import type { EntitiesByGroupContextValue } from "../data/knx-entities-by-group-context";
-import { getPlatformStyle } from "../utils/common";
+import { getPlatformStyle, yamlModeShortcutHint } from "../utils/common";
 import { setNestedValue } from "../utils/config-helper";
 import { validDPTsForSchema } from "../utils/dpt";
 import { exitFlow, navigateInFlow, navigateToError } from "../utils/navigation";
@@ -58,7 +59,7 @@ const logger = new KNXLogger("knx-create-entity");
 
 @customElement("knx-create-entity")
 export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
-  PreventUnsavedMixin(LitElement),
+  PreventUnsavedMixin(KeyboardShortcutMixin(LitElement)),
 ) {
   @property({ type: Object }) public hass!: HomeAssistant;
 
@@ -350,11 +351,11 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
     >
       <ha-icon-button
         slot="toolbar-icon"
-        .label=${this.knx.localize(
+        .label=${`${this.knx.localize(
           this._mode === "gui"
             ? "ui.panel.config.automation.editor.edit_yaml"
             : "ui.panel.config.automation.editor.edit_ui",
-        )}
+        )} (${yamlModeShortcutHint(this.knx.localize)})`}
         .path=${this._mode === "gui" ? mdiCodeBraces : mdiPlaylistEdit}
         @click=${this._toggleMode}
       ></ha-icon-button>
@@ -441,6 +442,11 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
     }
   }
 
+  /** Ctrl/Cmd+Shift+Y switches between the form and the YAML editor, like HA's editors. */
+  protected supportedShortcutsInInput(): SupportedShortcuts {
+    return { Y: () => this._toggleMode() };
+  }
+
   private _toggleMode = async () => {
     if (this._mode === "yaml") {
       if (this._yamlErrors) {
@@ -453,8 +459,12 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
         if (!confirmed) return;
       }
       this._yamlErrors = undefined;
+      this._mode = "gui";
+      return;
     }
-    this._mode = this._mode === "gui" ? "yaml" : "gui";
+    this._mode = "yaml";
+    await this.updateComplete;
+    this._yamlEditor?.focus();
   };
 
   private _yamlChanged(ev: CustomEvent) {

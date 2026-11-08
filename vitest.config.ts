@@ -7,6 +7,7 @@ export default defineConfig({
   define: {
     __DEMO__: false,
     __DEV__: false,
+    __HASS_URL__: JSON.stringify(""),
   },
   test: {
     alias: [
@@ -14,6 +15,10 @@ export default defineConfig({
       {
         find: /.*\/build\/mdi\/iconMetadata\.json$/,
         replacement: resolve(__dirname, "test/mocks/iconMetadata.json"),
+      },
+      {
+        find: /.*\/build\/mdi\/iconList\.json$/,
+        replacement: resolve(__dirname, "test/mocks/iconList.json"),
       },
       {
         find: /.*\/build\/translations\/translationMetadata\.json$/,

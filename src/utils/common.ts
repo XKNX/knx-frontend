@@ -8,6 +8,8 @@ import {
   mdiValve,
 } from "@mdi/js";
 import { FALLBACK_DOMAIN_ICONS } from "@ha/data/icons";
+import { ctrlOrCmdLabel } from "@ha/common/keyboard/ctrl-or-cmd";
+import type { LocalizeFunc } from "@ha/common/translations/localize";
 import type { SupportedPlatform } from "../types/entity_data";
 
 export interface PlatformStyle {
@@ -86,3 +88,7 @@ export function getPlatformStyle(platform: SupportedPlatform): PlatformStyle {
     ...platformConstants[platform],
   };
 }
+
+/** The keys that switch an editor between its form and YAML, spelled like HA's shortcuts dialog. */
+export const yamlModeShortcutHint = (localize: LocalizeFunc): string =>
+  `${ctrlOrCmdLabel(localize)}+Shift+Y`;
