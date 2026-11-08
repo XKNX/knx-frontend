@@ -18,6 +18,12 @@ import type { TelegramDict } from "../../../types/websocket";
 /** Maximum number of telegrams kept in the persistent cache. */
 export const MAX_CACHE_SIZE = 100_000;
 
+/**
+ * Entries removed beyond the cap when the cache overflows, so that trimming
+ * (which reads the whole store) runs once per this many writes, not per write.
+ */
+export const CACHE_EVICTION_HEADROOM = 5_000;
+
 /** IDB store name — kept stable; changing it orphans existing data. */
 const IDB_STORE = createStore("knx-group-monitor", "telegrams");
 
@@ -28,6 +34,13 @@ interface CachedEntry {
 }
 
 export class TelegramCacheService {
+  /**
+   * Upper bound of the number of entries in the store, or `null` before the
+   * store was first read. Writes count as new entries even when they overwrite,
+   * so the estimate only ever errs towards trimming early.
+   */
+  private _countEstimate: number | null = null;
+
   /**
    * Persists a batch of telegram dicts.  Existing entries with the same key are
    * overwritten (idempotent merge, matches buffer deduplication behaviour).
@@ -45,6 +58,7 @@ export class TelegramCacheService {
         : idOrBatch.map(({ id, ts: t, dict: d }) => [id, { ts: t, dict: d }]);
     if (pairs.length === 0) return;
     await setMany(pairs, IDB_STORE);
+    if (this._countEstimate !== null) this._countEstimate += pairs.length;
   }
 
   /**
@@ -56,6 +70,7 @@ export class TelegramCacheService {
     endMs: number,
   ): Promise<{ id: string; ts: number; dict: TelegramDict }[]> {
     const all = await entries<string, CachedEntry>(IDB_STORE);
+    this._countEstimate = all.length;
     return all
       .filter(([, entry]) => entry.ts >= startMs && entry.ts <= endMs)
       .map(([id, entry]) => ({ id, ts: entry.ts, dict: entry.dict }))
@@ -67,6 +82,7 @@ export class TelegramCacheService {
    */
   async loadAll(): Promise<{ id: string; ts: number; dict: TelegramDict }[]> {
     const all = await entries<string, CachedEntry>(IDB_STORE);
+    this._countEstimate = all.length;
     return all
       .map(([id, entry]) => ({ id, ts: entry.ts, dict: entry.dict }))
       .sort((a, b) => b.ts - a.ts);
@@ -79,6 +95,7 @@ export class TelegramCacheService {
     const all = await entries<string, CachedEntry>(IDB_STORE);
     const stale = all.filter(([, entry]) => entry.ts < minMs).map(([id]) => id);
     if (stale.length > 0) await delMany(stale, IDB_STORE);
+    this._countEstimate = all.length - stale.length;
   }
 
   /**
@@ -88,6 +105,7 @@ export class TelegramCacheService {
    */
   async evictToSize(maxCount: number): Promise<number | null> {
     const all = await entries<string, CachedEntry>(IDB_STORE);
+    this._countEstimate = all.length;
     if (all.length <= maxCount) return null;
     all.sort((a, b) => a[1].ts - b[1].ts);
     const toEvict = all.slice(0, all.length - maxCount);
@@ -95,18 +113,34 @@ export class TelegramCacheService {
       toEvict.map(([id]) => id),
       IDB_STORE,
     );
+    this._countEstimate = maxCount;
     // First surviving entry after eviction.
     return all[all.length - maxCount][1].ts;
+  }
+
+  /**
+   * Keeps the cache within `MAX_CACHE_SIZE` without reading the store on every
+   * call: the store is only read when the running estimate says it may be over
+   * the cap, and it is then trimmed `CACHE_EVICTION_HEADROOM` below it.
+   * Returns the timestamp of the oldest surviving entry when entries were
+   * evicted, `null` otherwise.
+   */
+  async evictIfOverCap(): Promise<number | null> {
+    const estimate = this._countEstimate ?? (await this.count());
+    if (estimate <= MAX_CACHE_SIZE) return null;
+    return this.evictToSize(MAX_CACHE_SIZE - CACHE_EVICTION_HEADROOM);
   }
 
   /** Returns the total number of entries in the cache. */
   async count(): Promise<number> {
     const all = await entries(IDB_STORE);
+    this._countEstimate = all.length;
     return all.length;
   }
 
   /** Wipes all entries from the cache. */
   async clear(): Promise<void> {
     await clear(IDB_STORE);
+    this._countEstimate = 0;
   }
 }

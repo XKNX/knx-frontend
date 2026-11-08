@@ -169,7 +169,7 @@ describe("GroupMonitorController cross-filtering", () => {
   it("ignores duplicate live telegrams without incrementing version or updating host", async () => {
     const host = createMockHost();
     const localController = new GroupMonitorController(host as any);
-    const cacheStoreSpy = vi.spyOn(localController as any, "_cacheStore");
+    const cacheStoreSpy = vi.spyOn(localController as any, "_queueCacheWrite");
     (localController as any)._isPaused = false;
     const initialVersion = (localController as any)._bufferVersion;
 

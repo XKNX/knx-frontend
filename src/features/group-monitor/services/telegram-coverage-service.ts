@@ -116,6 +116,17 @@ export class TelegramCoverageService {
   }
 
   /**
+   * Opens the live interval at `tsMs` when none is open, so the next
+   * `extendLive()` continues from there instead of starting at its own
+   * timestamp. An interval that is already open is left as it is.
+   */
+  anchorLive(tsMs: number): void {
+    if (this._liveStart === null) {
+      this._liveStart = tsMs;
+    }
+  }
+
+  /**
    * Closes the open live interval so the following pause/disconnect window is
    * treated as a gap. The next `extendLive()` starts a fresh live interval.
    */

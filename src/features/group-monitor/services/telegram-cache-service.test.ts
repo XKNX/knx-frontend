@@ -1,18 +1,26 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 // Import AFTER vi.mock so the module picks up the mock.
-import { TelegramCacheService, MAX_CACHE_SIZE } from "./telegram-cache-service";
+import {
+  TelegramCacheService,
+  MAX_CACHE_SIZE,
+  CACHE_EVICTION_HEADROOM,
+} from "./telegram-cache-service";
 import type { TelegramDict } from "../../../types/websocket";
 
 // In-memory IDB stand-in: Map<key, value> per custom store.
 const _store = new Map<string, any>();
+let _entriesReads = 0;
 
 vi.mock("idb-keyval", () => ({
   createStore: () => "mock-store",
   setMany: async (pairs: [string, any][]) => {
     for (const [k, v] of pairs) _store.set(k, v);
   },
-  entries: async () => Array.from(_store.entries()),
+  entries: async () => {
+    _entriesReads++;
+    return Array.from(_store.entries());
+  },
   delMany: async (keys: string[]) => {
     for (const k of keys) _store.delete(k);
   },
@@ -43,6 +51,7 @@ describe("TelegramCacheService", () => {
 
   beforeEach(() => {
     _store.clear();
+    _entriesReads = 0;
     svc = new TelegramCacheService();
   });
 
@@ -147,6 +156,55 @@ describe("TelegramCacheService", () => {
       const result = await svc.evictToSize(3);
       expect(result).toBeNull();
       expect(await svc.count()).toBe(1);
+    });
+  });
+
+  describe("evictIfOverCap", () => {
+    const seed = (count: number) =>
+      svc.store(
+        Array.from({ length: count }, (_, i) => ({
+          id: `t${i}`,
+          ts: i,
+          dict: makeDict("2024-01-01T00:00:00.000Z"),
+        })),
+      );
+
+    it("reads the store once to learn its size, then skips reads while under the cap", async () => {
+      await seed(3);
+      expect(await svc.evictIfOverCap()).toBeNull();
+      expect(_entriesReads).toBe(1);
+
+      await svc.store("x", 10, makeDict("2024-01-01T00:00:00.000Z"));
+      expect(await svc.evictIfOverCap()).toBeNull();
+      expect(_entriesReads).toBe(1);
+      expect(_store.size).toBe(4);
+    });
+
+    it("trims the oldest entries to headroom below the cap once it is exceeded", async () => {
+      await seed(MAX_CACHE_SIZE + 1);
+      const oldestSurviving = await svc.evictIfOverCap();
+
+      const target = MAX_CACHE_SIZE - CACHE_EVICTION_HEADROOM;
+      expect(_store.size).toBe(target);
+      expect(oldestSurviving).toBe(MAX_CACHE_SIZE + 1 - target);
+      expect(_store.has("t0")).toBe(false);
+      expect(_store.has(`t${MAX_CACHE_SIZE}`)).toBe(true);
+
+      // The size is known exactly now, so the next check needs no read.
+      _entriesReads = 0;
+      expect(await svc.evictIfOverCap()).toBeNull();
+      expect(_entriesReads).toBe(0);
+    });
+
+    it("counts writes towards the cap without reading the store", async () => {
+      await seed(MAX_CACHE_SIZE);
+      expect(await svc.evictIfOverCap()).toBeNull();
+      _entriesReads = 0;
+
+      await svc.store("late", MAX_CACHE_SIZE + 5, makeDict("2024-01-01T00:00:00.000Z"));
+      expect(await svc.evictIfOverCap()).not.toBeNull();
+      expect(_entriesReads).toBe(1);
+      expect(_store.size).toBe(MAX_CACHE_SIZE - CACHE_EVICTION_HEADROOM);
     });
   });
 

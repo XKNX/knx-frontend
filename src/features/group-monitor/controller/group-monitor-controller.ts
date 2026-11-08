@@ -9,7 +9,7 @@ import type { SortingDirection } from "@ha/components/data-table/ha-data-table";
 import { getGroupMonitorInfo, queryTelegrams } from "../../../services/websocket.service";
 import { TelegramBufferService } from "../services/telegram-buffer-service";
 import { TelegramCoverageService } from "../services/telegram-coverage-service";
-import { TelegramCacheService, MAX_CACHE_SIZE } from "../services/telegram-cache-service";
+import { TelegramCacheService } from "../services/telegram-cache-service";
 import { ConnectionService } from "../services/connection-service";
 import {
   FacetIndex,
@@ -50,6 +50,16 @@ export type HistoryWarning = "retention_clamped" | "partial_load" | "store_initi
 
 /** Delays between polls of the backend while its telegram store initializes (ms). */
 const STORE_INITIALIZING_RETRY_DELAYS_MS = [2_000, 5_000, 10_000];
+
+/** Live telegrams are written to the cache in batches collected over this long (ms). */
+const LIVE_CACHE_FLUSH_DELAY_MS = 250;
+
+/** A telegram as written to the IndexedDB cache. */
+interface CacheEntry {
+  id: string;
+  ts: number;
+  dict: TelegramDict;
+}
 
 /** Whether a rejected websocket call reported the telegram store as still initializing. */
 const isStoreInitializingError = (err: unknown): boolean =>
@@ -93,6 +103,17 @@ export class GroupMonitorController implements ReactiveController {
 
   // Persistent IndexedDB cache for raw telegram dicts
   private _cache = new TelegramCacheService();
+
+  // Timestamps (epoch ms) of the telegrams known to be committed to the cache, by id
+  private _cachedIds = new Map<string, number>();
+
+  // Oldest timestamp the cache may still hold after evictions; coverage never reaches below it
+  private _cacheFloorMs: number | null = null;
+
+  // Live telegrams waiting to be written to the cache in one batch
+  private _pendingCacheWrites: CacheEntry[] = [];
+
+  private _pendingCacheFlushTimer: ReturnType<typeof setTimeout> | null = null;
 
   // UI state
   private _filters: Record<string, string[]> = {};
@@ -166,6 +187,7 @@ export class GroupMonitorController implements ReactiveController {
 
   hostDisconnected(): void {
     this._clearStoreInitializingRetry();
+    this._flushPendingCacheWrites();
     this._connectionService.disconnect();
   }
 
@@ -219,7 +241,7 @@ export class GroupMonitorController implements ReactiveController {
     // --- 2. Apply retention trim to coverage (and evict old IDB entries) ---
     if (retentionDays != null) {
       const minMs = Date.now() - (retentionDays + 1) * 86400_000;
-      this._coverage.trim(minMs);
+      this._applyCacheFloor(minMs);
       this._cache.evictBefore(minMs).catch((err) => logger.warn("Cache evict failed", err));
     }
 
@@ -579,8 +601,7 @@ export class GroupMonitorController implements ReactiveController {
     // Clamp the start to the retention window (plus a day of slack) and warn.
     if (retentionDays != null) {
       const minMs = now - (retentionDays + 1) * 86400_000;
-      this._coverage.trim(minMs);
-      this._saveCoverage();
+      this._applyCacheFloor(minMs);
       if (startMs < minMs) {
         startMs = minMs;
         this._historyWarning = "retention_clamped";
@@ -627,7 +648,7 @@ export class GroupMonitorController implements ReactiveController {
       let fetchedTotal = 0;
       for (const [gapStart, gapEnd] of this._coverage.gaps(startMs, queryEnd)) {
         // eslint-disable-next-line no-await-in-loop
-        const { complete, lastTs, fetched } = await this._loadGap(
+        const { complete, lastTs, fetched, cached } = await this._loadGap(
           hass,
           gapStart,
           gapEnd,
@@ -637,14 +658,19 @@ export class GroupMonitorController implements ReactiveController {
         if (requestId !== this._historyRequestId) return; // superseded
         fetchedTotal += fetched;
 
-        if (complete) {
-          this._coverage.addCovered(gapStart, gapEnd);
-        } else {
-          if (lastTs !== null) this._coverage.addCovered(gapStart, lastTs);
+        // A range only counts as loaded once its rows are in the cache; the
+        // buffer alone does not survive a reload.
+        if (cached) {
+          if (complete) {
+            this._markCovered(gapStart, gapEnd);
+          } else if (lastTs !== null) {
+            this._markCovered(gapStart, lastTs);
+          }
+        }
+        if (!complete) {
           this._historyWarning = "partial_load";
           break;
         }
-        this._saveCoverage();
       }
     } catch (err) {
       if (isStoreInitializingError(err)) {
@@ -692,6 +718,7 @@ export class GroupMonitorController implements ReactiveController {
   /**
    * Loads a single gap with paginated queries until it is fully fetched, the
    * backend stops returning rows, or the global safety cap is reached.
+   * `cached` is true once every fetched row is committed to the cache.
    */
   private async _loadGap(
     hass: HomeAssistant,
@@ -699,10 +726,12 @@ export class GroupMonitorController implements ReactiveController {
     gapEnd: number,
     requestId: number,
     fetchedBefore: number,
-  ): Promise<{ complete: boolean; lastTs: number | null; fetched: number }> {
+  ): Promise<{ complete: boolean; lastTs: number | null; fetched: number; cached: boolean }> {
     let offset = 0;
     let lastTs: number | null = null;
     let fetched = 0;
+    let complete = false;
+    const writes: Promise<boolean>[] = [];
 
     for (;;) {
       // eslint-disable-next-line no-await-in-loop
@@ -714,24 +743,28 @@ export class GroupMonitorController implements ReactiveController {
         offset,
       });
       if (requestId !== this._historyRequestId) {
-        return { complete: false, lastTs, fetched };
+        return { complete: false, lastTs, fetched, cached: false };
       }
 
       const batch = result.telegrams;
       if (batch.length > 0) {
-        this.addHistoricalTelegrams(batch, false);
+        writes.push(this.addHistoricalTelegrams(batch));
         lastTs = new Date(batch[batch.length - 1].timestamp).getTime();
         offset += batch.length;
         fetched += batch.length;
       }
 
       if (batch.length === 0 || offset >= result.total_count) {
-        return { complete: true, lastTs, fetched };
+        complete = true;
+        break;
       }
       if (fetchedBefore + fetched >= GroupMonitorController.MAX_HISTORY_ROWS) {
-        return { complete: false, lastTs, fetched };
+        break;
       }
     }
+
+    const cached = (await Promise.all(writes)).every(Boolean);
+    return { complete, lastTs, fetched, cached };
   }
 
   // ============================================================================
@@ -754,23 +787,89 @@ export class GroupMonitorController implements ReactiveController {
   }
 
   /**
-   * Stores a batch of raw telegram dicts to IndexedDB and trims the cache to
-   * the configured size cap.  Fire-and-forget — errors are logged but not thrown.
+   * Marks `[startMs, endMs]` as loaded and persists the coverage. Only call
+   * this for rows that are committed to the cache: after a reload the range is
+   * served from the cache alone. Evicted ranges are never claimed.
    */
-  private _cacheStore(batch: { id: string; ts: number; dict: TelegramDict }[]): void {
+  private _markCovered(startMs: number, endMs: number): void {
+    const start = this._cacheFloorMs === null ? startMs : Math.max(startMs, this._cacheFloorMs);
+    this._coverage.addCovered(start, endMs);
+    this._saveCoverage();
+  }
+
+  /**
+   * Records that the cache holds nothing before `minMs` any more and drops the
+   * coverage and the committed ids of that range. The floor only ever rises.
+   */
+  private _applyCacheFloor(minMs: number): void {
+    if (this._cacheFloorMs !== null && minMs <= this._cacheFloorMs) return;
+    this._cacheFloorMs = minMs;
+    for (const [id, ts] of this._cachedIds) {
+      if (ts < minMs) this._cachedIds.delete(id);
+    }
+    this._coverage.trim(minMs);
+    this._saveCoverage();
+  }
+
+  /**
+   * Writes a batch of raw telegram dicts to IndexedDB and keeps the cache within
+   * its size cap. Resolves to true once the rows are committed; errors are
+   * logged and resolve to false, never thrown.
+   */
+  private async _cacheStore(batch: CacheEntry[]): Promise<boolean> {
+    if (batch.length === 0) return true;
+    try {
+      await this._cache.store(batch);
+    } catch (err) {
+      logger.warn("Cache write failed", err);
+      return false;
+    }
+    for (const { id, ts } of batch) {
+      this._cachedIds.set(id, ts);
+    }
+    try {
+      const oldestSurviving = await this._cache.evictIfOverCap();
+      if (oldestSurviving !== null) this._applyCacheFloor(oldestSurviving);
+    } catch (err) {
+      logger.warn("Cache evict failed", err);
+    }
+    return true;
+  }
+
+  /** Queues a live telegram for the next batched cache write. */
+  private _queueCacheWrite(entry: CacheEntry): void {
+    this._pendingCacheWrites.push(entry);
+    if (this._pendingCacheFlushTimer === null) {
+      this._pendingCacheFlushTimer = setTimeout(
+        () => this._flushPendingCacheWrites(),
+        LIVE_CACHE_FLUSH_DELAY_MS,
+      );
+    }
+  }
+
+  /**
+   * Writes the queued live telegrams and extends the live coverage over them
+   * once they are committed. A failed write closes the live interval instead,
+   * so the window of those telegrams is queried from the backend next time.
+   */
+  private _flushPendingCacheWrites(): void {
+    if (this._pendingCacheFlushTimer !== null) {
+      clearTimeout(this._pendingCacheFlushTimer);
+      this._pendingCacheFlushTimer = null;
+    }
+    const batch = this._pendingCacheWrites;
     if (batch.length === 0) return;
-    this._cache
-      .store(batch)
-      .then(async () => {
-        const oldestSurviving = await this._cache.evictToSize(MAX_CACHE_SIZE);
-        if (oldestSurviving !== null) {
-          // Size eviction dropped old entries — trim coverage to match so we
-          // don't claim those ranges are loaded when the data is gone.
-          this._coverage.trim(oldestSurviving);
-          this._saveCoverage();
-        }
-      })
-      .catch((err) => logger.warn("Cache write failed", err));
+    this._pendingCacheWrites = [];
+    this._cacheStore(batch).then((cached) => {
+      if (!cached) {
+        this._coverage.closeLive();
+        return;
+      }
+      for (const { ts } of batch) {
+        this._coverage.extendLive(ts);
+      }
+      this._saveCoverage();
+    });
   }
 
   /**
@@ -778,11 +877,18 @@ export class GroupMonitorController implements ReactiveController {
    * in-memory coverage, and wipes the telegram buffer.
    */
   public async clearCache(): Promise<void> {
+    if (this._pendingCacheFlushTimer !== null) {
+      clearTimeout(this._pendingCacheFlushTimer);
+      this._pendingCacheFlushTimer = null;
+    }
+    this._pendingCacheWrites = [];
     try {
       await this._cache.clear();
     } catch (err) {
       logger.warn("Cache clear failed", err);
     }
+    this._cachedIds.clear();
+    this._cacheFloorMs = null;
     this._coverage.clear();
     try {
       localStorage.removeItem(GroupMonitorController.COVERAGE_KEY);
@@ -869,9 +975,10 @@ export class GroupMonitorController implements ReactiveController {
    * @param persist - When `true` (default) the dicts are also written to the
    *   IndexedDB cache so they survive a page reload.  Pass `false` when the
    *   dicts already came *from* the cache to avoid a pointless round-trip.
+   * @returns Whether every dict is committed to the cache afterwards.
    */
-  public addHistoricalTelegrams(telegrams: TelegramDict[], persist = true): void {
-    if (telegrams.length === 0) return;
+  public async addHistoricalTelegrams(telegrams: TelegramDict[], persist = true): Promise<boolean> {
+    if (telegrams.length === 0) return true;
 
     // Calculate dynamic telegram storage limit
     const telegramsLength = this._telegramBuffer.length + telegrams.length;
@@ -894,23 +1001,30 @@ export class GroupMonitorController implements ReactiveController {
       this._bufferVersion++;
     }
 
-    if (added.length > 0) {
-      // Persist newly-added dicts (skip when caller is the cache restore path).
-      if (persist) {
-        const addedIds = new Set(added.map((r) => r.id));
-        // newTelegramRows[i] is the TelegramRow for telegrams[i] — use index to pair them.
-        const batch = newTelegramRows
-          .map((row, i) =>
-            addedIds.has(row.id)
-              ? { id: row.id, ts: row.timestamp.getTime(), dict: telegrams[i] }
-              : null,
-          )
-          .filter((x): x is { id: string; ts: number; dict: TelegramDict } => x !== null);
-        this._cacheStore(batch);
-      }
-    }
-
     this.host.requestUpdate();
+
+    if (!persist) {
+      for (const row of newTelegramRows) {
+        this._cachedIds.set(row.id, row.timestamp.getTime());
+      }
+      return true;
+    }
+    return this._cacheStore(this._uncachedEntries(newTelegramRows, telegrams));
+  }
+
+  /**
+   * Pairs rows with their dicts (same index) and keeps those the cache does not
+   * hold yet. Rows already in the buffer are not skipped: an earlier write of
+   * theirs may have failed.
+   */
+  private _uncachedEntries(rows: TelegramRow[], dicts: TelegramDict[]): CacheEntry[] {
+    const batch: CacheEntry[] = [];
+    rows.forEach((row, i) => {
+      if (!this._cachedIds.has(row.id)) {
+        batch.push({ id: row.id, ts: row.timestamp.getTime(), dict: dicts[i] });
+      }
+    });
+    return batch;
   }
 
   /** Clears all telegrams from the display. */
@@ -1072,6 +1186,7 @@ export class GroupMonitorController implements ReactiveController {
     }
 
     try {
+      const requestedAt = Date.now();
       const info = await getGroupMonitorInfo(hass);
 
       if (info.telegram_store_status === "initializing") {
@@ -1108,44 +1223,32 @@ export class GroupMonitorController implements ReactiveController {
         this._bufferVersion++;
       }
 
-      if (added.length > 0) {
-        // Persist newly-added recent telegrams to IndexedDB.
-        const addedIds = new Set(added.map((r) => r.id));
-        const batch = newTelegramRows
-          .map((row, i) =>
-            addedIds.has(row.id)
-              ? { id: row.id, ts: row.timestamp.getTime(), dict: info.recent_telegrams[i] }
-              : null,
-          )
-          .filter((x): x is { id: string; ts: number; dict: TelegramDict } => x !== null);
-        this._cacheStore(batch);
-      }
+      this._connectionError = null;
+      this._isReloadEnabled = false;
+      this.host.requestUpdate();
 
-      // Seed coverage for the recent window: the backend returns every telegram
-      // since the recent-load horizon, so `[oldestRecent, now]` is fully loaded.
-      const nowMs = Date.now();
+      const cached = await this._cacheStore(
+        this._uncachedEntries(newTelegramRows, info.recent_telegrams),
+      );
+
+      if (!cached) return true;
+
+      // The backend returns every telegram from the recent-load horizon up to
+      // the request, so once they are cached that window is loaded. Telegrams
+      // since then arrive through the live subscription and are covered as
+      // their own writes commit, continuing from the request time.
       if (newTelegramRows.length > 0) {
-        const oldestMs = newTelegramRows.reduce(
-          (min, t) => Math.min(min, t.timestamp.getTime()),
-          nowMs,
-        );
-        this._coverage.addCovered(oldestMs, nowMs);
-        this._saveCoverage();
+        let oldestMs = Infinity;
+        let newestMs = -Infinity;
+        for (const row of newTelegramRows) {
+          const ts = row.timestamp.getTime();
+          if (ts < oldestMs) oldestMs = ts;
+          if (ts > newestMs) newestMs = ts;
+        }
+        this._markCovered(oldestMs, Math.max(newestMs, requestedAt));
       }
       if (!this._isPaused) {
-        // Anchor the live interval so streaming telegrams extend from now on.
-        this._coverage.extendLive(nowMs);
-      }
-
-      if (this._connectionError !== null) {
-        this._connectionError = null;
-      }
-
-      this._isReloadEnabled = false;
-
-      // Trigger re-render if new telegrams were added or if we're recovering from an error
-      if (added.length > 0 || this._connectionError === null) {
-        this.host.requestUpdate();
+        this._coverage.anchorLive(requestedAt);
       }
       return true;
     } catch (err) {
@@ -1194,13 +1297,12 @@ export class GroupMonitorController implements ReactiveController {
       this._facetIndex.update(added, removed);
       this._bufferVersion++;
 
-      // Persist live telegram to IndexedDB cache.
-      this._cacheStore([
-        { id: telegramRow.id, ts: telegramRow.timestamp.getTime(), dict: telegram },
-      ]);
-
-      // Extend live coverage up to this telegram's timestamp
-      this._coverage.extendLive(telegramRow.timestamp.getTime());
+      // Cached in a batch; the live coverage follows once the write commits.
+      this._queueCacheWrite({
+        id: telegramRow.id,
+        ts: telegramRow.timestamp.getTime(),
+        dict: telegram,
+      });
 
       this.host.requestUpdate();
     } else if (!this._isReloadEnabled) {
