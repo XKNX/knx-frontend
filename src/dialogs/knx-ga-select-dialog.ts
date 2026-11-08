@@ -1,8 +1,9 @@
 import memoize from "memoize-one";
 import { LitElement, html, css, nothing } from "lit";
 import { consume } from "@lit/context";
-import { customElement, state } from "lit/decorators";
+import { customElement, query, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
+import { styleMap } from "lit/directives/style-map";
 
 import "@ha/components/ha-dialog";
 import "@ha/components/ha-button";
@@ -47,6 +48,11 @@ export class KnxGaSelectDialog extends DialogMixin<KnxGaSelectDialogParams>(LitE
   @state() private _selected?: string;
 
   @state() private _filter = "";
+
+  /** Height of the list container when the dialog opened - keeps the dialog from shrinking while filtering */
+  @state() private _listMinHeight?: number;
+
+  @query(".ga-list-container") private _listContainer?: HTMLElement;
 
   @state()
   @consumeKnxLocalize()
@@ -101,6 +107,13 @@ export class KnxGaSelectDialog extends DialogMixin<KnxGaSelectDialogParams>(LitE
     const target = ev.currentTarget as HTMLElement;
     const value = target.getAttribute("value");
     this._selected = value ?? undefined;
+  }
+
+  private _dialogShown(): void {
+    const height = this._listContainer?.offsetHeight;
+    if (height) {
+      this._listMinHeight = height;
+    }
   }
 
   private _onFilterChanged(ev: InputEvent): void {
@@ -197,14 +210,23 @@ export class KnxGaSelectDialog extends DialogMixin<KnxGaSelectDialogParams>(LitE
 
     return html`<ha-dialog
       open
+      flexcontent
       width=${this.params.width ?? "medium"}
       .headerTitle=${this.params.title}
+      @after-show=${this._dialogShown}
       @closed=${this.closeDialog}
     >
       <div class="dialog-body">
-        <ha-input-search .value=${this._filter} @input=${this._onFilterChanged}></ha-input-search>
+        <ha-input-search
+          autofocus
+          .value=${this._filter}
+          @input=${this._onFilterChanged}
+        ></ha-input-search>
 
-        <div class="ga-list-container">
+        <div
+          class="ga-list-container"
+          style=${styleMap({ minHeight: this._listMinHeight ? `${this._listMinHeight}px` : undefined })}
+        >
           ${
             noProjectData || !hasAddresses
               ? html`<div class="empty-state">
@@ -248,18 +270,18 @@ export class KnxGaSelectDialog extends DialogMixin<KnxGaSelectDialogParams>(LitE
           display: flex;
           flex-direction: column;
           gap: var(--ha-space-2, 8px);
-          height: 100%;
+          flex: 1 1 auto;
           min-height: 0;
         }
 
-        search-input {
-          display: block;
-          width: 100%;
+        ha-input-search {
+          flex: 0 0 auto;
         }
 
         .ga-list-container {
           flex: 1 1 auto;
           min-height: 0;
+          box-sizing: border-box;
           overflow: auto;
           border: 1px solid var(--divider-color);
           border-radius: 4px;

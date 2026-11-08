@@ -1,6 +1,7 @@
 import memoize from "memoize-one";
 import { LitElement, html, css, nothing } from "lit";
-import { customElement, state } from "lit/decorators";
+import { customElement, query, state } from "lit/decorators";
+import { styleMap } from "lit/directives/style-map";
 
 import "@ha/components/ha-dialog";
 import "@ha/components/ha-button";
@@ -41,6 +42,11 @@ export class KnxDptSelectDialog extends DialogMixin<KnxDptSelectDialogParams>(Li
 
   /** Filter string for the DPT list */
   @state() private _filter = "";
+
+  /** Height of the list container when the dialog opened - keeps the dialog from shrinking while filtering */
+  @state() private _listMinHeight?: number;
+
+  @query(".dpt-list-container") private _listContainer?: HTMLElement;
 
   @state()
   @consumeKnxLocalize()
@@ -96,6 +102,13 @@ export class KnxDptSelectDialog extends DialogMixin<KnxDptSelectDialogParams>(Li
     const target = ev.currentTarget as HTMLElement;
     const value = target.getAttribute("value");
     this._selected = value ?? undefined;
+  }
+
+  private _dialogShown(): void {
+    const height = this._listContainer?.offsetHeight;
+    if (height) {
+      this._listMinHeight = height;
+    }
   }
 
   private _onFilterChanged(ev: InputEvent): void {
@@ -176,19 +189,35 @@ export class KnxDptSelectDialog extends DialogMixin<KnxDptSelectDialogParams>(Li
     }
 
     const width = this.params.width ?? "medium";
+    const groups = this._groupDpts(this._filter, this.dpts);
+
     return html` <ha-dialog
       open
+      flexcontent
       width=${width}
       .headerTitle=${this.params.title}
+      @after-show=${this._dialogShown}
       @closed=${this.closeDialog}
     >
       <div class="dialog-body">
-        <ha-input-search .value=${this._filter} @input=${this._onFilterChanged}></ha-input-search>
+        <ha-input-search
+          autofocus
+          .value=${this._filter}
+          @input=${this._onFilterChanged}
+        ></ha-input-search>
 
-        ${
-          Object.keys(this.dpts).length
-            ? html`<div class="dpt-list-container">
-                ${this._groupDpts(this._filter, this.dpts).map(
+        <div
+          class="dpt-list-container"
+          style=${styleMap({ minHeight: this._listMinHeight ? `${this._listMinHeight}px` : undefined })}
+        >
+          ${
+            !groups.length
+              ? html`<div class="empty-state">
+                  ${this.localize(
+                    "component.knx.config_panel.entities.create._.knx.knx_group_address.dpt_none_for_filter",
+                  )}
+                </div>`
+              : groups.map(
                   (group) => html`
                     ${
                       group.title
@@ -214,10 +243,9 @@ export class KnxDptSelectDialog extends DialogMixin<KnxDptSelectDialogParams>(Li
                       })}
                     </ha-list-base>
                   `,
-                )}
-              </div>`
-            : html`<div>No options</div>`
-        }
+                )
+          }
+        </div>
       </div>
 
       <ha-dialog-footer slot="footer">
@@ -245,21 +273,27 @@ export class KnxDptSelectDialog extends DialogMixin<KnxDptSelectDialogParams>(Li
           display: flex;
           flex-direction: column;
           gap: var(--ha-space-2, 8px);
-          height: 100%;
+          flex: 1 1 auto;
           min-height: 0;
         }
 
-        search-input {
-          display: block;
-          width: 100%;
+        ha-input-search {
+          flex: 0 0 auto;
         }
 
         .dpt-list-container {
           flex: 1 1 auto;
           min-height: 0;
+          box-sizing: border-box;
           overflow: auto;
           border: 1px solid var(--divider-color);
           border-radius: 4px;
+        }
+
+        .empty-state {
+          padding: 12px;
+          color: var(--secondary-text-color);
+          font-style: italic;
         }
 
         .dpt-row {
