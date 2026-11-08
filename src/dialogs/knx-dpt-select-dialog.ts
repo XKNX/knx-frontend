@@ -189,6 +189,9 @@ export class KnxDptSelectDialog extends DialogMixin<KnxDptSelectDialogParams>(Li
     }
 
     const width = this.params.width ?? "medium";
+    const hasDpts = Object.keys(this.dpts).length > 0;
+    const groups = hasDpts ? this._groupDpts(this._filter, this.dpts) : [];
+
     return html` <ha-dialog
       open
       flexcontent
@@ -204,42 +207,52 @@ export class KnxDptSelectDialog extends DialogMixin<KnxDptSelectDialogParams>(Li
           @input=${this._onFilterChanged}
         ></ha-input-search>
 
-        ${
-          Object.keys(this.dpts).length
-            ? html`<div
-                class="dpt-list-container"
-                style=${styleMap({ minHeight: this._listMinHeight ? `${this._listMinHeight}px` : undefined })}
-              >
-                ${this._groupDpts(this._filter, this.dpts).map(
-                  (group) => html`
-                    ${
-                      group.title
-                        ? html`<ha-section-title>${group.title}</ha-section-title>`
-                        : nothing
-                    }
-                    <ha-list-base>
-                      ${group.items.map((dpt) => {
-                        const info = this._getDptInfo(dpt);
-                        const isSelected = this._selected === dpt;
-                        return html`<ha-list-item-button
-                          value=${dpt}
-                          @click=${this._onSelect}
-                          @dblclick=${this._onDoubleClick}
-                          @keydown=${this._itemKeydown}
-                        >
-                          <div class="dpt-row ${isSelected ? "selected" : ""}" slot="headline">
-                            <div class="dpt-number">${dpt}</div>
-                            <div class="dpt-name">${info.label}</div>
-                            <div class="dpt-unit">${info.unit}</div>
-                          </div>
-                        </ha-list-item-button>`;
-                      })}
-                    </ha-list-base>
-                  `,
-                )}
-              </div>`
-            : html`<div>No options</div>`
-        }
+        <div
+          class="dpt-list-container"
+          style=${styleMap({ minHeight: this._listMinHeight ? `${this._listMinHeight}px` : undefined })}
+        >
+          ${
+            !hasDpts
+              ? html`<div class="empty-state">
+                  ${this.localize(
+                    "component.knx.config_panel.entities.create._.knx.knx_group_address.dpt_none_available",
+                  )}
+                </div>`
+              : !groups.length
+                ? html`<div class="empty-state">
+                    ${this.localize(
+                      "component.knx.config_panel.entities.create._.knx.knx_group_address.dpt_none_for_filter",
+                    )}
+                  </div>`
+                : groups.map(
+                    (group) => html`
+                      ${
+                        group.title
+                          ? html`<ha-section-title>${group.title}</ha-section-title>`
+                          : nothing
+                      }
+                      <ha-list-base>
+                        ${group.items.map((dpt) => {
+                          const info = this._getDptInfo(dpt);
+                          const isSelected = this._selected === dpt;
+                          return html`<ha-list-item-button
+                            value=${dpt}
+                            @click=${this._onSelect}
+                            @dblclick=${this._onDoubleClick}
+                            @keydown=${this._itemKeydown}
+                          >
+                            <div class="dpt-row ${isSelected ? "selected" : ""}" slot="headline">
+                              <div class="dpt-number">${dpt}</div>
+                              <div class="dpt-name">${info.label}</div>
+                              <div class="dpt-unit">${info.unit}</div>
+                            </div>
+                          </ha-list-item-button>`;
+                        })}
+                      </ha-list-base>
+                    `,
+                  )
+          }
+        </div>
       </div>
 
       <ha-dialog-footer slot="footer">
@@ -282,6 +295,12 @@ export class KnxDptSelectDialog extends DialogMixin<KnxDptSelectDialogParams>(Li
           overflow: auto;
           border: 1px solid var(--divider-color);
           border-radius: 4px;
+        }
+
+        .empty-state {
+          padding: 12px;
+          color: var(--secondary-text-color);
+          font-style: italic;
         }
 
         .dpt-row {
