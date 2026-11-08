@@ -197,12 +197,17 @@ export class KnxGaSelectDialog extends DialogMixin<KnxGaSelectDialogParams>(LitE
 
     return html`<ha-dialog
       open
+      flexcontent
       width=${this.params.width ?? "medium"}
       .headerTitle=${this.params.title}
       @closed=${this.closeDialog}
     >
       <div class="dialog-body">
-        <ha-input-search .value=${this._filter} @input=${this._onFilterChanged}></ha-input-search>
+        <ha-input-search
+          autofocus
+          .value=${this._filter}
+          @input=${this._onFilterChanged}
+        ></ha-input-search>
 
         <div class="ga-list-container">
           ${
@@ -248,13 +253,12 @@ export class KnxGaSelectDialog extends DialogMixin<KnxGaSelectDialogParams>(LitE
           display: flex;
           flex-direction: column;
           gap: var(--ha-space-2, 8px);
-          height: 100%;
+          flex: 1 1 auto;
           min-height: 0;
         }
 
-        search-input {
-          display: block;
-          width: 100%;
+        ha-input-search {
+          flex: 0 0 auto;
         }
 
         .ga-list-container {
