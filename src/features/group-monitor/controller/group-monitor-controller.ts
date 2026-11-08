@@ -52,7 +52,7 @@ export type HistoryWarning = "retention_clamped" | "partial_load" | "store_initi
 const STORE_INITIALIZING_RETRY_DELAYS_MS = [2_000, 5_000, 10_000];
 
 /** Live telegrams are written to the cache in batches collected over this long (ms). */
-const LIVE_CACHE_FLUSH_DELAY_MS = 250;
+const LIVE_CACHE_FLUSH_DELAY_MS = 1_000;
 
 /** A telegram as written to the IndexedDB cache. */
 interface CacheEntry {

@@ -108,7 +108,7 @@ describe("GroupMonitorController - cache persistence", () => {
   const flush = () => vi.advanceTimersByTimeAsync(0);
 
   // Let the batched live cache write run and its coverage update land.
-  const flushLive = () => vi.advanceTimersByTimeAsync(1000);
+  const flushLive = () => vi.advanceTimersByTimeAsync(1_500);
 
   const covered = () => (controller as any)._coverage.covered as [number, number][];
 
