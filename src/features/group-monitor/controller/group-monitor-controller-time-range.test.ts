@@ -131,6 +131,30 @@ describe("GroupMonitorController - time-range filter", () => {
     expect(controller.hasAbsoluteTimeRange).toBe(true);
   });
 
+  it("merges many small gaps into at most five queries", async () => {
+    vi.mocked(queryTelegrams).mockResolvedValue({
+      telegrams: [],
+      total_count: 0,
+      limit_reached: false,
+    });
+    const coverage = (controller as any)._coverage;
+    const base = ms("2024-01-01T12:00:00.000Z");
+    // Twelve covered minutes with a minute of gap between each.
+    for (let i = 0; i < 12; i++) {
+      coverage.addCovered(base + i * 120_000, base + i * 120_000 + 60_000);
+    }
+
+    await controller.applyTimeRangeFilter({} as any, base, base + 24 * 60_000, null);
+
+    expect(queryTelegrams).toHaveBeenCalledTimes(5);
+    const spans = vi
+      .mocked(queryTelegrams)
+      .mock.calls.map(([, q]) => [ms(q.start_time!), ms(q.end_time!)]);
+    expect(spans[0][0]).toBe(base + 60_000 + 1);
+    expect(spans[spans.length - 1][1]).toBe(base + 24 * 60_000);
+    expect(coverage.gaps(base, base + 24 * 60_000)).toEqual([]);
+  });
+
   it("keeps the live stream running for an open-ended range", async () => {
     vi.mocked(queryTelegrams).mockResolvedValue({
       telegrams: [],

@@ -1,5 +1,47 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { TelegramCoverageService } from "./telegram-coverage-service";
+import { TelegramCoverageService, coalesceGaps } from "./telegram-coverage-service";
+
+describe("coalesceGaps", () => {
+  it("returns the gaps unchanged while within the limit", () => {
+    const gaps: [number, number][] = [
+      [0, 10],
+      [20, 30],
+    ];
+    expect(coalesceGaps(gaps, 2)).toEqual(gaps);
+    expect(coalesceGaps([], 2)).toEqual([]);
+  });
+
+  it("merges the closest neighbours first", () => {
+    const gaps: [number, number][] = [
+      [0, 10],
+      [100, 110],
+      [112, 120],
+      [300, 310],
+    ];
+    expect(coalesceGaps(gaps, 3)).toEqual([
+      [0, 10],
+      [100, 120],
+      [300, 310],
+    ]);
+    expect(coalesceGaps(gaps, 2)).toEqual([
+      [0, 120],
+      [300, 310],
+    ]);
+    expect(coalesceGaps(gaps, 1)).toEqual([[0, 310]]);
+  });
+
+  it("does not modify its input", () => {
+    const gaps: [number, number][] = [
+      [0, 10],
+      [12, 20],
+    ];
+    coalesceGaps(gaps, 1);
+    expect(gaps).toEqual([
+      [0, 10],
+      [12, 20],
+    ]);
+  });
+});
 
 describe("TelegramCoverageService", () => {
   let coverage: TelegramCoverageService;
