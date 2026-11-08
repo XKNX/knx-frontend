@@ -33,6 +33,21 @@ interface CachedEntry {
   dict: TelegramDict;
 }
 
+/** A cached telegram with its key. */
+export interface CachedTelegram {
+  id: string;
+  ts: number;
+  dict: TelegramDict;
+}
+
+/** What the store holds, read once at startup. */
+export interface CacheStartup {
+  /** Key and timestamp of every entry, oldest first. */
+  index: { id: string; ts: number }[];
+  /** The newest entries, newest first. */
+  newest: CachedTelegram[];
+}
+
 export class TelegramCacheService {
   /**
    * Upper bound of the number of entries in the store, or `null` before the
@@ -65,22 +80,45 @@ export class TelegramCacheService {
    * Returns cached dicts whose timestamp falls within [startMs, endMs],
    * sorted newest first.
    */
-  async loadRange(
-    startMs: number,
-    endMs: number,
-  ): Promise<{ id: string; ts: number; dict: TelegramDict }[]> {
+  async loadRange(startMs: number, endMs: number): Promise<CachedTelegram[]> {
+    return this.loadRanges([[startMs, endMs]]);
+  }
+
+  /**
+   * Returns cached dicts whose timestamp falls within any of the closed
+   * `ranges`, sorted newest first. The store has no index, so this is one
+   * read of every entry however many ranges are asked for.
+   */
+  async loadRanges(ranges: readonly (readonly [number, number])[]): Promise<CachedTelegram[]> {
+    if (ranges.length === 0) return [];
     const all = await entries<string, CachedEntry>(IDB_STORE);
     this._countEstimate = all.length;
     return all
-      .filter(([, entry]) => entry.ts >= startMs && entry.ts <= endMs)
+      .filter(([, entry]) => ranges.some(([s, e]) => entry.ts >= s && entry.ts <= e))
       .map(([id, entry]) => ({ id, ts: entry.ts, dict: entry.dict }))
       .sort((a, b) => b.ts - a.ts);
   }
 
   /**
+   * Reads the store once for startup: the key and timestamp of every entry,
+   * and the dicts of the newest `limit` entries only.
+   */
+  async loadStartup(limit: number): Promise<CacheStartup> {
+    const all = await entries<string, CachedEntry>(IDB_STORE);
+    this._countEstimate = all.length;
+    all.sort((a, b) => a[1].ts - b[1].ts);
+    const index = all.map(([id, entry]) => ({ id, ts: entry.ts }));
+    const newest = all
+      .slice(Math.max(0, all.length - limit))
+      .reverse()
+      .map(([id, entry]) => ({ id, ts: entry.ts, dict: entry.dict }));
+    return { index, newest };
+  }
+
+  /**
    * Returns all cached dicts, newest first (sorted by `ts` descending).
    */
-  async loadAll(): Promise<{ id: string; ts: number; dict: TelegramDict }[]> {
+  async loadAll(): Promise<CachedTelegram[]> {
     const all = await entries<string, CachedEntry>(IDB_STORE);
     this._countEstimate = all.length;
     return all

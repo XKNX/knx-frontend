@@ -236,6 +236,67 @@ describe("TelegramCacheService", () => {
     });
   });
 
+  describe("loadRanges", () => {
+    const seed = () =>
+      svc.store([
+        { id: "a", ts: 100, dict: makeDict("2024-01-01T00:00:00.000Z") },
+        { id: "b", ts: 200, dict: makeDict("2024-01-01T00:00:01.000Z") },
+        { id: "c", ts: 300, dict: makeDict("2024-01-01T00:00:02.000Z") },
+        { id: "d", ts: 400, dict: makeDict("2024-01-01T00:00:03.000Z") },
+      ]);
+
+    it("returns the entries of every range in one read, newest first", async () => {
+      await seed();
+      _entriesReads = 0;
+      const result = await svc.loadRanges([
+        [100, 150],
+        [300, 400],
+      ]);
+      expect(result.map((e) => e.id)).toEqual(["d", "c", "a"]);
+      expect(_entriesReads).toBe(1);
+    });
+
+    it("does not read the store for no ranges", async () => {
+      await seed();
+      _entriesReads = 0;
+      expect(await svc.loadRanges([])).toEqual([]);
+      expect(_entriesReads).toBe(0);
+    });
+  });
+
+  describe("loadStartup", () => {
+    it("returns every key with its timestamp and only the newest dicts", async () => {
+      await svc.store([
+        { id: "b", ts: 200, dict: makeDict("2024-01-01T00:00:01.000Z") },
+        { id: "a", ts: 100, dict: makeDict("2024-01-01T00:00:00.000Z") },
+        { id: "c", ts: 300, dict: makeDict("2024-01-01T00:00:02.000Z") },
+      ]);
+      _entriesReads = 0;
+
+      const { index, newest } = await svc.loadStartup(2);
+
+      expect(index).toEqual([
+        { id: "a", ts: 100 },
+        { id: "b", ts: 200 },
+        { id: "c", ts: 300 },
+      ]);
+      expect(newest.map((e) => e.id)).toEqual(["c", "b"]);
+      expect(newest[0].dict.timestamp).toBe("2024-01-01T00:00:02.000Z");
+      expect(_entriesReads).toBe(1);
+    });
+
+    it("returns everything when the store is smaller than the limit", async () => {
+      await svc.store("a", 100, makeDict("2024-01-01T00:00:00.000Z"));
+      const { index, newest } = await svc.loadStartup(10);
+      expect(index).toHaveLength(1);
+      expect(newest).toHaveLength(1);
+    });
+
+    it("handles an empty store", async () => {
+      expect(await svc.loadStartup(10)).toEqual({ index: [], newest: [] });
+    });
+  });
+
   describe("count", () => {
     it("returns 0 on an empty store", async () => {
       expect(await svc.count()).toBe(0);
