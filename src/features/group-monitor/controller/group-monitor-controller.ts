@@ -8,7 +8,7 @@ import type { SortingDirection } from "@ha/components/data-table/ha-data-table";
 
 import { getGroupMonitorInfo, queryTelegrams } from "../../../services/websocket.service";
 import { TelegramBufferService } from "../services/telegram-buffer-service";
-import { TelegramCoverageService, coalesceGaps } from "../services/telegram-coverage-service";
+import { TelegramCoverageService } from "../services/telegram-coverage-service";
 import { TelegramCacheService } from "../services/telegram-cache-service";
 import { ConnectionService } from "../services/connection-service";
 import {
@@ -86,9 +86,6 @@ export class GroupMonitorController implements ReactiveController {
 
   /** Safety cap on telegrams fetched for a single time-range request. */
   private static readonly MAX_HISTORY_ROWS = 100000;
-
-  /** Gaps of one time-range request beyond this count are merged into fewer, larger queries. */
-  private static readonly MAX_GAP_QUERIES = 5;
 
   /** localStorage key for persisted coverage intervals. */
   private static readonly COVERAGE_KEY = "knx-group-monitor-coverage";
@@ -637,14 +634,10 @@ export class GroupMonitorController implements ReactiveController {
     this._historyLoading = true;
     this.host.requestUpdate();
 
-    const gaps = coalesceGaps(
-      this._coverage.gaps(startMs, queryEnd),
-      GroupMonitorController.MAX_GAP_QUERIES,
-    );
-
     // Load already-covered sub-ranges from IDB immediately so the user sees
     // cached data while server queries fill in the remaining gaps.
     try {
+      const gaps = this._coverage.gaps(startMs, queryEnd);
       const coveredSubRanges = this._coveredSubRanges(startMs, queryEnd, gaps);
       for (const [covStart, covEnd] of coveredSubRanges) {
         // eslint-disable-next-line no-await-in-loop
@@ -667,7 +660,7 @@ export class GroupMonitorController implements ReactiveController {
 
     try {
       let fetchedTotal = 0;
-      for (const [gapStart, gapEnd] of gaps) {
+      for (const [gapStart, gapEnd] of this._coverage.gaps(startMs, queryEnd)) {
         // eslint-disable-next-line no-await-in-loop
         const { complete, lastTs, fetched, cached } = await this._loadGap(
           hass,

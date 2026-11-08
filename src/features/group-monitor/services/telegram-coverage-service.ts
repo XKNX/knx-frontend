@@ -4,26 +4,6 @@
 export type Interval = [number, number];
 
 /**
- * Merges the closest neighbouring gaps until at most `maxCount` remain, so a
- * fragmented coverage does not turn one request into a query per sliver. The
- * covered stretch between two merged gaps is queried again; its rows are
- * deduplicated by the caller. Gaps must be sorted and non-overlapping.
- */
-export function coalesceGaps(gaps: readonly Interval[], maxCount: number): Interval[] {
-  const result: Interval[] = gaps.map((g) => [g[0], g[1]] as Interval);
-  while (result.length > Math.max(1, maxCount)) {
-    let closest = 0;
-    for (let i = 1; i < result.length - 1; i++) {
-      if (result[i + 1][0] - result[i][1] < result[closest + 1][0] - result[closest][1]) {
-        closest = i;
-      }
-    }
-    result.splice(closest, 2, [result[closest][0], result[closest + 1][1]]);
-  }
-  return result;
-}
-
-/**
  * Tracks which time ranges have been fully loaded into the telegram buffer.
  *
  * The Group Monitor loads history transparently: when the user selects a time
