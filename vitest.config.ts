@@ -7,6 +7,7 @@ export default defineConfig({
   define: {
     __DEMO__: false,
     __DEV__: false,
+    __HASS_URL__: JSON.stringify(""),
   },
   test: {
     alias: [

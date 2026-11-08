@@ -28,6 +28,7 @@ import "@ha/components/ha-state-icon";
 import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-switch";
 import "@ha/components/ha-yaml-editor";
+import type { HaYamlEditor } from "@ha/components/ha-yaml-editor";
 import "@ha/components/entity/ha-entity-picker";
 import "@ha/components/entity/ha-entity-attribute-picker";
 
@@ -36,6 +37,7 @@ import { mainWindow } from "@ha/common/dom/get_main_window";
 import { throttle } from "@ha/common/util/throttle";
 import { showConfirmationDialog } from "@ha/dialogs/generic/show-dialog-box";
 import { DirtyStateProviderMixin } from "@ha/mixins/dirty-state-provider-mixin";
+import { KeyboardShortcutMixin } from "@ha/mixins/keyboard-shortcut-mixin";
 import type { HomeAssistant, Route } from "@ha/types";
 
 import "../components/knx-expose-template-preview";
@@ -54,6 +56,7 @@ import {
   type ExposeGroupsContextValue,
 } from "../data/knx-expose-groups-context";
 import type { KnxHaSelector, GASelectorOptions } from "../types/schema";
+import { yamlModeShortcutHint } from "../utils/common";
 import { setNestedValue } from "../utils/config-helper";
 import { exitFlow, navigateInFlow, navigateToError } from "../utils/navigation";
 import { PreventUnsavedMixin } from "../mixins/prevent-unsaved-mixin";
@@ -138,7 +141,7 @@ const HIDDEN_ATTRIBUTES = new Set([
 
 @customElement("knx-create-expose")
 export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()(
-  PreventUnsavedMixin(LitElement),
+  PreventUnsavedMixin(KeyboardShortcutMixin(LitElement)),
 ) {
   @property({ type: Object }) public hass!: HomeAssistant;
 
@@ -165,6 +168,8 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
   @state() private _mode: "gui" | "yaml" = "gui";
 
   @state() private _yamlErrors?: string;
+
+  @query("ha-yaml-editor") private _yamlEditor?: HaYamlEditor;
 
   @state()
   @consume({ context: knxProjectContext, subscribe: true })
@@ -342,11 +347,11 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
       >
         <ha-icon-button
           slot="toolbar-icon"
-          .label=${this.knx.localize(
+          .label=${`${this.knx.localize(
             this._mode === "gui"
               ? "ui.panel.config.automation.editor.edit_yaml"
               : "ui.panel.config.automation.editor.edit_ui",
-          )}
+          )} (${yamlModeShortcutHint(this.knx.localize)})`}
           .path=${this._mode === "gui" ? mdiCodeBraces : mdiPlaylistEdit}
           @click=${this._toggleMode}
         ></ha-icon-button>
@@ -509,6 +514,11 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
     `;
   }
 
+  /** Ctrl/Cmd+Shift+Y switches between the form and the YAML editor, like HA's editors. */
+  protected supportedShortcutsInInput(): SupportedShortcuts {
+    return { Y: () => this._toggleMode() };
+  }
+
   private _toggleMode = async () => {
     if (this._mode === "yaml") {
       if (this._yamlErrors) {
@@ -521,8 +531,12 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
         if (!confirmed) return;
       }
       this._yamlErrors = undefined;
+      this._mode = "gui";
+      return;
     }
-    this._mode = this._mode === "gui" ? "yaml" : "gui";
+    this._mode = "yaml";
+    await this.updateComplete;
+    this._yamlEditor?.focus();
   };
 
   private _yamlChanged(ev: CustomEvent) {
