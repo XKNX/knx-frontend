@@ -17,6 +17,10 @@ export default defineConfig({
         replacement: resolve(__dirname, "test/mocks/iconMetadata.json"),
       },
       {
+        find: /.*\/build\/mdi\/iconList\.json$/,
+        replacement: resolve(__dirname, "test/mocks/iconList.json"),
+      },
+      {
         find: /.*\/build\/translations\/translationMetadata\.json$/,
         replacement: resolve(__dirname, "test/mocks/translationMetadata.json"),
       },
