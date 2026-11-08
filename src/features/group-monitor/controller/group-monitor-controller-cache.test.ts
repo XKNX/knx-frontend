@@ -1,20 +1,31 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { TelegramDict } from "../../../types/websocket";
 import { GroupMonitorController } from "./group-monitor-controller";
+import { TelegramRow } from "../types/telegram-row";
 import { getGroupMonitorInfo, queryTelegrams } from "../../../services/websocket.service";
 
 // In-memory IDB stand-in shared across the mock.
 const _idbStore = new Map<string, any>();
 // When set, writes fail the way a full or unavailable IndexedDB does.
 let _failWrites = false;
+// Entries written and store reads since the last reset.
+let _written = 0;
+let _reads = 0;
+// When set, store reads wait for it, so a slow cache can be simulated.
+let _readGate: Promise<void> | null = null;
 
 vi.mock("idb-keyval", () => ({
   createStore: () => "mock-store",
   setMany: async (pairs: [string, any][]) => {
     if (_failWrites) throw new Error("QuotaExceededError");
     for (const [k, v] of pairs) _idbStore.set(k, v);
+    _written += pairs.length;
   },
-  entries: async () => Array.from(_idbStore.entries()),
+  entries: async () => {
+    _reads++;
+    if (_readGate) await _readGate;
+    return Array.from(_idbStore.entries());
+  },
   delMany: async (keys: string[]) => {
     for (const k of keys) _idbStore.delete(k);
   },
@@ -90,6 +101,9 @@ describe("GroupMonitorController - cache persistence", () => {
     vi.setSystemTime(NOW);
     _idbStore.clear();
     _failWrites = false;
+    _written = 0;
+    _reads = 0;
+    _readGate = null;
     localStorage.clear();
     mockHost = {
       addController: vi.fn(),
@@ -116,6 +130,112 @@ describe("GroupMonitorController - cache persistence", () => {
     const raw = localStorage.getItem(COVERAGE_KEY);
     return raw === null ? null : JSON.parse(raw);
   };
+
+  describe("setup", () => {
+    // Cached under the key the controller derives, as the real cache is.
+    const cacheRow = (iso: string, source: string) => {
+      const dict = makeTelegram({ timestamp: iso, source });
+      _idbStore.set(new TelegramRow(dict).id, { ts: ms(iso), dict });
+    };
+
+    it("shows the newest cached telegrams and registers every cached key once", async () => {
+      cacheRow("2024-01-01T08:00:00.000Z", "1.1.1");
+      cacheRow("2024-01-01T09:00:00.000Z", "1.1.2");
+      cacheRow("2024-01-01T10:00:00.000Z", "1.1.3");
+      vi.mocked(getGroupMonitorInfo).mockResolvedValueOnce({
+        project_loaded: true,
+        recent_telegrams: [
+          makeTelegram({ timestamp: "2024-01-01T10:00:00.000Z", source: "1.1.3" }),
+          makeTelegram({ timestamp: "2024-01-01T11:00:00.000Z", source: "1.1.4" }),
+        ],
+      } as any);
+
+      await controller.setup({} as any, null);
+      await flush();
+
+      expect(controller.telegrams.map((r) => r.sourceAddress).sort()).toEqual([
+        "1.1.1",
+        "1.1.2",
+        "1.1.3",
+        "1.1.4",
+      ]);
+      // Only the row the cache did not hold is written; the cache is read once.
+      expect(_written).toBe(1);
+      expect(_reads).toBe(1);
+      expect((controller as any)._cachedIds.size).toBe(4);
+    });
+
+    it("waits for the cache index before writing recent rows", async () => {
+      cacheRow("2024-01-01T10:00:00.000Z", "1.1.3");
+      let openGate!: () => void;
+      _readGate = new Promise<void>((resolve) => {
+        openGate = resolve;
+      });
+      vi.mocked(getGroupMonitorInfo).mockResolvedValueOnce({
+        project_loaded: true,
+        recent_telegrams: [
+          makeTelegram({ timestamp: "2024-01-01T10:00:00.000Z", source: "1.1.3" }),
+          makeTelegram({ timestamp: "2024-01-01T11:00:00.000Z", source: "1.1.4" }),
+        ],
+      } as any);
+
+      const setupDone = controller.setup({} as any, null);
+      await flush();
+      // The backend answered, the rows are shown, nothing is written yet.
+      expect(controller.telegrams).toHaveLength(2);
+      expect(_written).toBe(0);
+
+      openGate();
+      await setupDone;
+      await flush();
+      expect(_written).toBe(1);
+    });
+
+    it("does not read the cache again on reload", async () => {
+      cacheRow("2024-01-01T08:00:00.000Z", "1.1.1");
+      vi.mocked(getGroupMonitorInfo).mockResolvedValue({
+        project_loaded: true,
+        recent_telegrams: [],
+      } as any);
+      await controller.setup({} as any, null);
+      await flush();
+      expect(_reads).toBe(1);
+
+      await controller.reload({} as any);
+      await flush();
+      expect(_reads).toBe(1);
+    });
+
+    it("ignores malformed persisted coverage and keeps valid intervals", async () => {
+      localStorage.setItem(
+        COVERAGE_KEY,
+        JSON.stringify([[100, 200], [300], ["a", "b"], [500, 400], null, [600, 700]]),
+      );
+      vi.mocked(getGroupMonitorInfo).mockResolvedValueOnce({
+        project_loaded: true,
+        recent_telegrams: [],
+      } as any);
+
+      await controller.setup({} as any, null);
+
+      expect(covered()).toEqual([
+        [100, 200],
+        [600, 700],
+      ]);
+    });
+
+    it("starts without coverage when the persisted value is not an array", async () => {
+      localStorage.setItem(COVERAGE_KEY, JSON.stringify({ covered: [[1, 2]] }));
+      vi.mocked(getGroupMonitorInfo).mockResolvedValueOnce({
+        project_loaded: true,
+        recent_telegrams: [],
+      } as any);
+
+      await controller.setup({} as any, null);
+
+      expect(covered()).toEqual([]);
+    });
+  });
 
   describe("_loadRecentTelegrams (via setup / reload)", () => {
     it("stores recent telegrams in IDB after initial load", async () => {
@@ -409,6 +529,49 @@ describe("GroupMonitorController - cache persistence", () => {
 
       expect(queryTelegrams).not.toHaveBeenCalled();
       expect(reloaded.telegrams.map((r) => r.sourceAddress).sort()).toEqual(["4.4.1", "4.4.2"]);
+    });
+
+    it("loads all covered sub-ranges from the cache in one read", async () => {
+      // Two covered islands inside the requested range, both with cached rows.
+      const coverage = (controller as any)._coverage;
+      coverage.addCovered(ms("2024-01-01T08:05:00.000Z"), ms("2024-01-01T08:15:00.000Z"));
+      coverage.addCovered(ms("2024-01-01T08:40:00.000Z"), ms("2024-01-01T08:50:00.000Z"));
+      for (const [iso, source] of [
+        ["2024-01-01T08:10:00.000Z", "5.5.1"],
+        ["2024-01-01T08:45:00.000Z", "5.5.2"],
+      ]) {
+        _idbStore.set(`${iso}_${source}`, {
+          ts: ms(iso),
+          dict: makeTelegram({ timestamp: iso, source }),
+        });
+      }
+      _reads = 0;
+
+      await controller.applyTimeRangeFilter({} as any, START, END, null);
+
+      expect(_reads).toBeLessThanOrEqual(2); // one range read, at most one eviction check
+      expect(queryTelegrams).toHaveBeenCalledTimes(3);
+      const cachedSources = controller.telegrams
+        .map((r) => r.sourceAddress)
+        .filter((s) => s.startsWith("5.5."));
+      expect(cachedSources.sort()).toEqual(["5.5.1", "5.5.2"]);
+    });
+
+    it("queries a gap including the boundary millisecond of its neighbours", async () => {
+      const coverage = (controller as any)._coverage;
+      const covStart = ms("2024-01-01T08:20:00.000Z");
+      const covEnd = ms("2024-01-01T08:30:00.000Z");
+      coverage.addCovered(covStart, covEnd);
+
+      await controller.applyTimeRangeFilter({} as any, START, END, null);
+
+      const spans = vi
+        .mocked(queryTelegrams)
+        .mock.calls.map(([, q]) => [ms(q.start_time!), ms(q.end_time!)]);
+      expect(spans).toEqual([
+        [START, covStart],
+        [covEnd, END],
+      ]);
     });
 
     it("queries a range again when its cache write failed", async () => {

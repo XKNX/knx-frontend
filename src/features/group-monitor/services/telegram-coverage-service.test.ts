@@ -64,30 +64,40 @@ describe("TelegramCoverageService", () => {
       expect(coverage.gaps(10, 20)).toEqual([]);
     });
 
-    it("returns a leading gap", () => {
+    // Gaps include the boundary millisecond of their covered neighbours: the
+    // backend compares in microseconds, so a row just below a covered start
+    // must be fetched by the gap query.
+    it("returns a leading gap up to the covered start", () => {
       coverage.addCovered(50, 100);
-      expect(coverage.gaps(10, 100)).toEqual([[10, 49]]);
+      expect(coverage.gaps(10, 100)).toEqual([[10, 50]]);
     });
 
-    it("returns a trailing gap", () => {
+    it("returns a trailing gap from the covered end", () => {
       coverage.addCovered(10, 50);
-      expect(coverage.gaps(10, 100)).toEqual([[51, 100]]);
+      expect(coverage.gaps(10, 100)).toEqual([[50, 100]]);
     });
 
     it("returns a middle gap between two covered intervals", () => {
       coverage.addCovered(10, 30);
       coverage.addCovered(60, 100);
-      expect(coverage.gaps(10, 100)).toEqual([[31, 59]]);
+      expect(coverage.gaps(10, 100)).toEqual([[30, 60]]);
     });
 
     it("returns multiple gaps", () => {
       coverage.addCovered(20, 30);
       coverage.addCovered(50, 60);
       expect(coverage.gaps(0, 100)).toEqual([
-        [0, 19],
-        [31, 49],
-        [61, 100],
+        [0, 20],
+        [30, 50],
+        [60, 100],
       ]);
+    });
+
+    it("returns no gap for a range covered up to its exact end", () => {
+      coverage.addCovered(10, 100);
+      expect(coverage.gaps(10, 100)).toEqual([]);
+      expect(coverage.gaps(100, 100)).toEqual([]);
+      expect(coverage.gaps(100, 101)).toEqual([[100, 101]]);
     });
 
     it("ignores covered intervals outside the requested range", () => {
@@ -159,7 +169,7 @@ describe("TelegramCoverageService", () => {
         [100, 150],
         [300, 350],
       ]);
-      expect(coverage.gaps(100, 350)).toEqual([[151, 299]]);
+      expect(coverage.gaps(100, 350)).toEqual([[150, 300]]);
     });
   });
 
