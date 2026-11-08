@@ -13,8 +13,8 @@ describe("getNestedValue", () => {
     expect(getNestedValue({ knx: {} }, "knx.color.ga_color")).toBeUndefined();
   });
 
-  it("reads an optional key the backend stores as null as absent", () => {
-    // a group select or group address left unset is stored as `null`
+  it("reads an optional key set to null as absent", () => {
+    // storage written by 2026.11.0 holds unset group selects and group addresses as `null`
     expect(getNestedValue({ knx: { color: null } }, "knx.color")).toBeUndefined();
   });
 
@@ -39,7 +39,7 @@ describe("setNestedValue", () => {
     expect(config).toEqual({ knx: { color: { ga_color: "1/2/3" } } });
   });
 
-  it("writes below a parent the backend stored as null", () => {
+  it("writes below a parent that is null", () => {
     const config = { knx: { ga_switch: "1/1/1", color: null } };
     setNestedValue(config, "knx.color.ga_color", "1/2/3");
     expect(config).toEqual({ knx: { ga_switch: "1/1/1", color: { ga_color: "1/2/3" } } });

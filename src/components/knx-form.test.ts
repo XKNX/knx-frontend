@@ -93,8 +93,8 @@ describe("KnxForm group select", () => {
     expect((form as any)._getOptionIndex(COLOR, "knx.color")).toBe(0);
   });
 
-  it("falls back to the first option when the backend stored the group as null", () => {
-    // an optional group select left unset is stored as `null` since 2026.11
+  it("falls back to the first option when the group is null", () => {
+    // storage written by 2026.11.0 holds an unset group select as `null`
     const form = createForm({ knx: { ga_switch: { write: "1/1/1" }, color: null } });
     expect((form as any)._getOptionIndex(COLOR, "knx.color")).toBe(0);
     expect((form as any)._groupHasGroupAddressInConfig(COLOR, "knx.color")).toBe(false);

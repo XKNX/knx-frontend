@@ -2,7 +2,7 @@ import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("config-helper");
 
-/** A config node that can hold keys. `null` is how the backend sends an unset optional key. */
+/** A config node that can hold keys. `null` may stand in for an unset optional key, so it is none. */
 const isObject = (value: unknown): value is Record<string, any> =>
   typeof value === "object" && value !== null;
 
@@ -81,7 +81,7 @@ export function setNestedValue(
   let current = config;
   for (const key of keys) {
     if (!isObject(current[key])) {
-      // missing, or `null` for an optional group left unset by the backend
+      // missing, or `null` standing in for an unset optional group
       if (value === undefined) return; // don't create to remove
       current[key] = {};
     }
@@ -103,9 +103,9 @@ export function setNestedValue(
 /**
  * Retrieves a nested value from a configuration object using a dot-separated path.
  *
- * The backend stores an optional key left unset as `null` (a dataclass field at its `None`
- * default), so `null` reads as absent too - as does anything below it. Callers then never
- * have to tell "not there" from "there, but empty" apart.
+ * An optional key left unset may arrive as `null` rather than be missing - storage written
+ * by 2026.11.0 holds such keys - so `null` reads as absent too, as does anything below it.
+ * Callers then never have to tell "not there" from "there, but empty" apart.
  *
  * @param config - The configuration object to read from
  * @param path - Dot-separated path to the property (e.g., "knx.color.ga_color")
