@@ -80,7 +80,7 @@ export interface PlatformSuggestion {
 
 export interface EntitySuggestion {
   id: string;
-  // provider id this suggestion originates from - eg. "fb" for functional blocks
+  // provider id this suggestion originates from - a key of `EntitySuggestionProviderHints`
   source: string;
   suggested_name: string;
   // group suggestions are rendered in, eg. a device
@@ -102,12 +102,22 @@ export interface FunctionalBlockProviderHints {
   functional_blocks_found?: string[];
 }
 
+export interface ExistingConfigProviderHints {
+  state: "ok" | "no_project" | "no_ui_entities";
+}
+
+export interface EntitySuggestionProviderHints {
+  // suggestions from functional block semantics of the project
+  fb?: FunctionalBlockProviderHints;
+  // suggestions for channels wired like an existing entity;
+  // `metadata.template_entity_id` of its suggestions is that entity
+  cfg?: ExistingConfigProviderHints;
+}
+
 export interface EntitySuggestionsResult {
   suggestions: EntitySuggestion[];
-  // key: provider id
-  providers: {
-    fb: FunctionalBlockProviderHints;
-  };
+  // key: provider id - backends may not have every provider
+  providers: EntitySuggestionProviderHints;
 }
 
 export interface GroupMonitorInfoData {

@@ -29,7 +29,7 @@ import {
 import { getPlatformStyle } from "../utils/common";
 import { KNXLogger } from "../tools/knx-logger";
 import type { KNX } from "../types/knx";
-import type { EntitySuggestion, FunctionalBlockProviderHints } from "../types/websocket";
+import type { EntitySuggestion, EntitySuggestionProviderHints } from "../types/websocket";
 
 const logger = new KNXLogger("knx-entities-suggestions");
 
@@ -88,7 +88,7 @@ export class KNXEntitiesSuggestions extends LitElement {
       <hass-subpage
         .hass=${this.hass}
         .narrow=${this.narrow!}
-        .back-path=${this.backPath}
+        .backPath=${this.backPath}
         .header=${this.knx.localize("suggestions_title")}
       >
         <div class="content">
@@ -114,38 +114,56 @@ export class KNXEntitiesSuggestions extends LitElement {
 
   private _renderResult(
     suggestions: EntitySuggestion[],
-    providers: { fb: FunctionalBlockProviderHints },
+    providers: EntitySuggestionProviderHints,
   ): TemplateResult {
-    const hints = providers.fb;
-    if (hints.state === "no_project") {
+    if (providers.fb?.state === "no_project" || providers.cfg?.state === "no_project") {
       return this._renderInfo(
         this.knx.localize("suggestions_no_project"),
-        html`<ha-button @click=${this._navigateInfo}>
-          ${this.knx.localize("suggestions_open_info_view")}
-        </ha-button>`,
+        this._renderInfoViewButton(),
       );
     }
-    if (hints.state === "outdated_parser") {
-      return this._renderInfo(
-        this.knx.localize("suggestions_outdated_parser", {
-          version: hints.parser_version,
-        }),
-        html`<ha-button @click=${this._navigateInfo}>
-          ${this.knx.localize("suggestions_open_info_view")}
-        </ha-button>`,
-      );
+    // re-importing the project is worth it even if other suggestions are available
+    const outdatedParser =
+      providers.fb?.state === "outdated_parser"
+        ? this._renderInfo(
+            this.knx.localize("suggestions_outdated_parser", {
+              version: providers.fb.parser_version,
+            }),
+            this._renderInfoViewButton(),
+          )
+        : nothing;
+    if (suggestions.length) {
+      return html`${outdatedParser}${this._renderSuggestions(suggestions)}`;
     }
-    if (hints.state === "no_semantics") {
-      return this._renderInfo(this.knx.localize("suggestions_no_semantics"));
-    }
-    if (!suggestions.length) {
-      return this._renderInfo(
+    // tell why each source of suggestions has nothing to offer
+    return html`${outdatedParser}${this._emptyResultInfos(providers).map((text) =>
+      this._renderInfo(text),
+    )}`;
+  }
+
+  private _emptyResultInfos(providers: EntitySuggestionProviderHints): string[] {
+    const infos: string[] = [];
+    if (providers.fb?.state === "no_semantics") {
+      infos.push(this.knx.localize("suggestions_no_semantics"));
+    } else if (providers.fb?.state === "ok") {
+      infos.push(
         this.knx.localize("suggestions_no_supported_blocks", {
-          functional_blocks: (hints.functional_blocks_found ?? []).join(", "),
+          functional_blocks: (providers.fb.functional_blocks_found ?? []).join(", "),
         }),
       );
     }
-    return this._renderSuggestions(suggestions);
+    if (providers.cfg?.state === "no_ui_entities") {
+      infos.push(this.knx.localize("suggestions_no_ui_entities"));
+    } else if (providers.cfg?.state === "ok") {
+      infos.push(this.knx.localize("suggestions_no_similar_channels"));
+    }
+    return infos;
+  }
+
+  private _renderInfoViewButton(): TemplateResult {
+    return html`<ha-button @click=${this._navigateInfo}>
+      ${this.knx.localize("suggestions_open_info_view")}
+    </ha-button>`;
   }
 
   private _renderSuggestions(suggestions: EntitySuggestion[]): TemplateResult {
@@ -196,6 +214,7 @@ export class KNXEntitiesSuggestions extends LitElement {
           entities: suggestion.existing_entity_ids.join(", "),
         })
       : undefined;
+    const templateEntityInfo = this._templateEntityInfo(suggestion);
     return html`
       <div class="row">
         <ha-checkbox
@@ -245,6 +264,11 @@ export class KNXEntitiesSuggestions extends LitElement {
             )}
           </div>
           ${
+            templateEntityInfo
+              ? html`<div class="row-secondary">${templateEntityInfo}</div>`
+              : nothing
+          }
+          ${
             existingEntitiesInfo
               ? html`<div class="row-secondary existing">${existingEntitiesInfo}</div>`
               : nothing
@@ -277,6 +301,15 @@ export class KNXEntitiesSuggestions extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  /** The entity a suggestion copies its configuration from, if it has one. */
+  private _templateEntityInfo(suggestion: EntitySuggestion): string | undefined {
+    const entityId = suggestion.metadata.template_entity_id;
+    if (typeof entityId !== "string") return undefined;
+    return this.knx.localize("suggestions_template_entity", {
+      entity: this.hass.states[entityId]?.attributes.friendly_name ?? entityId,
+    });
   }
 
   private _platformLabel(platform: SupportedPlatform): string {
