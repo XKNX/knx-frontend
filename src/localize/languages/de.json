@@ -19,6 +19,7 @@
   "suggestions_no_ui_entities": "Hier wurden noch keine Entitäten eingerichtet. Sobald ein Kanal eines Geräts konfiguriert ist, wird dieselbe Konfiguration für dessen andere Kanäle und für gleich programmierte Geräte vorgeschlagen.",
   "suggestions_no_similar_channels": "In diesem ETS-Projekt wurden keine weiteren Kanäle gefunden, die wie deine bestehenden Entitäten verknüpft sind.",
   "suggestions_platform": "Entitätstyp",
+  "suggestions_select_all": "Alle Vorschläge dieses Geräts auswählen",
   "suggestions_already_configured": "Gruppenadressen bereits verwendet von: {entities}",
   "suggestions_template_entity": "Konfiguriert wie {entity}",
   "suggestions_open_in_editor": "Im Editor öffnen",

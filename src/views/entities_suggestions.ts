@@ -179,17 +179,7 @@ export class KNXEntitiesSuggestions extends LitElement {
     ).length;
 
     return html`
-      ${[...groups.values()].map(
-        (groupSuggestions) => html`
-          <ha-card
-            outlined
-            .header=${`${groupSuggestions[0].group_id} ${groupSuggestions[0].group_name}`}
-            class="device-card"
-          >
-            ${groupSuggestions.map((suggestion) => this._renderRow(suggestion))}
-          </ha-card>
-        `,
-      )}
+      ${[...groups.values()].map((groupSuggestions) => this._renderGroup(groupSuggestions))}
       <div class="footer">
         <ha-button
           size="l"
@@ -200,6 +190,39 @@ export class KNXEntitiesSuggestions extends LitElement {
           ${this.knx.localize("suggestions_create_selected", { count: selectedCount })}
         </ha-button>
       </div>
+    `;
+  }
+
+  private _renderGroup(groupSuggestions: EntitySuggestion[]): TemplateResult {
+    const { group_id: groupId, group_name: groupName } = groupSuggestions[0];
+    // created suggestions are done - there is nothing left to select
+    const selectable = groupSuggestions.filter(
+      (suggestion) => this._rowState(suggestion).status !== "created",
+    );
+    const selectedCount = selectable.filter(
+      (suggestion) => this._rowState(suggestion).selected,
+    ).length;
+    const selectAllLabel = this.knx.localize("suggestions_select_all");
+    return html`
+      <ha-card outlined class="device-card">
+        <div class="card-header">
+          ${
+            groupSuggestions.length > 1
+              ? html`<ha-checkbox
+                  data-group-id=${groupId}
+                  .checked=${selectable.length > 0 && selectedCount === selectable.length}
+                  .indeterminate=${selectedCount > 0 && selectedCount < selectable.length}
+                  .disabled=${this._creating || !selectable.length}
+                  title=${selectAllLabel}
+                  aria-label=${selectAllLabel}
+                  @change=${this._groupSelectedChanged}
+                ></ha-checkbox>`
+              : nothing
+          }
+          <span>${groupId} ${groupName}</span>
+        </div>
+        ${groupSuggestions.map((suggestion) => this._renderRow(suggestion))}
+      </ha-card>
     `;
   }
 
@@ -342,6 +365,19 @@ export class KNXEntitiesSuggestions extends LitElement {
     this._updateRowState(suggestion, { selected: (ev.target as HTMLInputElement).checked });
   };
 
+  private _groupSelectedChanged = (ev: Event) => {
+    const groupId = (ev.currentTarget as HTMLElement).getAttribute("data-group-id");
+    const selected = (ev.target as HTMLInputElement).checked;
+    const rowStates = { ...this._rowStates };
+    this._suggestionsTask.value?.suggestions.forEach((suggestion) => {
+      const rowState = this._rowState(suggestion);
+      if (suggestion.group_id === groupId && rowState.status !== "created") {
+        rowStates[suggestion.id] = { ...rowState, selected };
+      }
+    });
+    this._rowStates = rowStates;
+  };
+
   private _rowNameChanged = (ev: Event) => {
     const suggestion = this._suggestionOfEvent(ev);
     if (!suggestion) return;
@@ -440,6 +476,12 @@ export class KNXEntitiesSuggestions extends LitElement {
     ha-card {
       display: block;
       margin-bottom: 16px;
+    }
+
+    .device-card .card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .info-card .card-content {
