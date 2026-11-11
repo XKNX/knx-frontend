@@ -8,5 +8,21 @@
   "error_headline": "Bitte noch einmal versuchen",
   "error_description": "Die Anfrage ist fehlgeschlagen. Meist reicht ein zweiter Versuch. Bleibt der Fehler, kopiere die Meldung unten und melde das Problem.",
   "error_message": "Fehlermeldung",
-  "error_report": "Problem melden"
+  "error_report": "Problem melden",
+  "suggestions_title": "Entitätsvorschläge",
+  "suggestions_type_selection_description": "Entitäten automatisch aus dem importierten ETS-Projekt erstellen - aus dessen Funktionsblock-Informationen oder für Kanäle, die wie bereits eingerichtete Entitäten verknüpft sind.",
+  "suggestions_show": "Vorschläge anzeigen",
+  "suggestions_no_project": "Keine ETS-Projektdaten verfügbar. Importiere deine ETS-Projektdatei, um Entitätsvorschläge zu erhalten.",
+  "suggestions_open_info_view": "Info-Seite öffnen",
+  "suggestions_outdated_parser": "Dein ETS-Projekt wurde mit einer älteren Parser-Version ({version}) importiert. Importiere die Projektdatei erneut, um Entitätsvorschläge zu erhalten.",
+  "suggestions_no_semantics": "Die Applikationsprogramme der Geräte in diesem ETS-Projekt enthalten keine Funktionsblock-Informationen. Diese Informationen sind Teil neuerer KNX-Applikationsprogramme.",
+  "suggestions_no_supported_blocks": "Keine unterstützten Funktionsblöcke in diesem ETS-Projekt gefunden. Gefundene Funktionsblöcke: {functional_blocks}",
+  "suggestions_no_ui_entities": "Hier wurden noch keine Entitäten eingerichtet. Sobald ein Kanal eines Geräts konfiguriert ist, wird dieselbe Konfiguration für dessen andere Kanäle und für gleich programmierte Geräte vorgeschlagen.",
+  "suggestions_no_similar_channels": "In diesem ETS-Projekt wurden keine weiteren Kanäle gefunden, die wie deine bestehenden Entitäten verknüpft sind.",
+  "suggestions_platform": "Entitätstyp",
+  "suggestions_select_all": "Alle Vorschläge dieses Geräts auswählen",
+  "suggestions_already_configured": "Gruppenadressen bereits verwendet von: {entities}",
+  "suggestions_template_entity": "Konfiguriert wie {entity}",
+  "suggestions_open_in_editor": "Im Editor öffnen",
+  "suggestions_create_selected": "{count, plural, one {# Entität anlegen} other {# Entitäten anlegen}}"
 }

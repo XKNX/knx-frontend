@@ -63,6 +63,63 @@ export type TelegramStoreStatus = "initializing" | "ready";
 /** Websocket error code returned while the telegram store is still initializing. */
 export const ERR_TELEGRAM_STORE_INITIALIZING = "telegram_store_initializing";
 
+// this has to match `EntitySuggestionsResult` and related types in
+// the integrations `storage/entity_suggestions/const.py`
+export interface SuggestedGroupAddress {
+  address: string;
+  name: string;
+}
+
+export interface PlatformSuggestion {
+  // `knx` options of EntityData
+  knx: Record<string, unknown>;
+  matched_group_addresses: SuggestedGroupAddress[];
+  // source references that could not be assigned to a config key
+  unmatched: string[];
+}
+
+export interface EntitySuggestion {
+  id: string;
+  // provider id this suggestion originates from - a key of `EntitySuggestionProviderHints`
+  source: string;
+  suggested_name: string;
+  // group suggestions are rendered in, eg. a device
+  group_id: string;
+  group_name: string;
+  // additional info for the suggestion, eg. a channel name
+  secondary_info: string;
+  // platforms able to represent this suggestion - first item is the default
+  platform_options: SupportedPlatform[];
+  suggestions: Record<SupportedPlatform, PlatformSuggestion>;
+  existing_entity_ids: string[];
+  // provider specific details about where the suggestion comes from
+  metadata: Record<string, unknown>;
+}
+
+export interface FunctionalBlockProviderHints {
+  state: "ok" | "no_project" | "outdated_parser" | "no_semantics";
+  parser_version?: string;
+  functional_blocks_found?: string[];
+}
+
+export interface ExistingConfigProviderHints {
+  state: "ok" | "no_project" | "no_ui_entities";
+}
+
+export interface EntitySuggestionProviderHints {
+  // suggestions from functional block semantics of the project
+  fb?: FunctionalBlockProviderHints;
+  // suggestions for channels wired like an existing entity;
+  // `metadata.template_entity_id` of its suggestions is that entity
+  cfg?: ExistingConfigProviderHints;
+}
+
+export interface EntitySuggestionsResult {
+  suggestions: EntitySuggestion[];
+  // key: provider id - backends may not have every provider
+  providers: EntitySuggestionProviderHints;
+}
+
 export interface GroupMonitorInfoData {
   project_loaded: boolean;
   recent_telegrams: TelegramDict[];
