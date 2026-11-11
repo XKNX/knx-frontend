@@ -284,7 +284,7 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
                     <div class="card-actions">
                       <ha-button @click=${this._navigateSuggestions}>
                         <ha-svg-icon slot="start" .path=${mdiAutoFix}></ha-svg-icon>
-                        ${this.knx.localize("suggestions_title")}
+                        ${this.knx.localize("suggestions_show")}
                       </ha-button>
                     </div>
                   </ha-card>
