@@ -549,7 +549,7 @@ describe("GroupMonitorController - cache persistence", () => {
 
       await controller.applyTimeRangeFilter({} as any, START, END, null);
 
-      expect(_reads).toBeLessThanOrEqual(2); // one range read, at most one eviction check
+      expect(_reads).toBe(1);
       expect(queryTelegrams).toHaveBeenCalledTimes(3);
       const cachedSources = controller.telegrams
         .map((r) => r.sourceAddress)

@@ -77,14 +77,6 @@ export class TelegramCacheService {
   }
 
   /**
-   * Returns cached dicts whose timestamp falls within [startMs, endMs],
-   * sorted newest first.
-   */
-  async loadRange(startMs: number, endMs: number): Promise<CachedTelegram[]> {
-    return this.loadRanges([[startMs, endMs]]);
-  }
-
-  /**
    * Returns cached dicts whose timestamp falls within any of the closed
    * `ranges`, sorted newest first. The store has no index, so this is one
    * read of every entry however many ranges are asked for.
@@ -113,17 +105,6 @@ export class TelegramCacheService {
       .reverse()
       .map(([id, entry]) => ({ id, ts: entry.ts, dict: entry.dict }));
     return { index, newest };
-  }
-
-  /**
-   * Returns all cached dicts, newest first (sorted by `ts` descending).
-   */
-  async loadAll(): Promise<CachedTelegram[]> {
-    const all = await entries<string, CachedEntry>(IDB_STORE);
-    this._countEstimate = all.length;
-    return all
-      .map(([id, entry]) => ({ id, ts: entry.ts, dict: entry.dict }))
-      .sort((a, b) => b.ts - a.ts);
   }
 
   /**
