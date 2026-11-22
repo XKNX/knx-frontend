@@ -12,9 +12,11 @@ import "@ha/components/ha-button";
 import "@ha/components/ha-card";
 import "@ha/components/ha-checkbox";
 import "@ha/components/ha-icon-button";
+import "@ha/components/ha-label";
 import "@ha/components/ha-selector/ha-selector-select";
 import "@ha/components/ha-spinner";
 import "@ha/components/ha-svg-icon";
+import "@ha/components/ha-switch";
 import "@ha/components/input/ha-input";
 import { navigate } from "@ha/common/navigate";
 import type { HomeAssistant, Route } from "@ha/types";
@@ -26,12 +28,26 @@ import {
   entitiesByGroupContext,
   type EntitiesByGroupContextValue,
 } from "../data/knx-entities-by-group-context";
+import type { LocalKnxKey } from "../localize/localize";
 import { getPlatformStyle } from "../utils/common";
+import { suggestionProviders, type SuggestionProviderInfo } from "../utils/entity-suggestions";
 import { KNXLogger } from "../tools/knx-logger";
 import type { KNX } from "../types/knx";
-import type { EntitySuggestion, EntitySuggestionProviderHints } from "../types/websocket";
+import type { EntitySuggestion, EntitySuggestionsResult } from "../types/websocket";
 
 const logger = new KNXLogger("knx-entities-suggestions");
+
+// providers not listed here are shown by their id
+const PROVIDER_TEXTS: Record<string, { name: LocalKnxKey; description: LocalKnxKey }> = {
+  fb: {
+    name: "suggestions_provider_fb_name",
+    description: "suggestions_provider_fb_description",
+  },
+  cfg: {
+    name: "suggestions_provider_cfg_name",
+    description: "suggestions_provider_cfg_description",
+  },
+};
 
 interface RowState {
   selected: boolean;
@@ -60,6 +76,9 @@ export class KNXEntitiesSuggestions extends LitElement {
 
   @state() private _creating = false;
 
+  // ids of providers whose suggestions are filtered out
+  @state() private _hiddenProviders: ReadonlySet<string> = new Set();
+
   private _suggestionsTask = new Task(this, {
     args: () => [] as const,
     task: () => getEntitySuggestions(this.hass),
@@ -76,6 +95,13 @@ export class KNXEntitiesSuggestions extends LitElement {
     );
   }
 
+  /** Suggestions of the providers that are not filtered out. */
+  private _visibleSuggestions(): EntitySuggestion[] {
+    return (this._suggestionsTask.value?.suggestions ?? []).filter(
+      (suggestion) => !this._hiddenProviders.has(suggestion.source),
+    );
+  }
+
   private _updateRowState(suggestion: EntitySuggestion, update: Partial<RowState>) {
     this._rowStates = {
       ...this._rowStates,
@@ -85,18 +111,17 @@ export class KNXEntitiesSuggestions extends LitElement {
 
   protected render(): TemplateResult {
     return html`
-      <hass-subpage
-        .hass=${this.hass}
-        .narrow=${this.narrow!}
-        .backPath=${this.backPath}
-        .header=${this.knx.localize("suggestions_title")}
-      >
+      <hass-subpage .hass=${this.hass} .narrow=${this.narrow!} .backPath=${this.backPath}>
+        <span slot="header" class="header">
+          ${this.knx.localize("suggestions_title")}
+          <ha-label dense class="beta">${this.knx.localize("suggestions_beta")}</ha-label>
+        </span>
         <div class="content">
           ${this._suggestionsTask.render({
             initial: () => html`<hass-loading-screen no-toolbar></hass-loading-screen>`,
             pending: () => html`<hass-loading-screen no-toolbar></hass-loading-screen>`,
             error: (err) => this._renderInfo(`${err}`),
-            complete: (result) => this._renderResult(result.suggestions, result.providers),
+            complete: (result) => this._renderResult(result),
           })}
         </div>
       </hass-subpage>
@@ -112,52 +137,92 @@ export class KNXEntitiesSuggestions extends LitElement {
     `;
   }
 
-  private _renderResult(
-    suggestions: EntitySuggestion[],
-    providers: EntitySuggestionProviderHints,
-  ): TemplateResult {
-    if (providers.fb?.state === "no_project" || providers.cfg?.state === "no_project") {
+  private _renderResult(result: EntitySuggestionsResult): TemplateResult {
+    const providers = suggestionProviders(result);
+    if (providers.some((provider) => provider.hints?.state === "no_project")) {
       return this._renderInfo(
         this.knx.localize("suggestions_no_project"),
         this._renderInfoViewButton(),
       );
     }
-    // re-importing the project is worth it even if other suggestions are available
-    const outdatedParser =
-      providers.fb?.state === "outdated_parser"
-        ? this._renderInfo(
-            this.knx.localize("suggestions_outdated_parser", {
-              version: providers.fb.parser_version,
-            }),
-            this._renderInfoViewButton(),
-          )
-        : nothing;
-    if (suggestions.length) {
-      return html`${outdatedParser}${this._renderSuggestions(suggestions)}`;
-    }
-    // tell why each source of suggestions has nothing to offer
-    return html`${outdatedParser}${this._emptyResultInfos(providers).map((text) =>
-      this._renderInfo(text),
-    )}`;
+    return html`${this._renderProviders(providers)}${this._renderSuggestions()}`;
   }
 
-  private _emptyResultInfos(providers: EntitySuggestionProviderHints): string[] {
-    const infos: string[] = [];
-    if (providers.fb?.state === "no_semantics") {
-      infos.push(this.knx.localize("suggestions_no_semantics"));
-    } else if (providers.fb?.state === "ok") {
-      infos.push(
-        this.knx.localize("suggestions_no_supported_blocks", {
-          functional_blocks: (providers.fb.functional_blocks_found ?? []).join(", "),
-        }),
-      );
+  /** Every source of suggestions - what it does and what it has to offer. */
+  private _renderProviders(providers: SuggestionProviderInfo[]): TemplateResult {
+    // filtering is only of use if there is more than one source to choose from
+    const filterable = providers.filter((provider) => provider.count).length > 1;
+    return html`
+      <ha-card outlined .header=${this.knx.localize("suggestions_providers_title")}>
+        ${providers.map((provider) => this._renderProvider(provider, filterable))}
+      </ha-card>
+    `;
+  }
+
+  private _renderProvider(provider: SuggestionProviderInfo, filterable: boolean): TemplateResult {
+    const texts = PROVIDER_TEXTS[provider.id];
+    const name = texts ? this.knx.localize(texts.name) : provider.id;
+    // re-importing the project is worth it even if other suggestions are available
+    const outdatedParser = provider.hints?.state === "outdated_parser";
+    return html`
+      <div class="row provider">
+        <div class="row-content">
+          <div class="provider-name">${name}</div>
+          ${
+            texts
+              ? html`<div class="row-secondary">${this.knx.localize(texts.description)}</div>`
+              : nothing
+          }
+          <div class="row-secondary provider-status ${outdatedParser ? "existing" : ""}">
+            ${this._providerStatus(provider)}
+          </div>
+          ${outdatedParser ? this._renderInfoViewButton() : nothing}
+        </div>
+        ${
+          filterable && provider.count
+            ? html`<ha-switch
+                data-provider-id=${provider.id}
+                .checked=${!this._hiddenProviders.has(provider.id)}
+                .disabled=${this._creating}
+                title=${this.knx.localize("suggestions_provider_show", { provider: name })}
+                aria-label=${this.knx.localize("suggestions_provider_show", { provider: name })}
+                @change=${this._providerVisibilityChanged}
+              ></ha-switch>`
+            : nothing
+        }
+      </div>
+    `;
+  }
+
+  /** How many suggestions a provider has - or why it has none. */
+  private _providerStatus(provider: SuggestionProviderInfo): string {
+    if (provider.count) {
+      return this.knx.localize("suggestions_provider_count", { count: provider.count });
     }
-    if (providers.cfg?.state === "no_ui_entities") {
-      infos.push(this.knx.localize("suggestions_no_ui_entities"));
-    } else if (providers.cfg?.state === "ok") {
-      infos.push(this.knx.localize("suggestions_no_similar_channels"));
+    const hints = provider.hints;
+    if (provider.id === "fb") {
+      switch (hints?.state) {
+        case "outdated_parser":
+          return this.knx.localize("suggestions_outdated_parser", {
+            version: `${hints.parser_version}`,
+          });
+        case "no_semantics":
+          return this.knx.localize("suggestions_no_semantics");
+        case "ok":
+          return this.knx.localize("suggestions_no_supported_blocks", {
+            functional_blocks: ((hints.functional_blocks_found as string[]) ?? []).join(", "),
+          });
+      }
     }
-    return infos;
+    if (provider.id === "cfg") {
+      switch (hints?.state) {
+        case "no_ui_entities":
+          return this.knx.localize("suggestions_no_ui_entities");
+        case "ok":
+          return this.knx.localize("suggestions_no_similar_channels");
+      }
+    }
+    return this.knx.localize("suggestions_provider_none");
   }
 
   private _renderInfoViewButton(): TemplateResult {
@@ -166,7 +231,9 @@ export class KNXEntitiesSuggestions extends LitElement {
     </ha-button>`;
   }
 
-  private _renderSuggestions(suggestions: EntitySuggestion[]): TemplateResult {
+  private _renderSuggestions(): TemplateResult | typeof nothing {
+    if (!this._suggestionsTask.value?.suggestions.length) return nothing;
+    const suggestions = this._visibleSuggestions();
     const groups = new Map<string, EntitySuggestion[]>();
     suggestions.forEach((suggestion) => {
       const groupSuggestions = groups.get(suggestion.group_id) ?? [];
@@ -369,13 +436,25 @@ export class KNXEntitiesSuggestions extends LitElement {
     const groupId = (ev.currentTarget as HTMLElement).getAttribute("data-group-id");
     const selected = (ev.target as HTMLInputElement).checked;
     const rowStates = { ...this._rowStates };
-    this._suggestionsTask.value?.suggestions.forEach((suggestion) => {
+    this._visibleSuggestions().forEach((suggestion) => {
       const rowState = this._rowState(suggestion);
       if (suggestion.group_id === groupId && rowState.status !== "created") {
         rowStates[suggestion.id] = { ...rowState, selected };
       }
     });
     this._rowStates = rowStates;
+  };
+
+  private _providerVisibilityChanged = (ev: Event) => {
+    const providerId = (ev.currentTarget as HTMLElement).getAttribute("data-provider-id");
+    if (!providerId) return;
+    const hiddenProviders = new Set(this._hiddenProviders);
+    if ((ev.target as HTMLInputElement).checked) {
+      hiddenProviders.delete(providerId);
+    } else {
+      hiddenProviders.add(providerId);
+    }
+    this._hiddenProviders = hiddenProviders;
   };
 
   private _rowNameChanged = (ev: Event) => {
@@ -412,8 +491,8 @@ export class KNXEntitiesSuggestions extends LitElement {
   }
 
   private async _createSelected() {
-    const suggestions = this._suggestionsTask.value?.suggestions;
-    if (!suggestions) return;
+    // suggestions of a filtered out provider are not created
+    const suggestions = this._visibleSuggestions();
     this._creating = true;
     try {
       for (const suggestion of suggestions) {
@@ -473,9 +552,33 @@ export class KNXEntitiesSuggestions extends LitElement {
       padding: 0 16px;
     }
 
+    .header {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    ha-label.beta {
+      --ha-label-background-color: var(--primary-color);
+      --ha-label-background-opacity: 0.2;
+      text-transform: uppercase;
+    }
+
     ha-card {
       display: block;
       margin-bottom: 16px;
+    }
+
+    .row.provider {
+      align-items: center;
+    }
+
+    .provider-name {
+      font-weight: var(--ha-font-weight-medium, 500);
+    }
+
+    .provider ha-button {
+      margin-top: 8px;
     }
 
     .device-card .card-header {

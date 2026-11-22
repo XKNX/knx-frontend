@@ -13,6 +13,7 @@ import "@ha/components/ha-card";
 import "@ha/components/ha-button";
 import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-icon-button";
+import "@ha/components/ha-label";
 import "@ha/components/ha-yaml-editor";
 import type { HaYamlEditor } from "@ha/components/ha-yaml-editor";
 import "@ha/components/ha-config-navigation-list";
@@ -277,7 +278,11 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
           ${
             this.knx.projectInfo
               ? html`
-                  <ha-card outlined .header=${this.knx.localize("suggestions_title")}>
+                  <ha-card outlined>
+                    <h1 class="card-header suggestions-header">
+                      ${this.knx.localize("suggestions_title")}
+                      <ha-label dense>${this.knx.localize("suggestions_beta")}</ha-label>
+                    </h1>
                     <div class="card-content">
                       ${this.knx.localize("suggestions_type_selection_description")}
                     </div>
@@ -636,6 +641,18 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
 
     ha-card {
       overflow: hidden; /* don't cover rounded corner border by content */
+    }
+
+    .suggestions-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      & ha-label {
+        --ha-label-background-color: var(--primary-color);
+        --ha-label-background-opacity: 0.2;
+        text-transform: uppercase;
+      }
     }
 
     @media screen and (max-width: 600px) {

@@ -96,13 +96,19 @@ export interface EntitySuggestion {
   metadata: Record<string, unknown>;
 }
 
-export interface FunctionalBlockProviderHints {
+// provider specific information - every provider reports at least a `state`
+export interface SuggestionProviderHints {
+  state?: string;
+  [key: string]: unknown;
+}
+
+export interface FunctionalBlockProviderHints extends SuggestionProviderHints {
   state: "ok" | "no_project" | "outdated_parser" | "no_semantics";
   parser_version?: string;
   functional_blocks_found?: string[];
 }
 
-export interface ExistingConfigProviderHints {
+export interface ExistingConfigProviderHints extends SuggestionProviderHints {
   state: "ok" | "no_project" | "no_ui_entities";
 }
 
@@ -112,11 +118,13 @@ export interface EntitySuggestionProviderHints {
   // suggestions for channels wired like an existing entity;
   // `metadata.template_entity_id` of its suggestions is that entity
   cfg?: ExistingConfigProviderHints;
+  // providers this panel doesn't know yet are listed generically
+  [providerId: string]: SuggestionProviderHints | undefined;
 }
 
 export interface EntitySuggestionsResult {
   suggestions: EntitySuggestion[];
-  // key: provider id - backends may not have every provider
+  // key: provider id - backends may have fewer or more providers than known here
   providers: EntitySuggestionProviderHints;
 }
 
