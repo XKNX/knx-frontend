@@ -56,8 +56,12 @@ export class TelegramCoverageService {
 
   /**
    * Returns the sub-intervals of `[start, end]` that are not yet covered.
-   * The result is sorted and non-overlapping; an empty array means the whole
-   * range is already loaded.
+   * The result is sorted; an empty array means the whole range is loaded.
+   *
+   * A gap includes the boundary millisecond of its covered neighbours. The
+   * intervals hold millisecond timestamps while the backend compares in
+   * microseconds, so a telegram just below a covered start would otherwise
+   * be fetched by nobody. Rows on a boundary are deduplicated by the caller.
    */
   gaps(start: number, end: number): Interval[] {
     if (end < start) return [];
@@ -69,14 +73,13 @@ export class TelegramCoverageService {
       if (e < cursor) continue; // covered interval entirely before the cursor
       if (s > end) break; // covered intervals are sorted; no more overlap
       if (s > cursor) {
-        // Gap before this covered interval (s <= end here, so s-1 <= end).
-        result.push([cursor, s - 1]);
+        result.push([cursor, s]);
       }
-      cursor = Math.max(cursor, e + 1);
-      if (cursor > end) break;
+      cursor = Math.max(cursor, e);
+      if (cursor >= end) break;
     }
 
-    if (cursor <= end) {
+    if (cursor < end) {
       result.push([cursor, end]);
     }
 

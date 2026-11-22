@@ -54,6 +54,21 @@ const STORE_INITIALIZING_RETRY_DELAYS_MS = [2_000, 5_000, 10_000];
 /** Live telegrams are written to the cache in batches collected over this long (ms). */
 const LIVE_CACHE_FLUSH_DELAY_MS = 1_000;
 
+/**
+ * Cached telegrams shown while the first recent load is in flight. The recent
+ * load then sizes the buffer to its own window, so more would be built only to
+ * be dropped again.
+ */
+const STARTUP_CACHE_ROWS = 2_000;
+
+/** A persisted coverage interval: two finite epoch-millisecond timestamps in order. */
+const isInterval = (value: unknown): value is [number, number] =>
+  Array.isArray(value) &&
+  value.length === 2 &&
+  Number.isFinite(value[0]) &&
+  Number.isFinite(value[1]) &&
+  value[0] <= value[1];
+
 /** A telegram as written to the IndexedDB cache. */
 interface CacheEntry {
   id: string;
@@ -112,6 +127,9 @@ export class GroupMonitorController implements ReactiveController {
 
   // Oldest timestamp the cache may still hold after evictions; coverage never reaches below it
   private _cacheFloorMs: number | null = null;
+
+  // Settles once the cache index is known; writes wait for it so cached rows are not rewritten
+  private _cacheRestored: Promise<void> = Promise.resolve();
 
   // Live telegrams waiting to be written to the cache in one batch
   private _pendingCacheWrites: CacheEntry[] = [];
@@ -243,9 +261,11 @@ export class GroupMonitorController implements ReactiveController {
     try {
       const raw = localStorage.getItem(GroupMonitorController.COVERAGE_KEY);
       if (raw) {
-        const intervals: [number, number][] = JSON.parse(raw);
-        for (const [s, e] of intervals) {
-          this._coverage.addCovered(s, e);
+        const intervals: unknown = JSON.parse(raw);
+        if (Array.isArray(intervals)) {
+          for (const interval of intervals) {
+            if (isInterval(interval)) this._coverage.addCovered(interval[0], interval[1]);
+          }
         }
       }
     } catch {
@@ -259,8 +279,30 @@ export class GroupMonitorController implements ReactiveController {
       this._cache.evictBefore(minMs).catch((err) => logger.warn("Cache evict failed", err));
     }
 
-    // IDB data is loaded on-demand via loadRange when a time-range filter is
-    // applied, not pre-loaded here, so the startup view stays clean.
+    // --- 3. Show the newest cached telegrams while the recent load is in flight ---
+    // Not awaited here: the subscription and the recent load must not wait for
+    // it. Older cached ranges are loaded on demand by the time-range filter.
+    this._cacheRestored = this._restoreCachedRows().catch((err) =>
+      logger.warn("Startup cache load failed", err),
+    );
+  }
+
+  /**
+   * Reads the cache once: registers every entry as committed, so the recent
+   * load does not write it again, and shows the newest ones.
+   */
+  private async _restoreCachedRows(): Promise<void> {
+    const { index, newest } = await this._cache.loadStartup(STARTUP_CACHE_ROWS);
+    const floor = this._cacheFloorMs;
+    for (const { id, ts } of index) {
+      if (floor === null || ts >= floor) this._cachedIds.set(id, ts);
+    }
+    if (newest.length > 0) {
+      this.addHistoricalTelegrams(
+        newest.map((e) => e.dict),
+        false,
+      );
+    }
   }
 
   // ============================================================================
@@ -637,17 +679,15 @@ export class GroupMonitorController implements ReactiveController {
     // Load already-covered sub-ranges from IDB immediately so the user sees
     // cached data while server queries fill in the remaining gaps.
     try {
+      await this._cacheRestored;
       const gaps = this._coverage.gaps(startMs, queryEnd);
       const coveredSubRanges = this._coveredSubRanges(startMs, queryEnd, gaps);
-      for (const [covStart, covEnd] of coveredSubRanges) {
-        // eslint-disable-next-line no-await-in-loop
-        const cached = await this._cache.loadRange(covStart, covEnd);
-        if (cached.length > 0) {
-          this.addHistoricalTelegrams(
-            cached.map((e) => e.dict),
-            false,
-          );
-        }
+      const cached = await this._cache.loadRanges(coveredSubRanges);
+      if (cached.length > 0) {
+        this.addHistoricalTelegrams(
+          cached.map((e) => e.dict),
+          false,
+        );
       }
       if (coveredSubRanges.length > 0) {
         this._filterStartMs = startMs;
@@ -1179,25 +1219,6 @@ export class GroupMonitorController implements ReactiveController {
    */
   private async _loadRecentTelegrams(hass: HomeAssistant): Promise<boolean> {
     this._hass = hass;
-    // Load the previously-covered range from IDB non-blocking so cached
-    // telegrams appear instantly while the server request is in flight.
-    const covered = this._coverage.covered;
-    if (covered.length > 0) {
-      const minMs = covered[0][0];
-      const maxMs = covered[covered.length - 1][1];
-      this._cache
-        .loadRange(minMs, maxMs)
-        .then((cached) => {
-          if (cached.length > 0) {
-            this.addHistoricalTelegrams(
-              cached.map((e) => e.dict),
-              false,
-            );
-          }
-        })
-        .catch((err) => logger.warn("Startup cache load failed", err));
-    }
-
     try {
       const requestedAt = Date.now();
       const info = await getGroupMonitorInfo(hass);
@@ -1240,6 +1261,7 @@ export class GroupMonitorController implements ReactiveController {
       this._isReloadEnabled = false;
       this.host.requestUpdate();
 
+      await this._cacheRestored;
       const cached = await this._cacheStore(
         this._uncachedEntries(newTelegramRows, info.recent_telegrams),
       );
