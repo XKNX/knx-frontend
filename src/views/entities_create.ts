@@ -281,7 +281,7 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
                   <ha-card outlined>
                     <h1 class="card-header suggestions-header">
                       ${this.knx.localize("suggestions_title")}
-                      <ha-label dense>${this.knx.localize("suggestions_beta")}</ha-label>
+                      <ha-label dense>${this.knx.localize("suggestions_preview")}</ha-label>
                     </h1>
                     <div class="card-content">
                       ${this.knx.localize("suggestions_type_selection_description")}

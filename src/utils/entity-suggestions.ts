@@ -1,4 +1,17 @@
+import { compare, validate } from "compare-versions";
+
 import type { EntitySuggestionsResult, SuggestionProviderHints } from "../types/websocket";
+
+// project data of older xknxproject versions lacks information suggestions are
+// derived from (eg. the group object tree) or has it wrong (object numbers of sub-modules)
+export const SUGGESTIONS_MIN_XKNXPROJECT_VERSION = "3.11.1";
+
+/** Whether suggestions may get better by importing the project file again. */
+export const projectReimportSuggested = (parserVersion: string | undefined): boolean => {
+  // a version that can't be compared is not a released one - nothing to tell about it
+  if (parserVersion && !validate(parserVersion)) return false;
+  return compare(parserVersion || "0.0.0", SUGGESTIONS_MIN_XKNXPROJECT_VERSION, "<");
+};
 
 export interface SuggestionProviderInfo {
   id: string;

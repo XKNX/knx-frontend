@@ -30,7 +30,11 @@ import {
 } from "../data/knx-entities-by-group-context";
 import type { LocalKnxKey } from "../localize/localize";
 import { getPlatformStyle } from "../utils/common";
-import { suggestionProviders, type SuggestionProviderInfo } from "../utils/entity-suggestions";
+import {
+  projectReimportSuggested,
+  suggestionProviders,
+  type SuggestionProviderInfo,
+} from "../utils/entity-suggestions";
 import { KNXLogger } from "../tools/knx-logger";
 import type { KNX } from "../types/knx";
 import type { EntitySuggestion, EntitySuggestionsResult } from "../types/websocket";
@@ -114,7 +118,7 @@ export class KNXEntitiesSuggestions extends LitElement {
       <hass-subpage .hass=${this.hass} .narrow=${this.narrow!} .backPath=${this.backPath}>
         <span slot="header" class="header">
           ${this.knx.localize("suggestions_title")}
-          <ha-label dense class="beta">${this.knx.localize("suggestions_beta")}</ha-label>
+          <ha-label dense class="preview">${this.knx.localize("suggestions_preview")}</ha-label>
         </span>
         <div class="content">
           ${this._suggestionsTask.render({
@@ -145,7 +149,23 @@ export class KNXEntitiesSuggestions extends LitElement {
         this._renderInfoViewButton(),
       );
     }
-    return html`${this._renderProviders(providers)}${this._renderSuggestions()}`;
+    return html`
+      ${this._renderReimportNote()}${this._renderProviders(providers)}${this._renderSuggestions()}
+    `;
+  }
+
+  /** Newer parser versions export more of what suggestions are derived from. */
+  private _renderReimportNote(): TemplateResult | typeof nothing {
+    const version = this.knx.projectInfo?.xknxproject_version;
+    if (!projectReimportSuggested(version)) return nothing;
+    return html`
+      <ha-alert alert-type="info">
+        ${this.knx.localize("suggestions_reimport_project", { version: version ?? "?" })}
+        <ha-button slot="action" appearance="plain" @click=${this._navigateInfo}>
+          ${this.knx.localize("suggestions_open_info_view")}
+        </ha-button>
+      </ha-alert>
+    `;
   }
 
   /** Every source of suggestions - what it does and what it has to offer. */
@@ -162,7 +182,6 @@ export class KNXEntitiesSuggestions extends LitElement {
   private _renderProvider(provider: SuggestionProviderInfo, filterable: boolean): TemplateResult {
     const texts = PROVIDER_TEXTS[provider.id];
     const name = texts ? this.knx.localize(texts.name) : provider.id;
-    // re-importing the project is worth it even if other suggestions are available
     const outdatedParser = provider.hints?.state === "outdated_parser";
     return html`
       <div class="row provider">
@@ -176,7 +195,6 @@ export class KNXEntitiesSuggestions extends LitElement {
           <div class="row-secondary provider-status ${outdatedParser ? "existing" : ""}">
             ${this._providerStatus(provider)}
           </div>
-          ${outdatedParser ? this._renderInfoViewButton() : nothing}
         </div>
         ${
           filterable && provider.count
@@ -558,7 +576,7 @@ export class KNXEntitiesSuggestions extends LitElement {
       gap: 8px;
     }
 
-    ha-label.beta {
+    ha-label.preview {
       --ha-label-background-color: var(--primary-color);
       --ha-label-background-opacity: 0.2;
       text-transform: uppercase;
@@ -577,8 +595,12 @@ export class KNXEntitiesSuggestions extends LitElement {
       font-weight: var(--ha-font-weight-medium, 500);
     }
 
-    .provider ha-button {
-      margin-top: 8px;
+    .content > ha-alert {
+      margin: 0 0 16px;
+
+      & ha-button {
+        white-space: nowrap;
+      }
     }
 
     .device-card .card-header {

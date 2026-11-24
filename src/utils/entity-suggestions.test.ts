@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { EntitySuggestion, EntitySuggestionsResult } from "../types/websocket";
-import { suggestionProviders } from "./entity-suggestions";
+import { projectReimportSuggested, suggestionProviders } from "./entity-suggestions";
 
 const suggestion = (id: string, source: string): EntitySuggestion => ({
   id,
@@ -14,6 +14,23 @@ const suggestion = (id: string, source: string): EntitySuggestion => ({
   suggestions: {} as EntitySuggestion["suggestions"],
   existing_entity_ids: [],
   metadata: {},
+});
+
+describe("projectReimportSuggested", () => {
+  it.each([
+    ["3.8.2", true],
+    ["3.10.0", true],
+    ["3.11.0", true],
+    ["3.11.1", false],
+    ["3.12.0", false],
+    ["4.0.0", false],
+    // project data that doesn't tell its parser version is older than any known
+    [undefined, true],
+    ["", true],
+    ["unknown", false],
+  ])("for parser version %s is %s", (version, expected) => {
+    expect(projectReimportSuggested(version)).toBe(expected);
+  });
 });
 
 describe("suggestionProviders", () => {
