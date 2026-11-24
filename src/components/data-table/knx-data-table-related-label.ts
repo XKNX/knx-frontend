@@ -256,6 +256,7 @@ class KnxDataTableRelatedLabel extends LitElement {
     }
 
     .open-menu {
+      cursor: pointer;
       --ha-label-background-color: transparent;
       border: 1px solid var(--divider-color);
     }
