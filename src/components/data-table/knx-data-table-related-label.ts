@@ -169,12 +169,13 @@ class KnxDataTableRelatedLabel extends LitElement {
   }
 
   private _renderExposeItem(expose: RelatedExpose): TemplateResult {
-    const exposeTitle = this.localize("component.knx.config_panel.expose.title");
     const label = html`
       <ha-label
         dense
         class=${classMap({ "expose-label": true, "text-ellipsis": true, yaml: !expose.ui })}
-        .description=${expose.ui ? exposeTitle : `YAML ${exposeTitle}`}
+        .description=${
+          expose.ui ? this.localize("component.knx.config_panel.expose.title") : "YAML expose" // not translated - `expose` is the YAML key
+        }
       >
         <ha-svg-icon slot="icon" .path=${exposeTab.iconPath}></ha-svg-icon>
         ${expose.entity_id}

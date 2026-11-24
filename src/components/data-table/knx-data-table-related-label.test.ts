@@ -45,7 +45,7 @@ describe("knx-data-table-related-label", () => {
 
     expect(root.querySelector("a")).toBeNull();
     expect(label.classList.contains("yaml")).toBe(true);
-    expect(label.description).toContain("YAML");
+    expect(label.description).toBe("YAML expose");
   });
 
   it("shows the UI and the YAML expose of one entity separately", async () => {
