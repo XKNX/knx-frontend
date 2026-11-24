@@ -14,6 +14,7 @@ import { GroupAddressSelector } from "./knx-group-address-selector";
 // undefined so they stay plain elements.
 vi.mock("@ha/components/ha-icon-button", () => ({}));
 vi.mock("@ha/components/input/ha-input", () => ({}));
+vi.mock("./data-table/knx-data-table-related-label", () => ({}));
 
 const dptMeta = (main: number, sub: number, dpt_class: string): DPTMetadata =>
   ({ main, sub, dpt_class, payload_length: 1 }) as unknown as DPTMetadata;
@@ -37,8 +38,7 @@ const PROJECT = {
 
 const DPT_CLASSES = ["numeric", "enum", "string", "complex"];
 
-// Returns the key; the calls show the values a string was localized with.
-const localize = vi.fn((key: string, _values?: Record<string, unknown>) => key);
+const localize = (key: string) => key;
 
 // The selector and its children consume HA's localize context.
 const createHost = () => {
@@ -94,7 +94,6 @@ const pickDpt = (selector: Selector, dpt: string) =>
   change(selector, child(selector, "knx-dpt-dialog-selector"), dpt);
 
 afterEach(() => {
-  localize.mockClear();
   document.body.innerHTML = "";
 });
 
@@ -168,36 +167,23 @@ describe("knx-group-address-selector", () => {
     const relatedEntity = (entity_id: string) => ({ entity_id, ui: true, disabled: false });
     const usage: GroupAddressUsageMap = {
       [LIGHT.address]: { entities: [relatedEntity("light.kitchen")], exposes: ["sensor.outdoor"] },
-      [DIMMER.address]: {
-        entities: ["a", "b", "c", "d", "e"].map((name) => relatedEntity(`light.${name}`)),
-        exposes: [],
-      },
     };
-    const infoMessage = (selector: Selector) =>
-      (child(selector, "knx-single-address-selector") as any).infoMessage;
-    const alsoUsedByValues = () =>
-      localize.mock.calls.find(([key]) => key.endsWith(".also_used_by"))?.[1];
+    const relatedLabel = (selector: Selector) =>
+      child(selector, "knx-single-address-selector knx-data-table-related-label") as any;
 
-    it("hints at the other entities and exposes", async () => {
+    it("lists the other entities and exposes below the address", async () => {
       const selector = await createSelector({ write: LIGHT.address }, {}, usage);
 
-      expect(infoMessage(selector)).toContain("knx_group_address.also_used_by");
-      expect(alsoUsedByValues()).toEqual({
-        entities: "light.kitchen, sensor.outdoor (component.knx.config_panel.expose.title)",
-      });
-    });
-
-    it("sums up long lists", async () => {
-      await createSelector({ write: DIMMER.address }, {}, usage);
-
-      expect(alsoUsedByValues()).toEqual({
-        entities: "light.a, light.b, light.c +2",
-      });
+      expect(relatedLabel(selector).entities).toEqual(usage[LIGHT.address].entities);
+      expect(relatedLabel(selector).exposes).toEqual(["sensor.outdoor"]);
+      expect(child(selector, ".also-used-by span").textContent).toContain(
+        "knx_group_address.also_used_by",
+      );
     });
 
     it("shows no hint for an unused address or without usage data", async () => {
-      expect(infoMessage(await createSelector({ write: "7/7/7" }, {}, usage))).toBeUndefined();
-      expect(infoMessage(await createSelector({ write: LIGHT.address }))).toBeUndefined();
+      expect(relatedLabel(await createSelector({ write: "7/7/7" }, {}, usage))).toBeNull();
+      expect(relatedLabel(await createSelector({ write: LIGHT.address }))).toBeNull();
     });
   });
 });

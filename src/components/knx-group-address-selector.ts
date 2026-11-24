@@ -1,4 +1,4 @@
-import { mdiAlertCircleOutline, mdiClose } from "@mdi/js";
+import { mdiAlertCircleOutline, mdiClose, mdiInformationOutline } from "@mdi/js";
 import type { TemplateResult, PropertyValues, HTMLTemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { consume } from "@lit/context";
@@ -7,11 +7,14 @@ import { classMap } from "lit/directives/class-map";
 import memoize from "memoize-one";
 
 import "@ha/components/ha-icon-button";
+import "@ha/components/ha-svg-icon";
+import type { HomeAssistant } from "@ha/types";
 import { fireEvent } from "@ha/common/dom/fire_event";
 
 import "./knx-dpt-option-selector";
 import "./knx-dpt-dialog-selector";
 import "./knx-single-address-selector";
+import "./data-table/knx-data-table-related-label";
 import type { DragDropContext } from "../utils/drag-drop-context";
 import { dragDropContext } from "../utils/drag-drop-context";
 import { isValidDPT, dptToString, stringToDpt } from "../utils/dpt";
@@ -26,9 +29,6 @@ import type { DPT, GroupAddress, KNXProject } from "../types/websocket";
 import { consumeKnxLocalize } from "../localize/consume-knx-localize";
 import type { KnxLocalizeFunc } from "../localize/localize";
 
-/** More users of a group address are summed up as "+n". */
-const MAX_ALSO_USED_BY_NAMES = 3;
-
 @customElement("knx-group-address-selector")
 export class GroupAddressSelector extends LitElement {
   @consume({ context: dragDropContext, subscribe: true }) _dragDropContext?: DragDropContext;
@@ -41,6 +41,9 @@ export class GroupAddressSelector extends LitElement {
   @state()
   @consume({ context: groupAddressUsageContext, subscribe: true })
   private _groupAddressUsage?: GroupAddressUsageMap;
+
+  // optional - for the state icons of entities also using a group address
+  @property({ attribute: false }) public hass?: HomeAssistant;
 
   @property({ attribute: false }) public knx!: KNX;
 
@@ -217,11 +220,11 @@ export class GroupAddressSelector extends LitElement {
                       ? this._dptMismatchMessage(this.config.write)
                       : undefined
                   }
-                  .infoMessage=${this._alsoUsedByMessage(this.config.write)}
                   @value-changed=${this._valueChanged}
                   @dragover=${this._dragOverHandler}
                   @drop=${this._dropHandler}
-                ></knx-single-address-selector>`
+                  >${this._renderAlsoUsedBy(this.config.write)}</knx-single-address-selector
+                >`
               : nothing
           }
           ${
@@ -243,11 +246,11 @@ export class GroupAddressSelector extends LitElement {
                       ? this._dptMismatchMessage(this.config.state)
                       : undefined
                   }
-                  .infoMessage=${this._alsoUsedByMessage(this.config.state)}
                   @value-changed=${this._valueChanged}
                   @dragover=${this._dragOverHandler}
                   @drop=${this._dropHandler}
-                ></knx-single-address-selector>`
+                  >${this._renderAlsoUsedBy(this.config.state)}</knx-single-address-selector
+                >`
               : nothing
           }
         </div>
@@ -277,11 +280,11 @@ export class GroupAddressSelector extends LitElement {
                     .hintMessage=${
                       this._isGaDptMismatch(ga) ? this._dptMismatchMessage(ga) : undefined
                     }
-                    .infoMessage=${this._alsoUsedByMessage(ga)}
                     @value-changed=${this._valueChangedPassive}
                     @dragover=${this._dragOverHandler}
                     @drop=${this._dropHandler}
-                  ></knx-single-address-selector>
+                    >${this._renderAlsoUsedBy(ga)}</knx-single-address-selector
+                  >
                   <ha-icon-button
                     class="remove-passive"
                     .path=${mdiClose}
@@ -475,21 +478,18 @@ export class GroupAddressSelector extends LitElement {
   }
 
   /** Hint that other entities or exposes already use this group address. */
-  private _alsoUsedByMessage(ga?: string | null): string | undefined {
+  private _renderAlsoUsedBy(ga?: string | null): TemplateResult | typeof nothing {
     const usage = ga ? this._groupAddressUsage?.[ga] : undefined;
-    if (!usage) return undefined;
-    const names = [
-      ...usage.entities.map((entity) => entity.entity_id),
-      ...usage.exposes.map(
-        (entityId) => `${entityId} (${this.localize("component.knx.config_panel.expose.title")})`,
-      ),
-    ];
-    if (!names.length) return undefined;
-    const shown = names.slice(0, MAX_ALSO_USED_BY_NAMES).join(", ");
-    const more = names.length - MAX_ALSO_USED_BY_NAMES;
-    return this._baseTranslation("also_used_by", {
-      entities: more > 0 ? `${shown} +${more}` : shown,
-    });
+    if (!usage || !(usage.entities.length || usage.exposes.length)) return nothing;
+    return html`<div class="also-used-by">
+      <ha-svg-icon .path=${mdiInformationOutline}></ha-svg-icon>
+      <span>${this._baseTranslation("also_used_by")}</span>
+      <knx-data-table-related-label
+        .hass=${this.hass}
+        .entities=${usage.entities}
+        .exposes=${usage.exposes}
+      ></knx-data-table-related-label>
+    </div>`;
   }
 
   private _addPassiveSelector = (ev?: Event) => {
@@ -734,6 +734,32 @@ export class GroupAddressSelector extends LitElement {
       transition:
         box-shadow 250ms,
         opacity 250ms;
+    }
+
+    .also-used-by {
+      display: flex;
+      align-items: flex-start;
+      gap: 4px;
+      margin-top: 4px;
+      padding-left: 16px;
+      font-size: 0.75rem;
+      line-height: 24px; /* height of a dense ha-label */
+      color: var(--secondary-text-color);
+    }
+
+    .also-used-by ha-svg-icon {
+      flex: none;
+      margin-top: 4px;
+      --mdc-icon-size: 16px;
+    }
+
+    .also-used-by span {
+      flex: none;
+      margin-right: 4px;
+    }
+
+    .also-used-by knx-data-table-related-label {
+      min-width: 0;
     }
 
     .valid-drop-zone {

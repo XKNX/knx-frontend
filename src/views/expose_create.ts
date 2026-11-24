@@ -689,6 +689,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
           }
           <knx-group-address-selector
             data-idx=${idx}
+            .hass=${this.hass}
             .knx=${this.knx}
             .key=${"ga"}
             .options=${GA_SELECTOR_OPTIONS}

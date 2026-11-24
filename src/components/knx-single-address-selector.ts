@@ -1,4 +1,4 @@
-import { mdiInformationOutline, mdiTextSearchVariant } from "@mdi/js";
+import { mdiTextSearchVariant } from "@mdi/js";
 
 import type { TemplateResult, HTMLTemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
@@ -6,7 +6,6 @@ import { consume } from "@lit/context";
 import { customElement, property, state } from "lit/decorators";
 
 import "@ha/components/ha-icon-button";
-import "@ha/components/ha-svg-icon";
 import "@ha/components/input/ha-input";
 import { fireEvent } from "@ha/common/dom/fire_event";
 import type { HaInput } from "@ha/components/input/ha-input";
@@ -30,9 +29,6 @@ export class KnxSingleAddressSelector extends LitElement {
 
   // Optional non-blocking hint (e.g., DPT mismatch)
   @property({ attribute: false }) public hintMessage?: string;
-
-  // Optional neutral note (e.g., group address also used elsewhere)
-  @property({ attribute: false }) public infoMessage?: string;
 
   @property({ type: String }) public value?: string;
 
@@ -134,14 +130,7 @@ export class KnxSingleAddressSelector extends LitElement {
       </div>
       ${this.hintMessage ? html`<p class="hint-message">${this.hintMessage}</p>` : nothing}
       ${this.invalidMessage ? html`<p class="invalid-message">${this.invalidMessage}</p>` : nothing}
-      ${
-        this.infoMessage
-          ? html`<p class="info-message">
-              <ha-svg-icon .path=${mdiInformationOutline}></ha-svg-icon>
-              <span>${this.infoMessage}</span>
-            </p>`
-          : nothing
-      }
+      <slot></slot>
     `;
   }
 
@@ -241,8 +230,7 @@ export class KnxSingleAddressSelector extends LitElement {
     }
 
     .invalid-message,
-    .hint-message,
-    .info-message {
+    .hint-message {
       font-size: 0.75rem;
       color: var(--error-color);
       padding-left: 16px;
@@ -251,19 +239,6 @@ export class KnxSingleAddressSelector extends LitElement {
 
     .hint-message {
       color: var(--warning-color);
-    }
-
-    .info-message {
-      display: flex;
-      align-items: flex-start;
-      gap: 4px;
-      color: var(--secondary-text-color);
-      overflow-wrap: anywhere;
-    }
-
-    .info-message ha-svg-icon {
-      flex: none;
-      --mdc-icon-size: 16px;
     }
   `;
 }
