@@ -83,7 +83,7 @@ export interface EntitySuggestion {
   // provider id this suggestion originates from - a key of `EntitySuggestionProviderHints`
   source: string;
   suggested_name: string;
-  // group suggestions are rendered in, eg. a device
+  // group suggestions are rendered in, eg. a device - unique within its `source`
   group_id: string;
   group_name: string;
   // additional info for the suggestion, eg. a channel name
@@ -108,6 +108,13 @@ export interface FunctionalBlockProviderHints extends SuggestionProviderHints {
   functional_blocks_found?: string[];
 }
 
+export interface FunctionProviderHints extends SuggestionProviderHints {
+  state: "ok" | "no_project" | "outdated_parser" | "no_functions";
+  parser_version?: string;
+  // ids of function types, eg. "FT-6"
+  function_types_found?: string[];
+}
+
 export interface ExistingConfigProviderHints extends SuggestionProviderHints {
   state: "ok" | "no_project" | "no_ui_entities";
 }
@@ -115,6 +122,9 @@ export interface ExistingConfigProviderHints extends SuggestionProviderHints {
 export interface EntitySuggestionProviderHints {
   // suggestions from functional block semantics of the project
   fb?: FunctionalBlockProviderHints;
+  // suggestions from the building functions of the project - grouped by their space;
+  // added by https://github.com/home-assistant/core/pull/192342
+  fn?: FunctionProviderHints;
   // suggestions for channels wired like an existing entity;
   // `metadata.template_entity_id` of its suggestions is that entity
   cfg?: ExistingConfigProviderHints;
