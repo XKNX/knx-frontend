@@ -10,7 +10,7 @@
   "error_message": "Error message",
   "error_report": "Report a problem",
   "suggestions_title": "Entity suggestions",
-  "suggestions_preview": "Preview feature",
+  "suggestions_beta": "Beta",
   "suggestions_type_selection_description": "Automatically create entities from your imported ETS project - from its functional block information, or for channels wired like entities you already set up.",
   "suggestions_show": "Show suggestions",
   "suggestions_no_project": "No ETS project data available. Import your ETS project file to get entity suggestions.",

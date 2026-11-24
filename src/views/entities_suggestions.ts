@@ -120,7 +120,7 @@ export class KNXEntitiesSuggestions extends LitElement {
       <hass-subpage .hass=${this.hass} .narrow=${this.narrow!} .backPath=${this.backPath}>
         <span slot="header" class="header">
           ${this.knx.localize("suggestions_title")}
-          <ha-label dense class="preview">${this.knx.localize("suggestions_preview")}</ha-label>
+          <ha-label dense class="beta">${this.knx.localize("suggestions_beta")}</ha-label>
         </span>
         <div class="content">
           ${this._suggestionsTask.render({
@@ -579,7 +579,7 @@ export class KNXEntitiesSuggestions extends LitElement {
       gap: 8px;
     }
 
-    ha-label.preview {
+    ha-label.beta {
       --ha-label-background-color: var(--primary-color);
       --ha-label-background-opacity: 0.2;
       text-transform: uppercase;
