@@ -4,6 +4,7 @@ import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { consume } from "@lit/context";
 import { Task } from "@lit/task";
+import { repeat } from "lit/directives/repeat";
 
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-subpage";
@@ -21,6 +22,7 @@ import "@ha/components/input/ha-input";
 import { navigate } from "@ha/common/navigate";
 import type { HomeAssistant, Route } from "@ha/types";
 
+import "../components/knx-sticky-expansion-panel";
 import { createEntity, getEntitySuggestions, validateEntity } from "services/websocket.service";
 import type { EntityData, SupportedPlatform } from "types/entity_data";
 
@@ -322,7 +324,12 @@ export class KNXEntitiesSuggestions extends LitElement {
             ${this.knx.localize("suggestions_provider_count", { count })}
           </span>
         </h2>
-        ${provider.groups.map((group) => this._renderGroup(group))}
+        ${repeat(
+          provider.groups,
+          // the panel owns its expansion - the key keeps it with its group
+          (group) => group.groupId,
+          (group) => this._renderGroup(group),
+        )}
       </section>
     `;
   }
@@ -341,8 +348,8 @@ export class KNXEntitiesSuggestions extends LitElement {
     // a group without a name still needs a title - eg. a function of no room
     const title = providerGroups ? groupName || groupId : `${groupId} ${groupName}`;
     return html`
-      <ha-card outlined class="device-card">
-        <div class="card-header">
+      <knx-sticky-expansion-panel expanded class="group">
+        <div slot="header" class="group-header">
           ${
             groupSuggestions.length > 1
               ? html`<ha-checkbox
@@ -354,13 +361,18 @@ export class KNXEntitiesSuggestions extends LitElement {
                   title=${selectAllLabel}
                   aria-label=${selectAllLabel}
                   @change=${this._groupSelectedChanged}
+                  @click=${this._stopPropagation}
+                  @keydown=${this._stopPropagation}
                 ></ha-checkbox>`
               : nothing
           }
-          <span>${title}</span>
+          <span class="group-title">${title}</span>
+          <span class="group-count">
+            ${this.knx.localize("suggestions_provider_count", { count: groupSuggestions.length })}
+          </span>
         </div>
-        ${groupSuggestions.map((suggestion) => this._renderRow(suggestion))}
-      </ha-card>
+        <div class="rows">${groupSuggestions.map((suggestion) => this._renderRow(suggestion))}</div>
+      </knx-sticky-expansion-panel>
     `;
   }
 
@@ -496,6 +508,11 @@ export class KNXEntitiesSuggestions extends LitElement {
       (suggestion) => suggestion.id === suggestionId,
     );
   }
+
+  /** Using a control in a group header doesn't expand or collapse the group. */
+  private _stopPropagation = (ev: Event) => {
+    ev.stopPropagation();
+  };
 
   private _rowSelectedChanged = (ev: Event) => {
     const suggestion = this._suggestionOfEvent(ev);
@@ -689,10 +706,38 @@ export class KNXEntitiesSuggestions extends LitElement {
       }
     }
 
-    .device-card .card-header {
+    knx-sticky-expansion-panel.group {
+      margin-bottom: 8px;
+      --sticky-expansion-panel-header-padding: 4px 16px 4px 8px;
+      --sticky-expansion-panel-content-padding: 0;
+    }
+
+    .group-header {
       display: flex;
+      flex: 1;
       align-items: center;
       gap: 8px;
+      min-width: 0;
+    }
+
+    .group-title {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: var(--ha-font-size-l, 16px);
+    }
+
+    .group-count {
+      color: var(--secondary-text-color);
+      font-size: var(--ha-font-size-s, 12px);
+      white-space: nowrap;
+    }
+
+    /* the header of the group draws the divider above its first row */
+    .rows > .row:first-child {
+      border-top: none;
     }
 
     .info-card .card-content {
