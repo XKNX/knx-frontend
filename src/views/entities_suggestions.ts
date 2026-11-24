@@ -35,6 +35,9 @@ import { exitFlow } from "../utils/navigation";
 import {
   projectReimportSuggested,
   suggestionProviders,
+  suggestionsByProvider,
+  type ProviderSuggestions,
+  type SuggestionGroup,
   type SuggestionProviderInfo,
 } from "../utils/entity-suggestions";
 import { KNXLogger } from "../tools/knx-logger";
@@ -49,10 +52,21 @@ const PROVIDER_TEXTS: Record<string, { name: LocalKnxKey; description: LocalKnxK
     name: "suggestions_provider_fb_name",
     description: "suggestions_provider_fb_description",
   },
+  // added by https://github.com/home-assistant/core/pull/192342 - backends without it don't report it
+  fn: {
+    name: "suggestions_provider_fn_name",
+    description: "suggestions_provider_fn_description",
+  },
   cfg: {
     name: "suggestions_provider_cfg_name",
     description: "suggestions_provider_cfg_description",
   },
+};
+
+// providers grouping by something else than a device: its id is no individual
+// address but an internal identifier (`fn`: the space of a function) - not shown
+const PROVIDER_GROUPS: Record<string, { selectAll: LocalKnxKey }> = {
+  fn: { selectAll: "suggestions_select_all_space" },
 };
 
 interface RowState {
@@ -189,7 +203,7 @@ export class KNXEntitiesSuggestions extends LitElement {
 
   private _renderProvider(provider: SuggestionProviderInfo, filterable: boolean): TemplateResult {
     const texts = PROVIDER_TEXTS[provider.id];
-    const name = texts ? this.knx.localize(texts.name) : provider.id;
+    const name = this._providerName(provider.id);
     const outdatedParser = provider.hints?.state === "outdated_parser";
     return html`
       <div class="row provider">
@@ -220,6 +234,11 @@ export class KNXEntitiesSuggestions extends LitElement {
     `;
   }
 
+  private _providerName(providerId: string): string {
+    const texts = PROVIDER_TEXTS[providerId];
+    return texts ? this.knx.localize(texts.name) : providerId;
+  }
+
   /** How many suggestions a provider has - or why it has none. */
   private _providerStatus(provider: SuggestionProviderInfo): string {
     if (provider.count) {
@@ -238,6 +257,18 @@ export class KNXEntitiesSuggestions extends LitElement {
           return this.knx.localize("suggestions_no_supported_blocks", {
             functional_blocks: ((hints.functional_blocks_found as string[]) ?? []).join(", "),
           });
+      }
+    }
+    if (provider.id === "fn") {
+      switch (hints?.state) {
+        case "outdated_parser":
+          return this.knx.localize("suggestions_outdated_parser", {
+            version: `${hints.parser_version}`,
+          });
+        case "no_functions":
+          return this.knx.localize("suggestions_no_functions");
+        case "ok":
+          return this.knx.localize("suggestions_no_supported_functions");
       }
     }
     if (provider.id === "cfg") {
@@ -260,19 +291,13 @@ export class KNXEntitiesSuggestions extends LitElement {
   private _renderSuggestions(): TemplateResult | typeof nothing {
     if (!this._suggestionsTask.value?.suggestions.length) return nothing;
     const suggestions = this._visibleSuggestions();
-    const groups = new Map<string, EntitySuggestion[]>();
-    suggestions.forEach((suggestion) => {
-      const groupSuggestions = groups.get(suggestion.group_id) ?? [];
-      groupSuggestions.push(suggestion);
-      groups.set(suggestion.group_id, groupSuggestions);
-    });
     const selectedCount = suggestions.filter(
       (suggestion) =>
         this._rowState(suggestion).selected && this._rowState(suggestion).status !== "created",
     ).length;
 
     return html`
-      ${[...groups.values()].map((groupSuggestions) => this._renderGroup(groupSuggestions))}
+      ${suggestionsByProvider(suggestions).map((provider) => this._renderProviderSuggestions(provider))}
       <div class="footer">
         <ha-button
           size="l"
@@ -286,8 +311,25 @@ export class KNXEntitiesSuggestions extends LitElement {
     `;
   }
 
-  private _renderGroup(groupSuggestions: EntitySuggestion[]): TemplateResult {
-    const { group_id: groupId, group_name: groupName } = groupSuggestions[0];
+  /** The suggestions of one source - a group of one source never mixes with another's. */
+  private _renderProviderSuggestions(provider: ProviderSuggestions): TemplateResult {
+    const count = provider.groups.reduce((sum, group) => sum + group.suggestions.length, 0);
+    return html`
+      <section class="provider-section" data-provider-id=${provider.providerId}>
+        <h2 class="provider-heading">
+          <span>${this._providerName(provider.providerId)}</span>
+          <span class="provider-count">
+            ${this.knx.localize("suggestions_provider_count", { count })}
+          </span>
+        </h2>
+        ${provider.groups.map((group) => this._renderGroup(group))}
+      </section>
+    `;
+  }
+
+  private _renderGroup(group: SuggestionGroup): TemplateResult {
+    const { providerId, groupId, groupName, suggestions: groupSuggestions } = group;
+    const providerGroups = PROVIDER_GROUPS[providerId];
     // created suggestions are done - there is nothing left to select
     const selectable = groupSuggestions.filter(
       (suggestion) => this._rowState(suggestion).status !== "created",
@@ -295,13 +337,16 @@ export class KNXEntitiesSuggestions extends LitElement {
     const selectedCount = selectable.filter(
       (suggestion) => this._rowState(suggestion).selected,
     ).length;
-    const selectAllLabel = this.knx.localize("suggestions_select_all");
+    const selectAllLabel = this.knx.localize(providerGroups?.selectAll ?? "suggestions_select_all");
+    // a group without a name still needs a title - eg. a function of no room
+    const title = providerGroups ? groupName || groupId : `${groupId} ${groupName}`;
     return html`
       <ha-card outlined class="device-card">
         <div class="card-header">
           ${
             groupSuggestions.length > 1
               ? html`<ha-checkbox
+                  data-provider-id=${providerId}
                   data-group-id=${groupId}
                   .checked=${selectable.length > 0 && selectedCount === selectable.length}
                   .indeterminate=${selectedCount > 0 && selectedCount < selectable.length}
@@ -312,7 +357,7 @@ export class KNXEntitiesSuggestions extends LitElement {
                 ></ha-checkbox>`
               : nothing
           }
-          <span>${groupId} ${groupName}</span>
+          <span>${title}</span>
         </div>
         ${groupSuggestions.map((suggestion) => this._renderRow(suggestion))}
       </ha-card>
@@ -459,12 +504,18 @@ export class KNXEntitiesSuggestions extends LitElement {
   };
 
   private _groupSelectedChanged = (ev: Event) => {
-    const groupId = (ev.currentTarget as HTMLElement).getAttribute("data-group-id");
+    const target = ev.currentTarget as HTMLElement;
+    const providerId = target.getAttribute("data-provider-id");
+    const groupId = target.getAttribute("data-group-id");
     const selected = (ev.target as HTMLInputElement).checked;
     const rowStates = { ...this._rowStates };
     this._visibleSuggestions().forEach((suggestion) => {
       const rowState = this._rowState(suggestion);
-      if (suggestion.group_id === groupId && rowState.status !== "created") {
+      if (
+        suggestion.source === providerId &&
+        suggestion.group_id === groupId &&
+        rowState.status !== "created"
+      ) {
         rowStates[suggestion.id] = { ...rowState, selected };
       }
     });
@@ -607,6 +658,27 @@ export class KNXEntitiesSuggestions extends LitElement {
 
     .provider-name {
       font-weight: var(--ha-font-weight-medium, 500);
+    }
+
+    .provider-section {
+      margin-top: 24px;
+    }
+
+    .provider-heading {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 4px 12px;
+      margin: 0 0 8px;
+      padding: 0 16px;
+      font-size: var(--ha-font-size-l, 16px);
+      font-weight: var(--ha-font-weight-medium, 500);
+    }
+
+    .provider-count {
+      color: var(--secondary-text-color);
+      font-size: var(--ha-font-size-s, 12px);
+      font-weight: var(--ha-font-weight-normal, 400);
     }
 
     .content > ha-alert {

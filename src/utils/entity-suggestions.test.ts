@@ -1,14 +1,23 @@
 import { describe, expect, it } from "vitest";
 
 import type { EntitySuggestion, EntitySuggestionsResult } from "../types/websocket";
-import { projectReimportSuggested, suggestionProviders } from "./entity-suggestions";
+import {
+  projectReimportSuggested,
+  suggestionProviders,
+  suggestionsByProvider,
+} from "./entity-suggestions";
 
-const suggestion = (id: string, source: string): EntitySuggestion => ({
+const suggestion = (
+  id: string,
+  source: string,
+  groupId = "1.1.1",
+  groupName = "Device",
+): EntitySuggestion => ({
   id,
   source,
   suggested_name: id,
-  group_id: "1.1.1",
-  group_name: "Device",
+  group_id: groupId,
+  group_name: groupName,
   secondary_info: "",
   platform_options: ["switch"],
   suggestions: {} as EntitySuggestion["suggestions"],
@@ -62,5 +71,45 @@ describe("suggestionProviders", () => {
       providers: {},
     };
     expect(suggestionProviders(result)).toEqual([{ id: "other", count: 1 }]);
+  });
+});
+
+describe("suggestionsByProvider", () => {
+  it("groups by provider first, then by group, keeping the backend order", () => {
+    const fb1 = suggestion("fb_1", "fb", "1.1.2", "Actuator");
+    const fb2 = suggestion("fb_2", "fb", "1.1.1", "Dimmer");
+    const fb3 = suggestion("fb_3", "fb", "1.1.2", "Actuator");
+    const fn1 = suggestion("fn_1", "fn", "P-2", "Kitchen");
+    const fn2 = suggestion("fn_2", "fn", "P-3", "Living room");
+    const fn3 = suggestion("fn_3", "fn", "P-2", "Kitchen");
+    expect(suggestionsByProvider([fb1, fb2, fb3, fn1, fn2, fn3])).toEqual([
+      {
+        providerId: "fb",
+        groups: [
+          { providerId: "fb", groupId: "1.1.2", groupName: "Actuator", suggestions: [fb1, fb3] },
+          { providerId: "fb", groupId: "1.1.1", groupName: "Dimmer", suggestions: [fb2] },
+        ],
+      },
+      {
+        providerId: "fn",
+        groups: [
+          { providerId: "fn", groupId: "P-2", groupName: "Kitchen", suggestions: [fn1, fn3] },
+          { providerId: "fn", groupId: "P-3", groupName: "Living room", suggestions: [fn2] },
+        ],
+      },
+    ]);
+  });
+
+  it("keeps a group of the same id apart for each provider", () => {
+    const fb = suggestion("fb_1", "fb");
+    const cfg = suggestion("cfg_1", "cfg");
+    expect(suggestionsByProvider([fb, cfg]).map((provider) => provider.groups)).toEqual([
+      [{ providerId: "fb", groupId: "1.1.1", groupName: "Device", suggestions: [fb] }],
+      [{ providerId: "cfg", groupId: "1.1.1", groupName: "Device", suggestions: [cfg] }],
+    ]);
+  });
+
+  it("returns nothing without suggestions", () => {
+    expect(suggestionsByProvider([])).toEqual([]);
   });
 });
