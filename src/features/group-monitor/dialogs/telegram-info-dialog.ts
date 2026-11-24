@@ -13,6 +13,7 @@ import type { HassDialog } from "@ha/dialogs/make-dialog-manager";
 import type { HomeAssistant } from "@ha/types";
 
 import "../../../components/data-table/knx-data-table-related-label";
+import { createExposesByGroupAddressMap } from "../../../data/exposes-by-group";
 import type { EntitiesByGroupContextValue } from "../../../data/knx-entities-by-group-context";
 import { entitiesByGroupContext } from "../../../data/knx-entities-by-group-context";
 import type { ExposeGroupsContextValue } from "../../../data/knx-expose-groups-context";
@@ -179,7 +180,12 @@ export class GroupMonitorTelegramInfoDialog
 
     const destAddr = telegram.destinationAddress;
     const relatedEntities = this._entitiesByGroupCtx?.groups[destAddr] ?? [];
-    const relatedExposes = this._exposeGroupsCtx?.groups[destAddr] ?? [];
+    // The context maps entity_id -> group addresses; invert it for the lookup.
+    // An expose may use the same address for several options, so de-duplicate.
+    const exposeGroups = this._exposeGroupsCtx?.groups;
+    const relatedExposes = exposeGroups
+      ? [...new Set(createExposesByGroupAddressMap(exposeGroups)[destAddr] ?? [])]
+      : [];
 
     return html`
       <ha-dialog .open=${this._open} @closed=${this.closeDialog}>

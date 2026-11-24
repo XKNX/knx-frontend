@@ -58,4 +58,74 @@ describe("GroupMonitorTelegramInfoDialog", () => {
     automationButton.dispatchEvent(new MouseEvent("click", { bubbles: true, composed: true }));
     expect(editorEvent).toBeUndefined();
   });
+
+  it("lists exposes using the telegram's destination address", async () => {
+    const telegram = new TelegramRow({
+      timestamp: "2026-09-06T12:00:00Z",
+      source: "1.1.1",
+      source_name: "Wall switch",
+      destination: "1/2/3",
+      destination_name: "Ceiling Light",
+      telegramtype: "GroupValueWrite",
+      direction: "Incoming",
+      payload: [1],
+      dpt_main: 1,
+      dpt_sub: 1,
+      dpt_name: "Switch",
+      value: "On",
+      unit: null,
+    });
+    const dialog = new GroupMonitorTelegramInfoDialog();
+    dialog.hass = { localize: vi.fn((key) => key) } as any;
+    // Backend shape: entity_id -> group addresses (duplicates possible per option)
+    (dialog as any)._exposeGroupsCtx = {
+      groups: {
+        "sensor.outdoor_temperature": ["1/2/3", "1/2/3", "4/5/6"],
+        "light.kitchen": ["7/8/9"],
+        "binary_sensor.window": ["1/2/3"],
+      },
+      loading: false,
+      error: null,
+      reload: vi.fn(),
+    };
+
+    await dialog.showDialog({
+      knx: { localize: vi.fn((key) => key) } as any,
+      telegram,
+      narrow: false,
+      filteredTelegrams: [telegram],
+    });
+    const container = document.createElement("div");
+    render((dialog as any).render(), container, { host: dialog });
+
+    const relatedLabel = container.querySelector("knx-data-table-related-label") as any;
+    expect(relatedLabel).not.toBeNull();
+    expect(relatedLabel.exposes).toEqual(["sensor.outdoor_temperature", "binary_sensor.window"]);
+    expect(relatedLabel.entities).toEqual([]);
+
+    // A telegram to an address no expose uses shows no related section
+    const other = new TelegramRow({
+      timestamp: "2026-09-06T12:00:01Z",
+      source: "1.1.1",
+      source_name: "Wall switch",
+      destination: "2/2/2",
+      destination_name: "",
+      telegramtype: "GroupValueWrite",
+      direction: "Incoming",
+      payload: [1],
+      dpt_main: 1,
+      dpt_sub: 1,
+      dpt_name: "Switch",
+      value: "On",
+      unit: null,
+    });
+    await dialog.showDialog({
+      knx: { localize: vi.fn((key) => key) } as any,
+      telegram: other,
+      narrow: false,
+      filteredTelegrams: [other],
+    });
+    render((dialog as any).render(), container, { host: dialog });
+    expect(container.querySelector("knx-data-table-related-label")).toBeNull();
+  });
 });
