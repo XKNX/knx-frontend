@@ -176,9 +176,7 @@ describe("knx-group-address-selector", () => {
 
       expect(relatedLabel(selector).entities).toEqual(usage[LIGHT.address].entities);
       expect(relatedLabel(selector).exposes).toEqual(["sensor.outdoor"]);
-      expect(child(selector, ".also-used-by span").textContent).toContain(
-        "knx_group_address.also_used_by",
-      );
+      expect(child(selector, ".used-by span").textContent).toContain("knx_group_address.used_by");
     });
 
     it("shows no hint for an unused address or without usage data", async () => {

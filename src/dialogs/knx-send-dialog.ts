@@ -15,6 +15,7 @@ import "../components/knx-group-address-selector";
 import "../components/knx-payload-selector";
 import "../components/knx-selector-row";
 import type { PayloadConfigValue } from "../components/knx-payload-selector";
+import { KnxGroupAddressUsageProvider } from "../data/knx-group-address-usage-context";
 import type { GASchema } from "../types/entity_data";
 import type { KnxReadResponse } from "../types/websocket";
 import type { KNX } from "../types/knx";
@@ -51,6 +52,12 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
 
   public hass!: HomeAssistant; // no need for @property here - save rendering cycles
 
+  constructor() {
+    super();
+    // lets the group address selector show which entities and exposes use the address
+    new KnxGroupAddressUsageProvider(this);
+  }
+
   private _backendLocalize = (key: string, replace?: Record<string, string>) => {
     const fullKey = `component.knx.config_panel.dialogs.send.${key}` as const;
     // Form descriptions are optional (some fields have none on purpose), so look them up
@@ -86,6 +93,7 @@ export class KnxSendDialog extends DialogMixin<KnxSendDialogParams>(LitElement) 
           .content=${this._backendLocalize("description")}
         ></ha-markdown>
         <knx-group-address-selector
+          .hass=${this.hass}
           .knx=${this.knx}
           .label=${this.knx.localize("component.knx.config_panel.common.group_address")}
           .key=${"ga"}

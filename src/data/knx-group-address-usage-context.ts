@@ -69,21 +69,21 @@ const contextKey = Symbol("knx-group-address-usage-context");
 export const groupAddressUsageContext = createContext<GroupAddressUsageMap>(contextKey);
 
 /**
- * Provides group address usage to the group address selectors below an editor view,
- * so they can hint at addresses already used by another entity or expose.
+ * Provides group address usage to the group address selectors below a view or dialog,
+ * so they can show the entities and exposes using an address.
  *
- * Selectors without this provider above them (eg. in the send dialog) show no hint.
+ * Selectors without this provider above them (eg. in the time server dialog) show nothing.
  */
 export class KnxGroupAddressUsageProvider {
   private _provider: ContextProvider<typeof groupAddressUsageContext>;
 
-  private _exclude: GroupAddressUsageExclude;
+  private _exclude?: GroupAddressUsageExclude;
 
   private _entitiesByGroup?: EntitiesByGroup;
 
   private _exposeGroups?: ExposeGroups;
 
-  constructor(host: ReactiveElement, exclude: GroupAddressUsageExclude) {
+  constructor(host: ReactiveElement, exclude?: GroupAddressUsageExclude) {
     this._exclude = exclude;
     this._provider = new ContextProvider(host, {
       context: groupAddressUsageContext,
@@ -111,7 +111,7 @@ export class KnxGroupAddressUsageProvider {
 
   /** Set the entity id of the entity or expose being edited. */
   public setExcludedEntityId(entityId: string | undefined): void {
-    if (entityId === this._exclude.entityId) return;
+    if (!this._exclude || entityId === this._exclude.entityId) return;
     this._exclude = { ...this._exclude, entityId };
     this._update();
   }
