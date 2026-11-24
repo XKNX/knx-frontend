@@ -299,7 +299,12 @@ export class KNXEntitiesSuggestions extends LitElement {
     ).length;
 
     return html`
-      ${suggestionsByProvider(suggestions).map((provider) => this._renderProviderSuggestions(provider))}
+      ${repeat(
+        suggestionsByProvider(suggestions),
+        // the panel owns its expansion - the key keeps it with its provider
+        (provider) => provider.providerId,
+        (provider) => this._renderProviderSuggestions(provider),
+      )}
       <div class="footer">
         <ha-button
           size="l"
@@ -317,20 +322,19 @@ export class KNXEntitiesSuggestions extends LitElement {
   private _renderProviderSuggestions(provider: ProviderSuggestions): TemplateResult {
     const count = provider.groups.reduce((sum, group) => sum + group.suggestions.length, 0);
     return html`
-      <section class="provider-section" data-provider-id=${provider.providerId}>
-        <h2 class="provider-heading">
-          <span>${this._providerName(provider.providerId)}</span>
+      <knx-sticky-expansion-panel
+        expanded
+        class="provider-panel"
+        data-provider-id=${provider.providerId}
+      >
+        <div slot="header" class="provider-heading">
+          <span class="provider-title">${this._providerName(provider.providerId)}</span>
           <span class="provider-count">
             ${this.knx.localize("suggestions_provider_count", { count })}
           </span>
-        </h2>
-        ${repeat(
-          provider.groups,
-          // the panel owns its expansion - the key keeps it with its group
-          (group) => group.groupId,
-          (group) => this._renderGroup(group),
-        )}
-      </section>
+        </div>
+        ${provider.groups.map((group) => this._renderGroup(group))}
+      </knx-sticky-expansion-panel>
     `;
   }
 
@@ -348,8 +352,8 @@ export class KNXEntitiesSuggestions extends LitElement {
     // a group without a name still needs a title - eg. a function of no room
     const title = providerGroups ? groupName || groupId : `${groupId} ${groupName}`;
     return html`
-      <knx-sticky-expansion-panel expanded class="group">
-        <div slot="header" class="group-header">
+      <ha-card outlined class="device-card">
+        <div class="card-header">
           ${
             groupSuggestions.length > 1
               ? html`<ha-checkbox
@@ -361,18 +365,13 @@ export class KNXEntitiesSuggestions extends LitElement {
                   title=${selectAllLabel}
                   aria-label=${selectAllLabel}
                   @change=${this._groupSelectedChanged}
-                  @click=${this._stopPropagation}
-                  @keydown=${this._stopPropagation}
                 ></ha-checkbox>`
               : nothing
           }
-          <span class="group-title">${title}</span>
-          <span class="group-count">
-            ${this.knx.localize("suggestions_provider_count", { count: groupSuggestions.length })}
-          </span>
+          <span>${title}</span>
         </div>
-        <div class="rows">${groupSuggestions.map((suggestion) => this._renderRow(suggestion))}</div>
-      </knx-sticky-expansion-panel>
+        ${groupSuggestions.map((suggestion) => this._renderRow(suggestion))}
+      </ha-card>
     `;
   }
 
@@ -508,11 +507,6 @@ export class KNXEntitiesSuggestions extends LitElement {
       (suggestion) => suggestion.id === suggestionId,
     );
   }
-
-  /** Using a control in a group header doesn't expand or collapse the group. */
-  private _stopPropagation = (ev: Event) => {
-    ev.stopPropagation();
-  };
 
   private _rowSelectedChanged = (ev: Event) => {
     const suggestion = this._suggestionOfEvent(ev);
@@ -677,17 +671,26 @@ export class KNXEntitiesSuggestions extends LitElement {
       font-weight: var(--ha-font-weight-medium, 500);
     }
 
-    .provider-section {
-      margin-top: 24px;
+    knx-sticky-expansion-panel.provider-panel {
+      margin-bottom: 16px;
+      --sticky-expansion-panel-header-padding: 4px 16px 4px 8px;
+      --sticky-expansion-panel-content-padding: 16px 16px 0;
     }
 
     .provider-heading {
       display: flex;
-      flex-wrap: wrap;
+      flex: 1;
       align-items: baseline;
-      gap: 4px 12px;
-      margin: 0 0 8px;
-      padding: 0 16px;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .provider-title {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       font-size: var(--ha-font-size-l, 16px);
       font-weight: var(--ha-font-weight-medium, 500);
     }
@@ -695,7 +698,7 @@ export class KNXEntitiesSuggestions extends LitElement {
     .provider-count {
       color: var(--secondary-text-color);
       font-size: var(--ha-font-size-s, 12px);
-      font-weight: var(--ha-font-weight-normal, 400);
+      white-space: nowrap;
     }
 
     .content > ha-alert {
@@ -706,38 +709,10 @@ export class KNXEntitiesSuggestions extends LitElement {
       }
     }
 
-    knx-sticky-expansion-panel.group {
-      margin-bottom: 8px;
-      --sticky-expansion-panel-header-padding: 4px 16px 4px 8px;
-      --sticky-expansion-panel-content-padding: 0;
-    }
-
-    .group-header {
+    .device-card .card-header {
       display: flex;
-      flex: 1;
       align-items: center;
       gap: 8px;
-      min-width: 0;
-    }
-
-    .group-title {
-      flex: 1;
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: var(--ha-font-size-l, 16px);
-    }
-
-    .group-count {
-      color: var(--secondary-text-color);
-      font-size: var(--ha-font-size-s, 12px);
-      white-space: nowrap;
-    }
-
-    /* the header of the group draws the divider above its first row */
-    .rows > .row:first-child {
-      border-top: none;
     }
 
     .info-card .card-content {

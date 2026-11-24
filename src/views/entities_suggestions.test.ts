@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render } from "lit";
 import type { HomeAssistant } from "@ha/types";
 import type { KnxStickyExpansionPanel } from "../components/knx-sticky-expansion-panel";
@@ -49,62 +49,63 @@ const RESULT: EntitySuggestionsResult = {
   providers: { fb: { state: "ok" }, fn: { state: "ok" }, cfg: { state: "ok" } },
 };
 
-const panelsOf = (host: ShadowRoot, providerId: string) => [
-  ...host.querySelectorAll<KnxStickyExpansionPanel>(
-    `section[data-provider-id="${providerId}"] knx-sticky-expansion-panel`,
-  ),
+const panels = (host: ShadowRoot) => [
+  ...host.querySelectorAll<KnxStickyExpansionPanel>("knx-sticky-expansion-panel"),
 ];
 
+const panelOf = (host: ShadowRoot, providerId: string) =>
+  host.querySelector<KnxStickyExpansionPanel>(
+    `knx-sticky-expansion-panel[data-provider-id="${providerId}"]`,
+  )!;
+
 describe("KNXEntitiesSuggestions", () => {
-  it("renders a section per provider with an expanded panel per group", () => {
+  it("renders an expanded panel per provider with a card per group", () => {
     const { host } = draw(RESULT);
-    expect(
-      [...host.querySelectorAll("section")].map((section) =>
-        section.getAttribute("data-provider-id"),
-      ),
-    ).toEqual(["fb", "fn", "cfg"]);
-    for (const providerId of ["fb", "fn", "cfg"]) {
-      const panels = panelsOf(host, providerId);
-      expect(panels).toHaveLength(1);
-      expect(panels[0].expanded).toBe(true);
+    expect(panels(host).map((panel) => panel.getAttribute("data-provider-id"))).toEqual([
+      "fb",
+      "fn",
+      "cfg",
+    ]);
+    for (const panel of panels(host)) {
+      expect(panel.expanded).toBe(true);
+      expect(panel.querySelectorAll("ha-card")).toHaveLength(1);
     }
-    expect(panelsOf(host, "fb")[0].querySelectorAll(".row")).toHaveLength(2);
+    expect(panelOf(host, "fb").querySelectorAll(".row")).toHaveLength(2);
   });
 
   it("titles a device group by address and name, a room by its name only", () => {
     const { host } = draw(RESULT);
     const title = (providerId: string) =>
-      panelsOf(host, providerId)[0].querySelector(".group-title")!.textContent!.trim();
+      panelOf(host, providerId).querySelector(".card-header span")!.textContent!.trim();
     expect(title("fb")).toBe("1.1.1 Actuator");
     expect(title("fn")).toBe("Kitchen");
   });
 
-  it("keeps a panel collapsed across rerenders", () => {
-    const { host, update } = draw(RESULT);
-    const panel = panelsOf(host, "fb")[0];
+  it("keeps a provider collapsed across rerenders", () => {
+    const { view, host, update } = draw(RESULT);
+    const panel = panelOf(host, "fn");
     // the panel toggles itself - the view is disconnected, so set what a click would
     panel.expanded = false;
+    // filtering out the provider listed before it rebuilds the list
+    Reflect.set(view, "_hiddenProviders", new Set(["fb"]));
     update();
-    expect(panelsOf(host, "fb")[0]).toBe(panel);
+    expect(panels(host).map((item) => item.getAttribute("data-provider-id"))).toEqual([
+      "fn",
+      "cfg",
+    ]);
+    expect(panelOf(host, "fn")).toBe(panel);
     expect(panel.expanded).toBe(false);
+    expect(panelOf(host, "cfg").expanded).toBe(true);
   });
 
-  it("selects all of a group without toggling it or touching another provider", () => {
+  it("selects all of a group without touching another provider", () => {
     const { view, host, update } = draw(RESULT);
-    const panel = panelsOf(host, "fb")[0];
-    // the header of the panel toggles on the clicks and key presses reaching it
-    const reachedPanel = vi.fn();
-    panel.addEventListener("click", reachedPanel);
-    panel.addEventListener("keydown", reachedPanel);
-    const checkbox = panel.querySelector<HTMLInputElement>(".group-header ha-checkbox")!;
+    const checkbox = panelOf(host, "fb").querySelector<HTMLInputElement>(
+      ".card-header ha-checkbox",
+    )!;
     checkbox.checked = false;
-    checkbox.dispatchEvent(new MouseEvent("click", { bubbles: true, composed: true }));
-    checkbox.dispatchEvent(
-      new KeyboardEvent("keydown", { key: " ", bubbles: true, composed: true }),
-    );
     checkbox.dispatchEvent(new Event("change", { bubbles: true }));
     update();
-    expect(reachedPanel).not.toHaveBeenCalled();
     const selected = (id: string) =>
       view["_rowState"](RESULT.suggestions.find((item) => item.id === id)!).selected;
     expect(selected("fb_1")).toBe(false);
