@@ -17,6 +17,7 @@ import type { EntitiesByGroupContextValue } from "../../../data/knx-entities-by-
 import { entitiesByGroupContext } from "../../../data/knx-entities-by-group-context";
 import type { ExposeGroupsContextValue } from "../../../data/knx-expose-groups-context";
 import { exposeGroupsContext } from "../../../data/knx-expose-groups-context";
+import { createExposesByGroupAddressMap } from "../../../data/exposes-by-group";
 import type { KNX } from "../../../types/knx";
 import {
   formatDateTimeWithMilliseconds,
@@ -179,7 +180,9 @@ export class GroupMonitorTelegramInfoDialog
 
     const destAddr = telegram.destinationAddress;
     const relatedEntities = this._entitiesByGroupCtx?.groups[destAddr] ?? [];
-    const relatedExposes = this._exposeGroupsCtx?.groups[destAddr] ?? [];
+    const relatedExposes = this._exposeGroupsCtx
+      ? (createExposesByGroupAddressMap(this._exposeGroupsCtx.groups)[destAddr] ?? [])
+      : [];
 
     return html`
       <ha-dialog .open=${this._open} @closed=${this.closeDialog}>

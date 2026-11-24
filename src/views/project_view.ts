@@ -65,7 +65,7 @@ import {
 import type { DeviceFilterOption, DeviceTreeItem } from "../utils/project-structure";
 import { createExposesByGroupAddressMap } from "../data/exposes-by-group";
 import { exposeGroupsContext } from "../data/knx-expose-groups-context";
-import type { ExposeGroupsContextValue } from "../data/knx-expose-groups-context";
+import type { ExposeGroups, ExposeGroupsContextValue } from "../data/knx-expose-groups-context";
 import { entitiesByGroupContext } from "../data/knx-entities-by-group-context";
 import type {
   EntitiesByGroupContextValue,
@@ -395,7 +395,7 @@ export class KNXProjectView extends LitElement {
     (
       visibleGroupAddresses: string[],
       groupAddresses: Record<string, GroupAddress>,
-      exposeGroups: Record<string, string[]> | null,
+      exposeGroups: ExposeGroups | null,
       entitiesByGroup: EntitiesByGroupContextValue["groups"] | null,
       lastTelegrams: Record<string, TelegramDict>,
     ): GroupAddressRow[] => {
