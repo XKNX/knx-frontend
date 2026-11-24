@@ -168,13 +168,13 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
         // knx/entities/create -> path: ""; knx/entities/create/ -> path: "/"
         // knx/entities/create/light -> path: "/light"
         this.entityId = undefined; // clear entityId for create intent
-        this._groupAddressUsageProvider.setOwnerEntityId(undefined);
+        this._groupAddressUsageProvider.setExcludedEntityId(undefined);
         this.entityPlatform = this.route.path.split("/")[1];
         this._initDirtyTracking({ type: "deep" }, this._newEntityConfig());
       } else if (intent === "edit") {
         // knx/entities/edit/light.living_room -> path: "/light.living_room"
         this.entityId = this.route.path.split("/")[1];
-        this._groupAddressUsageProvider.setOwnerEntityId(this.entityId);
+        this._groupAddressUsageProvider.setExcludedEntityId(this.entityId);
         // this.entityPlatform will be set from load task result - triggering the next load task
         this._initDirtyTracking({ type: "deep" }); // baseline is set from the loaded config
       }

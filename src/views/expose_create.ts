@@ -238,7 +238,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
       const entityId = this.route.path.split("/")[1] || undefined;
       if (entityId !== this._entityId) {
         this._entityId = entityId;
-        this._groupAddressUsageProvider.setOwnerEntityId(entityId);
+        this._groupAddressUsageProvider.setExcludedEntityId(entityId);
         this._config = { options: [{ ga: {} }] };
         // reset tracking - the load task sets the baseline once the config is known
         this._initDirtyTracking({ type: "deep" }, deepClone(this._config));

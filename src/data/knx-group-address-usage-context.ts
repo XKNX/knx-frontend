@@ -7,8 +7,8 @@ import type { EntitiesByGroup, RelatedEntity } from "./knx-entities-by-group-con
 import { exposeGroupsContext } from "./knx-expose-groups-context";
 import type { ExposeGroups } from "./knx-expose-groups-context";
 
-/** The entity or expose being edited - its own group addresses are not reported as usage. */
-export interface GroupAddressUsageOwner {
+/** An entity or expose to leave out - eg. the one being edited, so it doesn't report itself. */
+export interface GroupAddressUsageExclude {
   type: "entity" | "expose";
   /** undefined while creating a new entity */
   entityId?: string;
@@ -24,15 +24,15 @@ export interface GroupAddressUsage {
 export type GroupAddressUsageMap = Record<string, GroupAddressUsage>;
 
 /**
- * Merge entities and exposes by group address, leaving out the owner itself.
+ * Merge entities and exposes by group address, optionally leaving one of them out.
  *
- * Only an owner of the same kind is left out: an expose of a KNX entity's state to one of
- * that entity's own group addresses is a real second use.
+ * Only the given kind is left out: an expose of a KNX entity's state to one of that
+ * entity's own group addresses is a real second use.
  */
 export const createGroupAddressUsageMap = (
   entitiesByGroup: EntitiesByGroup | undefined,
   exposeGroups: ExposeGroups | undefined,
-  owner: GroupAddressUsageOwner,
+  exclude?: GroupAddressUsageExclude,
 ): GroupAddressUsageMap => {
   const usage: GroupAddressUsageMap = Object.create(null);
   const getUsage = (groupAddress: string): GroupAddressUsage => {
@@ -42,8 +42,8 @@ export const createGroupAddressUsageMap = (
 
   Object.entries(entitiesByGroup ?? {}).forEach(([groupAddress, entities]) => {
     const others =
-      owner.type === "entity"
-        ? entities.filter((entity) => entity.entity_id !== owner.entityId)
+      exclude?.type === "entity"
+        ? entities.filter((entity) => entity.entity_id !== exclude.entityId)
         : entities;
     if (others.length) {
       getUsage(groupAddress).entities = others;
@@ -54,7 +54,7 @@ export const createGroupAddressUsageMap = (
     ([groupAddress, exposes]) => {
       // an expose can send several of its options to the same group address
       const others = [...new Set(exposes)].filter(
-        (entityId) => owner.type !== "expose" || entityId !== owner.entityId,
+        (entityId) => exclude?.type !== "expose" || entityId !== exclude.entityId,
       );
       if (others.length) {
         getUsage(groupAddress).exposes = others;
@@ -77,14 +77,14 @@ export const groupAddressUsageContext = createContext<GroupAddressUsageMap>(cont
 export class KnxGroupAddressUsageProvider {
   private _provider: ContextProvider<typeof groupAddressUsageContext>;
 
-  private _owner: GroupAddressUsageOwner;
+  private _exclude: GroupAddressUsageExclude;
 
   private _entitiesByGroup?: EntitiesByGroup;
 
   private _exposeGroups?: ExposeGroups;
 
-  constructor(host: ReactiveElement, owner: GroupAddressUsageOwner) {
-    this._owner = owner;
+  constructor(host: ReactiveElement, exclude: GroupAddressUsageExclude) {
+    this._exclude = exclude;
     this._provider = new ContextProvider(host, {
       context: groupAddressUsageContext,
       initialValue: {},
@@ -110,15 +110,15 @@ export class KnxGroupAddressUsageProvider {
   }
 
   /** Set the entity id of the entity or expose being edited. */
-  public setOwnerEntityId(entityId: string | undefined): void {
-    if (entityId === this._owner.entityId) return;
-    this._owner = { ...this._owner, entityId };
+  public setExcludedEntityId(entityId: string | undefined): void {
+    if (entityId === this._exclude.entityId) return;
+    this._exclude = { ...this._exclude, entityId };
     this._update();
   }
 
   private _update(): void {
     this._provider.setValue(
-      createGroupAddressUsageMap(this._entitiesByGroup, this._exposeGroups, this._owner),
+      createGroupAddressUsageMap(this._entitiesByGroup, this._exposeGroups, this._exclude),
     );
   }
 }

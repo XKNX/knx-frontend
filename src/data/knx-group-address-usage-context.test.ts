@@ -17,7 +17,7 @@ const EXPOSES = {
 
 describe("createGroupAddressUsageMap", () => {
   it("merges entities and exposes by group address", () => {
-    const usage = createGroupAddressUsageMap(ENTITIES, EXPOSES, { type: "entity" });
+    const usage = createGroupAddressUsageMap(ENTITIES, EXPOSES);
 
     expect(usage["1/0/1"]).toEqual({
       entities: [entity("light.kitchen"), entity("sensor.kitchen")],
@@ -48,6 +48,6 @@ describe("createGroupAddressUsageMap", () => {
   });
 
   it("handles data that has not loaded yet", () => {
-    expect(createGroupAddressUsageMap(undefined, undefined, { type: "entity" })).toEqual({});
+    expect(createGroupAddressUsageMap(undefined, undefined)).toEqual({});
   });
 });
