@@ -1,4 +1,4 @@
-import { mdiPlus, mdiFloppy, mdiCodeBraces, mdiPlaylistEdit } from "@mdi/js";
+import { mdiAutoFix, mdiPlus, mdiFloppy, mdiCodeBraces, mdiPlaylistEdit } from "@mdi/js";
 import deepClone from "deep-clone-simple";
 import type { TemplateResult, PropertyValues } from "lit";
 import { LitElement, html, css, nothing } from "lit";
@@ -13,6 +13,7 @@ import "@ha/components/ha-card";
 import "@ha/components/ha-button";
 import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-icon-button";
+import "@ha/components/ha-label";
 import "@ha/components/ha-yaml-editor";
 import type { HaYamlEditor } from "@ha/components/ha-yaml-editor";
 import "@ha/components/ha-config-navigation-list";
@@ -124,9 +125,13 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
   /**
    * The config a new entity starts out with - `knx-configure-entity` applies url
    * parameters the same way, eg. when creating an entity from the project view,
-   * so an untouched form doesn't count as changed.
+   * so an untouched form doesn't count as changed. Entity suggestions pass a
+   * complete config in the history state instead.
    */
   private _newEntityConfig(): EntityData {
+    if (mainWindow.history.state?.entityData) {
+      return deepClone(mainWindow.history.state.entityData) as EntityData;
+    }
     const config = { entity: {}, knx: {} } as EntityData;
     const urlParams = new URLSearchParams(mainWindow.location.search);
     for (const [path, value] of urlParams.entries()) {
@@ -166,6 +171,10 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
         // knx/entities/create/light -> path: "/light"
         this.entityId = undefined; // clear entityId for create intent
         this.entityPlatform = this.route.path.split("/")[1];
+        if (mainWindow.history.state?.entityData) {
+          // unlike url parameters, `knx-configure-entity` can't apply this itself
+          this._config = this._newEntityConfig();
+        }
         this._initDirtyTracking({ type: "deep" }, this._newEntityConfig());
       } else if (intent === "edit") {
         // knx/entities/edit/light.living_room -> path: "/light.living_room"
@@ -266,6 +275,27 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
         .header=${this.knx.localize("component.knx.config_panel.entities.create.title")}
       >
         <div class="type-selection" @click=${this._typeSelected}>
+          ${
+            this.knx.projectInfo
+              ? html`
+                  <ha-card outlined>
+                    <h1 class="card-header suggestions-header">
+                      ${this.knx.localize("suggestions_title")}
+                      <ha-label dense>${this.knx.localize("suggestions_beta")}</ha-label>
+                    </h1>
+                    <div class="card-content">
+                      ${this.knx.localize("suggestions_type_selection_description")}
+                    </div>
+                    <div class="card-actions">
+                      <ha-button @click=${this._navigateSuggestions}>
+                        <ha-svg-icon slot="start" .path=${mdiAutoFix}></ha-svg-icon>
+                        ${this.knx.localize("suggestions_show")}
+                      </ha-button>
+                    </div>
+                  </ha-card>
+                `
+              : nothing
+          }
           <ha-card
             outlined
             .header=${this.knx.localize(
@@ -313,6 +343,12 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
     navigateInFlow("/knx/entities/create");
   };
 
+  /** A suggestion opened in the editor is its own history entry above the suggestions. */
+  private _backToSuggestions = async () => {
+    if (!(await this.promptDiscardChanges())) return;
+    exitFlow("/knx/entities/suggestions");
+  };
+
   private _exitEntitiesFlow = async () => {
     if (!(await this.promptDiscardChanges())) return;
     exitFlow("/knx/entities/view");
@@ -336,12 +372,19 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
   private _renderEntityConfig(platform: SupportedPlatform): TemplateResult {
     const create = this._intent === "create";
     const schema = this.knx.schema[platform]!;
+    // back leads to where the form was opened from
+    let backCallback = this._exitEntitiesFlow;
+    if (create) {
+      backCallback = mainWindow.history.state?.entityData
+        ? this._backToSuggestions
+        : this._backToTypeSelection;
+    }
 
     return html`<hass-subpage
       .hass=${this.hass}
       .narrow=${this.narrow!}
       .backPath=${this.backPath}
-      .backCallback=${create ? this._backToTypeSelection : this._exitEntitiesFlow}
+      .backCallback=${backCallback}
       .scrollable=${this._mode === "gui"}
       .header=${
         create
@@ -587,6 +630,10 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
     return false;
   }
 
+  private _navigateSuggestions() {
+    navigateInFlow("/knx/entities/suggestions");
+  }
+
   private _entityMoreInfoSettings(entityId: string) {
     fireEvent(mainWindow.document.querySelector("home-assistant")!, "hass-more-info", {
       entityId,
@@ -607,6 +654,18 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
 
     ha-card {
       overflow: hidden; /* don't cover rounded corner border by content */
+    }
+
+    .suggestions-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      & ha-label {
+        --ha-label-background-color: var(--primary-color);
+        --ha-label-background-opacity: 0.2;
+        text-transform: uppercase;
+      }
     }
 
     @media screen and (max-width: 600px) {
