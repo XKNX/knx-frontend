@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ContextProvider } from "@lit/context";
 
 import { internationalizationContext } from "@ha/data/context";
+import { groupAddressUsageContext } from "../data/knx-group-address-usage-context";
+import type { GroupAddressUsageMap } from "../data/knx-group-address-usage-context";
 import type { GASchema } from "../types/entity_data";
 import type { GASelectorOptions } from "../types/schema";
 import type { DPTMetadata, GroupAddress, KNXProject } from "../types/websocket";
@@ -12,6 +14,7 @@ import { GroupAddressSelector } from "./knx-group-address-selector";
 // undefined so they stay plain elements.
 vi.mock("@ha/components/ha-icon-button", () => ({}));
 vi.mock("@ha/components/input/ha-input", () => ({}));
+vi.mock("./data-table/knx-data-table-related-label", () => ({}));
 
 const dptMeta = (main: number, sub: number, dpt_class: string): DPTMetadata =>
   ({ main, sub, dpt_class, payload_length: 1 }) as unknown as DPTMetadata;
@@ -35,18 +38,24 @@ const PROJECT = {
 
 const DPT_CLASSES = ["numeric", "enum", "string", "complex"];
 
+const localize = (key: string) => key;
+
 // The selector and its children consume HA's localize context.
 const createHost = () => {
   const host = document.createElement("div");
   new ContextProvider(host, {
     context: internationalizationContext,
-    initialValue: { localize: (key: string) => key } as any,
+    initialValue: { localize } as any,
   });
   document.body.appendChild(host);
   return host;
 };
 
-const createSelector = async (config: GASchema, options: Partial<GASelectorOptions> = {}) => {
+const createSelector = async (
+  config: GASchema,
+  options: Partial<GASelectorOptions> = {},
+  usage?: GroupAddressUsageMap,
+) => {
   const element = new GroupAddressSelector();
   element.knx = { dptMetadata: DPT_METADATA } as any;
   (element as any)._projectData = PROJECT;
@@ -57,7 +66,11 @@ const createSelector = async (config: GASchema, options: Partial<GASelectorOptio
   element.addEventListener("value-changed", (ev) => {
     emitted.push((ev as CustomEvent).detail.value);
   });
-  createHost().appendChild(element);
+  const host = createHost();
+  if (usage) {
+    new ContextProvider(host, { context: groupAddressUsageContext, initialValue: usage });
+  }
+  host.appendChild(element);
   await element.updateComplete;
   return { element, emitted };
 };
@@ -147,6 +160,28 @@ describe("knx-group-address-selector", () => {
       const selector = await createSelector({ write: "7/7/7", dpt: "5.001" }, options);
 
       expect(addresses(selector)).toEqual([DIMMER.address]);
+    });
+  });
+
+  describe("with a group address used elsewhere", () => {
+    const relatedEntity = (entity_id: string) => ({ entity_id, ui: true, disabled: false });
+    const usage: GroupAddressUsageMap = {
+      [LIGHT.address]: { entities: [relatedEntity("light.kitchen")], exposes: ["sensor.outdoor"] },
+    };
+    const relatedLabel = (selector: Selector) =>
+      child(selector, "knx-single-address-selector knx-data-table-related-label") as any;
+
+    it("lists the other entities and exposes below the address", async () => {
+      const selector = await createSelector({ write: LIGHT.address }, {}, usage);
+
+      expect(relatedLabel(selector).entities).toEqual(usage[LIGHT.address].entities);
+      expect(relatedLabel(selector).exposes).toEqual(["sensor.outdoor"]);
+      expect(child(selector, ".used-by span").textContent).toContain("knx_group_address.used_by");
+    });
+
+    it("shows no hint for an unused address or without usage data", async () => {
+      expect(relatedLabel(await createSelector({ write: "7/7/7" }, {}, usage))).toBeNull();
+      expect(relatedLabel(await createSelector({ write: LIGHT.address }))).toBeNull();
     });
   });
 });

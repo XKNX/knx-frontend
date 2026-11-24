@@ -55,6 +55,7 @@ import {
   exposeGroupsContext,
   type ExposeGroupsContextValue,
 } from "../data/knx-expose-groups-context";
+import { KnxGroupAddressUsageProvider } from "../data/knx-group-address-usage-context";
 import type { KnxHaSelector, GASelectorOptions } from "../types/schema";
 import { yamlModeShortcutHint } from "../utils/common";
 import { setNestedValue } from "../utils/config-helper";
@@ -211,6 +212,8 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
     },
   });
 
+  private _groupAddressUsageProvider = new KnxGroupAddressUsageProvider(this, { type: "expose" });
+
   private _backendLocalize = (key: string) => {
     const fullKey = `component.knx.config_panel.expose.create.${key}` as const;
     // Form descriptions are optional (some fields have none on purpose), so look them up
@@ -235,6 +238,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
       const entityId = this.route.path.split("/")[1] || undefined;
       if (entityId !== this._entityId) {
         this._entityId = entityId;
+        this._groupAddressUsageProvider.setExcludedEntityId(entityId);
         this._config = { options: [{ ga: {} }] };
         // reset tracking - the load task sets the baseline once the config is known
         this._initDirtyTracking({ type: "deep" }, deepClone(this._config));
@@ -685,6 +689,7 @@ export class KNXCreateExpose extends DirtyStateProviderMixin<ExposeConfigData>()
           }
           <knx-group-address-selector
             data-idx=${idx}
+            .hass=${this.hass}
             .knx=${this.knx}
             .key=${"ga"}
             .options=${GA_SELECTOR_OPTIONS}

@@ -1,6 +1,10 @@
 import { compare, validate } from "compare-versions";
 
-import type { EntitySuggestionsResult, SuggestionProviderHints } from "../types/websocket";
+import type {
+  EntitySuggestion,
+  EntitySuggestionsResult,
+  SuggestionProviderHints,
+} from "../types/websocket";
 
 // project data of older xknxproject versions lacks information suggestions are
 // derived from (eg. the group object tree) or has it wrong (object numbers of sub-modules)
@@ -36,4 +40,42 @@ export const suggestionProviders = (result: EntitySuggestionsResult): Suggestion
     providers.set(suggestion.source, provider);
   });
   return [...providers.values()];
+};
+
+export interface SuggestionGroup {
+  providerId: string;
+  groupId: string;
+  groupName: string;
+  suggestions: EntitySuggestion[];
+}
+
+export interface ProviderSuggestions {
+  providerId: string;
+  groups: SuggestionGroup[];
+}
+
+/**
+ * Suggestions by the provider they originate from, and by their group within it.
+ * Providers, groups and suggestions keep the order the backend lists them in.
+ * A group id is only unique within its provider - `fb` and `cfg` both use the
+ * individual address of a device, `fn` the identifier of a space.
+ */
+export const suggestionsByProvider = (suggestions: EntitySuggestion[]): ProviderSuggestions[] => {
+  const providers = new Map<string, Map<string, SuggestionGroup>>();
+  suggestions.forEach((suggestion) => {
+    const groups = providers.get(suggestion.source) ?? new Map<string, SuggestionGroup>();
+    providers.set(suggestion.source, groups);
+    const group = groups.get(suggestion.group_id) ?? {
+      providerId: suggestion.source,
+      groupId: suggestion.group_id,
+      groupName: suggestion.group_name,
+      suggestions: [],
+    };
+    groups.set(suggestion.group_id, group);
+    group.suggestions.push(suggestion);
+  });
+  return [...providers.entries()].map(([providerId, groups]) => ({
+    providerId,
+    groups: [...groups.values()],
+  }));
 };

@@ -179,6 +179,7 @@ export class KnxForm extends LitElement {
       case "knx_group_address":
         return html`
           <knx-group-address-selector
+            .hass=${this.hass}
             .knx=${this.knx}
             .key=${selectorPath}
             .required=${selector.required}
