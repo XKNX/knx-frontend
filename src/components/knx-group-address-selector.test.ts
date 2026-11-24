@@ -166,7 +166,10 @@ describe("knx-group-address-selector", () => {
   describe("with a group address used elsewhere", () => {
     const relatedEntity = (entity_id: string) => ({ entity_id, ui: true, disabled: false });
     const usage: GroupAddressUsageMap = {
-      [LIGHT.address]: { entities: [relatedEntity("light.kitchen")], exposes: ["sensor.outdoor"] },
+      [LIGHT.address]: {
+        entities: [relatedEntity("light.kitchen")],
+        exposes: [{ entity_id: "sensor.outdoor", ui: true }],
+      },
     };
     const relatedLabel = (selector: Selector) =>
       child(selector, "knx-single-address-selector knx-data-table-related-label") as any;
@@ -175,7 +178,7 @@ describe("knx-group-address-selector", () => {
       const selector = await createSelector({ write: LIGHT.address }, {}, usage);
 
       expect(relatedLabel(selector).entities).toEqual(usage[LIGHT.address].entities);
-      expect(relatedLabel(selector).exposes).toEqual(["sensor.outdoor"]);
+      expect(relatedLabel(selector).exposes).toEqual(usage[LIGHT.address].exposes);
       expect(child(selector, ".used-by span").textContent).toContain("knx_group_address.used_by");
     });
 

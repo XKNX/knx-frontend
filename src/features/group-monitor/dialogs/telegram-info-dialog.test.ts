@@ -101,6 +101,9 @@ describe("GroupMonitorTelegramInfoDialog", () => {
     const related = container.querySelector("knx-data-table-related-label") as any;
 
     expect(related.entities).toEqual([entity]);
-    expect(related.exposes).toEqual(["sensor.outdoor"]);
+    expect(related.exposes).toEqual([
+      { entity_id: "sensor.outdoor", ui: true },
+      { entity_id: "sensor.outdoor", ui: false },
+    ]);
   });
 });

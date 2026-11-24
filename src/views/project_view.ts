@@ -64,6 +64,7 @@ import {
 } from "../utils/project-structure";
 import type { DeviceFilterOption, DeviceTreeItem } from "../utils/project-structure";
 import { createExposesByGroupAddressMap } from "../data/exposes-by-group";
+import type { RelatedExpose } from "../data/exposes-by-group";
 import { exposeGroupsContext } from "../data/knx-expose-groups-context";
 import type { ExposeGroups, ExposeGroupsContextValue } from "../data/knx-expose-groups-context";
 import { entitiesByGroupContext } from "../data/knx-entities-by-group-context";
@@ -88,9 +89,10 @@ const MIN_XKNXPROJECT_VERSION = "3.3.0";
 /** A group address as a table row, with the extra fields the columns show and filter by. */
 type GroupAddressRow = GroupAddress & {
   dpt_raw: string;
-  related_exposes: string[];
+  related_exposes: RelatedExpose[];
   related_entities: RelatedEntity[];
   /** plain ids for the search filter */
+  related_expose_ids: string[];
   related_entity_ids: string[];
   last_telegram?: TelegramDict;
 };
@@ -301,7 +303,7 @@ export class KNXProjectView extends LitElement {
         sortable: false,
         title: "Entities",
       },
-      related_exposes: {
+      related_expose_ids: {
         hidden: true,
         filterable: true,
         sortable: false,
@@ -408,10 +410,12 @@ export class KNXProjectView extends LitElement {
             .filter((ga): ga is GroupAddress => !!ga);
       return filtered.map((ga) => {
         const relatedEntities = entitiesByGroup?.[ga.address] ?? [];
+        const relatedExposes = exposesByGA?.[ga.address] ?? [];
         return {
           ...ga,
           dpt_raw: dptToString(ga.dpt),
-          related_exposes: exposesByGA?.[ga.address] ?? [],
+          related_exposes: relatedExposes,
+          related_expose_ids: relatedExposes.map((expose) => expose.entity_id),
           related_entities: relatedEntities,
           related_entity_ids: relatedEntities.map((entity) => entity.entity_id),
           last_telegram: lastTelegrams[ga.address],

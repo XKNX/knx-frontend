@@ -1,6 +1,7 @@
 import { ContextConsumer, ContextProvider, createContext } from "@lit/context";
 import type { ReactiveElement } from "lit";
 
+import type { RelatedExpose } from "./exposes-by-group";
 import { entitiesByGroupContext } from "./knx-entities-by-group-context";
 import type { EntitiesByGroup, RelatedEntity } from "./knx-entities-by-group-context";
 import { exposeGroupsContext } from "./knx-expose-groups-context";
@@ -15,8 +16,8 @@ export interface GroupAddressUsageExclude {
 
 export interface GroupAddressUsage {
   entities: RelatedEntity[];
-  /** entity ids of exposes sending to the group address */
-  exposes: string[];
+  /** exposes sending to the group address */
+  exposes: RelatedExpose[];
 }
 
 /** Other entities and exposes using a group address, by group address. */
@@ -56,8 +57,8 @@ export const createGroupAddressUsageMap = (
       if (excluded && ui) return;
       const { exposes } = getUsage(ga);
       // an expose can send several of its options to the same group address
-      if (!exposes.includes(entityId)) {
-        exposes.push(entityId);
+      if (!exposes.some((expose) => expose.entity_id === entityId && expose.ui === ui)) {
+        exposes.push({ entity_id: entityId, ui });
       }
     });
   });

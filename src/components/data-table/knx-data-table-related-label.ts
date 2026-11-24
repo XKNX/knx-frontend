@@ -18,10 +18,14 @@ import { navigate } from "@ha/common/navigate";
 import { stopPropagation } from "@ha/common/dom/stop_propagation";
 import type { HomeAssistant } from "@ha/types";
 
+import type { RelatedExpose } from "../../data/exposes-by-group";
 import type { RelatedEntity } from "../../data/knx-entities-by-group-context";
 import { entitiesTab, exposeTab } from "../../knx-router";
 import { consumeKnxLocalize } from "../../localize/consume-knx-localize";
 import type { KnxLocalizeFunc } from "../../localize/localize";
+
+const exposeKey = (expose: RelatedExpose): string =>
+  `${expose.entity_id}:${expose.ui ? "ui" : "yaml"}`;
 
 @customElement("knx-data-table-related-label")
 class KnxDataTableRelatedLabel extends LitElement {
@@ -29,7 +33,7 @@ class KnxDataTableRelatedLabel extends LitElement {
 
   @property({ attribute: false }) public entities: RelatedEntity[] = [];
 
-  @property({ attribute: false }) public exposes: string[] = [];
+  @property({ attribute: false }) public exposes: RelatedExpose[] = [];
 
   @state()
   @consumeKnxLocalize()
@@ -49,11 +53,7 @@ class KnxDataTableRelatedLabel extends LitElement {
             (entity) => entity.entity_id,
             (entity) => this._renderEntityItem(entity),
           )}
-          ${repeat(
-            this.exposes,
-            (itemId) => itemId,
-            (itemId) => this._renderExposeItem(itemId),
-          )}
+          ${repeat(this.exposes, exposeKey, (expose) => this._renderExposeItem(expose))}
         </ha-chip-set>
       `;
     }
@@ -111,10 +111,10 @@ class KnxDataTableRelatedLabel extends LitElement {
         <ha-label slot="trigger" class="open-menu" dense>${openDropdownLabel}</ha-label>
         ${repeat(
           this.exposes,
-          (itemId) => itemId,
-          (itemId) =>
-            html`<ha-dropdown-item .value=${itemId}>
-              ${this._renderExposeItem(itemId)}
+          exposeKey,
+          (expose) =>
+            html`<ha-dropdown-item .value=${exposeKey(expose)}>
+              ${this._renderExposeItem(expose)}
             </ha-dropdown-item>`,
         )}
       </ha-dropdown>
@@ -168,17 +168,29 @@ class KnxDataTableRelatedLabel extends LitElement {
     ></ha-state-icon>`;
   }
 
-  private _renderExposeItem(itemId: string): TemplateResult {
+  private _renderExposeItem(expose: RelatedExpose): TemplateResult {
+    const exposeTitle = this.localize("component.knx.config_panel.expose.title");
+    const label = html`
+      <ha-label
+        dense
+        class=${classMap({ "expose-label": true, "text-ellipsis": true, yaml: !expose.ui })}
+        .description=${expose.ui ? exposeTitle : `${exposeTitle} YAML`}
+      >
+        <ha-svg-icon slot="icon" .path=${exposeTab.iconPath}></ha-svg-icon>
+        ${expose.entity_id}
+      </ha-label>
+    `;
+    // YAML exposes can not be edited in the panel
+    if (!expose.ui) {
+      return label;
+    }
     return html`
-      <a class="related-item link" href=${this._exposeHref(itemId)} @click=${this._linkClicked}>
-        <ha-label
-          dense
-          class="expose-label text-ellipsis"
-          .description=${this.localize("component.knx.config_panel.expose.title")}
-        >
-          <ha-svg-icon slot="icon" .path=${exposeTab.iconPath}></ha-svg-icon>
-          ${itemId}
-        </ha-label>
+      <a
+        class="related-item link"
+        href=${this._exposeHref(expose.entity_id)}
+        @click=${this._linkClicked}
+      >
+        ${label}
       </a>
     `;
   }
@@ -227,6 +239,11 @@ class KnxDataTableRelatedLabel extends LitElement {
       --ha-label-background-opacity: 0.5;
     }
 
+    .expose-label {
+      --ha-label-background-color: ${unsafeCSS(exposeTab.iconColor)};
+      --ha-label-background-opacity: 0.5;
+    }
+
     .yaml {
       --ha-label-background-color: var(--disabled-color);
       cursor: default;
@@ -237,11 +254,6 @@ class KnxDataTableRelatedLabel extends LitElement {
       --ha-label-background-opacity: 0.25;
       --ha-label-text-color: var(--secondary-text-color);
       --ha-label-icon-color: var(--secondary-text-color);
-    }
-
-    .expose-label {
-      --ha-label-background-color: ${unsafeCSS(exposeTab.iconColor)};
-      --ha-label-background-opacity: 0.5;
     }
 
     .link {

@@ -26,9 +26,16 @@ describe("createGroupAddressUsageMap", () => {
 
     expect(usage["1/0/1"]).toEqual({
       entities: [entity("light.kitchen"), entity("sensor.kitchen")],
-      exposes: ["sensor.outdoor"],
+      exposes: [{ entity_id: "sensor.outdoor", ui: true }],
     });
-    expect(usage["2/0/1"]).toEqual({ entities: [], exposes: ["sensor.outdoor"] });
+    // UI and YAML exposes of the same entity are separate items
+    expect(usage["2/0/1"]).toEqual({
+      entities: [],
+      exposes: [
+        { entity_id: "sensor.outdoor", ui: true },
+        { entity_id: "sensor.outdoor", ui: false },
+      ],
+    });
     expect(usage["9/9/9"]).toBeUndefined();
   });
 
@@ -39,7 +46,10 @@ describe("createGroupAddressUsageMap", () => {
     });
 
     expect(usage["1/0/1"].entities).toEqual([entity("sensor.kitchen")]);
-    expect(usage["1/0/2"]).toEqual({ entities: [], exposes: ["light.kitchen"] });
+    expect(usage["1/0/2"]).toEqual({
+      entities: [],
+      exposes: [{ entity_id: "light.kitchen", ui: true }],
+    });
   });
 
   it("leaves out the expose being edited, but not its entity", () => {
@@ -49,7 +59,10 @@ describe("createGroupAddressUsageMap", () => {
     });
 
     expect(usage["1/0/2"]).toEqual({ entities: [entity("light.kitchen")], exposes: [] });
-    expect(usage["2/0/1"].exposes).toEqual(["sensor.outdoor"]);
+    expect(usage["2/0/1"].exposes.map((expose) => expose.entity_id)).toEqual([
+      "sensor.outdoor",
+      "sensor.outdoor",
+    ]);
   });
 
   it("still reports a YAML expose of the expose being edited", () => {
@@ -60,7 +73,10 @@ describe("createGroupAddressUsageMap", () => {
     );
 
     expect(usage["1/0/2"]).toBeUndefined();
-    expect(usage["1/0/3"]).toEqual({ entities: [], exposes: ["light.kitchen"] });
+    expect(usage["1/0/3"]).toEqual({
+      entities: [],
+      exposes: [{ entity_id: "light.kitchen", ui: false }],
+    });
   });
 
   it("handles data that has not loaded yet", () => {
