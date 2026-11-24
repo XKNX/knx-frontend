@@ -24,6 +24,7 @@ import type { HomeAssistant, Route } from "@ha/types";
 import { createEntity, getEntitySuggestions, validateEntity } from "services/websocket.service";
 import type { EntityData, SupportedPlatform } from "types/entity_data";
 
+import { showKnxProjectUploadDialog } from "../dialogs/show-knx-project-upload-dialog";
 import {
   entitiesByGroupContext,
   type EntitiesByGroupContextValue,
@@ -84,7 +85,8 @@ export class KNXEntitiesSuggestions extends LitElement {
   @state() private _hiddenProviders: ReadonlySet<string> = new Set();
 
   private _suggestionsTask = new Task(this, {
-    args: () => [] as const,
+    // generated anew when another project file was imported
+    args: () => [this.knx.projectInfo] as const,
     task: () => getEntitySuggestions(this.hass),
   });
 
@@ -146,7 +148,7 @@ export class KNXEntitiesSuggestions extends LitElement {
     if (providers.some((provider) => provider.hints?.state === "no_project")) {
       return this._renderInfo(
         this.knx.localize("suggestions_no_project"),
-        this._renderInfoViewButton(),
+        this._renderProjectUploadButton(),
       );
     }
     return html`
@@ -161,8 +163,8 @@ export class KNXEntitiesSuggestions extends LitElement {
     return html`
       <ha-alert alert-type="info">
         ${this.knx.localize("suggestions_reimport_project", { version: version ?? "?" })}
-        <ha-button slot="action" appearance="plain" @click=${this._navigateInfo}>
-          ${this.knx.localize("suggestions_open_info_view")}
+        <ha-button slot="action" appearance="plain" @click=${this._openProjectUploadDialog}>
+          ${this.knx.localize("component.knx.config_panel.dialogs.project_upload.title")}
         </ha-button>
       </ha-alert>
     `;
@@ -243,9 +245,9 @@ export class KNXEntitiesSuggestions extends LitElement {
     return this.knx.localize("suggestions_provider_none");
   }
 
-  private _renderInfoViewButton(): TemplateResult {
-    return html`<ha-button @click=${this._navigateInfo}>
-      ${this.knx.localize("suggestions_open_info_view")}
+  private _renderProjectUploadButton(): TemplateResult {
+    return html`<ha-button @click=${this._openProjectUploadDialog}>
+      ${this.knx.localize("component.knx.config_panel.dialogs.project_upload.title")}
     </ha-button>`;
   }
 
@@ -559,8 +561,9 @@ export class KNXEntitiesSuggestions extends LitElement {
     }
   }
 
-  private _navigateInfo() {
-    navigate("/knx/info");
+  private _openProjectUploadDialog() {
+    // a finished upload reloads `knx` - the suggestions follow its project info
+    showKnxProjectUploadDialog(this, { hass: this.hass, knx: this.knx });
   }
 
   static styles = css`

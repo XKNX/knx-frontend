@@ -14,7 +14,6 @@
   "suggestions_type_selection_description": "Entitäten automatisch aus dem importierten ETS-Projekt erstellen - aus dessen Funktionsblock-Informationen oder für Kanäle, die wie bereits eingerichtete Entitäten verknüpft sind.",
   "suggestions_show": "Vorschläge anzeigen",
   "suggestions_no_project": "Keine ETS-Projektdaten verfügbar. Importiere deine ETS-Projektdatei, um Entitätsvorschläge zu erhalten.",
-  "suggestions_open_info_view": "Info-Seite öffnen",
   "suggestions_reimport_project": "Dein ETS-Projekt wurde mit einer älteren Parser-Version ({version}) importiert. Nach erneutem Hochladen der Projektdatei können die Vorschläge vollständiger und genauer sein.",
   "suggestions_outdated_parser": "Dein ETS-Projekt wurde mit einer älteren Parser-Version ({version}) importiert. Importiere die Projektdatei erneut, um Entitätsvorschläge zu erhalten.",
   "suggestions_no_semantics": "Die Applikationsprogramme der Geräte in diesem ETS-Projekt enthalten keine Funktionsblock-Informationen. Diese Informationen sind Teil neuerer KNX-Applikationsprogramme.",
