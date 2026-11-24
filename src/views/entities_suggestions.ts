@@ -31,6 +31,7 @@ import {
 } from "../data/knx-entities-by-group-context";
 import type { LocalKnxKey } from "../localize/localize";
 import { getPlatformStyle } from "../utils/common";
+import { exitFlow } from "../utils/navigation";
 import {
   projectReimportSuggested,
   suggestionProviders,
@@ -117,7 +118,12 @@ export class KNXEntitiesSuggestions extends LitElement {
 
   protected render(): TemplateResult {
     return html`
-      <hass-subpage .hass=${this.hass} .narrow=${this.narrow!} .backPath=${this.backPath}>
+      <hass-subpage
+        .hass=${this.hass}
+        .narrow=${this.narrow!}
+        .backPath=${this.backPath}
+        .backCallback=${this._exitSuggestions}
+      >
         <span slot="header" class="header">
           ${this.knx.localize("suggestions_title")}
           <ha-label dense class="beta">${this.knx.localize("suggestions_beta")}</ha-label>
@@ -560,6 +566,11 @@ export class KNXEntitiesSuggestions extends LitElement {
       this._entitiesByGroupCtx?.reload();
     }
   }
+
+  /** Back to where the suggestions were opened from, leaving no history entry. */
+  private _exitSuggestions = () => {
+    exitFlow("/knx/entities/view");
+  };
 
   private _openProjectUploadDialog() {
     // a finished upload reloads `knx` - the suggestions follow its project info

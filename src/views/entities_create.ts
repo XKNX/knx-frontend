@@ -343,6 +343,12 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
     navigateInFlow("/knx/entities/create");
   };
 
+  /** A suggestion opened in the editor is its own history entry above the suggestions. */
+  private _backToSuggestions = async () => {
+    if (!(await this.promptDiscardChanges())) return;
+    exitFlow("/knx/entities/suggestions");
+  };
+
   private _exitEntitiesFlow = async () => {
     if (!(await this.promptDiscardChanges())) return;
     exitFlow("/knx/entities/view");
@@ -366,12 +372,19 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
   private _renderEntityConfig(platform: SupportedPlatform): TemplateResult {
     const create = this._intent === "create";
     const schema = this.knx.schema[platform]!;
+    // back leads to where the form was opened from
+    let backCallback = this._exitEntitiesFlow;
+    if (create) {
+      backCallback = mainWindow.history.state?.entityData
+        ? this._backToSuggestions
+        : this._backToTypeSelection;
+    }
 
     return html`<hass-subpage
       .hass=${this.hass}
       .narrow=${this.narrow!}
       .backPath=${this.backPath}
-      .backCallback=${create ? this._backToTypeSelection : this._exitEntitiesFlow}
+      .backCallback=${backCallback}
       .scrollable=${this._mode === "gui"}
       .header=${
         create
