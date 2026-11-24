@@ -1,4 +1,3 @@
-/* global module, require */
 // rspack/webpack loader that minifies the HTML, SVG, and CSS inside lit
 // tagged template literals using `minify-literals` (html-minifier-next +
 // lightningcss). Replaces the unmaintained babel-plugin-template-html-minifier.
@@ -12,18 +11,48 @@
 const remapping = require("@ampproject/remapping");
 
 // minify-literals is ESM-only, so load it via dynamic import from this CJS loader.
-let minifyPromise;
-const getMinifier = () => {
-  if (!minifyPromise) {
-    minifyPromise = import("minify-literals").then((m) => m.minifyHTMLLiterals);
+// Also map to cache loader promises per environment (e.g., 'modern', 'legacy')
+const loaderInitPromises = new Map();
+const initLoader = (browserslistEnv) => {
+  if (!loaderInitPromises.has(browserslistEnv)) {
+    loaderInitPromises.set(
+      browserslistEnv,
+      Promise.all([import("minify-literals"), import("browserslist"), import("lightningcss")]).then(
+        ([minifyModule, browserslistModule, lightningcssModule]) => {
+          const browserslist = browserslistModule.default;
+          const { browserslistToTargets } = lightningcssModule;
+          const rawTargets = browserslist(null, { env: browserslistEnv });
+          if (!rawTargets.length) {
+            throw new Error(
+              `No browsers resolved for browserslist environment "${browserslistEnv}"`,
+            );
+          }
+          const lightningcssTargets = browserslistToTargets(rawTargets);
+
+          return {
+            minifyHTMLLiterals: minifyModule.minifyHTMLLiterals,
+            lightningcssTargets,
+            // With the legacy floor at Chrome 67, lightningcss rewrites rgba()
+            // to 8-digit hex (#rrggbbaa). Some kiosk webviews served the legacy
+            // build (e.g. Shelly Wall Display) can't parse that, so any
+            // var(--divider-color) border falls back to currentColor. Always
+            // compile hex alpha colors to rgba() in legacy builds.
+            lightningcssInclude: browserslistEnv.startsWith("legacy")
+              ? lightningcssModule.Features.HexAlphaColors
+              : 0,
+          };
+        },
+      ),
+    );
   }
-  return minifyPromise;
+  return loaderInitPromises.get(browserslistEnv);
 };
 
 // HTML options mirror the previous babel-plugin-template-html-minifier config
 // (html-minifier-next is option-compatible with html-minifier-terser). CSS in
-// css`` templates and inline <style> is handled by minify-literals' lightningcss
-// default.
+// css`` templates and inline <style> is handled by minify-literals'
+// lightningcss. We pass in the targets from browserslist so lightningcss
+// can minify CSS appropriately for the build environment.
 //
 // `keepClosingSlash` is required for `svg`` templates: SVG elements such as
 // `<path />` and `<circle />` are not void elements in HTML, so dropping the
@@ -40,12 +69,18 @@ const htmlOptions = {
 
 module.exports = function minifyTemplateLiteralsLoader(source, map, meta) {
   const callback = this.async();
-  getMinifier()
-    .then((minifyHTMLLiterals) =>
+  const { browserslistEnv } = this.getOptions();
+
+  initLoader(browserslistEnv)
+    .then(({ minifyHTMLLiterals, lightningcssTargets, lightningcssInclude }) =>
       minifyHTMLLiterals(source, {
         fileName: this.resourcePath,
         html: htmlOptions,
-      })
+        css: {
+          targets: lightningcssTargets,
+          include: lightningcssInclude,
+        },
+      }),
     )
     .then((result) => {
       if (!result) {
@@ -59,9 +94,7 @@ module.exports = function minifyTemplateLiteralsLoader(source, map, meta) {
       // original source) so the map handed downstream still points at the
       // original source; otherwise every minified file's source map is wrong.
       const outMap =
-        map && result.map
-          ? remapping([result.map, map], () => null)
-          : (result.map ?? map);
+        map && result.map ? remapping([result.map, map], () => null) : (result.map ?? map);
       callback(null, result.code, outMap, meta);
     })
     .catch(callback);
