@@ -639,6 +639,7 @@ export class GroupAddressSelector extends LitElement {
 
     .selectors {
       flex: 1;
+      min-width: 0;
     }
 
     .options {
@@ -669,6 +670,7 @@ export class GroupAddressSelector extends LitElement {
 
     .passive-row knx-single-address-selector {
       flex: 1 1 auto;
+      min-width: 0;
     }
 
     .title {
@@ -738,6 +740,7 @@ export class GroupAddressSelector extends LitElement {
 
     .also-used-by {
       display: flex;
+      flex-wrap: wrap; /* the labels move below the text when they don't fit beside it */
       align-items: flex-start;
       gap: 4px;
       margin-top: 4px;
@@ -754,12 +757,16 @@ export class GroupAddressSelector extends LitElement {
     }
 
     .also-used-by span {
-      flex: none;
+      /* shares a line with the icon */
+      flex: 0 1 auto;
+      min-width: 0;
+      max-width: calc(100% - 24px);
       margin-right: 4px;
+      overflow-wrap: anywhere;
     }
 
     .also-used-by knx-data-table-related-label {
-      min-width: 0;
+      flex: 0 1 auto;
     }
 
     .valid-drop-zone {
