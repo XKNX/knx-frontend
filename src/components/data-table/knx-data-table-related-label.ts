@@ -125,7 +125,12 @@ class KnxDataTableRelatedLabel extends LitElement {
     const label = html`
       <ha-label
         dense
-        class=${classMap({ "entity-label": true, yaml: !entity.ui, disabled: entity.disabled })}
+        class=${classMap({
+          "entity-label": true,
+          "text-ellipsis": true,
+          yaml: !entity.ui,
+          disabled: entity.disabled,
+        })}
         .description=${entity.ui ? undefined : "YAML"}
         title=${ifDefined(
           entity.disabled
@@ -168,7 +173,7 @@ class KnxDataTableRelatedLabel extends LitElement {
       <a class="related-item link" href=${this._exposeHref(itemId)} @click=${this._linkClicked}>
         <ha-label
           dense
-          class="expose-label"
+          class="expose-label text-ellipsis"
           .description=${this.localize("component.knx.config_panel.expose.title")}
         >
           <ha-svg-icon slot="icon" .path=${exposeTab.iconPath}></ha-svg-icon>
@@ -199,6 +204,15 @@ class KnxDataTableRelatedLabel extends LitElement {
     :host {
       display: block;
       flex-grow: 1;
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    /* long entity ids are cropped instead of widening the container */
+    ha-chip-set > *,
+    ha-dropdown-item .related-item {
+      min-width: 0;
+      max-width: 100%;
     }
 
     ha-chip-set {
@@ -242,6 +256,7 @@ class KnxDataTableRelatedLabel extends LitElement {
     }
 
     .open-menu {
+      cursor: pointer;
       --ha-label-background-color: transparent;
       border: 1px solid var(--divider-color);
     }

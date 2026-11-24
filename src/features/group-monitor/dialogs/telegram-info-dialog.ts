@@ -1,4 +1,5 @@
 import { consume } from "@lit/context";
+import memoize from "memoize-one";
 import { mdiArrowLeft, mdiArrowRight, mdiRobot } from "@mdi/js";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
@@ -17,6 +18,7 @@ import type { EntitiesByGroupContextValue } from "../../../data/knx-entities-by-
 import { entitiesByGroupContext } from "../../../data/knx-entities-by-group-context";
 import type { ExposeGroupsContextValue } from "../../../data/knx-expose-groups-context";
 import { exposeGroupsContext } from "../../../data/knx-expose-groups-context";
+import { createGroupAddressUsageMap } from "../../../data/knx-group-address-usage-context";
 import type { KNX } from "../../../types/knx";
 import {
   formatDateTimeWithMilliseconds,
@@ -158,6 +160,9 @@ export class GroupMonitorTelegramInfoDialog
     return true;
   }
 
+  // the expose groups are keyed by entity id - merge both sources by group address
+  private _getGroupAddressUsage = memoize(createGroupAddressUsageMap);
+
   /**
    * Render the dialog contents
    *
@@ -178,8 +183,12 @@ export class GroupMonitorTelegramInfoDialog
     const directionClass = isOutgoing ? "outgoing" : "incoming";
 
     const destAddr = telegram.destinationAddress;
-    const relatedEntities = this._entitiesByGroupCtx?.groups[destAddr] ?? [];
-    const relatedExposes = this._exposeGroupsCtx?.groups[destAddr] ?? [];
+    const usage = this._getGroupAddressUsage(
+      this._entitiesByGroupCtx?.groups,
+      this._exposeGroupsCtx?.groups,
+    )[destAddr];
+    const relatedEntities = usage?.entities ?? [];
+    const relatedExposes = usage?.exposes ?? [];
 
     return html`
       <ha-dialog .open=${this._open} @closed=${this.closeDialog}>

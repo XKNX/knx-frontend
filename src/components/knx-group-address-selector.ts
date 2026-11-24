@@ -1,4 +1,4 @@
-import { mdiAlertCircleOutline, mdiClose } from "@mdi/js";
+import { mdiAlertCircleOutline, mdiClose, mdiInformationOutline } from "@mdi/js";
 import type { TemplateResult, PropertyValues, HTMLTemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { consume } from "@lit/context";
@@ -7,17 +7,22 @@ import { classMap } from "lit/directives/class-map";
 import memoize from "memoize-one";
 
 import "@ha/components/ha-icon-button";
+import "@ha/components/ha-svg-icon";
+import type { HomeAssistant } from "@ha/types";
 import { fireEvent } from "@ha/common/dom/fire_event";
 
 import "./knx-dpt-option-selector";
 import "./knx-dpt-dialog-selector";
 import "./knx-single-address-selector";
+import "./data-table/knx-data-table-related-label";
 import type { DragDropContext } from "../utils/drag-drop-context";
 import { dragDropContext } from "../utils/drag-drop-context";
 import { isValidDPT, dptToString, stringToDpt } from "../utils/dpt";
 import { getValidationError, extractValidationErrors } from "../utils/validation";
 import type { ErrorDescription, GASchema } from "../types/entity_data";
 import { knxProjectContext } from "../data/knx-project-context";
+import { groupAddressUsageContext } from "../data/knx-group-address-usage-context";
+import type { GroupAddressUsageMap } from "../data/knx-group-address-usage-context";
 import type { KNX } from "../types/knx";
 import type { GASelectorOptions } from "../types/schema";
 import type { DPT, GroupAddress, KNXProject } from "../types/websocket";
@@ -31,6 +36,14 @@ export class GroupAddressSelector extends LitElement {
   @state()
   @consume({ context: knxProjectContext, subscribe: true })
   private _projectData: KNXProject | null = null;
+
+  // only provided where usage should be shown - eg. the entity and expose editors
+  @state()
+  @consume({ context: groupAddressUsageContext, subscribe: true })
+  private _groupAddressUsage?: GroupAddressUsageMap;
+
+  // optional - for the state icons of entities also using a group address
+  @property({ attribute: false }) public hass?: HomeAssistant;
 
   @property({ attribute: false }) public knx!: KNX;
 
@@ -210,7 +223,8 @@ export class GroupAddressSelector extends LitElement {
                   @value-changed=${this._valueChanged}
                   @dragover=${this._dragOverHandler}
                   @drop=${this._dropHandler}
-                ></knx-single-address-selector>`
+                  >${this._renderUsedBy(this.config.write)}</knx-single-address-selector
+                >`
               : nothing
           }
           ${
@@ -235,7 +249,8 @@ export class GroupAddressSelector extends LitElement {
                   @value-changed=${this._valueChanged}
                   @dragover=${this._dragOverHandler}
                   @drop=${this._dropHandler}
-                ></knx-single-address-selector>`
+                  >${this._renderUsedBy(this.config.state)}</knx-single-address-selector
+                >`
               : nothing
           }
         </div>
@@ -268,7 +283,8 @@ export class GroupAddressSelector extends LitElement {
                     @value-changed=${this._valueChangedPassive}
                     @dragover=${this._dragOverHandler}
                     @drop=${this._dropHandler}
-                  ></knx-single-address-selector>
+                    >${this._renderUsedBy(ga)}</knx-single-address-selector
+                  >
                   <ha-icon-button
                     class="remove-passive"
                     .path=${mdiClose}
@@ -461,6 +477,21 @@ export class GroupAddressSelector extends LitElement {
     return this._baseTranslation("dpt_incompatible", { dpt });
   }
 
+  /** The entities and exposes using this group address. */
+  private _renderUsedBy(ga?: string | null): TemplateResult | typeof nothing {
+    const usage = ga ? this._groupAddressUsage?.[ga] : undefined;
+    if (!usage || !(usage.entities.length || usage.exposes.length)) return nothing;
+    return html`<div class="used-by">
+      <ha-svg-icon .path=${mdiInformationOutline}></ha-svg-icon>
+      <span>${this._baseTranslation("used_by")}</span>
+      <knx-data-table-related-label
+        .hass=${this.hass}
+        .entities=${usage.entities}
+        .exposes=${usage.exposes}
+      ></knx-data-table-related-label>
+    </div>`;
+  }
+
   private _addPassiveSelector = (ev?: Event) => {
     if (ev) ev.preventDefault();
     // Only allow adding if no empty field is currently shown
@@ -608,6 +639,7 @@ export class GroupAddressSelector extends LitElement {
 
     .selectors {
       flex: 1;
+      min-width: 0;
     }
 
     .options {
@@ -638,6 +670,7 @@ export class GroupAddressSelector extends LitElement {
 
     .passive-row knx-single-address-selector {
       flex: 1 1 auto;
+      min-width: 0;
     }
 
     .title {
@@ -703,6 +736,37 @@ export class GroupAddressSelector extends LitElement {
       transition:
         box-shadow 250ms,
         opacity 250ms;
+    }
+
+    .used-by {
+      display: flex;
+      flex-wrap: wrap; /* the labels move below the text when they don't fit beside it */
+      align-items: flex-start;
+      gap: 4px;
+      margin-top: 4px;
+      padding-left: 16px;
+      font-size: 0.75rem;
+      line-height: 24px; /* height of a dense ha-label */
+      color: var(--secondary-text-color);
+    }
+
+    .used-by ha-svg-icon {
+      flex: none;
+      margin-top: 4px;
+      --mdc-icon-size: 16px;
+    }
+
+    .used-by span {
+      /* shares a line with the icon */
+      flex: 0 1 auto;
+      min-width: 0;
+      max-width: calc(100% - 24px);
+      margin-right: 4px;
+      overflow-wrap: anywhere;
+    }
+
+    .used-by knx-data-table-related-label {
+      flex: 0 1 auto;
     }
 
     .valid-drop-zone {

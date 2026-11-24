@@ -51,6 +51,7 @@ import { validDPTsForSchema } from "../utils/dpt";
 import { exitFlow, navigateInFlow, navigateToError } from "../utils/navigation";
 import { localizeValidationErrors } from "../utils/validation";
 import { PreventUnsavedMixin } from "../mixins/prevent-unsaved-mixin";
+import { KnxGroupAddressUsageProvider } from "../data/knx-group-address-usage-context";
 import { dragDropContext, DragDropContext } from "../utils/drag-drop-context";
 import { KNXLogger } from "../tools/knx-logger";
 import type { KNX } from "../types/knx";
@@ -147,6 +148,8 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
     }),
   });
 
+  private _groupAddressUsageProvider = new KnxGroupAddressUsageProvider(this, { type: "entity" });
+
   protected willUpdate(changedProperties: PropertyValues<this>) {
     super.willUpdate(changedProperties); // dirty state listeners are handled by the mixin
     if (changedProperties.has("route")) {
@@ -170,6 +173,7 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
         // knx/entities/create -> path: ""; knx/entities/create/ -> path: "/"
         // knx/entities/create/light -> path: "/light"
         this.entityId = undefined; // clear entityId for create intent
+        this._groupAddressUsageProvider.setExcludedEntityId(undefined);
         this.entityPlatform = this.route.path.split("/")[1];
         if (mainWindow.history.state?.entityData) {
           // unlike url parameters, `knx-configure-entity` can't apply this itself
@@ -179,6 +183,7 @@ export class KNXCreateEntity extends DirtyStateProviderMixin<EntityData>()(
       } else if (intent === "edit") {
         // knx/entities/edit/light.living_room -> path: "/light.living_room"
         this.entityId = this.route.path.split("/")[1];
+        this._groupAddressUsageProvider.setExcludedEntityId(this.entityId);
         // this.entityPlatform will be set from load task result - triggering the next load task
         this._initDirtyTracking({ type: "deep" }); // baseline is set from the loaded config
       }

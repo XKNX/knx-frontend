@@ -130,6 +130,7 @@ export class KnxSingleAddressSelector extends LitElement {
       </div>
       ${this.hintMessage ? html`<p class="hint-message">${this.hintMessage}</p>` : nothing}
       ${this.invalidMessage ? html`<p class="invalid-message">${this.invalidMessage}</p>` : nothing}
+      <slot></slot>
     `;
   }
 

@@ -58,4 +58,43 @@ describe("GroupMonitorTelegramInfoDialog", () => {
     automationButton.dispatchEvent(new MouseEvent("click", { bubbles: true, composed: true }));
     expect(editorEvent).toBeUndefined();
   });
+
+  it("lists the entities and exposes using the destination address", async () => {
+    const telegram = new TelegramRow({
+      timestamp: "2026-09-06T12:00:00Z",
+      source: "1.1.1",
+      source_name: "Wall switch",
+      destination: "1/2/3",
+      destination_name: "Ceiling Light",
+      telegramtype: "GroupValueWrite",
+      direction: "Incoming",
+      payload: [1],
+      dpt_main: 1,
+      dpt_sub: 1,
+      dpt_name: "Switch",
+      value: "On",
+      unit: null,
+    });
+    const dialog = new GroupMonitorTelegramInfoDialog();
+    dialog.hass = { localize: vi.fn((key) => key) } as any;
+    const entity = { entity_id: "light.ceiling", ui: true, disabled: false };
+    (dialog as any)._entitiesByGroupCtx = { groups: { "1/2/3": [entity] } };
+    // the backend maps expose entity ids to their group addresses
+    (dialog as any)._exposeGroupsCtx = {
+      groups: { "sensor.outdoor": ["1/2/3", "1/2/3"], "sensor.other": ["9/9/9"] },
+    };
+
+    await dialog.showDialog({
+      knx: { localize: vi.fn((key) => key) } as any,
+      telegram,
+      narrow: false,
+      filteredTelegrams: [telegram],
+    });
+    const container = document.createElement("div");
+    render((dialog as any).render(), container, { host: dialog });
+    const related = container.querySelector("knx-data-table-related-label") as any;
+
+    expect(related.entities).toEqual([entity]);
+    expect(related.exposes).toEqual(["sensor.outdoor"]);
+  });
 });
