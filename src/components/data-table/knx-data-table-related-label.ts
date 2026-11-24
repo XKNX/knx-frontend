@@ -174,7 +174,7 @@ class KnxDataTableRelatedLabel extends LitElement {
       <ha-label
         dense
         class=${classMap({ "expose-label": true, "text-ellipsis": true, yaml: !expose.ui })}
-        .description=${expose.ui ? exposeTitle : `${exposeTitle} YAML`}
+        .description=${expose.ui ? exposeTitle : `YAML ${exposeTitle}`}
       >
         <ha-svg-icon slot="icon" .path=${exposeTab.iconPath}></ha-svg-icon>
         ${expose.entity_id}
