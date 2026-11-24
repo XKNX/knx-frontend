@@ -333,7 +333,9 @@ export class KNXEntitiesSuggestions extends LitElement {
             ${this.knx.localize("suggestions_provider_count", { count })}
           </span>
         </div>
-        ${provider.groups.map((group) => this._renderGroup(group))}
+        <div class="provider-groups">
+          ${provider.groups.map((group) => this._renderGroup(group))}
+        </div>
       </knx-sticky-expansion-panel>
     `;
   }
@@ -674,7 +676,16 @@ export class KNXEntitiesSuggestions extends LitElement {
     knx-sticky-expansion-panel.provider-panel {
       margin-bottom: 16px;
       --sticky-expansion-panel-header-padding: 4px 16px 4px 8px;
-      --sticky-expansion-panel-content-padding: 16px 16px 0;
+      --sticky-expansion-panel-content-padding: 0;
+    }
+
+    /* the cards of the groups stand out against the tinted body of the panel,
+       its header keeps the card color */
+    .provider-groups {
+      padding: 16px 16px 0;
+      background-color: var(--primary-background-color);
+      /* the margin of the last card stays inside the tinted area */
+      display: flow-root;
     }
 
     .provider-heading {
