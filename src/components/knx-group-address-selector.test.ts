@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ContextProvider } from "@lit/context";
 
 import { internationalizationContext } from "@ha/data/context";
+import { groupAddressUsageContext } from "../data/knx-group-address-usage-context";
+import type { GroupAddressUsageMap } from "../data/knx-group-address-usage-context";
 import type { GASchema } from "../types/entity_data";
 import type { GASelectorOptions } from "../types/schema";
 import type { DPTMetadata, GroupAddress, KNXProject } from "../types/websocket";
@@ -35,18 +37,25 @@ const PROJECT = {
 
 const DPT_CLASSES = ["numeric", "enum", "string", "complex"];
 
+// Returns the key; the calls show the values a string was localized with.
+const localize = vi.fn((key: string, _values?: Record<string, unknown>) => key);
+
 // The selector and its children consume HA's localize context.
 const createHost = () => {
   const host = document.createElement("div");
   new ContextProvider(host, {
     context: internationalizationContext,
-    initialValue: { localize: (key: string) => key } as any,
+    initialValue: { localize } as any,
   });
   document.body.appendChild(host);
   return host;
 };
 
-const createSelector = async (config: GASchema, options: Partial<GASelectorOptions> = {}) => {
+const createSelector = async (
+  config: GASchema,
+  options: Partial<GASelectorOptions> = {},
+  usage?: GroupAddressUsageMap,
+) => {
   const element = new GroupAddressSelector();
   element.knx = { dptMetadata: DPT_METADATA } as any;
   (element as any)._projectData = PROJECT;
@@ -57,7 +66,11 @@ const createSelector = async (config: GASchema, options: Partial<GASelectorOptio
   element.addEventListener("value-changed", (ev) => {
     emitted.push((ev as CustomEvent).detail.value);
   });
-  createHost().appendChild(element);
+  const host = createHost();
+  if (usage) {
+    new ContextProvider(host, { context: groupAddressUsageContext, initialValue: usage });
+  }
+  host.appendChild(element);
   await element.updateComplete;
   return { element, emitted };
 };
@@ -81,6 +94,7 @@ const pickDpt = (selector: Selector, dpt: string) =>
   change(selector, child(selector, "knx-dpt-dialog-selector"), dpt);
 
 afterEach(() => {
+  localize.mockClear();
   document.body.innerHTML = "";
 });
 
@@ -147,6 +161,43 @@ describe("knx-group-address-selector", () => {
       const selector = await createSelector({ write: "7/7/7", dpt: "5.001" }, options);
 
       expect(addresses(selector)).toEqual([DIMMER.address]);
+    });
+  });
+
+  describe("with a group address used elsewhere", () => {
+    const relatedEntity = (entity_id: string) => ({ entity_id, ui: true, disabled: false });
+    const usage: GroupAddressUsageMap = {
+      [LIGHT.address]: { entities: [relatedEntity("light.kitchen")], exposes: ["sensor.outdoor"] },
+      [DIMMER.address]: {
+        entities: ["a", "b", "c", "d", "e"].map((name) => relatedEntity(`light.${name}`)),
+        exposes: [],
+      },
+    };
+    const infoMessage = (selector: Selector) =>
+      (child(selector, "knx-single-address-selector") as any).infoMessage;
+    const alsoUsedByValues = () =>
+      localize.mock.calls.find(([key]) => key.endsWith(".also_used_by"))?.[1];
+
+    it("hints at the other entities and exposes", async () => {
+      const selector = await createSelector({ write: LIGHT.address }, {}, usage);
+
+      expect(infoMessage(selector)).toContain("knx_group_address.also_used_by");
+      expect(alsoUsedByValues()).toEqual({
+        entities: "light.kitchen, sensor.outdoor (component.knx.config_panel.expose.title)",
+      });
+    });
+
+    it("sums up long lists", async () => {
+      await createSelector({ write: DIMMER.address }, {}, usage);
+
+      expect(alsoUsedByValues()).toEqual({
+        entities: "light.a, light.b, light.c +2",
+      });
+    });
+
+    it("shows no hint for an unused address or without usage data", async () => {
+      expect(infoMessage(await createSelector({ write: "7/7/7" }, {}, usage))).toBeUndefined();
+      expect(infoMessage(await createSelector({ write: LIGHT.address }))).toBeUndefined();
     });
   });
 });

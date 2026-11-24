@@ -18,11 +18,16 @@ import { isValidDPT, dptToString, stringToDpt } from "../utils/dpt";
 import { getValidationError, extractValidationErrors } from "../utils/validation";
 import type { ErrorDescription, GASchema } from "../types/entity_data";
 import { knxProjectContext } from "../data/knx-project-context";
+import { groupAddressUsageContext } from "../data/knx-group-address-usage-context";
+import type { GroupAddressUsageMap } from "../data/knx-group-address-usage-context";
 import type { KNX } from "../types/knx";
 import type { GASelectorOptions } from "../types/schema";
 import type { DPT, GroupAddress, KNXProject } from "../types/websocket";
 import { consumeKnxLocalize } from "../localize/consume-knx-localize";
 import type { KnxLocalizeFunc } from "../localize/localize";
+
+/** More users of a group address are summed up as "+n". */
+const MAX_ALSO_USED_BY_NAMES = 3;
 
 @customElement("knx-group-address-selector")
 export class GroupAddressSelector extends LitElement {
@@ -31,6 +36,11 @@ export class GroupAddressSelector extends LitElement {
   @state()
   @consume({ context: knxProjectContext, subscribe: true })
   private _projectData: KNXProject | null = null;
+
+  // only provided in the entity and expose editors
+  @state()
+  @consume({ context: groupAddressUsageContext, subscribe: true })
+  private _groupAddressUsage?: GroupAddressUsageMap;
 
   @property({ attribute: false }) public knx!: KNX;
 
@@ -207,6 +217,7 @@ export class GroupAddressSelector extends LitElement {
                       ? this._dptMismatchMessage(this.config.write)
                       : undefined
                   }
+                  .infoMessage=${this._alsoUsedByMessage(this.config.write)}
                   @value-changed=${this._valueChanged}
                   @dragover=${this._dragOverHandler}
                   @drop=${this._dropHandler}
@@ -232,6 +243,7 @@ export class GroupAddressSelector extends LitElement {
                       ? this._dptMismatchMessage(this.config.state)
                       : undefined
                   }
+                  .infoMessage=${this._alsoUsedByMessage(this.config.state)}
                   @value-changed=${this._valueChanged}
                   @dragover=${this._dragOverHandler}
                   @drop=${this._dropHandler}
@@ -265,6 +277,7 @@ export class GroupAddressSelector extends LitElement {
                     .hintMessage=${
                       this._isGaDptMismatch(ga) ? this._dptMismatchMessage(ga) : undefined
                     }
+                    .infoMessage=${this._alsoUsedByMessage(ga)}
                     @value-changed=${this._valueChangedPassive}
                     @dragover=${this._dragOverHandler}
                     @drop=${this._dropHandler}
@@ -459,6 +472,24 @@ export class GroupAddressSelector extends LitElement {
     if (!ga || !this._projectData) return undefined;
     const dpt = dptToString(this._projectData.group_addresses[ga]?.dpt) ?? "?";
     return this._baseTranslation("dpt_incompatible", { dpt });
+  }
+
+  /** Hint that other entities or exposes already use this group address. */
+  private _alsoUsedByMessage(ga?: string | null): string | undefined {
+    const usage = ga ? this._groupAddressUsage?.[ga] : undefined;
+    if (!usage) return undefined;
+    const names = [
+      ...usage.entities.map((entity) => entity.entity_id),
+      ...usage.exposes.map(
+        (entityId) => `${entityId} (${this.localize("component.knx.config_panel.expose.title")})`,
+      ),
+    ];
+    if (!names.length) return undefined;
+    const shown = names.slice(0, MAX_ALSO_USED_BY_NAMES).join(", ");
+    const more = names.length - MAX_ALSO_USED_BY_NAMES;
+    return this._baseTranslation("also_used_by", {
+      entities: more > 0 ? `${shown} +${more}` : shown,
+    });
   }
 
   private _addPassiveSelector = (ev?: Event) => {
