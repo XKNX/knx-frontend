@@ -32,6 +32,35 @@ class LogStartCompilePlugin {
   }
 }
 
+// Resolve @home-assistant/components entry points to their sources, so the package
+// needs no build step. The entry points are read from the "ha-source" export
+// condition of the package; subpath patterns are expanded for every element,
+// i.e. every directory with a global.ts, like "card".
+const COMPONENTS_PACKAGE_DIR = path.join(
+  paths.root_dir,
+  "homeassistant-frontend",
+  "packages",
+  "components",
+);
+const COMPONENTS_SRC_DIR = path.join(COMPONENTS_PACKAGE_DIR, "src", "components");
+const componentElements = fs
+  .readdirSync(COMPONENTS_SRC_DIR, { recursive: true })
+  .filter((file) => path.basename(file) === "global.ts")
+  .map((file) => path.dirname(file).split(path.sep).join("/"));
+const componentsSourceAliases = Object.fromEntries(
+  Object.entries(require(path.join(COMPONENTS_PACKAGE_DIR, "package.json")).exports)
+    .filter(([, target]) => target["ha-source"])
+    .flatMap(([subpath, target]) =>
+      (subpath.includes("*") ? componentElements : [undefined]).map((name) => [
+        `${path.posix.join("@home-assistant/components", name ? subpath.replaceAll("*", name) : subpath)}$`,
+        path.join(
+          COMPONENTS_PACKAGE_DIR,
+          name ? target["ha-source"].replaceAll("*", name) : target["ha-source"],
+        ),
+      ]),
+    ),
+);
+
 // Directory of the babel-loader cache. Defaults to babel-loader's own location under
 // node_modules/.cache. Set BABEL_CACHE_DIR to use another directory or to "false" to disable it.
 // Local entries are never pruned: every pnpm-lock.yaml change invalidates all entries and adds a new
@@ -261,6 +290,7 @@ const createRspackConfig = ({
             "homeassistant-frontend/src/resources/polyfills/bigdecimal.ts",
           ),
         }),
+        ...componentsSourceAliases,
         "lit/static-html$": "lit/static-html.js",
         "lit/decorators$": "lit/decorators.js",
         "lit/directive$": "lit/directive.js",

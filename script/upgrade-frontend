@@ -19,7 +19,7 @@ else
     tagSource="latest"
     newTag=$(git describe --tags `git rev-list --tags --max-count=1`)
 fi
-if [ "$previousTag" == "$newTag" ]; then
+if [ "$previousTag" = "$newTag" ]; then
     echo "Skipping update. Already on $tagSource tag: $newTag"
     exit 0
 fi
