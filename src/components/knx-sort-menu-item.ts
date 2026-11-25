@@ -13,7 +13,7 @@ import { mdiArrowDown, mdiArrowUp } from "@mdi/js";
 
 import "@ha/components/ha-icon-button";
 import "@ha/components/ha-svg-icon";
-import "@ha/components/ha-list-item";
+import "@ha/components/item/ha-list-item-button";
 
 import type { SortDirection } from "../types/sorting";
 import { SORT_ASC, SORT_DESC } from "../types/sorting";
@@ -164,19 +164,16 @@ export class KnxSortMenuItem extends LitElement {
    */
   protected render(): TemplateResult {
     return html`
-      <ha-list-item
+      <ha-list-item-button
+        role="presentation"
         class="sort-row ${this.active ? "active" : ""} ${this.disabled ? "disabled" : ""}"
         @click=${this.disabled ? nothing : this._handleItemClick}
       >
-        <div class="container">
-          <div class="sort-field-name" title=${this.displayName} aria-label=${this.displayName}>
-            ${this.displayName}
-          </div>
-          <div class="sort-buttons">
-            ${this.isMobileDevice ? this._renderMobileButtons() : this._renderDesktopButtons()}
-          </div>
+        <span slot="headline" title=${this.displayName}>${this.displayName}</span>
+        <div slot="end" class="sort-buttons">
+          ${this.isMobileDevice ? this._renderMobileButtons() : this._renderDesktopButtons()}
         </div>
-      </ha-list-item>
+      </ha-list-item-button>
     `;
   }
 
@@ -313,12 +310,12 @@ export class KnxSortMenuItem extends LitElement {
     }
 
     .sort-row {
-      display: block;
-      padding: 0 16px;
+      --ha-row-item-padding-block: 0;
+      --ha-row-item-gap: 10px;
     }
 
     .sort-row.active {
-      --mdc-theme-text-primary-on-background: var(--primary-color);
+      color: var(--primary-color);
       background-color: var(--mdc-theme-surface-variant, rgba(var(--rgb-primary-color), 0.06));
       font-weight: 500;
     }
@@ -329,29 +326,10 @@ export class KnxSortMenuItem extends LitElement {
     }
 
     .sort-row.disabled.active {
-      --mdc-theme-text-primary-on-background: var(--primary-color);
+      color: var(--primary-color);
       background-color: var(--mdc-theme-surface-variant, rgba(var(--rgb-primary-color), 0.06));
       font-weight: 500;
       opacity: 0.6;
-    }
-
-    .container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-      height: 48px;
-      gap: 10px;
-    }
-
-    .sort-field-name {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: 1rem;
-      align-items: center;
     }
 
     .sort-buttons {

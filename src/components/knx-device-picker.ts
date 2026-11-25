@@ -3,7 +3,6 @@
  * Unlike the ha-device-picker or selector, its value is the device identifier
  * (second tuple item), not the device id.
  * */
-import type { RenderItemFunction } from "@lit-labs/virtualizer/virtualize";
 import type { PropertyValues, TemplateResult } from "lit";
 import { LitElement, html } from "lit";
 import { customElement, query, property, state } from "lit/decorators";
@@ -11,7 +10,6 @@ import memoizeOne from "memoize-one";
 
 import "@ha/components/ha-generic-picker";
 import type { HaGenericPicker } from "@ha/components/ha-generic-picker";
-import "@ha/components/ha-list-item";
 
 import { fireEvent } from "@ha/common/dom/fire_event";
 import type { ScorableTextItem } from "@ha/common/string/filter/sequence-matching";
@@ -35,12 +33,6 @@ interface Device extends PickerComboBoxItem {
 }
 
 type ScorableDevice = ScorableTextItem & Device;
-
-const rowRenderer: RenderItemFunction<Device> = (item) =>
-  html`<ha-list-item .twoline=${!!item.secondary} style="width: 100%">
-    <span>${item.primary}</span>
-    <span slot="secondary">${item.secondary}</span>
-  </ha-list-item>`;
 
 @customElement("knx-device-picker")
 class KnxDevicePicker extends LitElement {
@@ -145,7 +137,6 @@ class KnxDevicePicker extends LitElement {
         .notFoundLabel=${this._notFoundLabel}
         .helper=${this.helper}
         .value=${this._deviceId}
-        .rowRenderer=${rowRenderer}
         .valueRenderer=${this._valueRenderer}
         .getItems=${this._getPickerItems}
         .searchKeys=${SEARCH_KEYS}
