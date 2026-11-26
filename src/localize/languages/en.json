@@ -38,5 +38,8 @@
   "suggestions_already_configured": "Group addresses already used by: {entities}",
   "suggestions_template_entity": "Configured like {entity}",
   "suggestions_open_in_editor": "Open in editor",
-  "suggestions_create_selected": "{count, plural, one {Create # entity} other {Create # entities}}"
+  "suggestions_create_selected": "{count, plural, one {Create # entity} other {Create # entities}}",
+  "suggestions_assign_areas": "Assign areas from the ETS building structure",
+  "suggestions_strip_sort_numbers": "Remove sort numbers like \"05. \" from the names of floors and areas",
+  "suggestions_area_error": "The entity was created, but could not be assigned to the area {area}: {error}"
 }

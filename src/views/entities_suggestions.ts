@@ -20,6 +20,9 @@ import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-switch";
 import "@ha/components/input/ha-input";
 import { navigate } from "@ha/common/navigate";
+import { createAreaRegistryEntry } from "@ha/data/area/area_registry";
+import { updateEntityRegistryEntry } from "@ha/data/entity/entity_registry";
+import { createFloorRegistryEntry } from "@ha/data/floor_registry";
 import type { HomeAssistant, Route } from "@ha/types";
 
 import "../components/knx-sticky-expansion-panel";
@@ -27,6 +30,7 @@ import { createEntity, getEntitySuggestions, validateEntity } from "services/web
 import type { EntityData, SupportedPlatform } from "types/entity_data";
 
 import { showKnxProjectUploadDialog } from "../dialogs/show-knx-project-upload-dialog";
+import { knxProjectContext } from "../data/knx-project-context";
 import {
   entitiesByGroupContext,
   type EntitiesByGroupContextValue,
@@ -42,9 +46,18 @@ import {
   type SuggestionGroup,
   type SuggestionProviderInfo,
 } from "../utils/entity-suggestions";
+import {
+  findRegistryIdByName,
+  getProjectAreas,
+  normalizeRegistryName,
+  suggestionArea,
+  type ProjectArea,
+  type ProjectAreas,
+  type ProjectFloor,
+} from "../utils/project-areas";
 import { KNXLogger } from "../tools/knx-logger";
 import type { KNX } from "../types/knx";
-import type { EntitySuggestion, EntitySuggestionsResult } from "../types/websocket";
+import type { EntitySuggestion, EntitySuggestionsResult, KNXProject } from "../types/websocket";
 
 const logger = new KNXLogger("knx-entities-suggestions");
 
@@ -77,6 +90,8 @@ interface RowState {
   platform: SupportedPlatform;
   status: "idle" | "creating" | "created" | "error";
   errorMessage?: string;
+  // the entity was created, but could not be assigned to its area
+  areaErrorMessage?: string;
 }
 
 @customElement("knx-entities-suggestions")
@@ -93,6 +108,22 @@ export class KNXEntitiesSuggestions extends LitElement {
 
   @consume({ context: entitiesByGroupContext, subscribe: false })
   private _entitiesByGroupCtx?: EntitiesByGroupContextValue | null;
+
+  @consume({ context: knxProjectContext, subscribe: true })
+  @state()
+  private _projectData: KNXProject | null = null;
+
+  // assign created entities to areas derived from the ETS building structure
+  @state() private _assignAreas = false;
+
+  // remove sort numbers like "05. " from the names of floors and areas
+  @state() private _stripSortNumbers = false;
+
+  private _projectAreasCache?: {
+    project: KNXProject;
+    stripSortNumbers: boolean;
+    areas: ProjectAreas;
+  };
 
   @state() private _rowStates: Record<string, RowState> = {};
 
@@ -130,6 +161,24 @@ export class KNXEntitiesSuggestions extends LitElement {
       ...this._rowStates,
       [suggestion.id]: { ...this._rowState(suggestion), ...update },
     };
+  }
+
+  /** Floors and areas of the ETS building structure - undefined while there is none. */
+  private _projectAreas(): ProjectAreas | undefined {
+    const project = this._projectData;
+    if (!project?.locations || !Object.keys(project.locations).length) return undefined;
+    const stripSortNumbers = this._stripSortNumbers;
+    if (
+      this._projectAreasCache?.project !== project ||
+      this._projectAreasCache.stripSortNumbers !== stripSortNumbers
+    ) {
+      this._projectAreasCache = {
+        project,
+        stripSortNumbers,
+        areas: getProjectAreas(project.locations, { stripSortNumbers }),
+      };
+    }
+    return this._projectAreasCache.areas;
   }
 
   protected render(): TemplateResult {
@@ -306,6 +355,7 @@ export class KNXEntitiesSuggestions extends LitElement {
         (provider) => this._renderProviderSuggestions(provider),
       )}
       <div class="footer">
+        ${this._renderAssignAreasSwitch()}
         <ha-button
           size="l"
           @click=${this._createSelected}
@@ -314,6 +364,30 @@ export class KNXEntitiesSuggestions extends LitElement {
           <ha-svg-icon slot="start" .path=${mdiPlus}></ha-svg-icon>
           ${this.knx.localize("suggestions_create_selected", { count: selectedCount })}
         </ha-button>
+      </div>
+    `;
+  }
+
+  private _renderAssignAreasSwitch(): TemplateResult | typeof nothing {
+    if (!this._projectAreas()) return nothing;
+    return html`
+      <div class="area-options">
+        <ha-switch
+          .checked=${this._assignAreas}
+          .disabled=${this._creating}
+          @change=${this._assignAreasChanged}
+          >${this.knx.localize("suggestions_assign_areas")}</ha-switch
+        >
+        ${
+          this._assignAreas
+            ? html`<ha-switch
+                .checked=${this._stripSortNumbers}
+                .disabled=${this._creating}
+                @change=${this._stripSortNumbersChanged}
+                >${this.knx.localize("suggestions_strip_sort_numbers")}</ha-switch
+              >`
+            : nothing
+        }
       </div>
     `;
   }
@@ -389,6 +463,7 @@ export class KNXEntitiesSuggestions extends LitElement {
         })
       : undefined;
     const templateEntityInfo = this._templateEntityInfo(suggestion);
+    const areaInfo = this._areaInfo(suggestion);
     return html`
       <div class="row">
         <ha-checkbox
@@ -447,9 +522,15 @@ export class KNXEntitiesSuggestions extends LitElement {
               ? html`<div class="row-secondary existing">${existingEntitiesInfo}</div>`
               : nothing
           }
+          ${areaInfo ? html`<div class="row-secondary">${areaInfo}</div>` : nothing}
           ${
             rowState.status === "error"
               ? html`<ha-alert alert-type="error">${rowState.errorMessage}</ha-alert>`
+              : nothing
+          }
+          ${
+            rowState.areaErrorMessage
+              ? html`<ha-alert alert-type="warning">${rowState.areaErrorMessage}</ha-alert>`
               : nothing
           }
         </div>
@@ -483,6 +564,17 @@ export class KNXEntitiesSuggestions extends LitElement {
     if (typeof entityId !== "string") return undefined;
     return this.knx.localize("suggestions_template_entity", {
       entity: this.hass.states[entityId]?.attributes.friendly_name ?? entityId,
+    });
+  }
+
+  /** The area an entity created from this suggestion is assigned to. */
+  private _areaInfo(suggestion: EntitySuggestion): string | undefined {
+    const projectAreas = this._assignAreas ? this._projectAreas() : undefined;
+    if (!projectAreas) return undefined;
+    const area = suggestionArea(suggestion, projectAreas);
+    if (!area) return this.knx.localize("ui.panel.config.integrations.config_entry.no_area");
+    return this.knx.localize("ui.panel.config.integrations.config_entry.area", {
+      area: area.floor ? `${area.name} (${area.floor.name})` : area.name,
     });
   }
 
@@ -535,6 +627,14 @@ export class KNXEntitiesSuggestions extends LitElement {
     this._rowStates = rowStates;
   };
 
+  private _assignAreasChanged = (ev: Event) => {
+    this._assignAreas = (ev.target as HTMLInputElement).checked;
+  };
+
+  private _stripSortNumbersChanged = (ev: Event) => {
+    this._stripSortNumbers = (ev.target as HTMLInputElement).checked;
+  };
+
   private _providerVisibilityChanged = (ev: Event) => {
     const providerId = (ev.currentTarget as HTMLElement).getAttribute("data-provider-id");
     if (!providerId) return;
@@ -583,8 +683,15 @@ export class KNXEntitiesSuggestions extends LitElement {
   private async _createSelected() {
     // suggestions of a filtered out provider are not created
     const suggestions = this._visibleSuggestions();
+    const projectAreas = this._assignAreas ? this._projectAreas() : undefined;
+    // ids of floors and areas by normalized name - including those created in this run,
+    // which `hass.floors` and `hass.areas` may not list yet
+    const registryIds = { floors: new Map<string, string>(), areas: new Map<string, string>() };
     this._creating = true;
     try {
+      if (projectAreas) {
+        await this._ensureFloorsInOrder(suggestions, projectAreas, registryIds.floors);
+      }
       for (const suggestion of suggestions) {
         const rowState = this._rowState(suggestion);
         if (!rowState.selected || rowState.status === "created") continue;
@@ -617,6 +724,25 @@ export class KNXEntitiesSuggestions extends LitElement {
           }
           logger.debug("created entity", result.entity_id, "for", suggestion.id);
           this._updateRowState(suggestion, { status: "created", selected: false });
+          const area = projectAreas && suggestionArea(suggestion, projectAreas);
+          if (area && result.entity_id) {
+            try {
+              // eslint-disable-next-line no-await-in-loop
+              const areaId = await this._ensureArea(area, registryIds);
+              // eslint-disable-next-line no-await-in-loop
+              await updateEntityRegistryEntry(this.hass.callWS, result.entity_id, {
+                area_id: areaId,
+              });
+            } catch (err) {
+              logger.error("Error assigning area", err);
+              this._updateRowState(suggestion, {
+                areaErrorMessage: this.knx.localize("suggestions_area_error", {
+                  area: area.name,
+                  error: `${(err as { message?: string })?.message ?? err}`,
+                }),
+              });
+            }
+          }
         } catch (err) {
           logger.error("Error creating entity", err);
           this._updateRowState(suggestion, {
@@ -628,6 +754,75 @@ export class KNXEntitiesSuggestions extends LitElement {
     } finally {
       this._creating = false;
       this._entitiesByGroupCtx?.reload();
+    }
+  }
+
+  /**
+   * The id of the area of the given name - created on its floor, and the floor
+   * created too, if there is none of that name yet. An existing area is kept as is.
+   */
+  private async _ensureArea(
+    area: ProjectArea,
+    registryIds: { floors: Map<string, string>; areas: Map<string, string> },
+  ): Promise<string> {
+    const areaKey = normalizeRegistryName(area.name);
+    const knownAreaId =
+      registryIds.areas.get(areaKey) ?? findRegistryIdByName(this.hass.areas, area.name);
+    if (knownAreaId) {
+      registryIds.areas.set(areaKey, knownAreaId);
+      return knownAreaId;
+    }
+    const floorId = area.floor
+      ? await this._ensureFloor(area.floor, registryIds.floors)
+      : undefined;
+    const created = await createAreaRegistryEntry(this.hass, {
+      name: area.name,
+      ...(floorId ? { floor_id: floorId } : {}),
+    });
+    registryIds.areas.set(areaKey, created.area_id);
+    return created.area_id;
+  }
+
+  /** The id of the floor of the given name - created if there is none of that name yet. */
+  private async _ensureFloor(floor: ProjectFloor, floorIds: Map<string, string>): Promise<string> {
+    const floorKey = normalizeRegistryName(floor.name);
+    const floorId =
+      floorIds.get(floorKey) ??
+      findRegistryIdByName(this.hass.floors, floor.name) ??
+      (await createFloorRegistryEntry(this.hass.callWS, { name: floor.name })).floor_id;
+    floorIds.set(floorKey, floorId);
+    return floorId;
+  }
+
+  /**
+   * New floors are listed in the order they are created - the floors of the
+   * selected suggestions are created up front, in the order of the ETS building
+   * structure, instead of the order their first entity is created in.
+   * Their level is left unset: the ETS has no notion of the ground floor.
+   */
+  private async _ensureFloorsInOrder(
+    suggestions: EntitySuggestion[],
+    projectAreas: ProjectAreas,
+    floorIds: Map<string, string>,
+  ) {
+    const floors = new Set<ProjectFloor>();
+    suggestions.forEach((suggestion) => {
+      const rowState = this._rowState(suggestion);
+      if (!rowState.selected || rowState.status === "created") return;
+      const area = suggestionArea(suggestion, projectAreas);
+      // an existing area is kept on its floor - its floor of the ETS isn't needed
+      if (area?.floor && !findRegistryIdByName(this.hass.areas, area.name)) {
+        floors.add(area.floor);
+      }
+    });
+    for (const floor of [...floors].sort((a, b) => a.order - b.order)) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        await this._ensureFloor(floor, floorIds);
+      } catch (err) {
+        // retried with the first area on this floor - which reports the error
+        logger.error("Error creating floor", err);
+      }
     }
   }
 
@@ -813,7 +1008,18 @@ export class KNXEntitiesSuggestions extends LitElement {
 
     .footer {
       display: flex;
+      flex-wrap: wrap;
+      align-items: center;
       justify-content: flex-end;
+      gap: var(--ha-space-4, 16px);
+    }
+    /* the options of the entities to create - stacked, apart from the button */
+    .area-options {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--ha-space-2, 8px);
+      margin-inline-end: auto;
     }
   `;
 }
