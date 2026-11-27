@@ -1,10 +1,10 @@
 import {
   mdiAlertCircle,
+  mdiCheckboxMultipleBlankOutline,
+  mdiCheckboxMultipleMarkedOutline,
   mdiCheckCircle,
   mdiOpenInNew,
   mdiPlus,
-  mdiSelectAll,
-  mdiSelectOff,
 } from "@mdi/js";
 import type { TemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
@@ -183,7 +183,7 @@ export class KNXEntitiesSuggestions extends LitElement {
         slot="toolbar-icon"
         class="select-all"
         .label=${this.knx.localize("suggestions_select_all_shown")}
-        .path=${mdiSelectAll}
+        .path=${mdiCheckboxMultipleMarkedOutline}
         .disabled=${this._creating || selectedCount === selectable.length}
         @click=${this._selectAllClicked}
       ></ha-icon-button>
@@ -191,7 +191,7 @@ export class KNXEntitiesSuggestions extends LitElement {
         slot="toolbar-icon"
         class="deselect-all"
         .label=${this.knx.localize("suggestions_deselect_all_shown")}
-        .path=${mdiSelectOff}
+        .path=${mdiCheckboxMultipleBlankOutline}
         .disabled=${this._creating || !selectedCount}
         @click=${this._deselectAllClicked}
       ></ha-icon-button>
