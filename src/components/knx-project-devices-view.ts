@@ -22,6 +22,7 @@ import "./data-table/knx-data-table-related-label";
 import "./knx-sticky-expansion-panel";
 
 import type { KNX } from "../types/knx";
+import type { RelatedExpose } from "../data/exposes-by-group";
 import type { EntitiesByGroup, RelatedEntity } from "../data/knx-entities-by-group-context";
 import type { KNXProject, COFlags, GroupAddress, TelegramDict } from "../types/websocket";
 import type {
@@ -36,7 +37,7 @@ import { TelegramDictFormatter } from "../utils/format";
 
 interface RelatedRefs {
   entities: RelatedEntity[];
-  exposes: string[];
+  exposes: RelatedExpose[];
 }
 
 interface ScopeRelated {
@@ -87,7 +88,7 @@ export class KNXProjectDevicesView extends LitElement {
 
   @property({ attribute: false }) public entitiesByGroup: EntitiesByGroup | null = null;
 
-  @property({ attribute: false }) public exposesByGA: Record<string, string[]> | null = null;
+  @property({ attribute: false }) public exposesByGA: Record<string, RelatedExpose[]> | null = null;
 
   @property({ attribute: false }) public searchText = "";
 
@@ -124,7 +125,7 @@ export class KNXProjectDevicesView extends LitElement {
     (
       items: DeviceTreeItem[],
       entitiesByGroup: EntitiesByGroup | null,
-      exposesByGA: Record<string, string[]> | null,
+      exposesByGA: Record<string, RelatedExpose[]> | null,
     ): Record<string, ScopeRelated> => {
       const result: Record<string, ScopeRelated> = {};
       if (!entitiesByGroup && !exposesByGA) {
@@ -133,7 +134,7 @@ export class KNXProjectDevicesView extends LitElement {
       const processScope = (scopeKey: string, comObjects: ComObjectItem[]) => {
         // distinct GA addresses per related item within this scope
         const entityGas = new Map<string, { entity: RelatedEntity; gas: Set<string> }>();
-        const exposeGas = new Map<string, Set<string>>();
+        const exposeGas = new Map<string, { expose: RelatedExpose; gas: Set<string> }>();
         const addressSet = new Set<string>();
         comObjects.forEach((item) =>
           item.groupAddresses.forEach((ga) => addressSet.add(ga.address)),
@@ -144,10 +145,12 @@ export class KNXProjectDevicesView extends LitElement {
             item.gas.add(address);
             entityGas.set(entity.entity_id, item);
           });
-          exposesByGA?.[address]?.forEach((id) => {
-            const gas = exposeGas.get(id) ?? new Set<string>();
-            gas.add(address);
-            exposeGas.set(id, gas);
+          exposesByGA?.[address]?.forEach((expose) => {
+            // UI and YAML exposes of the same entity are separate items
+            const key = `${expose.entity_id}:${expose.ui}`;
+            const item = exposeGas.get(key) ?? { expose, gas: new Set<string>() };
+            item.gas.add(address);
+            exposeGas.set(key, item);
           });
         });
         if (!entityGas.size && !exposeGas.size) {
@@ -166,7 +169,7 @@ export class KNXProjectDevicesView extends LitElement {
           return byGa[address];
         };
         entityGas.forEach(({ entity, gas }) => targetFor(gas).entities.push(entity));
-        exposeGas.forEach((gas, id) => targetFor(gas).exposes.push(id));
+        exposeGas.forEach(({ expose, gas }) => targetFor(gas).exposes.push(expose));
         result[scopeKey] = { aggregated: hasRelatedRefs(aggregated) ? aggregated : null, byGa };
       };
 

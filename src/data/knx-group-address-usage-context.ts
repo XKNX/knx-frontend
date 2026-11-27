@@ -1,7 +1,7 @@
 import { ContextConsumer, ContextProvider, createContext } from "@lit/context";
 import type { ReactiveElement } from "lit";
 
-import { createExposesByGroupAddressMap } from "./exposes-by-group";
+import type { RelatedExpose } from "./exposes-by-group";
 import { entitiesByGroupContext } from "./knx-entities-by-group-context";
 import type { EntitiesByGroup, RelatedEntity } from "./knx-entities-by-group-context";
 import { exposeGroupsContext } from "./knx-expose-groups-context";
@@ -16,8 +16,8 @@ export interface GroupAddressUsageExclude {
 
 export interface GroupAddressUsage {
   entities: RelatedEntity[];
-  /** entity ids of exposes sending to the group address */
-  exposes: string[];
+  /** exposes sending to the group address */
+  exposes: RelatedExpose[];
 }
 
 /** Other entities and exposes using a group address, by group address. */
@@ -50,17 +50,18 @@ export const createGroupAddressUsageMap = (
     }
   });
 
-  Object.entries(exposeGroups ? createExposesByGroupAddressMap(exposeGroups) : {}).forEach(
-    ([groupAddress, exposes]) => {
+  Object.entries(exposeGroups ?? {}).forEach(([entityId, addresses]) => {
+    const excluded = exclude?.type === "expose" && entityId === exclude.entityId;
+    addresses.forEach(({ ga, ui }) => {
+      // only the UI expose is being edited - a YAML expose of the same entity is another use
+      if (excluded && ui) return;
+      const { exposes } = getUsage(ga);
       // an expose can send several of its options to the same group address
-      const others = [...new Set(exposes)].filter(
-        (entityId) => exclude?.type !== "expose" || entityId !== exclude.entityId,
-      );
-      if (others.length) {
-        getUsage(groupAddress).exposes = others;
+      if (!exposes.some((expose) => expose.entity_id === entityId && expose.ui === ui)) {
+        exposes.push({ entity_id: entityId, ui });
       }
-    },
-  );
+    });
+  });
 
   return usage;
 };

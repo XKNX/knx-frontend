@@ -44,6 +44,7 @@ import "../components/data-table/knx-data-table-ga-label";
 import "../components/data-table/filter/knx-list-filter";
 
 import { knxProjectContext } from "../data/knx-project-context";
+import { createUiExposeGroups } from "../data/exposes-by-group";
 import { exposeGroupsContext } from "../data/knx-expose-groups-context";
 import type { ExposeGroupsContextValue } from "../data/knx-expose-groups-context";
 import { deleteExpose } from "../services/websocket.service";
@@ -121,7 +122,8 @@ export class KNXExposeView extends LitElement {
   @transform({
     transformer: function (this: KNXExposeView, entities: EntityRegistryEntry[]) {
       if (!this._exposeGroupsCtx) return [];
-      return Object.keys(this._exposeGroupsCtx.groups).map(
+      // YAML exposes can not be edited here - list UI exposes only
+      return Object.keys(createUiExposeGroups(this._exposeGroupsCtx.groups)).map(
         (entityId) =>
           entities.find((e) => e.entity_id === entityId) ??
           // exposed, but no longer in the registry
@@ -161,8 +163,10 @@ export class KNXExposeView extends LitElement {
       entries: ExposedEntity[],
       projectData: KNXProject | null,
       entityStates: EntityStates,
+      uiExposeGroups: Record<string, string[]>,
     ): EntityRow[] =>
       entries.map((entry) => {
+        const groupAddresses = uiExposeGroups[entry.entity_id] ?? [];
         const entityState: HassEntity | undefined = entityStates[entry.entity_id]; // undefined for disabled entities
         const device = entry.device_id ? this.hass.devices[entry.device_id] : undefined;
         const areaId = entry.area_id ?? device?.area_id;
@@ -179,12 +183,9 @@ export class KNXExposeView extends LitElement {
           area_name: area?.name ?? "",
           disabled: !!entry.disabled_by,
           domain: domainName,
-          group_addresses: this._exposeGroupsCtx?.groups[entry.entity_id] ?? [],
+          group_addresses: groupAddresses,
           // matched by index with group_addresses
-          group_address_names:
-            (this._exposeGroupsCtx?.groups[entry.entity_id] ?? []).map(
-              (ga) => projectData?.group_addresses[ga]?.name,
-            ) ?? [],
+          group_address_names: groupAddresses.map((ga) => projectData?.group_addresses[ga]?.name),
         };
       }),
   );
@@ -497,7 +498,12 @@ export class KNXExposeView extends LitElement {
     if (!this._exposeGroupsCtx || this._exposeGroupsCtx.loading) {
       return html`<hass-loading-screen></hass-loading-screen>`;
     }
-    const computedRows = this._computeRows(this._exposes, this._projectData, this._entityStates);
+    const computedRows = this._computeRows(
+      this._exposes,
+      this._projectData,
+      this._entityStates,
+      createUiExposeGroups(this._exposeGroupsCtx.groups),
+    );
     const filteredEntities = this._filterEntities(computedRows, this._filters);
 
     // Keyed by entity_id: rows for deleted entities have no registry `id`, and an unkeyed

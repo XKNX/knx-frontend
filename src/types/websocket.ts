@@ -50,6 +50,11 @@ export interface KNXEntityIdentifier {
   disabled: boolean;
 }
 
+export interface ExposeGroupAddress {
+  ga: string;
+  ui: boolean; // ui or yaml expose
+}
+
 export interface KNXProjectInfo {
   name: string;
   last_modified: string | null;

@@ -81,7 +81,13 @@ describe("GroupMonitorTelegramInfoDialog", () => {
     (dialog as any)._entitiesByGroupCtx = { groups: { "1/2/3": [entity] } };
     // the backend maps expose entity ids to their group addresses
     (dialog as any)._exposeGroupsCtx = {
-      groups: { "sensor.outdoor": ["1/2/3", "1/2/3"], "sensor.other": ["9/9/9"] },
+      groups: {
+        "sensor.outdoor": [
+          { ga: "1/2/3", ui: true },
+          { ga: "1/2/3", ui: false },
+        ],
+        "sensor.other": [{ ga: "9/9/9", ui: true }],
+      },
     };
 
     await dialog.showDialog({
@@ -95,6 +101,9 @@ describe("GroupMonitorTelegramInfoDialog", () => {
     const related = container.querySelector("knx-data-table-related-label") as any;
 
     expect(related.entities).toEqual([entity]);
-    expect(related.exposes).toEqual(["sensor.outdoor"]);
+    expect(related.exposes).toEqual([
+      { entity_id: "sensor.outdoor", ui: true },
+      { entity_id: "sensor.outdoor", ui: false },
+    ]);
   });
 });

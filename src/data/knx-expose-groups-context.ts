@@ -4,11 +4,13 @@ import type { ReactiveElement } from "lit";
 import type { HomeAssistant } from "@ha/types";
 
 import { getExposeGroups } from "../services/websocket.service";
+import type { ExposeGroupAddress } from "../types/websocket";
 import { KNXLogger } from "../tools/knx-logger";
 
 const logger = new KNXLogger("knx-expose-groups-context");
 
-export type ExposeGroups = Record<string, string[]>;
+/** entity_id -> group addresses of UI and YAML exposes */
+export type ExposeGroups = Record<string, ExposeGroupAddress[]>;
 
 export interface ExposeGroupsContextValue {
   groups: ExposeGroups;

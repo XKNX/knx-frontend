@@ -17,6 +17,7 @@ import type {
   GroupMonitorInfoData,
   KNXBaseData,
   KNXEntityIdentifier,
+  ExposeGroupAddress,
   TelegramQueryParameters,
   TelegramQueryResult,
 } from "../types/websocket";
@@ -149,7 +150,9 @@ export const createDevice = (
 // Expose store calls
 //
 
-export const getExposeGroups = (hass: HomeAssistant): Promise<Record<string, string[]>> =>
+export const getExposeGroups = (
+  hass: HomeAssistant,
+): Promise<Record<string, ExposeGroupAddress[]>> =>
   hass.callWS({
     type: "knx/get_expose_groups",
   });
