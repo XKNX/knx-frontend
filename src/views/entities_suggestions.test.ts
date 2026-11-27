@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { html, render } from "lit";
+import type { IconOverflowMenuItem } from "@ha/components/ha-icon-overflow-menu";
 import type { HomeAssistant } from "@ha/types";
 import type { KnxStickyExpansionPanel } from "../components/knx-sticky-expansion-panel";
 import type { KNX } from "../types/knx";
@@ -120,31 +121,33 @@ describe("KNXEntitiesSuggestions", () => {
 
   it("selects and deselects every shown suggestion from the toolbar", () => {
     const { view, host, update } = draw(RESULT);
-    const button = (name: string) =>
-      host.querySelector<HTMLElement & { disabled: boolean }>(`ha-icon-button.${name}`)!;
+    const menu = host.querySelector<HTMLElement & { items: IconOverflowMenuItem[] }>(
+      "ha-icon-overflow-menu",
+    )!;
+    const [selectAll, deselectAll] = [0, 1].map((index) => () => menu.items[index]!);
     const selected = (id: string) =>
       view["_rowState"](RESULT.suggestions.find((item) => item.id === id)!).selected;
     // everything starts selected - there is nothing more to select
-    expect(button("select-all").disabled).toBe(true);
-    expect(button("deselect-all").disabled).toBe(false);
+    expect(selectAll().disabled).toBe(true);
+    expect(deselectAll().disabled).toBe(false);
 
     // a filtered out provider keeps its selection
     Reflect.set(view, "_hiddenProviders", new Set(["cfg"]));
     update();
-    button("deselect-all").click();
+    deselectAll().action();
     update();
     expect(selected("fb_1")).toBe(false);
     expect(selected("fb_2")).toBe(false);
     expect(selected("fn_1")).toBe(false);
     expect(selected("cfg_1")).toBe(true);
-    expect(button("select-all").disabled).toBe(false);
-    expect(button("deselect-all").disabled).toBe(true);
+    expect(selectAll().disabled).toBe(false);
+    expect(deselectAll().disabled).toBe(true);
 
-    button("select-all").click();
+    selectAll().action();
     update();
     expect(selected("fb_1")).toBe(true);
     expect(selected("fb_2")).toBe(true);
     expect(selected("fn_1")).toBe(true);
-    expect(button("select-all").disabled).toBe(true);
+    expect(selectAll().disabled).toBe(true);
   });
 });

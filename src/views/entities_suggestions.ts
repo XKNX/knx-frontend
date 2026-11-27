@@ -20,6 +20,7 @@ import "@ha/components/ha-button";
 import "@ha/components/ha-card";
 import "@ha/components/ha-checkbox";
 import "@ha/components/ha-icon-button";
+import "@ha/components/ha-icon-overflow-menu";
 import "@ha/components/ha-label";
 import "@ha/components/ha-selector/ha-selector-select";
 import "@ha/components/ha-spinner";
@@ -27,6 +28,7 @@ import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-switch";
 import "@ha/components/input/ha-input";
 import { navigate } from "@ha/common/navigate";
+import type { IconOverflowMenuItem } from "@ha/components/ha-icon-overflow-menu";
 import type { HomeAssistant, Route } from "@ha/types";
 
 import "../components/knx-sticky-expansion-panel";
@@ -171,31 +173,38 @@ export class KNXEntitiesSuggestions extends LitElement {
     `;
   }
 
-  /** Toolbar buttons selecting or deselecting every shown suggestion at once. */
+  /** Toolbar actions selecting or deselecting every shown suggestion at once - icons, or a menu when narrow. */
   private _renderSelectionActions(): TemplateResult {
+    return html`
+      <ha-icon-overflow-menu
+        slot="toolbar-icon"
+        .narrow=${this.narrow}
+        .label=${this.hass.localize("ui.common.overflow_menu")}
+        .items=${this._selectionActions()}
+      ></ha-icon-overflow-menu>
+    `;
+  }
+
+  private _selectionActions(): IconOverflowMenuItem[] {
     // suggestions of filtered out providers are left as they are
     const selectable = this._selectableSuggestions();
     const selectedCount = selectable.filter(
       (suggestion) => this._rowState(suggestion).selected,
     ).length;
-    return html`
-      <ha-icon-button
-        slot="toolbar-icon"
-        class="select-all"
-        .label=${this.knx.localize("suggestions_select_all_shown")}
-        .path=${mdiCheckboxMultipleMarkedOutline}
-        .disabled=${this._creating || selectedCount === selectable.length}
-        @click=${this._selectAllClicked}
-      ></ha-icon-button>
-      <ha-icon-button
-        slot="toolbar-icon"
-        class="deselect-all"
-        .label=${this.knx.localize("suggestions_deselect_all_shown")}
-        .path=${mdiCheckboxMultipleBlankOutline}
-        .disabled=${this._creating || !selectedCount}
-        @click=${this._deselectAllClicked}
-      ></ha-icon-button>
-    `;
+    return [
+      {
+        path: mdiCheckboxMultipleMarkedOutline,
+        label: this.hass.localize("ui.components.subpage-data-table.select_all"),
+        disabled: this._creating || selectedCount === selectable.length,
+        action: this._selectAllClicked,
+      },
+      {
+        path: mdiCheckboxMultipleBlankOutline,
+        label: this.hass.localize("ui.components.media-browser.file_management.deselect_all"),
+        disabled: this._creating || !selectedCount,
+        action: this._deselectAllClicked,
+      },
+    ];
   }
 
   private _renderInfo(text: string, action?: TemplateResult): TemplateResult {
