@@ -1,4 +1,11 @@
-import { mdiAlertCircle, mdiCheckCircle, mdiOpenInNew, mdiPlus } from "@mdi/js";
+import {
+  mdiAlertCircle,
+  mdiCheckCircle,
+  mdiOpenInNew,
+  mdiPlus,
+  mdiSelectAll,
+  mdiSelectOff,
+} from "@mdi/js";
 import type { TemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
@@ -125,6 +132,13 @@ export class KNXEntitiesSuggestions extends LitElement {
     );
   }
 
+  /** Shown suggestions not created yet - the ones there are to select. */
+  private _selectableSuggestions(): EntitySuggestion[] {
+    return this._visibleSuggestions().filter(
+      (suggestion) => this._rowState(suggestion).status !== "created",
+    );
+  }
+
   private _updateRowState(suggestion: EntitySuggestion, update: Partial<RowState>) {
     this._rowStates = {
       ...this._rowStates,
@@ -144,6 +158,7 @@ export class KNXEntitiesSuggestions extends LitElement {
           ${this.knx.localize("suggestions_title")}
           <ha-label dense class="beta">${this.knx.localize("suggestions_beta")}</ha-label>
         </span>
+        ${this._renderSelectionActions()}
         <div class="content">
           ${this._suggestionsTask.render({
             initial: () => html`<hass-loading-screen no-toolbar></hass-loading-screen>`,
@@ -153,6 +168,33 @@ export class KNXEntitiesSuggestions extends LitElement {
           })}
         </div>
       </hass-subpage>
+    `;
+  }
+
+  /** Toolbar buttons selecting or deselecting every shown suggestion at once. */
+  private _renderSelectionActions(): TemplateResult {
+    // suggestions of filtered out providers are left as they are
+    const selectable = this._selectableSuggestions();
+    const selectedCount = selectable.filter(
+      (suggestion) => this._rowState(suggestion).selected,
+    ).length;
+    return html`
+      <ha-icon-button
+        slot="toolbar-icon"
+        class="select-all"
+        .label=${this.knx.localize("suggestions_select_all_shown")}
+        .path=${mdiSelectAll}
+        .disabled=${this._creating || selectedCount === selectable.length}
+        @click=${this._selectAllClicked}
+      ></ha-icon-button>
+      <ha-icon-button
+        slot="toolbar-icon"
+        class="deselect-all"
+        .label=${this.knx.localize("suggestions_deselect_all_shown")}
+        .path=${mdiSelectOff}
+        .disabled=${this._creating || !selectedCount}
+        @click=${this._deselectAllClicked}
+      ></ha-icon-button>
     `;
   }
 
@@ -293,9 +335,8 @@ export class KNXEntitiesSuggestions extends LitElement {
   private _renderSuggestions(): TemplateResult | typeof nothing {
     if (!this._suggestionsTask.value?.suggestions.length) return nothing;
     const suggestions = this._visibleSuggestions();
-    const selectedCount = suggestions.filter(
-      (suggestion) =>
-        this._rowState(suggestion).selected && this._rowState(suggestion).status !== "created",
+    const selectedCount = this._selectableSuggestions().filter(
+      (suggestion) => this._rowState(suggestion).selected,
     ).length;
 
     return html`
@@ -520,20 +561,32 @@ export class KNXEntitiesSuggestions extends LitElement {
     const target = ev.currentTarget as HTMLElement;
     const providerId = target.getAttribute("data-provider-id");
     const groupId = target.getAttribute("data-group-id");
-    const selected = (ev.target as HTMLInputElement).checked;
+    this._selectSuggestions(
+      (ev.target as HTMLInputElement).checked,
+      (suggestion) => suggestion.source === providerId && suggestion.group_id === groupId,
+    );
+  };
+
+  private _selectAllClicked = () => {
+    this._selectSuggestions(true);
+  };
+
+  private _deselectAllClicked = () => {
+    this._selectSuggestions(false);
+  };
+
+  /** Selects or deselects the shown suggestions still to be created - all of them, or the ones matching. */
+  private _selectSuggestions(
+    selected: boolean,
+    matches: (suggestion: EntitySuggestion) => boolean = () => true,
+  ) {
     const rowStates = { ...this._rowStates };
-    this._visibleSuggestions().forEach((suggestion) => {
-      const rowState = this._rowState(suggestion);
-      if (
-        suggestion.source === providerId &&
-        suggestion.group_id === groupId &&
-        rowState.status !== "created"
-      ) {
-        rowStates[suggestion.id] = { ...rowState, selected };
-      }
+    this._selectableSuggestions().forEach((suggestion) => {
+      if (!matches(suggestion)) return;
+      rowStates[suggestion.id] = { ...this._rowState(suggestion), selected };
     });
     this._rowStates = rowStates;
-  };
+  }
 
   private _providerVisibilityChanged = (ev: Event) => {
     const providerId = (ev.currentTarget as HTMLElement).getAttribute("data-provider-id");

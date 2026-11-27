@@ -35,6 +35,8 @@
   "suggestions_platform": "Entitätstyp",
   "suggestions_select_all": "Alle Vorschläge dieses Geräts auswählen",
   "suggestions_select_all_space": "Alle Vorschläge dieses Raums auswählen",
+  "suggestions_select_all_shown": "Alle angezeigten Vorschläge auswählen",
+  "suggestions_deselect_all_shown": "Auswahl aller angezeigten Vorschläge aufheben",
   "suggestions_already_configured": "Gruppenadressen bereits verwendet von: {entities}",
   "suggestions_template_entity": "Konfiguriert wie {entity}",
   "suggestions_open_in_editor": "Im Editor öffnen",
