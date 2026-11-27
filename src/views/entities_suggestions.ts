@@ -1,4 +1,11 @@
-import { mdiAlertCircle, mdiCheckCircle, mdiOpenInNew, mdiPlus } from "@mdi/js";
+import {
+  mdiAlertCircle,
+  mdiCheckboxMultipleBlankOutline,
+  mdiCheckboxMultipleMarkedOutline,
+  mdiCheckCircle,
+  mdiOpenInNew,
+  mdiPlus,
+} from "@mdi/js";
 import type { TemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
@@ -13,6 +20,7 @@ import "@ha/components/ha-button";
 import "@ha/components/ha-card";
 import "@ha/components/ha-checkbox";
 import "@ha/components/ha-icon-button";
+import "@ha/components/ha-icon-overflow-menu";
 import "@ha/components/ha-label";
 import "@ha/components/ha-selector/ha-selector-select";
 import "@ha/components/ha-spinner";
@@ -20,6 +28,7 @@ import "@ha/components/ha-svg-icon";
 import "@ha/components/ha-switch";
 import "@ha/components/input/ha-input";
 import { navigate } from "@ha/common/navigate";
+import type { IconOverflowMenuItem } from "@ha/components/ha-icon-overflow-menu";
 import type { HomeAssistant, Route } from "@ha/types";
 
 import "../components/knx-sticky-expansion-panel";
@@ -125,6 +134,13 @@ export class KNXEntitiesSuggestions extends LitElement {
     );
   }
 
+  /** Shown suggestions not created yet - the ones there are to select. */
+  private _selectableSuggestions(): EntitySuggestion[] {
+    return this._visibleSuggestions().filter(
+      (suggestion) => this._rowState(suggestion).status !== "created",
+    );
+  }
+
   private _updateRowState(suggestion: EntitySuggestion, update: Partial<RowState>) {
     this._rowStates = {
       ...this._rowStates,
@@ -144,6 +160,7 @@ export class KNXEntitiesSuggestions extends LitElement {
           ${this.knx.localize("suggestions_title")}
           <ha-label dense class="beta">${this.knx.localize("suggestions_beta")}</ha-label>
         </span>
+        ${this._renderSelectionActions()}
         <div class="content">
           ${this._suggestionsTask.render({
             initial: () => html`<hass-loading-screen no-toolbar></hass-loading-screen>`,
@@ -154,6 +171,40 @@ export class KNXEntitiesSuggestions extends LitElement {
         </div>
       </hass-subpage>
     `;
+  }
+
+  /** Toolbar actions selecting or deselecting every shown suggestion at once - icons, or a menu when narrow. */
+  private _renderSelectionActions(): TemplateResult {
+    return html`
+      <ha-icon-overflow-menu
+        slot="toolbar-icon"
+        .narrow=${this.narrow}
+        .label=${this.hass.localize("ui.common.overflow_menu")}
+        .items=${this._selectionActions()}
+      ></ha-icon-overflow-menu>
+    `;
+  }
+
+  private _selectionActions(): IconOverflowMenuItem[] {
+    // suggestions of filtered out providers are left as they are
+    const selectable = this._selectableSuggestions();
+    const selectedCount = selectable.filter(
+      (suggestion) => this._rowState(suggestion).selected,
+    ).length;
+    return [
+      {
+        path: mdiCheckboxMultipleMarkedOutline,
+        label: this.hass.localize("ui.components.subpage-data-table.select_all"),
+        disabled: this._creating || selectedCount === selectable.length,
+        action: this._selectAllClicked,
+      },
+      {
+        path: mdiCheckboxMultipleBlankOutline,
+        label: this.hass.localize("ui.components.media-browser.file_management.deselect_all"),
+        disabled: this._creating || !selectedCount,
+        action: this._deselectAllClicked,
+      },
+    ];
   }
 
   private _renderInfo(text: string, action?: TemplateResult): TemplateResult {
@@ -293,9 +344,8 @@ export class KNXEntitiesSuggestions extends LitElement {
   private _renderSuggestions(): TemplateResult | typeof nothing {
     if (!this._suggestionsTask.value?.suggestions.length) return nothing;
     const suggestions = this._visibleSuggestions();
-    const selectedCount = suggestions.filter(
-      (suggestion) =>
-        this._rowState(suggestion).selected && this._rowState(suggestion).status !== "created",
+    const selectedCount = this._selectableSuggestions().filter(
+      (suggestion) => this._rowState(suggestion).selected,
     ).length;
 
     return html`
@@ -520,20 +570,32 @@ export class KNXEntitiesSuggestions extends LitElement {
     const target = ev.currentTarget as HTMLElement;
     const providerId = target.getAttribute("data-provider-id");
     const groupId = target.getAttribute("data-group-id");
-    const selected = (ev.target as HTMLInputElement).checked;
+    this._selectSuggestions(
+      (ev.target as HTMLInputElement).checked,
+      (suggestion) => suggestion.source === providerId && suggestion.group_id === groupId,
+    );
+  };
+
+  private _selectAllClicked = () => {
+    this._selectSuggestions(true);
+  };
+
+  private _deselectAllClicked = () => {
+    this._selectSuggestions(false);
+  };
+
+  /** Selects or deselects the shown suggestions still to be created - all of them, or the ones matching. */
+  private _selectSuggestions(
+    selected: boolean,
+    matches: (suggestion: EntitySuggestion) => boolean = () => true,
+  ) {
     const rowStates = { ...this._rowStates };
-    this._visibleSuggestions().forEach((suggestion) => {
-      const rowState = this._rowState(suggestion);
-      if (
-        suggestion.source === providerId &&
-        suggestion.group_id === groupId &&
-        rowState.status !== "created"
-      ) {
-        rowStates[suggestion.id] = { ...rowState, selected };
-      }
+    this._selectableSuggestions().forEach((suggestion) => {
+      if (!matches(suggestion)) return;
+      rowStates[suggestion.id] = { ...this._rowState(suggestion), selected };
     });
     this._rowStates = rowStates;
-  };
+  }
 
   private _providerVisibilityChanged = (ev: Event) => {
     const providerId = (ev.currentTarget as HTMLElement).getAttribute("data-provider-id");
