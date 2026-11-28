@@ -215,6 +215,38 @@ describe("KNXEntitiesSuggestions", () => {
       );
     });
 
+    it("shows the area to create in the field and brings back a removed suggestion", () => {
+      const { view, host, update } = draw(AREA_RESULT);
+      const [newArea, existing] = AREA_RESULT.suggestions;
+      const picker = (id: string) =>
+        host.querySelector<HTMLElement & { label?: string; value?: string }>(
+          `ha-area-picker[data-suggestion-id='${id}']`,
+        )!;
+      const button = () =>
+        host.querySelector<HTMLElement>("ha-icon-button[data-suggestion-id='new']")!;
+      const area = (item: EntitySuggestion) => view["_area"](item, view["_rowState"](item));
+
+      // the localize stub returns the key - the name is a placeholder of it
+      expect(picker("new").label).toBe("ui.components.area-picker.add_new_suggestion");
+      expect(button().hasAttribute("data-undo")).toBe(false);
+      button().click();
+      update();
+      expect(area(newArea)).toEqual({});
+      expect(picker("new").label).toBeUndefined();
+      expect(button().hasAttribute("data-undo")).toBe(true);
+      button().click();
+      update();
+      expect(area(newArea)).toEqual({ suggested_area: { name: "Kitchen", floor: "Ground floor" } });
+
+      // an existing area replaced by another one can be brought back too
+      view["_updateRowState"](existing, { areaId: "office" });
+      update();
+      host
+        .querySelector<HTMLElement>("ha-icon-button[data-suggestion-id='existing'][data-undo]")!
+        .click();
+      expect(area(existing)).toEqual({ area_id: "bath" });
+    });
+
     it("creates entities in the area picked - or none", async () => {
       const { created } = await createAll((view) => {
         const [newArea, existing] = AREA_RESULT.suggestions;

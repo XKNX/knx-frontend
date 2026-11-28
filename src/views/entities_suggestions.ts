@@ -6,6 +6,7 @@ import {
   mdiClose,
   mdiOpenInNew,
   mdiPlus,
+  mdiUndo,
 } from "@mdi/js";
 import type { TemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
@@ -549,31 +550,42 @@ export class KNXEntitiesSuggestions extends LitElement {
   ): TemplateResult | typeof nothing {
     if (suggestion.suggested_area === undefined) return nothing;
     const area = this._area(suggestion, rowState);
+    const newArea = area.suggested_area;
+    // a replaced suggestion can be brought back
+    const undo = !newArea && rowState.areaId !== undefined && !!suggestion.suggested_area;
     return html`
-      <ha-area-picker
-        data-suggestion-id=${suggestion.id}
-        .value=${area.area_id}
-        .helper=${
-          area.suggested_area
-            ? this.knx.localize("ui.components.area-picker.add_new_suggestion", {
-                name: area.suggested_area.name,
-              })
-            : undefined
+      <div class="area">
+        <ha-area-picker
+          data-suggestion-id=${suggestion.id}
+          .value=${area.area_id}
+          .label=${
+            // a new area isn't selectable yet - its name shows instead of an empty field
+            newArea
+              ? this.knx.localize("ui.components.area-picker.add_new_suggestion", {
+                  name: newArea.floor ? `${newArea.name} (${newArea.floor})` : newArea.name,
+                })
+              : undefined
+          }
+          .disabled=${this._creating || done}
+          @value-changed=${this._rowAreaChanged}
+        ></ha-area-picker>
+        ${
+          (newArea || undo) && !done
+            ? html`<ha-icon-button
+                data-suggestion-id=${suggestion.id}
+                ?data-undo=${undo}
+                .label=${
+                  undo
+                    ? this.knx.localize("ui.common.undo")
+                    : this.knx.localize("ui.components.target-picker.remove_area_id")
+                }
+                .path=${undo ? mdiUndo : mdiClose}
+                .disabled=${this._creating}
+                @click=${this._rowAreaButtonClicked}
+              ></ha-icon-button>`
+            : nothing
         }
-        .disabled=${this._creating || done}
-        @value-changed=${this._rowAreaChanged}
-      ></ha-area-picker>
-      ${
-        area.suggested_area && !done
-          ? html`<ha-icon-button
-              data-suggestion-id=${suggestion.id}
-              .label=${this.knx.localize("ui.components.target-picker.remove_area_id")}
-              .path=${mdiClose}
-              .disabled=${this._creating}
-              @click=${this._rowAreaRemoved}
-            ></ha-icon-button>`
-          : nothing
-      }
+      </div>
     `;
   }
 
@@ -677,10 +689,12 @@ export class KNXEntitiesSuggestions extends LitElement {
     this._updateRowState(suggestion, { areaId: ev.detail.value || null });
   };
 
-  private _rowAreaRemoved = (ev: Event) => {
+  /** Removes the area to create, or brings back the suggested one. */
+  private _rowAreaButtonClicked = (ev: Event) => {
     const suggestion = this._suggestionOfEvent(ev);
     if (!suggestion) return;
-    this._updateRowState(suggestion, { areaId: null });
+    const undo = (ev.currentTarget as HTMLElement).hasAttribute("data-undo");
+    this._updateRowState(suggestion, { areaId: undo ? undefined : null });
   };
 
   private _rowPlatformChanged = (ev: CustomEvent) => {
@@ -896,8 +910,13 @@ export class KNXEntitiesSuggestions extends LitElement {
         min-width: 140px;
       }
 
+      & .area {
+        display: flex;
+        align-items: center;
+      }
+
       & ha-area-picker {
-        min-width: 200px;
+        min-width: 240px;
       }
     }
 
