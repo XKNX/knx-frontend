@@ -13,6 +13,7 @@ import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { consume } from "@lit/context";
 import { Task } from "@lit/task";
+import { ifDefined } from "lit/directives/if-defined";
 import { repeat } from "lit/directives/repeat";
 
 import "@ha/layouts/hass-loading-screen";
@@ -569,7 +570,7 @@ export class KNXEntitiesSuggestions extends LitElement {
           data-suggestion-id=${suggestion.id}
           .value=${area.area_id}
           .label=${newAreaLabel}
-          title=${newAreaLabel ?? nothing}
+          title=${ifDefined(newAreaLabel)}
           .disabled=${this._creating || done}
           @value-changed=${this._rowAreaChanged}
         ></ha-area-picker>
