@@ -554,8 +554,11 @@ export class KNXEntitiesSuggestions extends LitElement {
     const newArea = area.suggested_area;
     // a replaced suggestion can be brought back
     const undo = !newArea && rowState.areaId !== undefined && !!suggestion.suggested_area;
-    // a new area isn't selectable yet - its name shows instead of an empty field
+    // a new area isn't selectable yet - its name shows instead of an empty field, in full on hover
     const newAreaLabel = newArea
+      ? this.knx.localize("suggestions_new_area", { area: newArea.name })
+      : undefined;
+    const newAreaTitle = newArea
       ? this.knx.localize("ui.components.area-picker.add_new_suggestion", {
           // the floor only if the name doesn't start with it already, eg. "Ground floor / Kitchen"
           name:
@@ -570,7 +573,7 @@ export class KNXEntitiesSuggestions extends LitElement {
           data-suggestion-id=${suggestion.id}
           .value=${area.area_id}
           .label=${newAreaLabel}
-          title=${ifDefined(newAreaLabel)}
+          title=${ifDefined(newAreaTitle)}
           .disabled=${this._creating || done}
           @value-changed=${this._rowAreaChanged}
         ></ha-area-picker>

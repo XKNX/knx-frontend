@@ -38,5 +38,6 @@
   "suggestions_already_configured": "Group addresses already used by: {entities}",
   "suggestions_template_entity": "Configured like {entity}",
   "suggestions_open_in_editor": "Open in editor",
-  "suggestions_create_selected": "{count, plural, one {Create # entity} other {Create # entities}}"
+  "suggestions_create_selected": "{count, plural, one {Create # entity} other {Create # entities}}",
+  "suggestions_new_area": "{area} (new)"
 }

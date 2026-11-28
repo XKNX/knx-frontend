@@ -227,7 +227,7 @@ describe("KNXEntitiesSuggestions", () => {
       const area = (item: EntitySuggestion) => view["_area"](item, view["_rowState"](item));
 
       // the localize stub returns the key - the name is a placeholder of it
-      expect(picker("new").label).toBe("ui.components.area-picker.add_new_suggestion");
+      expect(picker("new").label).toBe("suggestions_new_area");
       expect(button().hasAttribute("data-undo")).toBe(false);
       button().click();
       update();
@@ -247,7 +247,7 @@ describe("KNXEntitiesSuggestions", () => {
       expect(area(existing)).toEqual({ area_id: "bath" });
     });
 
-    it("names the floor of an area to create once", () => {
+    it("names an area to create - in full with its floor on hover", () => {
       const { view, host, update } = draw({
         suggestions: [
           withArea("floor", { name: "Kitchen", floor: "Ground floor", area_id: null }),
@@ -261,16 +261,19 @@ describe("KNXEntitiesSuggestions", () => {
         providers: { fn: { state: "ok" } },
       });
       view.knx = {
-        localize: (key: string, args?: { name?: string }) => args?.name ?? key,
+        localize: (key: string, args?: { name?: string; area?: string }) =>
+          args?.area ? `${args.area} (new)` : (args?.name ?? key),
       } as unknown as KNX;
       update();
-      const label = (id: string) =>
+      const picker = (id: string) =>
         host.querySelector<HTMLElement & { label?: string }>(
           `ha-area-picker[data-suggestion-id='${id}']`,
-        )!.label;
-      expect(label("floor")).toBe("Kitchen (Ground floor)");
-      expect(label("prefixed")).toBe("Ground floor / Hall");
-      expect(label("no_floor")).toBe("Garden");
+        )!;
+      expect(picker("floor").label).toBe("Kitchen (new)");
+      // the floor only once
+      expect(picker("floor").title).toBe("Kitchen (Ground floor)");
+      expect(picker("prefixed").title).toBe("Ground floor / Hall");
+      expect(picker("no_floor").title).toBe("Garden");
     });
 
     it("creates entities in the area picked - or none", async () => {

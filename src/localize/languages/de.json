@@ -38,5 +38,6 @@
   "suggestions_already_configured": "Gruppenadressen bereits verwendet von: {entities}",
   "suggestions_template_entity": "Konfiguriert wie {entity}",
   "suggestions_open_in_editor": "Im Editor öffnen",
-  "suggestions_create_selected": "{count, plural, one {# Entität anlegen} other {# Entitäten anlegen}}"
+  "suggestions_create_selected": "{count, plural, one {# Entität anlegen} other {# Entitäten anlegen}}",
+  "suggestions_new_area": "{area} (neu)"
 }
