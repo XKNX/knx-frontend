@@ -247,6 +247,32 @@ describe("KNXEntitiesSuggestions", () => {
       expect(area(existing)).toEqual({ area_id: "bath" });
     });
 
+    it("names the floor of an area to create once", () => {
+      const { view, host, update } = draw({
+        suggestions: [
+          withArea("floor", { name: "Kitchen", floor: "Ground floor", area_id: null }),
+          withArea("prefixed", {
+            name: "Ground floor / Hall",
+            floor: "Ground floor",
+            area_id: null,
+          }),
+          withArea("no_floor", { name: "Garden", floor: null, area_id: null }),
+        ],
+        providers: { fn: { state: "ok" } },
+      });
+      view.knx = {
+        localize: (key: string, args?: { name?: string }) => args?.name ?? key,
+      } as unknown as KNX;
+      update();
+      const label = (id: string) =>
+        host.querySelector<HTMLElement & { label?: string }>(
+          `ha-area-picker[data-suggestion-id='${id}']`,
+        )!.label;
+      expect(label("floor")).toBe("Kitchen (Ground floor)");
+      expect(label("prefixed")).toBe("Ground floor / Hall");
+      expect(label("no_floor")).toBe("Garden");
+    });
+
     it("creates entities in the area picked - or none", async () => {
       const { created } = await createAll((view) => {
         const [newArea, existing] = AREA_RESULT.suggestions;

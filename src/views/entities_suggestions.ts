@@ -553,19 +553,23 @@ export class KNXEntitiesSuggestions extends LitElement {
     const newArea = area.suggested_area;
     // a replaced suggestion can be brought back
     const undo = !newArea && rowState.areaId !== undefined && !!suggestion.suggested_area;
+    // a new area isn't selectable yet - its name shows instead of an empty field
+    const newAreaLabel = newArea
+      ? this.knx.localize("ui.components.area-picker.add_new_suggestion", {
+          // the floor only if the name doesn't start with it already, eg. "Ground floor / Kitchen"
+          name:
+            newArea.floor && !newArea.name.startsWith(`${newArea.floor} / `)
+              ? `${newArea.name} (${newArea.floor})`
+              : newArea.name,
+        })
+      : undefined;
     return html`
       <div class="area">
         <ha-area-picker
           data-suggestion-id=${suggestion.id}
           .value=${area.area_id}
-          .label=${
-            // a new area isn't selectable yet - its name shows instead of an empty field
-            newArea
-              ? this.knx.localize("ui.components.area-picker.add_new_suggestion", {
-                  name: newArea.floor ? `${newArea.name} (${newArea.floor})` : newArea.name,
-                })
-              : undefined
-          }
+          .label=${newAreaLabel}
+          title=${newAreaLabel ?? nothing}
           .disabled=${this._creating || done}
           @value-changed=${this._rowAreaChanged}
         ></ha-area-picker>
@@ -910,13 +914,17 @@ export class KNXEntitiesSuggestions extends LitElement {
         min-width: 140px;
       }
 
+      /* a fixed width - the same in every row, button or not, and long names cut off */
       & .area {
         display: flex;
         align-items: center;
+        width: 288px;
+        max-width: 100%;
       }
 
       & ha-area-picker {
-        min-width: 240px;
+        flex: 0 1 240px;
+        min-width: 0;
       }
     }
 
