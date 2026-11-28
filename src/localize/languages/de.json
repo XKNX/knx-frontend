@@ -38,8 +38,5 @@
   "suggestions_already_configured": "Gruppenadressen bereits verwendet von: {entities}",
   "suggestions_template_entity": "Konfiguriert wie {entity}",
   "suggestions_open_in_editor": "Im Editor öffnen",
-  "suggestions_create_selected": "{count, plural, one {# Entität anlegen} other {# Entitäten anlegen}}",
-  "suggestions_assign_areas": "Bereiche aus der ETS-Gebäudestruktur zuweisen",
-  "suggestions_strip_sort_numbers": "Sortiernummern wie „05. “ aus den Namen von Etagen und Bereichen entfernen",
-  "suggestions_area_error": "Die Entität wurde angelegt, konnte aber nicht dem Bereich {area} zugewiesen werden: {error}"
+  "suggestions_create_selected": "{count, plural, one {# Entität anlegen} other {# Entitäten anlegen}}"
 }

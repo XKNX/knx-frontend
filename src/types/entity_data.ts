@@ -23,6 +23,9 @@ export interface EntityData {
 export interface CreateEntityData {
   platform: SupportedPlatform;
   data: EntityData;
+  // only one of both - an existing area, or one to get or create by name
+  area_id?: string;
+  suggested_area?: { name: string; floor: string | null };
 }
 
 export interface UpdateEntityData extends CreateEntityData {
