@@ -3,19 +3,23 @@ import {
   mdiCheckboxMultipleBlankOutline,
   mdiCheckboxMultipleMarkedOutline,
   mdiCheckCircle,
+  mdiClose,
   mdiOpenInNew,
   mdiPlus,
+  mdiUndo,
 } from "@mdi/js";
 import type { TemplateResult } from "lit";
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { consume } from "@lit/context";
 import { Task } from "@lit/task";
+import { ifDefined } from "lit/directives/if-defined";
 import { repeat } from "lit/directives/repeat";
 
 import "@ha/layouts/hass-loading-screen";
 import "@ha/layouts/hass-subpage";
 import "@ha/components/ha-alert";
+import "@ha/components/ha-area-picker";
 import "@ha/components/ha-button";
 import "@ha/components/ha-card";
 import "@ha/components/ha-checkbox";
@@ -33,7 +37,7 @@ import type { HomeAssistant, Route } from "@ha/types";
 
 import "../components/knx-sticky-expansion-panel";
 import { createEntity, getEntitySuggestions, validateEntity } from "services/websocket.service";
-import type { EntityData, SupportedPlatform } from "types/entity_data";
+import type { CreateEntityData, EntityData, SupportedPlatform } from "types/entity_data";
 
 import { showKnxProjectUploadDialog } from "../dialogs/show-knx-project-upload-dialog";
 import {
@@ -86,6 +90,8 @@ interface RowState {
   platform: SupportedPlatform;
   status: "idle" | "creating" | "created" | "error";
   errorMessage?: string;
+  // the area picked - undefined: the suggested one, null: none
+  areaId?: string | null;
 }
 
 @customElement("knx-entities-suggestions")
@@ -480,6 +486,7 @@ export class KNXEntitiesSuggestions extends LitElement {
                     </span>
                   `
             }
+            ${this._renderArea(suggestion, rowState, done)}
           </div>
           <div class="row-secondary">
             <span class="channel-name">${suggestion.secondary_info}</span>
@@ -534,6 +541,75 @@ export class KNXEntitiesSuggestions extends LitElement {
     return this.knx.localize("suggestions_template_entity", {
       entity: this.hass.states[entityId]?.attributes.friendly_name ?? entityId,
     });
+  }
+
+  /** The area picker of a row - only if the backend suggests areas, so it takes one too. */
+  private _renderArea(
+    suggestion: EntitySuggestion,
+    rowState: RowState,
+    done: boolean,
+  ): TemplateResult | typeof nothing {
+    if (suggestion.suggested_area === undefined) return nothing;
+    const area = this._area(suggestion, rowState);
+    const newArea = area.suggested_area;
+    // a replaced suggestion can be brought back
+    const undo = !newArea && rowState.areaId !== undefined && !!suggestion.suggested_area;
+    // a new area isn't selectable yet - its name shows instead of an empty field, in full on hover
+    const newAreaLabel = newArea
+      ? this.knx.localize("suggestions_new_area", { area: newArea.name })
+      : undefined;
+    const newAreaTitle = newArea
+      ? this.knx.localize("ui.components.area-picker.add_new_suggestion", {
+          // the floor only if the name doesn't start with it already, eg. "Ground floor / Kitchen"
+          name:
+            newArea.floor && !newArea.name.startsWith(`${newArea.floor} / `)
+              ? `${newArea.name} (${newArea.floor})`
+              : newArea.name,
+        })
+      : undefined;
+    return html`
+      <div class="area">
+        <ha-area-picker
+          data-suggestion-id=${suggestion.id}
+          .value=${area.area_id}
+          .label=${newAreaLabel}
+          title=${ifDefined(newAreaTitle)}
+          .disabled=${this._creating || done}
+          @value-changed=${this._rowAreaChanged}
+        ></ha-area-picker>
+        ${
+          (newArea || undo) && !done
+            ? html`<ha-icon-button
+                data-suggestion-id=${suggestion.id}
+                ?data-undo=${undo}
+                .label=${
+                  undo
+                    ? this.knx.localize("ui.common.undo")
+                    : this.knx.localize("ui.components.target-picker.remove_area_id")
+                }
+                .path=${undo ? mdiUndo : mdiClose}
+                .disabled=${this._creating}
+                @click=${this._rowAreaButtonClicked}
+              ></ha-icon-button>`
+            : nothing
+        }
+      </div>
+    `;
+  }
+
+  /** The area for `knx/create_entity` - an existing one, or the suggested one to create. */
+  private _area(
+    suggestion: EntitySuggestion,
+    rowState: RowState,
+  ): Pick<CreateEntityData, "area_id" | "suggested_area"> {
+    if (rowState.areaId !== undefined) {
+      return rowState.areaId ? { area_id: rowState.areaId } : {};
+    }
+    const suggested = suggestion.suggested_area;
+    if (!suggested) return {};
+    return suggested.area_id
+      ? { area_id: suggested.area_id }
+      : { suggested_area: { name: suggested.name, floor: suggested.floor } };
   }
 
   private _platformLabel(platform: SupportedPlatform): string {
@@ -615,6 +691,20 @@ export class KNXEntitiesSuggestions extends LitElement {
     this._updateRowState(suggestion, { name: (ev.target as HTMLInputElement).value });
   };
 
+  private _rowAreaChanged = (ev: CustomEvent) => {
+    const suggestion = this._suggestionOfEvent(ev);
+    if (!suggestion) return;
+    this._updateRowState(suggestion, { areaId: ev.detail.value || null });
+  };
+
+  /** Removes the area to create, or brings back the suggested one. */
+  private _rowAreaButtonClicked = (ev: Event) => {
+    const suggestion = this._suggestionOfEvent(ev);
+    if (!suggestion) return;
+    const undo = (ev.currentTarget as HTMLElement).hasAttribute("data-undo");
+    this._updateRowState(suggestion, { areaId: undo ? undefined : null });
+  };
+
   private _rowPlatformChanged = (ev: CustomEvent) => {
     const suggestion = this._suggestionOfEvent(ev);
     if (!suggestion) return;
@@ -669,7 +759,11 @@ export class KNXEntitiesSuggestions extends LitElement {
             continue;
           }
           // eslint-disable-next-line no-await-in-loop
-          const result = await createEntity(this.hass, createData);
+          const result = await createEntity(this.hass, {
+            ...createData,
+            // not for validation - `knx/validate_entity` doesn't take an area
+            ...this._area(suggestion, rowState),
+          });
           if (result.success === false) {
             this._updateRowState(suggestion, {
               status: "error",
@@ -822,6 +916,19 @@ export class KNXEntitiesSuggestions extends LitElement {
 
       & ha-selector-select {
         min-width: 140px;
+      }
+
+      /* a fixed width - the same in every row, button or not, and long names cut off */
+      & .area {
+        display: flex;
+        align-items: center;
+        width: 288px;
+        max-width: 100%;
+      }
+
+      & ha-area-picker {
+        flex: 0 1 240px;
+        min-width: 0;
       }
     }
 

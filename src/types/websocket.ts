@@ -94,6 +94,17 @@ export interface EntitySuggestion {
   existing_entity_ids: string[];
   // provider specific details about where the suggestion comes from
   metadata: Record<string, unknown>;
+  // area of the ETS building structure - null if not placed in a room; added by
+  // https://github.com/home-assistant/core/pull/195147, undefined on older backends
+  suggested_area?: SuggestedArea | null;
+}
+
+export interface SuggestedArea {
+  // name of the area to get or create
+  name: string;
+  floor: string | null;
+  // id of an existing area of this name - null if it is created with the entity
+  area_id: string | null;
 }
 
 // provider specific information - every provider reports at least a `state`
